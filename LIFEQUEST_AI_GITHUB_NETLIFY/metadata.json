@@ -1,0 +1,6 @@
+{
+  "name": "LifeQuest AI - English Town",
+  "description": "An interactive 2D RPG English learning town featuring lively NPCs with daily schedules, live AI grammar coaching, quests, and Vietnamese vocabulary explanations powered by Gemini AI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
