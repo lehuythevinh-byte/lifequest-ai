@@ -1,4 +1,5 @@
 <!doctype html>
+<<<<<<< HEAD
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
@@ -19,3 +20,115 @@
   </body>
 </html>
 
+=======
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LifeQuest AI - English Town</title>
+    <meta name="description" content="An interactive 2D RPG English learning town featuring lively NPCs with daily schedules, live AI grammar coaching, quests, and Vietnamese vocabulary explanations powered by Gemini AI." />
+    <meta property="og:title" content="LifeQuest AI - English Town" />
+    <meta property="og:description" content="An interactive 2D RPG English learning town featuring lively NPCs with daily schedules, live AI grammar coaching, quests, and Vietnamese vocabulary explanations powered by Gemini AI." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏘️</text></svg>">
+  </head>
+  <body>
+    <!-- React Root handles the overlay UI, cheatsheet guide, status indicators, and mounting -->
+    <div id="root"></div>
+
+    <!-- 2D Canvas Container -->
+    <div id="game"></div>
+
+    <!-- NPC Chat Overlay -->
+    <div id="chat">
+      <div class="name"></div>
+      <div class="goal"></div>
+      <div class="log"></div>
+      <div class="inrow">
+        <input type="text" placeholder="Type in English and press Enter, or press the mic and speak..." autocomplete="off" />
+        <button id="mic" type="button" title="Speak English (Tab)">🎤</button>
+      </div>
+      <div class="hint">
+        Enter: send &nbsp;|&nbsp; Tab: speak (microphone) &nbsp;|&nbsp; Esc: leave conversation &nbsp;|&nbsp; ?word: explain a word &nbsp;|&nbsp; 
+        <button id="teacher" type="button" title="AI teacher fixes your grammar under each message">✎ Teacher: ON</button> &nbsp;
+        <button id="voice-toggle" type="button" title="Toggle NPC voice">🔊 Voice: ON</button>
+      </div>
+    </div>
+
+    <!-- Quest Briefing Overlay -->
+    <div id="briefing">
+      <div class="name"></div>
+      <div class="text"></div>
+      <div class="row">
+        <span class="hint">E / Space / Enter: continue &nbsp;|&nbsp; Esc: stay here</span>
+        <span><span class="step"></span><button class="next" type="button">Next ▸</button></span>
+      </div>
+    </div>
+
+    <!-- Word Helper (Vietnamese English Explanations) -->
+    <div id="helper">
+      <h3>📖 Word helper - ask about any hard word</h3>
+      <div class="row">
+        <input type="text" placeholder="Type a word, a phrase or a sentence (you can also ask in Vietnamese)" autocomplete="off" spellcheck="false" />
+        <button id="helper-ask" type="button">Explain</button>
+        <button id="helper-close" type="button">Close</button>
+      </div>
+      <div class="hout">
+        <div class="wnote">Example: <b>polite</b>, <b>take care of</b>, or "How much does it cost?"</div>
+      </div>
+      <div class="hbook"></div>
+      <div class="wnote">In a chat, type <b>?word</b> to ask without leaving the conversation. H: close</div>
+    </div>
+
+    <!-- Player Journal -->
+    <div id="journal"></div>
+
+    <!-- Quests Log -->
+    <div id="quests"></div>
+
+    <!-- Notification Toast -->
+    <div id="toast"></div>
+
+    <!-- Quick Group Menu Button & Menu -->
+    <button id="group-btn" type="button" title="Open the menu (G)">☰ Menu (G)</button>
+    <div id="group-menu">
+      <button type="button" data-act="talk"><span>💬 Talk / sleep</span><kbd>E</kbd></button>
+      <button type="button" data-act="quests"><span>📜 Quests</span><kbd>Q</kbd></button>
+      <button type="button" data-act="journal"><span>📓 Journal</span><kbd>J</kbd></button>
+      <button type="button" data-act="helper"><span>📖 Word helper</span><kbd>H</kbd></button>
+      <button type="button" data-act="settings"><span>⚙ AI settings</span><kbd>K</kbd></button>
+      <div class="sep"></div>
+      <button type="button" data-act="reset"><span>🗑 Erase all progress</span><kbd>F8</kbd></button>
+      <div class="tip">Move: WASD / arrows. At a door press W to enter. G: open or close this menu.</div>
+    </div>
+
+    <!-- AI Settings & Progress Backup Modal -->
+    <div id="settings">
+      <h3>AI Settings - Smarter NPCs with Gemini</h3>
+      <ol>
+        <li>Default: Automatically powered by the server's Gemini AI.</li>
+        <li>Optional: Or paste your personal Gemini API key below.</li>
+      </ol>
+      <label>Gemini API key (optional)<input id="ai-key" type="password" autocomplete="off" spellcheck="false" placeholder="Leave empty to use built-in server key" /></label>
+      <label>Model (optional)<input id="ai-model" type="text" autocomplete="off" spellcheck="false" placeholder="gemini-3.8-flash" /></label>
+      <div class="row">
+        <button id="ai-test">Test</button>
+        <button id="ai-save">Save</button>
+        <button id="ai-clear">Remove key</button>
+        <button id="ai-close">Close</button>
+      </div>
+      <div class="status"></div>
+      <h3 style="margin-top:14px">Backup Your Progress</h3>
+      <div class="row">
+        <button id="save-export">Export save</button>
+        <button id="save-import">Import save</button>
+        <input id="save-file" type="file" accept=".json,application/json" style="display:none" />
+      </div>
+      <div class="note">Progress is saved in your browser. Export it to keep a backup or continue on another device.</div>
+    </div>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+>>>>>>> 742ed336759c7e8e3d93fa5cf05858a7a92fd3da
