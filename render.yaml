@@ -1,7 +1,7 @@
 services:
   - type: web
-    name: lifequest-ai-v70
+    name: lifequest-ai-v70-apikey
     runtime: static
-    buildCommand: 'mkdir -p public && test "$(find v70/parts -type f -name ''p*.txt'' | wc -l)" -eq 44 && cat v70/parts/p*.txt > public/index.html && echo "8476d3b98ef3c133df6bc785956c19def9d036cccebbdb2acf52a31564f6ce21  public/index.html" | sha256sum -c -'
+    buildCommand: 'mkdir -p public && test "$(find v70/parts -type f -name ''p*.txt'' | wc -l)" -eq 44 && cat v70/parts/p*.txt > public/index.html && echo "8476d3b98ef3c133df6bc785956c19def9d036cccebbdb2acf52a31564f6ce21  public/index.html" | sha256sum -c - && cp v70/addons/api-key-ui.js public/api-key-ui.js && cp v70/addons/api-key-ui.css public/api-key-ui.css && sed -i ''s@</head>@<link rel="stylesheet" href="/api-key-ui.css"></head>@'' public/index.html && sed -i ''s@^</body>$@<script defer src="/api-key-ui.js"></script></body>@'' public/index.html && grep -q ''src="/api-key-ui.js"'' public/index.html'
     staticPublishPath: ./public
     autoDeployTrigger: commit
