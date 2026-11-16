@@ -1,0 +1,2482 @@
+ flag in 10-core-characters-and-scene.js) and
+ * lifted a few pixels so it sits on the dog's back.
+ */
+(function () {
+  'use strict';
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  const BLACK = 0x0a0a12,
+    FAR = 0x06060b,
+    DARK = 0x15152a,
+    RIM = 0x3a3a68,
+    OUT = 0x2e2c58,
+    EYE = 0xe6e8ff,
+    GLOW = 0x6a4aa8,
+    FURH = 0x2c2c3a, // head and mane fur: a touch lighter than the body so the shaggy tufts read
+    STREAK = 0x70708a,
+    YEL = 0xe8cc22,
+    RED = 0xc02830,
+    FANG = 0xeeeae0,
+    NOSE = 0x4a2a20;
+  const LIFT = 9; // how many art pixels the rider is raised (front/back views)
+  const LIFT_SIDE = 7.5; // same for the smaller side-view dog
+  const state = { riding: false };
+
+  // Draws the dog. o = { x, y (ground), s (scale), dir, flip, moving, time, part: 'back' | 'front', alpha }.
+  // Local units are art pixels: x grows towards the dog's nose (mirrored when flipped), y is up from the ground (< 0).
+  function drawDog(g, o) {
+    const s = o.s,
+      sx = o.flip ? -1 : 1,
+      back = o.part === 'back',
+      // The side views are drawn 18% smaller than the front/back ones so the dog is not bigger than its rider.
+      k = o.dir === 'up' || o.dir === 'down' ? 1 : 0.82;
+    const R = (x, y, w, h, c, a = 1) => {
+      g.fillStyle(c, a * o.alpha);
+      g.fillRect(o.x + (sx > 0 ? x : -(x + w)) * s * k, o.y + y * s * k, w * s * k, h * s * k);
+    };
+    const E = (x, y, w, h, c, a = 1) => {
+      g.fillStyle(c, a * o.alpha);
+      g.fillEllipse(o.x + sx * x * s * k, o.y + y * s * k, w * s * k, h * s * k);
+    };
+    const T = (x1, y1, x2, y2, x3, y3, c) => {
+      g.fillStyle(c, o.alpha);
+      g.fillTriangle(o.x + sx * x1 * s * k, o.y + y1 * s * k, o.x + sx * x2 * s * k, o.y + y2 * s * k, o.x + sx * x3 * s * k, o.y + y3 * s * k);
+    };
+    // Pixel-art rounded block (corners cut by one pixel), used for the stocky front/back body.
+    const B = (x, y, w, h, c) => {
+      R(x + 1, y, w - 2, h, c);
+      R(x, y + 1, w, h - 2, c);
+    };
+    const ph = o.moving ? o.time * 0.014 : 0;
+    const wag = Math.sin(o.time * 0.006) * 1.5;
+    const dir = o.dir;
+    const swing = (p0, amp) => (o.moving ? Math.sin(ph + p0) * amp : 0);
+    const lift = (p0, amp) => (o.moving ? Math.max(0, Math.cos(ph + p0)) * amp : 0);
+    if (dir === 'down') {
+      if (back) {
+        // Wide body that sticks out on both sides of the rider, with a pale violet outline so it reads against the
+        // dark uniform.
+        B(-12.5, -19, 25, 11, OUT);
+        B(-11.5, -18, 23, 9, BLACK);
+        R(-10, -10, 20, 1, DARK, 0.9);
+        R(-9, -18, 18, 1, RIM, 0.8);
+      } else {
+        // Front legs step alternately, then chest, a low head with big ears, snout and pale eyes.
+        const l = lift(0, 2),
+          r = lift(Math.PI, 2);
+        R(-10, -10, 6, 10 - l, OUT);
+        R(4, -10, 6, 10 - r, OUT);
+        R(-9, -10, 4, 10 - l, BLACK);
+        R(5, -10, 4, 10 - r, BLACK);
+        R(-9, -1 - l, 5, 1, DARK);
+        R(4, -1 - r, 5, 1, DARK);
+        B(-11, -15, 22, 12, OUT);
+        B(-10, -14, 20, 10, BLACK);
+        R(-8, -15, 16, 12, OUT);
+        T(-7, -12, -12.5, -9, -7, -4, FURH);
+        T(7, -12, 12.5, -9, 7, -4, FURH);
+        T(-7, -9, -11, -3, -5, -6, FURH);
+        T(7, -9, 11, -3, 5, -6, FURH);
+        R(-7, -14, 14, 10, FURH);
+        T(-8, -14, -10, -26, -1.5, -14, OUT);
+        T(8, -14, 10, -26, 1.5, -14, OUT);
+        T(-7, -14, -8.8, -24, -2.5, -14, FURH);
+        T(7, -14, 8.8, -24, 2.5, -14, FURH);
+        T(-4, -14, -2, -18, 0, -14, FURH);
+        T(0, -14, 2, -18, 4, -14, FURH);
+        T(-5.5, -15, -7, -21, -3.5, -15, DARK);
+        T(5.5, -15, 7, -21, 3.5, -15, DARK);
+        R(-3, -8, 6, 4, BLACK);
+        R(-1.5, -8, 3, 2, DARK);
+        R(-5, -11, 2, 1, YEL);
+        R(3, -11, 2, 1, YEL);
+        R(-6, -12, 4, 1, BLACK);
+        R(2, -12, 4, 1, BLACK);
+        R(-0.5, -14, 1, 1, RED);
+        R(-1, -13, 1, 1, RED);
+        R(-4, -9, 8, 1, STREAK, 0.5);
+        T(-1.5, -5, -0.5, -3, 0.5, -5, FANG);
+        T(-5, -5, -2.5, -1, 0, -5, BLACK);
+        T(0, -5, 2.5, -1, 5, -5, BLACK);
+      }
+    } else if (dir === 'up') {
+      // Seen from behind, the dog's rump, hind legs and tail sit in front of the rider and hide his legs, as they
+      // would for someone really sitting on its back (drawn in the back layer, his legs looked like the dog's).
+      if (!back) {
+        const l = lift(0, 2),
+          r = lift(Math.PI, 2);
+        R(-10, -11, 6, 11 - l, OUT);
+        R(4, -11, 6, 11 - r, OUT);
+        R(-9, -11, 4, 11 - l, BLACK);
+        R(5, -11, 4, 11 - r, BLACK);
+        R(-9, -1 - l, 5, 1, DARK);
+        R(4, -1 - r, 5, 1, DARK);
+        B(-12.5, -19, 25, 11, OUT);
+        B(-11.5, -18, 23, 9, BLACK);
+        R(-10, -10, 20, 1, DARK, 0.9);
+        R(-9, -18, 18, 1, RIM, 0.8);
+        // Bushy tail hanging down over the rump.
+        T(-4, -15, 4, -15, wag * 0.6, -3, OUT);
+        T(-3, -15, 3, -15, wag * 0.6, -4, BLACK);
+        R(-1, -14, 1, 7, RIM, 0.5);
+      }
+    } else {
+      // Side view (also used for the two diagonal views): a long, deep-chested wolf with a bushy tail.
+      if (back) {
+        // Legs: [x, phase, colour]. The far pair is darker and drawn first.
+        const legs = [
+          [-13, 0, FAR],
+          [6, Math.PI * 1.5, FAR],
+          [-8, Math.PI, BLACK],
+          [10, Math.PI / 2, BLACK],
+        ];
+        for (const [lx, lp, col] of legs) {
+          const sw = swing(lp, 2.5),
+            up = lift(lp, 2);
+          R(lx + sw, -11, 4, 11 - up, col);
+          R(lx + sw, -1 - up, 5, 1, DARK);
+        }
+        T(-16, -19, -28, -13 + wag, -16, -11, BLACK);
+        T(-16, -18, -24, -17 + wag * 0.5, -27, -13 + wag, BLACK);
+        R(-11, -20, 20, 10, BLACK);
+        E(-10, -14.5, 13, 13, BLACK);
+        E(9, -14.5, 13, 14, BLACK);
+        E(0, -10, 22, 5, DARK, 0.7);
+        R(-10, -20, 19, 1, RIM, 0.85);
+        T(8, -9, 10, -4, 12.5, -9, BLACK);
+        T(12, -9, 14.5, -5, 16, -10, BLACK);
+        // Neck and mane sit under the rider (back layer); only the head is drawn over him.
+        T(9, -22, 1, -19, 9, -11, FURH);
+        T(12, -24, 3, -26, 12, -16, FURH);
+        R(9, -25, 9, 14, FURH);
+        T(13, -28, 5, -32, 13, -23, FURH);
+        T(12, -26, 4, -27, 12, -20, FURH);
+        R(11, -22, 6, 1, STREAK, 0.6);
+        R(10, -18, 5, 1, STREAK, 0.5);
+      } else {
+        // Shaggy wolf head: thick neck, a mane of jagged tufts (cheeks and neck, sweeping back and down), pointed
+        // ears, narrow snout with a brown nose and one fang, a yellow eye with a dark pupil under an angry brow, and
+        // red marks on the forehead.
+        T(16, -19, 11, -13, 20, -18, FURH);
+        T(20, -19, 17, -13, 24, -19, FURH);
+        T(22, -19, 21, -15, 25, -20, FURH);
+        R(14, -28, 10, 10, FURH);
+        R(22, -26, 6, 5, FURH);
+        R(27, -26, 2, 2, NOSE);
+        R(22, -21, 5, 2, DARK);
+        T(24, -21, 25.5, -17.5, 26.5, -21, FANG);
+        T(15, -28, 16.5, -39, 21, -28, FURH);
+        T(16.5, -29, 17.5, -36, 19.5, -29, BLACK);
+        T(21, -28, 24, -37, 25, -28, FAR);
+        T(16, -29, 18, -34, 20, -29, FURH);
+        R(20, -28, 5, 1, BLACK);
+        R(21, -27, 2, 2, YEL);
+        R(22, -26.5, 1, 1.5, BLACK);
+        R(17, -28, 1, 1, RED);
+        R(19, -29, 1, 1, RED);
+        R(19, -27, 1, 1, RED);
+        R(15, -26, 5, 1, STREAK, 0.7);
+        R(14, -29, 8, 1, RIM, 0.8);
+      }
+    }
+  }
+
+  function summonFx(g, o) {
+    // Dark puddle spreading under the dog and a few violet specks rising from it while it appears or leaves.
+    const k = o.e;
+    if (k <= 0 || k >= 1) return;
+    const s = o.s;
+    g.fillStyle(0x05050a, 0.55 * Math.sin(k * Math.PI));
+    g.fillEllipse(o.x, o.y + 1 * s, (14 + 30 * k) * s, (4 + 6 * k) * s);
+    for (let i = 0; i < 7; i++) {
+      const life = (k * 1.4 + i / 7) % 1;
+      const x = o.x + Math.sin(i * 5.1 + o.time * 0.004) * 12 * s;
+      const y = o.y - life * 22 * s;
+      g.fillStyle(GLOW, 0.45 * Math.sin(life * Math.PI));
+      g.fillRect(x, y, 2 * s, 2 * s);
+    }
+  }
+
+  function release(sc, st) {
+    st.active = false;
+    st.lastOrigin = undefined;
+    st.back.clear();
+    st.front.clear();
+    try {
+      sc.applyRankLook();
+    } catch (e) {
+      /* the scene is being rebuilt */
+    }
+  }
+
+  function frame(sc, time, delta) {
+    const st = sc.__lqShadow;
+    if (!st) return;
+    st.back.clear();
+    st.front.clear();
+    const look = sc.store && sc.store.game && sc.store.game.rpg && sc.store.game.rpg.look;
+    const p = sc.player;
+    const able = !!(look && look.shadow && p && p.visible);
+    if (!able) {
+      state.riding = false;
+      st.t = 0;
+      if (st.active) release(sc, st);
+      return;
+    }
+    const target = state.riding ? 1 : 0;
+    const step = Math.min(1, (delta || 16) / 450);
+    st.t = target > st.t ? Math.min(target, st.t + step) : Math.max(target, st.t - step);
+    if (st.t <= 0) {
+      if (st.active) release(sc, st);
+      return;
+    }
+    st.active = true;
+    if (st.look !== look) {
+      st.look = look;
+      st.key = window.LQCharacter.ensure(sc, Object.assign({}, look, { riding: true }));
+    }
+    // The scene picks the sprite frame from playerKey each frame, so keep it on the riding set while the dog is out.
+    sc.playerKey = st.key;
+    const e = st.t * st.t * (3 - 2 * st.t);
+    const s = p.scaleX || 1;
+    // applyRankLook resets the origin; detect that and re-base (same trick as aura.js).
+    if (st.lastOrigin === undefined || Math.abs(p.originY - st.lastOrigin) > 1e-6) st.baseOrigin = p.originY;
+    const moving = !!sc.pMoving;
+    const bob = moving ? Math.abs(Math.sin(time * 0.014)) * 0.9 : Math.sin(time * 0.002) * 0.5;
+    // The side-view dog is smaller, so the rider sits lower on its back there.
+    const dirNow = (sc.pFace && sc.pFace.dir) || 'down';
+    const lift = dirNow === 'up' || dirNow === 'down' ? LIFT : LIFT_SIDE;
+    st.lastOrigin = st.baseOrigin + (lift * e + bob) / (p.height || 50);
+    p.setOrigin(0.5, st.lastOrigin);
+    const face = sc.pFace || {};
+    const o = {
+      x: p.x,
+      y: p.y + 9 * s + (1 - e) * 12 * s,
+      s,
+      dir: face.dir || 'down',
+      flip: !!face.flip,
+      moving,
+      time,
+      alpha: e,
+      e: st.t,
+    };
+    st.back.fillStyle(0x000000, 0.28 * e);
+    st.back.fillEllipse(p.x, p.y + 10 * s, 38 * s, 7 * s);
+    summonFx(st.back, o);
+    drawDog(st.back, Object.assign({ part: 'back' }, o));
+    drawDog(st.front, Object.assign({ part: 'front' }, o));
+  }
+
+  function attach(sc) {
+    if (sc.__lqShadow) return;
+    sc.__lqShadow = {
+      back: sc.add.graphics().setDepth(9.9),
+      front: sc.add.graphics().setDepth(10.1),
+      t: 0,
+      active: false,
+    };
+    sc.events.on('update', (time, delta) => frame(sc, time, delta));
+    sc.events.once('shutdown', () => {
+      sc.__lqShadow = null;
+    });
+  }
+
+  function toggle() {
+    const sc = getScene();
+    const look = sc && sc.store && sc.store.game && sc.store.game.rpg && sc.store.game.rpg.look;
+    if (!look || !look.shadow) return;
+    state.riding = !state.riding;
+  }
+
+  // A "tap" is Ctrl pressed and released with nothing else in between (so Ctrl+C, Ctrl+click etc. do not count).
+  let ctrlAlone = false;
+  const typing = () => {
+    const a = document.activeElement;
+    return !!a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable);
+  };
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Control') {
+        if (!e.repeat) ctrlAlone = !e.altKey && !e.shiftKey && !e.metaKey;
+      } else ctrlAlone = false;
+    },
+    true,
+  );
+  window.addEventListener('mousedown', () => (ctrlAlone = false), true);
+  window.addEventListener('blur', () => (ctrlAlone = false));
+  window.addEventListener(
+    'keyup',
+    (e) => {
+      if (e.key !== 'Control' || !ctrlAlone) return;
+      ctrlAlone = false;
+      if (!typing()) toggle();
+    },
+    true,
+  );
+
+  setInterval(() => {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqShadow) {
+      try {
+        attach(sc);
+      } catch (err) {
+        console.warn('shadow attach failed', err);
+      }
+    }
+  }, 1000);
+
+  window.LQShadow = { toggle, isRiding: () => state.riding, drawDog };
+})();
+
+</script>
+    <script>
+/*
+ * Gojo Satoru: the unlock greeting and the Six Eyes.
+ *
+ * 1. Greeting (LQGojo.greet()): when the 'mineral-trip' achievement completes, the screen goes dark and one line is
+ *    typed out in glowing blue: "Throughout heaven and earth, I alone am the honored one." Text only, no domain art.
+ *    Preview: open index.html?honored=1, or run LQGojo.preview() in the Console.
+ *
+ * 2. Six Eyes (looks with `sixEyes: true`, the Gojo preset): tap Ctrl (or the 👁 button) to lift the blindfold. For
+ *    DURATION ms the player sees through walls:
+ *      👆 Sukuna's fingers that are still missing,
+ *      🌑 Ten Shadows marks whose clue has been told,
+ *      🗣 villagers to talk to for the current quests (Ten Shadows, the quest panel, the town quests),
+ *      🏠 / 📍 buildings and spots the current quest asks for.
+ *    Things inside buildings shine through the roof; things off screen get an arrow on the edge of the view.
+ *    Then the eyes rest for COOLDOWN ms. Tap again to close them early.
+ */
+(function () {
+  'use strict';
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const lookOf = (sc) => sc && sc.store && sc.store.game && sc.store.game.rpg && sc.store.game.rpg.look;
+  // Older saves wore Gojo before the sixEyes flag existed: the Infinity aura plus the blindfold is the same preset.
+  const hasSixEyes = (look) => !!look && (!!look.sixEyes || (look.aura === 'infinity' && !!look.blindfold));
+
+  // ---- 1. greeting ----------------------------------------------------------------------------------------------
+  const GREET_LINES = ['Throughout heaven and earth,', 'I alone am the honored one.'];
+  const GREET_FONT = 'Cinzel, "Trajan Pro", "Times New Roman", Georgia, serif';
+  const G_FADE_IN = 450;
+  const G_CHAR = 48; // ms per letter
+  const G_GAP = 350; // pause between the two lines
+  const G_HOLD = 1500; // the finished line stays up
+  const G_FADE_OUT = 800;
+
+  function chime() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ac = new AC();
+      const t = ac.currentTime;
+      [659, 988, 1319].forEach((hz, i) => {
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(hz, t + i * 0.09);
+        g.gain.setValueAtTime(0.0001, t + i * 0.09);
+        g.gain.exponentialRampToValueAtTime(0.12, t + i * 0.09 + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 1.6);
+        o.connect(g).connect(ac.destination);
+        o.start(t + i * 0.09);
+        o.stop(t + i * 0.09 + 1.7);
+      });
+      setTimeout(() => ac.close().catch(() => {}), 2400);
+    } catch (e) {
+      /* sound is optional */
+    }
+  }
+
+  try {
+    if (document.fonts && document.fonts.load) document.fonts.load('700 40px Cinzel').catch(() => {});
+  } catch (e) {
+    /* the serif fallback is used instead */
+  }
+
+  let greeting = null;
+  function greet() {
+    if (greeting) return greeting;
+    greeting = new Promise((resolve) => {
+      const cv = document.createElement('canvas');
+      cv.setAttribute('aria-hidden', 'true');
+      cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;z-index:9800;pointer-events:none;opacity:0';
+      document.body.appendChild(cv);
+      const W = (cv.width = Math.max(1, window.innerWidth));
+      const H = (cv.height = Math.max(1, window.innerHeight));
+      const ctx = cv.getContext('2d');
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const typeEnd = G_FADE_IN + GREET_LINES[0].length * G_CHAR + G_GAP + GREET_LINES[1].length * G_CHAR;
+      const total = typeEnd + G_HOLD + G_FADE_OUT;
+      const start = performance.now();
+      let sounded = false;
+      const frame = (now) => {
+        const el = now - start;
+        if (el >= total) {
+          cv.remove();
+          greeting = null;
+          resolve();
+          return;
+        }
+        const fadeOut = el > typeEnd + G_HOLD ? 1 - (el - typeEnd - G_HOLD) / G_FADE_OUT : 1;
+        cv.style.opacity = String(Math.max(0, Math.min(1, el / G_FADE_IN, fadeOut)));
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#03060d';
+        ctx.fillRect(0, 0, W, H);
+        const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.08, W / 2, H / 2, Math.max(W, H) * 0.7);
+        vg.addColorStop(0, 'rgba(70,170,255,0.20)');
+        vg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+        // How many letters of each line are typed so far.
+        const t0 = el - G_FADE_IN;
+        const n1 = reduce ? GREET_LINES[0].length : Math.max(0, Math.min(GREET_LINES[0].length, Math.floor(t0 / G_CHAR)));
+        const t1 = t0 - GREET_LINES[0].length * G_CHAR - G_GAP;
+        const n2 = reduce ? GREET_LINES[1].length : Math.max(0, Math.min(GREET_LINES[1].length, Math.floor(t1 / G_CHAR)));
+        if (!sounded && n2 > 0) {
+          sounded = true;
+          chime();
+        }
+        const size = Math.max(17, Math.min(W * 0.036, 46));
+        ctx.font = `700 ${size}px ${GREET_FONT}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${(size * 0.08).toFixed(1)}px`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        const lh = size * 1.6;
+        const shown = [n1, n2];
+        GREET_LINES.forEach((ln, i) => {
+          const part = ln.slice(0, shown[i]);
+          const w = ctx.measureText(ln).width;
+          const x = (W - Math.min(w, W * 0.94)) / 2;
+          const y = H / 2 + (i - 0.5) * lh;
+          // The second line is the boast: a stronger glow.
+          ctx.shadowColor = '#4fc3ff';
+          ctx.shadowBlur = size * (i ? 0.75 : 0.45);
+          ctx.fillStyle = i ? '#ffffff' : '#dcefff';
+          ctx.fillText(part, x, y, W * 0.94);
+          ctx.shadowBlur = 0;
+          const typing = shown[i] > 0 && shown[i] < ln.length;
+          const lastIdle = i === 1 && shown[1] === ln.length && Math.floor(el / 380) % 2 === 0;
+          if (typing || lastIdle) {
+            ctx.fillStyle = '#7fd8ff';
+            ctx.fillRect(x + Math.min(ctx.measureText(part).width, W * 0.94) + 3, y - size * 0.55, Math.max(2, size * 0.06), size * 1.1);
+          }
+        });
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+    return greeting;
+  }
+
+  if (/[?&]honored=1\b/.test(location.search)) window.addEventListener('load', () => setTimeout(() => greet(), 800));
+
+  // ---- 2. Six Eyes ----------------------------------------------------------------------------------------------
+  const DURATION = 12000;
+  const COOLDOWN = 8000;
+  const EYE_BLUE = 0x8fe8ff;
+  const COLORS = { finger: 0xc77dff, shadow: 0x8f9bff, npc: 0x7fe9ff, place: 0xffd36b };
+  const MAX_ARROWS = 5;
+  const st = { active: false, until: 0, readyAt: 0, e: 0, msg: '', msgUntil: 0 };
+
+  const CSS = `
+#lq-sixeyes-veil{position:fixed;inset:0;z-index:8;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 52%,rgba(70,175,255,.16) 80%,rgba(160,225,255,.30) 100%);box-shadow:inset 0 0 80px rgba(120,210,255,.35)}
+#lq-sixeyes-hud{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:42;pointer-events:none;max-width:calc(100vw - 24px);box-sizing:border-box;background:#06142ae0;border:1px solid #7fd8ff;border-radius:12px;padding:7px 12px;color:#eaf8ff;font:600 12px/1.45 system-ui,sans-serif;text-align:center;box-shadow:0 0 18px #4fc3ff55;display:none}
+#lq-sixeyes-hud b{color:#8fe8ff}
+#lq-sixeyes-hud small{display:block;color:#b9d9f2;font-weight:500}
+#lq-skill{position:fixed;right:13px;top:calc(50% + 34px);z-index:41;display:none;background:#0c1a33f2;color:#dff4ff;border:1px solid #4fa8e0;border-radius:999px;padding:8px 12px;font:600 13px system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 14px #0006}
+#lq-skill:hover{border-color:#8fe8ff}
+#lq-skill.on{background:#174a7a;border-color:#bff0ff;box-shadow:0 0 16px #4fc3ff88}
+#lq-skill.rest{opacity:.65}
+@media(max-width:700px){#lq-skill{top:auto;bottom:176px}#lq-sixeyes-hud{top:228px;bottom:auto;font-size:11px}}
+`;
+  let veil = null,
+    hud = null,
+    btn = null;
+  function mountUi() {
+    if (veil) return;
+    const s = document.createElement('style');
+    s.textContent = CSS;
+    document.head.appendChild(s);
+    veil = document.createElement('div');
+    veil.id = 'lq-sixeyes-veil';
+    hud = document.createElement('div');
+    hud.id = 'lq-sixeyes-hud';
+    hud.setAttribute('role', 'status');
+    btn = document.createElement('button');
+    btn.id = 'lq-skill';
+    btn.type = 'button';
+    btn.title = 'Six Eyes: see through walls (Ctrl)';
+    btn.addEventListener('click', () => {
+      btn.blur(); // keep Space/Enter for the game
+      toggle();
+    });
+    document.body.append(veil, hud, btn);
+  }
+
+  function say(text, ms = 1800) {
+    st.msg = text;
+    st.msgUntil = performance.now() + ms;
+  }
+
+  function toggle() {
+    const sc = getScene();
+    if (!hasSixEyes(lookOf(sc))) return;
+    const now = performance.now();
+    if (st.active) {
+      st.active = false;
+      st.readyAt = now + COOLDOWN;
+      return;
+    }
+    if (now < st.readyAt) {
+      say(`👁 The Six Eyes are resting… ${Math.ceil((st.readyAt - now) / 1000)}s`);
+      return;
+    }
+    st.active = true;
+    st.until = now + DURATION;
+    chime();
+  }
+
+  // ---- what the Six Eyes can see ---------------------------------------------------------------------------------
+  // Returns { here: [{kind, icon, label, x, y, k, wall}], away: {finger, shadow, npc: [names], otherTown} }.
+  function sense(sc) {
+    const here = [];
+    const away = { finger: 0, shadow: 0, npc: [], otherTown: 0 };
+    const area = sc.area.id;
+    const ins = sc.inside;
+    const A = window.LQAchievements;
+    const building = (name) => sc.area.buildings.find((b) => b.name === name);
+    // Seen from outdoors, things inside a building glow over the middle of its roof.
+    const roof = (name, dx) => {
+      const b = building(name);
+      return b ? { x: (b.x + b.w / 2) * 32 + dx, y: (b.y + b.h / 2) * 32, k: 1 } : null;
+    };
+    const collectibles = (kind, icon, list, isLive, spot, dx) => {
+      for (const it of list) {
+        if (!isLive(it)) continue;
+        if (it.area !== area) {
+          away[kind]++;
+          continue;
+        }
+        let p = null;
+        if (ins) p = spot(it.id); // indoors: only what lies in this room
+        else p = it.in ? roof(it.in, dx) : { x: it.x * 32 + 16, y: it.y * 32 + 16, k: 1 };
+        if (!p) {
+          away[kind]++;
+          continue;
+        }
+        here.push({ kind, icon, label: !ins && it.in ? it.in : '', x: p.x, y: p.y, k: p.k || 1, wall: !ins && !!it.in });
+      }
+    };
+    const F = window.LQFingers;
+    if (F && A && !A.isUnlocked('sukuna-fingers'))
+      collectibles('finger', '👆', F.list, (f) => !F.isFound(f.id), (id) => F.spot(id), -12);
+    const TS = window.LQTenShadows;
+    if (TS && TS.isStarted())
+      collectibles('shadow', '🌑', TS.list, (s) => TS.isTold(s.id) && !TS.isFound(s.id), (id) => TS.spot(id), 12);
+
+    // Villagers to talk to, with the reason (first reason wins).
+    const people = new Map();
+    const want = (id, why) => id && !people.has(id) && people.set(id, why);
+    if (TS && A && !A.isUnlocked('ten-shadows')) {
+      if (!TS.isStarted()) want('librarian', 'Ten Shadows');
+      else
+        for (const s of TS.list)
+          if (!TS.isTold(s.id) && !TS.isFound(s.id) && !(s.needs && TS.count() < s.needs)) want(s.npc, 'shadow clue');
+    }
+    let placeGoal = null;
+    try {
+      const step = window.LQV8 && window.LQV8.currentStep ? window.LQV8.currentStep() : null;
+      if (step && step.kind === 'npc') want(step.npc, 'quest');
+      if (step && /^(enter|floor|inspect)$/.test(step.kind) && step.building) placeGoal = { building: step.building };
+    } catch (e) {
+      /* quest panel not ready */
+    }
+    try {
+      const q = sc.quests && sc.quests.active && sc.quests.active();
+      if (q) {
+        const s = q.steps[sc.quests.progress(q)];
+        if (s && s.kind === 'talk') want(s.npc, 'town quest');
+        if (s && s.kind === 'visit' && sc.area.places[s.place]) {
+          const p = sc.area.places[s.place];
+          if (!ins) here.push({ kind: 'place', icon: '📍', label: 'Quest spot', x: p.x * 32 + 16, y: p.y * 32 + 16, k: 1, wall: false });
+        }
+      }
+    } catch (e) {
+      /* town quests not ready */
+    }
+    if (placeGoal && !ins) {
+      const b = building(placeGoal.building);
+      if (b) here.push({ kind: 'place', icon: '🏠', label: b.name, x: b.door * 32 + 16, y: (b.y + b.h) * 32 + 4, k: 1, wall: false, b });
+    }
+    for (const [id, why] of people) {
+      const n = sc.npcs && sc.npcs.find((x) => x.def.id === id);
+      if (!n) {
+        away.otherTown++; // villagers of the other town are not in this scene
+        continue;
+      }
+      const name = (n.def.name || id).split(' (')[0];
+      if (!n.sprite.visible) {
+        away.npc.push(name + ' (resting)');
+        continue;
+      }
+      if (!!n.inside !== !!ins) {
+        away.npc.push(name);
+        continue;
+      }
+      const k = n.sprite.scaleX || 1;
+      here.push({ kind: 'npc', icon: '🗣', label: `${name} · ${why}`, x: n.sprite.x, y: n.sprite.y - 6 * k, k, wall: false, npc: n });
+    }
+    return { here, away };
+  }
+
+  // ---- drawing ------------------------------------------------------------------------------------------------
+  // While the eyes are open the world sinks under a dark layer (depth DIM). Only the player and what the Six Eyes
+  // see are lifted above it, each with a glowing outline that follows its shape; nothing is labelled.
+  const DIM = 59;
+  const DIM_ALPHA = 0.85; // how dark the world gets
+  const D = { glow: 59.2, aura: 59.4, player: 59.5, npc: 59.6, npcLabel: 59.65, marks: 59.7, markText: 59.75, top: 59.8 };
+  const BASE = { aura: 9.5, player: 10, npc: 9, npcLabel: 11, marks: 8.8, markText: 8.9 };
+
+  // Lift (or put back) the game objects that should shine through the dark layer.
+  function lift(sc, s, on, npcs) {
+    const set = (o, d) => o && o.depth !== d && o.setDepth(d);
+    set(sc.player, on ? D.player : BASE.player);
+    set(sc.__lqAura && sc.__lqAura.g, on ? D.aura : BASE.aura);
+    set(sc.__lqFingers && sc.__lqFingers.g, on ? D.marks : BASE.marks);
+    const ts = sc.__lqTenShadows;
+    if (ts) {
+      set(ts.g, on ? D.marks : BASE.marks);
+      ts.texts.forEach((t) => set(t, on ? D.markText : BASE.markText));
+    }
+    const want = new Set(on ? npcs : []);
+    for (const n of s.lifted) if (!want.has(n)) set(n.sprite, BASE.npc), set(n.label, BASE.npcLabel);
+    for (const n of want) set(n.sprite, D.npc), set(n.label, D.npcLabel);
+    s.lifted = want;
+  }
+
+  // A pixel-crisp outline: four copies of the sprite, filled with one colour, nudged one pixel each way.
+  function outline(sc, s, spr, color, alpha) {
+    const off = Math.max(1, spr.scaleX || 1);
+    for (const [dx, dy] of [[-off, 0], [off, 0], [0, -off], [0, off]]) {
+      let img = s.glows[s.gi++];
+      if (!img) s.glows.push((img = sc.add.image(0, 0, spr.texture.key).setDepth(D.glow)));
+      img
+        .setTexture(spr.texture.key, spr.frame.name)
+        .setOrigin(spr.originX, spr.originY)
+        .setScale(spr.scaleX, spr.scaleY)
+        .setFlipX(spr.flipX)
+        .setPosition(spr.x + dx, spr.y + dy)
+        .setAlpha(alpha)
+        .setVisible(true);
+      fillTint(img, color);
+    }
+  }
+
+  // Solid-colour tint: Phaser 4 uses setTint + FILL mode (setTintFill was removed); Phaser 3 has setTintFill.
+  function fillTint(img, color) {
+    const P = window.Phaser;
+    if (img.setTintMode && P && P.TintModes) img.setTint(color).setTintMode(P.TintModes.FILL);
+    else img.setTintFill(color);
+  }
+
+  // Soft glow with no hard edge: stacked faint discs.
+  function halo(g, x, y, r, color, a) {
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle(color, a);
+      g.fillCircle(x, y, r * (1 - i * 0.14));
+    }
+  }
+
+  function drawWorld(sc, s, seen, time, e) {
+    const cam = sc.cameras.main;
+    const v = cam.worldView;
+    const z = cam.zoom || 1;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.005);
+    s.dim.fillStyle(0x030812, DIM_ALPHA * e);
+    s.dim.fillRect(v.x - 4, v.y - 4, v.width + 8, v.height + 8);
+    const g = s.g;
+    const top = s.top.setAlpha(e);
+    s.gi = 0;
+    const px = sc.player.x,
+      py = sc.player.y;
+    const onScreen = (t) => t.x > v.x && t.x < v.right && t.y > v.y && t.y < v.bottom;
+    const inView = [],
+      outView = [];
+    for (const t of seen.here) {
+      t.d = Math.hypot(t.x - px, t.y - py);
+      (onScreen(t) || (t.b && t.b.x * 32 < v.right && (t.b.x + t.b.w) * 32 > v.x && t.b.y * 32 < v.bottom && (t.b.y + t.b.h) * 32 > v.y) ? inView : outView).push(t);
+    }
+    // The player keeps a faint blue rim so Gojo still stands out.
+    outline(sc, s, sc.player, 0x8fe8ff, 0.55 * e);
+    lift(sc, s, true, inView.filter((t) => t.npc).map((t) => t.npc));
+    inView.forEach((t, i) => {
+      const c = COLORS[t.kind];
+      const k = t.k;
+      if (t.kind === 'npc') {
+        halo(g, t.npc.sprite.x, t.npc.sprite.y - 14 * k, 26 * k, c, 0.035 * e);
+        outline(sc, s, t.npc.sprite, c, (0.7 + 0.3 * pulse) * e);
+      } else if (t.kind === 'place' && t.b) {
+        // The whole building is traced in light.
+        const x = t.b.x * 32,
+          y = t.b.y * 32,
+          w = t.b.w * 32,
+          h = t.b.h * 32;
+        [[7, 0.12], [4, 0.25], [1.5, 0.9]].forEach(([lw, a]) => {
+          g.lineStyle(lw, c, a * (0.75 + 0.25 * pulse) * e);
+          g.strokeRect(x, y, w, h);
+        });
+      } else if (t.kind === 'place') {
+        g.lineStyle(2, c, (0.6 + 0.4 * pulse) * e);
+        g.strokeEllipse(t.x, t.y + 6, 34, 12);
+        halo(g, t.x, t.y, 22, c, 0.04 * e);
+      } else {
+        halo(g, t.x, t.y, 30 * k, c, (0.05 + 0.03 * pulse) * e);
+        if (t.wall) {
+          // Seen through the roof: the object itself, drawn over the building.
+          if (t.kind === 'finger' && window.LQFingers && window.LQFingers.draw) window.LQFingers.draw(top, t.x, t.y, 1, time, i);
+          if (t.kind === 'shadow' && window.LQTenShadows && window.LQTenShadows.drawMark) window.LQTenShadows.drawMark(top, t.x, t.y, 1, time, i);
+        }
+      }
+    });
+    for (let i = s.gi; i < s.glows.length; i++) s.glows[i].setVisible(false);
+    // Glowing chevrons on the edge of the view for what lies beyond it (nearest first, no text).
+    const m = 22 / z;
+    outView
+      .sort((a, b) => a.d - b.d)
+      .slice(0, MAX_ARROWS)
+      .forEach((t) => {
+        const c = COLORS[t.kind];
+        const cx = Math.min(v.right - m, Math.max(v.x + m, t.x));
+        const cy = Math.min(v.bottom - m, Math.max(v.y + m, t.y));
+        const ang = Math.atan2(t.y - cy, t.x - cx);
+        const chevron = (size, a) => {
+          const L = size / z,
+            W2 = size * 0.7 / z;
+          const tipX = cx + Math.cos(ang) * L,
+            tipY = cy + Math.sin(ang) * L;
+          const bx = cx - Math.cos(ang) * L * 0.5,
+            by = cy - Math.sin(ang) * L * 0.5;
+          top.fillStyle(c, a);
+          top.fillTriangle(tipX, tipY, bx + Math.cos(ang + Math.PI / 2) * W2, by + Math.sin(ang + Math.PI / 2) * W2, bx + Math.cos(ang - Math.PI / 2) * W2, by + Math.sin(ang - Math.PI / 2) * W2);
+        };
+        chevron(17, 0.15);
+        chevron(13, 0.3);
+        chevron(9, 0.95);
+      });
+  }
+
+  // One short line: time left, and what is hidden elsewhere (indoors, outdoors or in the other town).
+  function hudText(seen, now) {
+    const left = Math.max(0, Math.ceil((st.until - now) / 1000));
+    const a = seen.away;
+    const bits = [];
+    if (a.finger) bits.push(`👆${a.finger}`);
+    if (a.shadow) bits.push(`🌑${a.shadow}`);
+    if (a.npc.length + a.otherTown) bits.push(`🗣${a.npc.length + a.otherTown}`);
+    return `<b>👁 ${left}s</b>${bits.length ? ` · elsewhere ${bits.join(' ')}` : ''}`;
+  }
+
+  let lastHud = 0;
+  function frame(sc, time, delta) {
+    const s = sc.__lqSixEyes;
+    if (!s) return;
+    s.g.clear();
+    s.dim.clear();
+    s.top.clear();
+    const now = performance.now();
+    const look = lookOf(sc);
+    const able = hasSixEyes(look) && sc.player && sc.player.visible && !sc.switching && sc.area;
+    mountUi();
+    btn.style.display = hasSixEyes(look) ? 'block' : 'none';
+    if (st.active && (now >= st.until || !able)) {
+      st.active = false;
+      st.readyAt = now + COOLDOWN;
+    }
+    const target = st.active ? 1 : 0;
+    const step = Math.min(1, (delta || 16) / 350);
+    st.e = target > st.e ? Math.min(1, st.e + step) : Math.max(0, st.e - step);
+    // Button label: ready / open / resting.
+    const rest = now < st.readyAt ? Math.ceil((st.readyAt - now) / 1000) : 0;
+    const label = st.active ? '👁 Six Eyes ✦' : rest ? `👁 ${rest}s` : '👁 Six Eyes';
+    if (btn.textContent !== label) btn.textContent = label;
+    btn.classList.toggle('on', st.active);
+    btn.classList.toggle('rest', !st.active && !!rest);
+    veil.style.opacity = String(st.e);
+    // The eyes: blindfold off, glowing blue, while the Six Eyes are open.
+    if (st.e > 0 && able) {
+      if (s.look !== look) {
+        s.look = look;
+        s.key = window.LQCharacter.ensure(sc, Object.assign({}, look, { blindfold: false, eyeGlow: true, eye: EYE_BLUE }));
+      }
+      sc.playerKey = s.key;
+      s.worn = true;
+    } else if (s.worn) {
+      s.worn = false;
+      try {
+        sc.applyRankLook();
+      } catch (e) {
+        /* the scene is being rebuilt */
+      }
+    }
+    if (st.e <= 0 || !able) {
+      if (s.on) {
+        s.on = false;
+        lift(sc, s, false, []);
+        s.glows.forEach((img) => img.setVisible(false));
+      }
+      if (now < st.msgUntil) {
+        hud.style.display = 'block';
+        hud.innerHTML = st.msg;
+      } else hud.style.display = 'none';
+      return;
+    }
+    const seen = sense(sc);
+    s.on = true;
+    drawWorld(sc, s, seen, time, st.e);
+    if (now - lastHud > 200) {
+      lastHud = now;
+      hud.style.display = 'block';
+      hud.innerHTML = hudText(seen, now);
+    }
+  }
+
+  function attach(sc) {
+    if (sc.__lqSixEyes) return;
+    sc.__lqSixEyes = {
+      dim: sc.add.graphics().setDepth(DIM),
+      g: sc.add.graphics().setDepth(D.glow),
+      top: sc.add.graphics().setDepth(D.top),
+      glows: [],
+      gi: 0,
+      lifted: new Set(),
+      on: false,
+      key: null,
+      look: null,
+      worn: false,
+    };
+    sc.events.on('update', (time, delta) => frame(sc, time, delta));
+    sc.events.once('shutdown', () => {
+      sc.__lqSixEyes = null;
+    });
+  }
+
+  setInterval(() => {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqSixEyes) {
+      try {
+        attach(sc);
+      } catch (e) {
+        console.warn('six eyes attach failed', e);
+      }
+    }
+  }, 1000);
+
+  // Ctrl tap (pressed and released alone), the same key as Megumi's Divine Dog; each skill checks its own look.
+  let ctrlAlone = false;
+  const typing = () => {
+    const a = document.activeElement;
+    return !!a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable);
+  };
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Control') {
+        if (!e.repeat) ctrlAlone = !e.altKey && !e.shiftKey && !e.metaKey;
+      } else ctrlAlone = false;
+    },
+    true,
+  );
+  window.addEventListener('mousedown', () => (ctrlAlone = false), true);
+  window.addEventListener('blur', () => (ctrlAlone = false));
+  window.addEventListener(
+    'keyup',
+    (e) => {
+      if (e.key !== 'Control' || !ctrlAlone) return;
+      ctrlAlone = false;
+      if (!typing()) toggle();
+    },
+    true,
+  );
+
+  window.LQGojo = {
+    greet,
+    preview: () => greet(),
+    toggleSixEyes: toggle,
+    isSixEyesOpen: () => st.active,
+    // What the Six Eyes would show right now (for testing in the Console).
+    sense: () => {
+      const sc = getScene();
+      return sc && sc.area ? sense(sc) : null;
+    },
+  };
+})();
+
+</script>
+    <script>
+/*
+ * Device choice: right after Start on the title screen, the player must say how they play: 💻 Computer, 📱 Phone or
+ * 📲 iPad / tablet. The likely answer is pre-selected (from the screen size and touch support), but nothing goes on
+ * until the player confirms: there is no close button and Esc does nothing. The answer is remembered in localStorage
+ * and only asked once; it can be changed later from the Menu (see LQDevice.change()).
+ *
+ * The choice is written to <html data-device="pc|phone|tablet"> so CSS and other scripts can adapt (touch controls
+ * only appear on phone and tablet), and a 'lifequest:device' event is sent whenever it changes.
+ *
+ * window.LQDevice.ask() returns a promise that resolves once a device is chosen (at once if it was chosen before).
+ */
+(function () {
+  'use strict';
+
+  const KEY = 'lifequest.device';
+  const DEVICES = [
+    { id: 'pc', icon: '💻', title: 'Computer', desc: 'Keyboard: WASD or arrow keys to move, E to talk.' },
+    { id: 'phone', icon: '📱', title: 'Phone', desc: 'On-screen joystick and buttons, sized for small screens.' },
+    { id: 'tablet', icon: '📲', title: 'iPad / tablet', desc: 'On-screen joystick and larger buttons.' },
+  ];
+  const valid = (id) => DEVICES.some((d) => d.id === id);
+
+  function read() {
+    try {
+      const v = localStorage.getItem(KEY);
+      return valid(v) ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Best guess, only used to pre-select an answer. The primary pointer decides (a touchscreen laptop still has a
+  // mouse or trackpad as its main pointer); iPads that report themselves as a Mac are caught by 'MacIntel' + touch.
+  function guess() {
+    const mq = (q) => !!(window.matchMedia && matchMedia(q).matches);
+    const ipadAsMac = navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+    if (ipadAsMac) return 'tablet';
+    if (!mq('(pointer: coarse)')) return 'pc';
+    const short = Math.min(screen.width || innerWidth, screen.height || innerHeight);
+    return short >= 600 ? 'tablet' : 'phone';
+  }
+
+  let current = read();
+  function apply(id) {
+    current = id;
+    document.documentElement.dataset.device = id;
+    window.dispatchEvent(new CustomEvent('lifequest:device', { detail: { device: id } }));
+  }
+  if (current) apply(current);
+
+  const CSS = `
+#lq-device{position:fixed;inset:0;z-index:260;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;background:#070a16f2;color:#eef2ff;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;animation:lqdev-in .35s ease}
+@keyframes lqdev-in{from{opacity:0}to{opacity:1}}
+#lq-device .box{width:min(560px,100%);max-height:100%;overflow:auto;background:linear-gradient(160deg,#151d36,#0e1428);border:1px solid #3b4a7a;border-radius:18px;padding:22px;box-shadow:0 20px 60px #000c}
+#lq-device h2{margin:0 0 4px;font-size:21px}
+#lq-device p.sub{margin:0 0 16px;color:#aab6d6;font-size:14px}
+#lq-device .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+#lq-device .opt{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:16px 10px;border-radius:14px;border:2px solid #34416b;background:#121a33;color:inherit;font:inherit;cursor:pointer;transition:border-color .15s,background .15s}
+#lq-device .opt:hover{border-color:#6b82c9}
+#lq-device .opt.on{border-color:#ffd36b;background:#1e2748}
+#lq-device .opt .ic{font-size:34px;line-height:1}
+#lq-device .opt>div{display:flex;flex-direction:column;gap:4px}
+#lq-device .opt b{font-size:15px}
+#lq-device .opt small{color:#9fadcf;font-size:12px;line-height:1.35}
+#lq-device .opt .tag{font-size:10px;font-weight:700;color:#1b2630;background:#ffd36b;border-radius:999px;padding:1px 7px;visibility:hidden}
+#lq-device .opt.guess .tag{visibility:visible}
+#lq-device .go{margin-top:16px;width:100%;padding:13px;border:0;border-radius:12px;background:#ffd36b;color:#1b2630;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer}
+#lq-device .go:disabled{opacity:.45;cursor:default}
+#lq-device .note{margin:10px 0 0;color:#7f8db3;font-size:12px;text-align:center}
+@media(max-width:520px){#lq-device .opts{grid-template-columns:1fr}#lq-device .opt{flex-direction:row;text-align:left;padding:12px}#lq-device .opt>div{gap:2px;flex:1}#lq-device .opt .ic{font-size:28px}}
+`;
+
+  // Shows the chooser and resolves with the chosen id. There is no way to skip it.
+  function open() {
+    return new Promise((resolve) => {
+      const st = document.createElement('style');
+      st.textContent = CSS;
+      document.head.appendChild(st);
+      const pre = current || guess();
+      const el = document.createElement('div');
+      el.id = 'lq-device';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-modal', 'true');
+      el.setAttribute('aria-labelledby', 'lq-device-title');
+      el.innerHTML = `<div class="box">
+        <h2 id="lq-device-title">How are you playing?</h2>
+        <p class="sub">Pick your device so the game can show the right controls.</p>
+        <div class="opts" role="radiogroup">${DEVICES.map(
+          (d) => `<button type="button" class="opt${d.id === pre ? ' on' : ''}${d.id === guess() ? ' guess' : ''}" role="radio" aria-checked="${d.id === pre}" data-dev="${d.id}">
+            <span class="ic">${d.icon}</span><div><b>${d.title}</b><small>${d.desc}</small></div><span class="tag">Detected</span></button>`,
+        ).join('')}</div>
+        <button type="button" class="go">Continue</button>
+        <p class="note">You can change this later in Menu → Settings.</p>
+      </div>`;
+      document.body.appendChild(el);
+      let pick = pre;
+      const opts = [...el.querySelectorAll('.opt')];
+      const select = (id) => {
+        pick = id;
+        opts.forEach((o) => {
+          o.classList.toggle('on', o.dataset.dev === id);
+          o.setAttribute('aria-checked', String(o.dataset.dev === id));
+        });
+      };
+      opts.forEach((o) => o.addEventListener('click', () => select(o.dataset.dev)));
+      const go = el.querySelector('.go');
+      // Esc must not close it, and keys must not reach the game underneath.
+      const onKey = (ev) => {
+        if (ev.key === 'Escape') ev.preventDefault();
+        ev.stopPropagation();
+      };
+      addEventListener('keydown', onKey, true);
+      go.addEventListener('click', () => {
+        if (!valid(pick)) return;
+        try {
+          localStorage.setItem(KEY, pick);
+        } catch (e) {
+          /* private mode: the choice lasts for this visit only */
+        }
+        removeEventListener('keydown', onKey, true);
+        el.remove();
+        st.remove();
+        apply(pick);
+        resolve(pick);
+      });
+      setTimeout(() => go.focus(), 50);
+    });
+  }
+
+  window.LQDevice = {
+    list: DEVICES,
+    get: () => current,
+    guess,
+    // First visit: ask (cannot be skipped). Later visits: resolve at once with the saved choice.
+    // index.html?device=ask always asks (handy for testing the first-visit screen).
+    ask: () => (current && !/[?&]device=ask\b/.test(location.search) ? Promise.resolve(current) : open()),
+    // From the Menu: ask again, with the current choice pre-selected.
+    change: () => open(),
+    isTouch: () => current === 'phone' || current === 'tablet',
+  };
+})();
+
+</script>
+    <script>
+/*
+ * On-screen controls for phones and tablets (device chosen in device.js: <html data-device="phone|tablet">).
+ *
+ *  - Joystick (bottom left): drag to walk in 8 directions.
+ *  - 💬 button (bottom right): the E key, i.e. go through the door ahead or talk to the nearest person.
+ *  - Character skill (above 💬): Gojo's 👁 Six Eyes button (from gojo.js, moved here) or Megumi's 🐕 Divine Dog.
+ *
+ * The game already reads window.__townControls next to the keyboard (10-core-characters-and-scene.js): up / down /
+ * left / right while held, and actionRequested for one E press. 15-ui-assistant-panel.js replaces that object when the
+ * game starts, so it is looked up again on every write instead of being kept.
+ *
+ * On touch devices the minimap moves to the top-left corner so the joystick has the bottom-left corner to itself.
+ * The controls hide while a panel, chat or menu is open, and on computers they never appear.
+ */
+(function () {
+  'use strict';
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const isTouch = () => /^(phone|tablet)$/.test(document.documentElement.dataset.device || '');
+  const controls = () => (window.__townControls = window.__townControls || {});
+
+  const CSS = `
+#lq-touch{position:fixed;inset:0;z-index:40;pointer-events:none;display:none}
+#lq-touch.on{display:block}
+#lq-touch .joy{position:absolute;left:18px;bottom:60px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,#ffffff14 0,#ffffff0a 60%,#ffffff05 100%);border:2px solid #ffffff38;box-shadow:0 4px 18px #0006;pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none}
+#lq-touch .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffffffd0,#c9d6f0b0 60%,#8ea2c8a0);box-shadow:0 3px 10px #0007;transition:transform .08s ease-out}
+#lq-touch .joy.held .knob{transition:none}
+#lq-touch .act{position:absolute;right:20px;bottom:70px;width:72px;height:72px;border-radius:50%;border:2px solid #ffd36bcc;background:#1b2440e6;color:#fff;font-size:30px;line-height:1;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;box-shadow:0 4px 16px #0008}
+#lq-touch .act.down,#lq-touch .skill.down{transform:scale(.92);filter:brightness(1.25)}
+#lq-touch .skill{position:absolute;right:20px;bottom:154px;display:none;padding:10px 14px;border-radius:999px;border:1px solid #6c7fb8;background:#141c33f0;color:#eef3ff;font:600 14px system-ui,sans-serif;pointer-events:auto;touch-action:none;box-shadow:0 4px 14px #0007}
+#lq-touch .skill.show{display:block}
+#lq-touch .skill.on{border-color:#bff0ff;background:#174a7a}
+html[data-device="tablet"] #lq-touch .joy{left:30px;bottom:90px;width:150px;height:150px}
+html[data-device="tablet"] #lq-touch .knob{width:64px;height:64px;margin:-32px 0 0 -32px}
+html[data-device="tablet"] #lq-touch .act{right:34px;bottom:100px;width:88px;height:88px;font-size:36px}
+html[data-device="tablet"] #lq-touch .skill{right:34px;bottom:206px;font-size:16px;padding:12px 18px}
+/* Room for the controls: minimap to the top left, Character button up, Six Eyes button into the skill slot. */
+html[data-device="phone"] #v8-map-wrap{top:64px!important;bottom:auto!important;left:8px!important;width:190px!important;transform:none!important}
+html[data-device="tablet"] #v8-map-wrap{top:80px!important;bottom:auto!important;left:14px!important;transform:none!important}
+html[data-device="phone"] #lq-quick{top:auto!important;bottom:214px!important;transform:none!important}
+html[data-device="phone"] #lq-skill{top:auto!important;bottom:154px!important;right:20px!important}
+html[data-device="tablet"] #lq-skill{top:auto!important;bottom:206px!important;right:34px!important;font-size:16px!important;padding:12px 18px!important}
+html[data-device="phone"] #lq-sixeyes-hud{top:250px!important;bottom:auto!important}
+`;
+
+  let root = null,
+    joy = null,
+    knob = null,
+    act = null,
+    skill = null;
+
+  function mount() {
+    if (root) return;
+    const st = document.createElement('style');
+    st.textContent = CSS;
+    document.head.appendChild(st);
+    root = document.createElement('div');
+    root.id = 'lq-touch';
+    root.innerHTML = `<div class="joy" role="application" aria-label="Joystick: drag to walk"><div class="knob"></div></div>
+      <button type="button" class="act" aria-label="Talk / interact (E)">💬</button>
+      <button type="button" class="skill" aria-label="Character skill">🐕 Divine Dog</button>`;
+    document.body.appendChild(root);
+    joy = root.querySelector('.joy');
+    knob = root.querySelector('.knob');
+    act = root.querySelector('.act');
+    skill = root.querySelector('.skill');
+    bindJoystick();
+    bindButton(act, () => {
+      controls().actionRequested = true;
+    });
+    bindButton(skill, () => {
+      if (window.LQShadow) window.LQShadow.toggle();
+    });
+  }
+
+  // ---- joystick ---------------------------------------------------------------------------------------------------
+  let pointer = null;
+  function setDirs(dx, dy) {
+    const c = controls();
+    // 8 directions: a component counts once it is a good part of the push (about 22° either side of an axis).
+    const len = Math.hypot(dx, dy);
+    const on = len > 0.25;
+    const ux = on ? dx / len : 0,
+      uy = on ? dy / len : 0;
+    c.right = on && ux > 0.38;
+    c.left = on && ux < -0.38;
+    c.down = on && uy > 0.38;
+    c.up = on && uy < -0.38;
+  }
+  function release() {
+    pointer = null;
+    joy.classList.remove('held');
+    knob.style.transform = '';
+    setDirs(0, 0);
+  }
+  function bindJoystick() {
+    const move = (ev) => {
+      const r = joy.getBoundingClientRect();
+      const R = r.width / 2;
+      let dx = (ev.clientX - (r.left + R)) / R,
+        dy = (ev.clientY - (r.top + R)) / R;
+      const len = Math.hypot(dx, dy);
+      if (len > 1) (dx /= len), (dy /= len);
+      knob.style.transform = `translate(${dx * R * 0.62}px,${dy * R * 0.62}px)`;
+      setDirs(dx, dy);
+    };
+    joy.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      pointer = ev.pointerId;
+      try {
+        joy.setPointerCapture(ev.pointerId);
+      } catch (e) {
+        /* capture is optional */
+      }
+      joy.classList.add('held');
+      move(ev);
+    });
+    joy.addEventListener('pointermove', (ev) => {
+      if (ev.pointerId === pointer) move(ev);
+    });
+    for (const t of ['pointerup', 'pointercancel', 'lostpointercapture'])
+      joy.addEventListener(t, (ev) => {
+        if (ev.pointerId === pointer) release();
+      });
+  }
+
+  function bindButton(el, fn) {
+    el.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      el.classList.add('down');
+      fn();
+    });
+    for (const t of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(t, () => el.classList.remove('down'));
+    // Keyboard / screen reader activation (click without a pointer press).
+    el.addEventListener('click', (ev) => {
+      if (ev.detail === 0) fn();
+    });
+  }
+
+  // ---- when to show -----------------------------------------------------------------------------------------------
+  const shown = (id) => {
+    const el = document.getElementById(id);
+    return !!el && !el.hidden && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
+  };
+  function blocked(sc) {
+    if (!sc || !sc.player || sc.sleeping) return true;
+    if ((sc.chat && sc.chat.isOpen) || (sc.settings && sc.settings.isOpen) || (sc.helper && sc.helper.isOpen) || (sc.briefing && sc.briefing.isOpen))
+      return true;
+    return ['lq-title', 'lq-device', 'lq-auth', 'lq-cc', 'l11-shell', 'v8-panel', 'ai-panel', 'rpg-panel', 'v10-panel', 'journal', 'quests'].some(shown);
+  }
+
+  function tick() {
+    if (!isTouch()) {
+      if (root && root.classList.contains('on')) {
+        root.classList.remove('on');
+        release();
+      }
+      return;
+    }
+    mount();
+    const sc = getScene();
+    const on = !blocked(sc);
+    if (root.classList.contains('on') !== on) {
+      root.classList.toggle('on', on);
+      if (!on) release();
+    }
+    if (!on) return;
+    // Megumi's Divine Dog gets a button here; Gojo already has his own (👁, moved into the same slot by the CSS).
+    const look = sc.store && sc.store.game && sc.store.game.rpg && sc.store.game.rpg.look;
+    const dog = !!(look && look.shadow && window.LQShadow);
+    skill.classList.toggle('show', dog);
+    if (dog) {
+      const riding = window.LQShadow.isRiding();
+      skill.classList.toggle('on', riding);
+      const label = riding ? '🐕 Dismiss' : '🐕 Divine Dog';
+      if (skill.textContent !== label) skill.textContent = label;
+    }
+  }
+
+  setInterval(tick, 250);
+  window.addEventListener('lifequest:device', tick);
+  // Lifting a finger outside the page, switching apps or rotating must never leave the player walking.
+  window.addEventListener('blur', () => root && release());
+  document.addEventListener('visibilitychange', () => root && document.hidden && release());
+
+  window.LQTouch = { refresh: tick };
+})();
+
+</script>
+    <script>
+/*
+ * Opening scene and first-run tutorial.
+ *
+ * 1. Opening scene (about 30 s, click / Space / Enter to go on, "Skip" to leave): a little train crosses the hills
+ *    with the player on board and stops at English Town station. Each line is in easy English with a Vietnamese
+ *    subtitle. Drawn with code on a small canvas that is scaled up (pixel art), like the train ride in 17-train.
+ * 2. Tutorial: a card at the top of the screen walks a new player through the first minutes, checking what they
+ *    actually do: walk → find Mia (a yellow arrow points the way) → talk (E / 💬) → type a first English sentence →
+ *    leave the chat → open the Menu (G) → the first quest → the AI Coach. It can be skipped at any time.
+ *
+ * Only new saves get it: an older save that already has progress is marked as done without showing anything.
+ * State is kept in the normal save: game.tut = { intro, step, done, skipped }.
+ * The guided quest is '🌱 First Day in Town' (14-v8-quests-and-minimap.js); once it is finished the quest card moves
+ * on to The Ten Shadows.
+ *
+ * Menu → Settings → "🎬 Intro & tutorial" calls LQIntro.replay(). Preview the scene alone: index.html?intro=1 or
+ * LQIntro.preview() in the Console.
+ */
+(function () {
+  'use strict';
+
+  // ---- helpers ----------------------------------------------------------------------------------------------------
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const game = () => {
+    const sc = getScene();
+    return (sc && sc.store && sc.store.game) || null;
+  };
+  const save = () => {
+    try {
+      const sc = getScene();
+      sc && sc.store && sc.store.save();
+    } catch (e) {
+      console.warn('intro save failed', e);
+    }
+  };
+  const isTouch = () => {
+    const d = (window.LQDevice && window.LQDevice.get && window.LQDevice.get()) || document.documentElement.dataset.device;
+    return d === 'phone' || d === 'tablet';
+  };
+  const esc = (s) =>
+    String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const shown = (id) => {
+    const el = document.getElementById(id);
+    return !!el && !el.hidden && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
+  };
+  const playerName = () => {
+    const g = game();
+    return String((g && g.rpg && g.rpg.look && g.rpg.look.name) || '').trim().slice(0, 20);
+  };
+  // The quest checks only accept plain English letters, so example sentences use the name without accents.
+  const plainName = () =>
+    playerName()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .replace(/[^\x20-\x7e]/g, '')
+      .trim();
+  const toast = (title, sub, hint) => {
+    try {
+      if (window.LQAchievements && window.LQAchievements.toast) window.LQAchievements.toast(title, sub, hint);
+    } catch (e) {}
+  };
+
+  // ---- styles -----------------------------------------------------------------------------------------------------
+  const CSS = `
+#lq-intro{position:fixed;inset:0;z-index:10050;background:#000;opacity:0;transition:opacity .6s;font-family:system-ui,'Segoe UI',sans-serif;cursor:pointer;user-select:none;-webkit-user-select:none}
+#lq-intro.on{opacity:1}
+#lq-intro canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+#lq-intro .chap{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);text-align:center;color:#fff;text-shadow:0 2px 12px #000c;opacity:0;animation:lqInChap 2.6s ease forwards;pointer-events:none;white-space:nowrap}
+#lq-intro .chap small{display:block;font:700 13px system-ui,sans-serif;letter-spacing:.35em;color:#ffe2a0;text-transform:uppercase}
+#lq-intro .chap b{display:block;font:800 clamp(30px,6vw,52px)/1.1 Georgia,'Times New Roman',serif;margin:6px 0}
+#lq-intro .chap span{font:600 14px system-ui,sans-serif;color:#d8e6f5}
+@keyframes lqInChap{0%{opacity:0;transform:translate(-50%,-40%)}18%{opacity:1;transform:translate(-50%,-50%)}78%{opacity:1}100%{opacity:0}}
+#lq-intro .skip{position:absolute;top:14px;right:14px;background:#0009;color:#fff;border:1px solid #ffffff55;border-radius:999px;padding:7px 14px;font:700 13px system-ui,sans-serif;cursor:pointer}
+#lq-intro .skip:hover{background:#000c}
+#lq-intro .box{position:absolute;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(760px,calc(100vw - 32px));box-sizing:border-box;background:#101a2bf0;border:2px solid #f3c14b;border-radius:14px;padding:14px 18px 10px;color:#fff;box-shadow:0 10px 30px #000a;opacity:0;transition:opacity .35s}
+#lq-intro .box.show{opacity:1}
+#lq-intro .en{margin:0;font:600 clamp(16px,2.4vw,20px)/1.4 system-ui,sans-serif;min-height:1.4em}
+#lq-intro .vi{margin:6px 0 0;font:15px/1.4 system-ui,sans-serif;color:#a9c6e6;opacity:0;transition:opacity .4s}
+#lq-intro .vi.show{opacity:1}
+#lq-intro .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+#lq-intro .dots{display:flex;gap:5px}
+#lq-intro .dots i{width:7px;height:7px;border-radius:50%;background:#ffffff33}
+#lq-intro .dots i.on{background:#f3c14b}
+#lq-intro .next{background:#f3c14b;color:#1b2630;border:0;border-radius:8px;padding:7px 14px;font:800 14px system-ui,sans-serif;cursor:pointer}
+#lq-intro .hint{font-size:12px;color:#8fa6c2;margin-right:auto;margin-left:12px}
+#lq-tut{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:9050;width:min(470px,calc(100vw - 32px));box-sizing:border-box;background:linear-gradient(155deg,#13253ef5,#1b3150f5);border:2px solid #f3c14b;border-radius:14px;padding:10px 14px 12px;color:#fff;font-family:system-ui,'Segoe UI',sans-serif;box-shadow:0 10px 28px #000a}
+#lq-tut[hidden]{display:none}
+#lq-tut.pop{animation:lqTutPop .45s ease}
+@keyframes lqTutPop{0%{transform:translateX(-50%) scale(.94);opacity:.4}100%{transform:translateX(-50%) scale(1);opacity:1}}
+#lq-tut .hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+#lq-tut .tag{font:800 12px system-ui,sans-serif;color:#ffe2a0;letter-spacing:.02em}
+#lq-tut .bar{flex:1;height:5px;border-radius:9px;background:#ffffff1f;overflow:hidden;margin:0 6px}
+#lq-tut .bar i{display:block;height:100%;background:#f3c14b;border-radius:9px;transition:width .4s}
+#lq-tut .skip{background:none;border:0;color:#9fb6cf;font:600 12px system-ui,sans-serif;cursor:pointer;padding:2px 4px;text-decoration:underline}
+#lq-tut .en{margin:0;font:650 15px/1.4 system-ui,sans-serif}
+#lq-tut .en b{white-space:nowrap}
+#lq-tut .vi{margin:4px 0 0;font:13px/1.4 system-ui,sans-serif;color:#a9c6e6}
+#lq-tut .act{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+#lq-tut .act:empty{display:none}
+#lq-tut .act button{background:#f3c14b;color:#1b2630;border:0;border-radius:8px;padding:6px 12px;font:800 13px system-ui,sans-serif;cursor:pointer}
+#lq-tut .act button.ex{background:#24476e;color:#fff;border:1px solid #6d9bd0;font-weight:650}
+#lq-tut kbd{display:inline-block;min-width:1.4em;text-align:center;background:#f3f6ff;color:#14223a;border-radius:5px;padding:0 5px;font:800 13px system-ui,sans-serif;box-shadow:0 2px 0 #8aa0c0}
+@media (max-width:980px){#lq-tut{top:252px}#lq-tut.chatting{top:62px}}
+`;
+  function ensureCss() {
+    if (document.getElementById('lq-intro-css')) return;
+    const st = document.createElement('style');
+    st.id = 'lq-intro-css';
+    st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  // ---- 1. opening scene -------------------------------------------------------------------------------------------
+  const LINES = [
+    {
+      en: 'One sunny morning, a little train rolls across the green hills…',
+      vi: 'Một buổi sáng đầy nắng, đoàn tàu nhỏ lăn bánh qua những ngọn đồi xanh…',
+    },
+    { en: 'On board is a new student. That is you, {name}!', vi: 'Trên tàu có một học sinh mới. Đó chính là bạn, {name}!', you: true },
+    {
+      en: 'You are moving to English Town, where everybody speaks English.',
+      vi: 'Bạn chuyển đến English Town, nơi mọi người đều nói tiếng Anh.',
+    },
+    {
+      en: 'Talk to people, help your neighbours and learn new words every day.',
+      vi: 'Hãy trò chuyện với mọi người, giúp đỡ hàng xóm và học từ mới mỗi ngày.',
+    },
+    {
+      en: 'Don’t be afraid of mistakes. Mistakes help you learn!',
+      vi: 'Đừng sợ nói sai. Nói sai cũng là cách để học!',
+      brake: true,
+    },
+    {
+      en: 'Next stop: English Town! Mia, a friendly student, will show you around.',
+      vi: 'Ga tiếp theo: English Town! Mia, một bạn học sinh thân thiện, sẽ dẫn bạn đi tham quan.',
+    },
+  ];
+  const fillName = (s, name) => (name ? s.replace('{name}', name) : s.replace(', {name}', '').replace(' {name}', ''));
+
+  let playing = null;
+
+  function playIntro() {
+    if (playing) return playing;
+    ensureCss();
+    playing = new Promise((resolve) => {
+      const sc = getScene();
+      let paused = false;
+      try {
+        if (sc && sc.scene && sc.scene.isActive && sc.scene.isActive()) {
+          sc.scene.pause();
+          paused = true;
+        }
+      } catch (e) {}
+      const g = game();
+      const look = (g && g.rpg && g.rpg.look) || {};
+      const hex = (n, d) => (typeof n === 'number' ? '#' + (n >>> 0).toString(16).padStart(6, '0') : d);
+      const me = { skin: hex(look.skin, '#f1c6a0'), hair: hex(look.hair, '#5a3b2a'), top: hex(look.outfit, '#3a63c8') };
+      const name = playerName();
+      const lines = LINES.map((l) => Object.assign({}, l, { en: fillName(l.en, name), vi: fillName(l.vi, name) }));
+
+      const root = document.createElement('div');
+      root.id = 'lq-intro';
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-label', 'Opening scene');
+      root.innerHTML =
+        '<canvas></canvas>' +
+        '<div class="chap"><small>Chapter 1</small><b>A New Home</b><span>Chương 1 · Ngôi nhà mới</span></div>' +
+        '<button type="button" class="skip">Skip ⏭</button>' +
+        '<div class="box"><p class="en"></p><p class="vi"></p><div class="foot"><span class="dots">' +
+        lines.map(() => '<i></i>').join('') +
+        '</span><span class="hint">Click or press Space</span><button type="button" class="next">Next ▸</button></div></div>';
+      document.body.appendChild(root);
+      requestAnimationFrame(() => root.classList.add('on'));
+      const cv = root.querySelector('canvas');
+      const cx = cv.getContext('2d');
+      const box = root.querySelector('.box');
+      const enEl = root.querySelector('.en');
+      const viEl = root.querySelector('.vi');
+      const nextBtn = root.querySelector('.next');
+      const dots = [...root.querySelectorAll('.dots i')];
+
+      // Canvas size in "pixels" of the art: about 180 high on a wide screen, 220 wide on a tall phone screen.
+      let W = 320;
+      let H = 180;
+      let GY = 140; // ground line (top of the rails)
+      const size = () => {
+        const w = innerWidth || 1;
+        const h = innerHeight || 1;
+        if (w >= h) {
+          W = Math.min(440, Math.max(240, Math.round((180 * w) / h)));
+          H = Math.round((W * h) / w);
+        } else {
+          W = 220;
+          H = Math.round((220 * h) / w);
+        }
+        GY = Math.round(Math.min(H - 40, H * 0.55 + 40));
+        cv.width = W;
+        cv.height = H;
+      };
+      size();
+      addEventListener('resize', size);
+
+      // ---- scene state ----
+      const CRUISE = 80; // art pixels per second
+      let cam = 0;
+      let speed = CRUISE;
+      let brake = null; // { t0, c0, D, T }
+      let li = -1;
+      let typing = null; // { text, n, t }
+      let ended = false;
+      let raf = 0;
+      let last = performance.now();
+      const t0 = last;
+      const smoke = [];
+      let smokeT = 0;
+
+      const R = (x, y, w, h, c) => {
+        cx.fillStyle = c;
+        cx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+      };
+      const disc = (x, y, r, c) => {
+        cx.fillStyle = c;
+        cx.beginPath();
+        cx.arc(Math.round(x), Math.round(y), r, 0, Math.PI * 2);
+        cx.fill();
+      };
+      // Tiny pixel letters, 5 rows high (only the ones the sign needs; N and W are wider so they read clearly).
+      const GLYPHS = {
+        E: ['111', '100', '110', '100', '111'], N: ['1001', '1101', '1011', '1001', '1001'],
+        G: ['111', '100', '101', '101', '111'], L: ['100', '100', '100', '100', '111'],
+        I: ['111', '010', '010', '010', '111'], S: ['111', '100', '111', '001', '111'],
+        H: ['101', '101', '111', '101', '101'], T: ['111', '010', '010', '010', '010'],
+        O: ['111', '101', '101', '101', '111'], W: ['10001', '10001', '10101', '10101', '01010'],
+        ' ': ['00', '00', '00', '00', '00'],
+      };
+      const pixelText = (text, cxm, top, color) => {
+        const chars = [...text].map((ch) => GLYPHS[ch] || GLYPHS[' ']);
+        const width = chars.reduce((s, g) => s + g[0].length + 1, -1);
+        let x = Math.round(cxm - width / 2);
+        cx.fillStyle = color;
+        for (const g of chars) {
+          g.forEach((row, ry) => [...row].forEach((b, rx) => b === '1' && cx.fillRect(x + rx, top + ry, 1, 1)));
+          x += g[0].length + 1;
+        }
+      };
+      const wrap = (v, m) => ((v % m) + m) % m;
+      const hash = (n) => {
+        const s = Math.sin(n * 127.1) * 43758.5453;
+        return s - Math.floor(s);
+      };
+
+      function sky() {
+        const gr = cx.createLinearGradient(0, 0, 0, GY);
+        gr.addColorStop(0, '#5fb2f0');
+        gr.addColorStop(0.65, '#a9dcf7');
+        gr.addColorStop(1, '#ffe9c2');
+        cx.fillStyle = gr;
+        cx.fillRect(0, 0, W, GY);
+        const sx = W * 0.8;
+        const sy = Math.max(26, GY - 104);
+        disc(sx, sy, 17, '#fff4c455');
+        disc(sx, sy, 12, '#fff4c4aa');
+        disc(sx, sy, 8, '#fffbe6');
+        for (let k = 0; k < 6; k++) {
+          const x = wrap(k * 97 + 30 - cam * 0.06, W + 120) - 60;
+          const y = 14 + hash(k) * Math.max(20, GY - 110);
+          R(x, y, 34, 6, '#ffffffd9');
+          R(x + 6, y - 4, 18, 5, '#ffffffd9');
+          R(x + 20, y - 2, 10, 3, '#ffffffd9');
+        }
+      }
+      function mountains() {
+        for (let x = 0; x < W; x++) {
+          const a = x + cam * 0.15;
+          const h = 26 + 14 * Math.sin(a / 41) + 9 * Math.sin(a / 17 + 1.3);
+          R(x, GY - 18 - h, 1, h + 18, '#9cc4d4');
+          if (h > 40) R(x, GY - 18 - h, 1, 3, '#eef6fa');
+        }
+      }
+      function hills() {
+        for (let x = 0; x < W; x++) {
+          const a = x + cam * 0.35;
+          const h = 14 + 7 * Math.sin(a / 29) + 4 * Math.sin(a / 11 + 2);
+          R(x, GY - 6 - h, 1, h + 6, '#78bb62');
+          R(x, GY - 6 - h, 1, 2, '#93cf77');
+        }
+      }
+      function trees() {
+        const step = 23;
+        const first = Math.floor((cam * 0.6) / step) - 1;
+        for (let i = first; i < first + Math.ceil(W / step) + 3; i++) {
+          if (hash(i + 7) < 0.35) continue;
+          const x = i * step - cam * 0.6 + hash(i) * 10;
+          const s = 0.8 + hash(i + 3) * 0.5;
+          const base = GY - 5;
+          R(x - 1, base - 9 * s, 3, 9 * s, '#6b4a2e');
+          disc(x + 0.5, base - 12 * s, 6 * s, '#3f8f4c');
+          disc(x - 2, base - 15 * s, 4 * s, '#4ea25a');
+        }
+      }
+      function townBehindStation() {
+        if (!brake) return;
+        const colors = ['#d9534f', '#3f7fbf', '#e0a33a', '#5aa36b', '#9b59b6', '#e67e22', '#3aa7a3'];
+        for (let k = 0; k < 7; k++) {
+          const x = brake.c0 * 0.6 + W + 30 + k * 28 - cam * 0.6;
+          if (x < -40 || x > W + 40) continue;
+          const h = 14 + (k % 3) * 5;
+          const base = GY - 6;
+          R(x, base - h, 22, h, '#f4ead6');
+          R(x - 2, base - h - 7, 26, 8, colors[k]);
+          R(x + 2, base - h - 11, 18, 4, colors[k]);
+          R(x + 4, base - h + 4, 5, 5, '#7fc4ef');
+          R(x + 13, base - h + 4, 5, 5, '#7fc4ef');
+          if (k === 3) {
+            // the clock tower of the Town Hall
+            R(x + 7, base - h - 26, 8, 16, '#e8dcc0');
+            R(x + 6, base - h - 30, 10, 5, '#3f7fbf');
+            disc(x + 11, base - h - 19, 2.5, '#fffbe6');
+          }
+        }
+      }
+      function station() {
+        if (!brake) return;
+        const cxs = brake.c0 + brake.D + W / 2 - cam; // centre of the station on screen
+        if (cxs < -160 || cxs > W + 160) return;
+        // platform behind the track
+        R(cxs - 130, GY - 9, 260, 6, '#b9b2a6');
+        R(cxs - 130, GY - 9, 260, 1, '#e0dad0');
+        R(cxs - 130, GY - 4, 260, 2, '#8d8578');
+        // station building
+        const bx = cxs - 44;
+        const by = GY - 9;
+        R(bx, by - 34, 88, 34, '#f1e2c4');
+        R(bx, by - 34, 88, 3, '#e2cfa6');
+        R(bx - 6, by - 42, 100, 9, '#b8483e');
+        R(bx - 2, by - 47, 92, 6, '#c9554a');
+        R(bx + 36, by - 22, 16, 22, '#7a4a2a');
+        R(bx + 43, by - 22, 1, 22, '#5a361e');
+        for (const wx of [8, 22, 60, 74]) {
+          R(bx + wx, by - 24, 8, 9, '#7fc4ef');
+          R(bx + wx, by - 24, 8, 1, '#5a8fb0');
+        }
+        // sign board, lettered with a tiny pixel font so it stays sharp when scaled up
+        R(bx + 12, by - 58, 64, 12, '#1d3a5f');
+        R(bx + 13, by - 57, 62, 10, '#24497a');
+        pixelText('ENGLISH TOWN', bx + 44, by - 55, '#ffe9a8');
+        R(bx + 18, by - 47, 2, 5, '#3b3b3b');
+        R(bx + 68, by - 47, 2, 5, '#3b3b3b');
+        // lamp posts and a flower box
+        for (const lx of [-110, -70, 70, 110]) {
+          R(cxs + lx, GY - 30, 2, 21, '#2f3a44');
+          R(cxs + lx - 2, GY - 33, 6, 4, '#2f3a44');
+          R(cxs + lx - 1, GY - 32, 4, 2, '#fff2b0');
+        }
+        for (let k = 0; k < 10; k++) R(bx - 2 + k * 9, by - 3, 4, 3, k % 2 ? '#e74c3c' : '#f1c40f');
+      }
+      // Top of the near rail (track() draws it at GY + 3); every wheel rests on this line.
+      // Refreshed every frame in track() (drawn before the train), because GY changes on resize.
+      let RAIL = GY + 3;
+      function track() {
+        RAIL = GY + 3;
+        R(0, GY - 3, W, 7, '#9b8f80');
+        for (let x = -8; x < W + 8; x += 8) R(wrap(x - cam, W + 16) - 8, GY - 2, 5, 5, '#6d5640');
+        R(0, GY - 2, W, 1, '#d4d8dc');
+        R(0, GY - 1, W, 1, '#7b8086');
+        R(0, GY + 3, W, 1, '#c3c8cc');
+        R(0, GY + 4, W, H - GY - 4, '#6cb553');
+        R(0, GY + 4, W, 2, '#86c96a');
+        for (let k = 0; k < 24; k++) {
+          const x = wrap(k * 41 - cam * 1.25, W + 40) - 20;
+          const y = GY + 10 + hash(k + 11) * Math.max(6, H - GY - 18);
+          R(x, y, 2, 2, ['#f6e05e', '#ffffff', '#f28cb1'][k % 3]);
+          R(x - 2, y + 2, 6, 1, '#4f9a3f');
+        }
+      }
+      function wheel(x, y, r, a) {
+        disc(x, y, r, '#2a2a30');
+        disc(x, y, r - 1.2, '#55555f');
+        cx.strokeStyle = '#c9c9d2';
+        cx.lineWidth = 1;
+        cx.beginPath();
+        cx.moveTo(x - Math.cos(a) * (r - 1), y - Math.sin(a) * (r - 1));
+        cx.lineTo(x + Math.cos(a) * (r - 1), y + Math.sin(a) * (r - 1));
+        cx.stroke();
+        disc(x, y, 1, '#c9c9d2');
+      }
+      const PEOPLE = [
+        { skin: '#f0c8a0', hair: '#3a2418' },
+        { skin: '#e3b48c', hair: '#d8d8d8' },
+        { skin: '#f3cfae', hair: '#1f1a16' },
+        { skin: '#c98f66', hair: '#222222' },
+        { skin: '#f6d2b0', hair: '#c8702a' },
+        { skin: '#e8b88a', hair: '#2a3a35' },
+      ];
+      function carriage(x, y, idx, now, youWin) {
+        R(x, y - 24, 50, 22, '#f4e6c4');
+        R(x - 1, y - 27, 52, 4, '#7a4a35');
+        R(x + 1, y - 29, 48, 2, '#8d5a42');
+        R(x, y - 9, 50, 3, '#1f8a8a');
+        R(x, y - 4, 50, 2, '#c9b893');
+        for (let w = 0; w < 4; w++) {
+          const wx = x + 4 + w * 11;
+          R(wx, y - 21, 9, 9, '#a9dcf7');
+          const you = youWin === w;
+          const p = you ? me : PEOPLE[(idx * 4 + w) % PEOPLE.length];
+          if (you || hash(idx * 10 + w) > 0.3) {
+            const bob = Math.sin(now / 300 + w + idx) > 0.6 ? 1 : 0;
+            R(wx + 2, y - 13 - bob, 5, 4, you ? p.top : '#8aa2c8');
+            R(wx + 3, y - 17 - bob, 4, 4, p.skin);
+            R(wx + 3, y - 18 - bob, 4, 2, p.hair);
+          }
+          R(wx, y - 21, 9, 1, '#ffffff99');
+        }
+        R(x + 50, y - 14, 4, 2, '#3b3b3b');
+        // Wheels sit on the near rail (RAIL) and do not bounce; only the body jiggles on its springs.
+        const a = cam / 3.5;
+        const wy = RAIL - 3.5;
+        wheel(x + 9, wy, 3.5, a);
+        wheel(x + 18, wy, 3.5, a + 1);
+        wheel(x + 32, wy, 3.5, a + 2);
+        wheel(x + 41, wy, 3.5, a + 3);
+      }
+      function locomotive(x, y) {
+        // cab
+        R(x, y - 30, 20, 27, '#c8433a');
+        R(x - 1, y - 33, 22, 4, '#2b2f3a');
+        R(x + 4, y - 26, 12, 9, '#a9dcf7');
+        R(x + 4, y - 26, 12, 1, '#ffffff99');
+        R(x + 9, y - 24, 4, 4, '#f6d2b0');
+        R(x + 8, y - 26, 6, 2, '#1f3552');
+        // boiler
+        R(x + 20, y - 21, 31, 16, '#2b5f8a');
+        R(x + 20, y - 21, 31, 2, '#3f7fb5');
+        for (const bx of [26, 36, 46]) R(x + bx, y - 21, 2, 16, '#f3c14b');
+        R(x + 30, y - 25, 6, 4, '#f3c14b');
+        R(x + 41, y - 31, 6, 10, '#2b2f3a');
+        R(x + 40, y - 33, 8, 3, '#2b2f3a');
+        R(x + 51, y - 19, 5, 13, '#c8433a');
+        R(x + 54, y - 15, 3, 3, '#fff2b0');
+        R(x, y - 5, 57, 3, '#2b2f3a');
+        // cow-catcher
+        R(x + 55, y - 4, 4, 3, '#8a8f96');
+        const a = cam / 5;
+        wheel(x + 10, RAIL - 4.5, 4.5, a);
+        wheel(x + 26, RAIL - 5.5, 5.5, a + 1);
+        wheel(x + 40, RAIL - 5.5, 5.5, a + 2);
+        // side rod joining the two driving wheels, pinned 3px off their centres
+        R(x + 26 + Math.cos(a + 1) * 3, RAIL - 5.5 + Math.sin(a + 1) * 3, 15, 1.5, '#c9c9d2');
+      }
+      function train(now) {
+        const total = 50 + 4 + 50 + 4 + 57;
+        const left = Math.round(W / 2 - total / 2);
+        const jig = (k) => (speed > 8 && Math.sin(now / 70 + k * 1.7) > 0.7 ? 1 : 0);
+        const y = GY - 2;
+        carriage(left, y - jig(0), 0, now, -1);
+        carriage(left + 54, y - jig(1), 1, now, 2);
+        locomotive(left + 108, y - jig(2));
+        // smoke
+        // Puffs while moving; once stopped, only a thin wisp that fades quickly.
+        const moving = speed > 8;
+        smokeT += moving ? 1 : 0.12;
+        if (smokeT > 7) {
+          smokeT = 0;
+          smoke.push({ x: left + 108 + 44, y: GY - 37, r: moving ? 2.5 : 1.5, life: 0, max: moving ? 2.4 : 1.1 });
+        }
+        for (const p of smoke) {
+          p.life += 1 / 60;
+          p.x -= (speed / 60) * 0.85 + 0.15;
+          p.y -= 0.32;
+          p.r += 0.07;
+        }
+        for (let k = smoke.length - 1; k >= 0; k--) if (smoke[k].life > smoke[k].max) smoke.splice(k, 1);
+        for (const p of smoke) disc(p.x, p.y, p.r, `rgba(255,255,255,${Math.max(0, 0.75 * (1 - p.life / p.max)).toFixed(2)})`);
+        // a small bouncing arrow over the player's window
+        if (lines[li] && lines[li].you) {
+          const wx = left + 54 + 4 + 2 * 11 + 4;
+          const b = Math.round(Math.sin(now / 160) * 2);
+          R(wx - 4, y - 40 + b, 9, 2, '#ffd84a');
+          R(wx - 3, y - 38 + b, 7, 2, '#ffd84a');
+          R(wx - 2, y - 36 + b, 5, 2, '#ffd84a');
+          R(wx - 1, y - 34 + b, 3, 2, '#ffd84a');
+        }
+      }
+      function draw(now) {
+        cx.setTransform(1, 0, 0, 1, 0, 0);
+        cx.imageSmoothingEnabled = false;
+        sky();
+        mountains();
+        hills();
+        trees();
+        townBehindStation();
+        station();
+        track();
+        train(now);
+        // soft dark edges
+        const v = cx.createLinearGradient(0, 0, 0, H);
+        v.addColorStop(0, 'rgba(0,0,0,.25)');
+        v.addColorStop(0.18, 'rgba(0,0,0,0)');
+        v.addColorStop(0.8, 'rgba(0,0,0,0)');
+        v.addColorStop(1, 'rgba(0,0,0,.35)');
+        cx.fillStyle = v;
+        cx.fillRect(0, 0, W, H);
+      }
+
+      // ---- text ----
+      function show(i) {
+        li = i;
+        const l = lines[i];
+        box.classList.add('show');
+        enEl.textContent = '';
+        viEl.textContent = l.vi;
+        viEl.classList.remove('show');
+        typing = { text: l.en, n: 0, t: 0 };
+        dots.forEach((d, k) => d.classList.toggle('on', k <= i));
+        nextBtn.textContent = i === lines.length - 1 ? "Let's go! ▸" : 'Next ▸';
+        if (l.brake && !brake) {
+          const D = W + 140;
+          brake = { t0: performance.now(), c0: cam, D, T: (2 * D) / CRUISE };
+        }
+      }
+      function finishTyping() {
+        if (!typing) return;
+        enEl.textContent = typing.text;
+        typing = null;
+        viEl.classList.add('show');
+      }
+      function next() {
+        if (ended) return;
+        if (li < 0) {
+          show(0);
+          return;
+        }
+        if (typing) {
+          finishTyping();
+          return;
+        }
+        if (li < lines.length - 1) show(li + 1);
+        else end();
+      }
+      function end() {
+        if (ended) return;
+        ended = true;
+        root.classList.remove('on');
+        removeEventListener('keydown', onKey, true);
+        setTimeout(() => {
+          cancelAnimationFrame(raf);
+          removeEventListener('resize', size);
+          root.remove();
+          try {
+            if (paused && sc && sc.scene) sc.scene.resume();
+          } catch (e) {}
+          playing = null;
+          resolve();
+        }, 650);
+      }
+      const onKey = (ev) => {
+        // The scene owns the keyboard while it plays: the game must not move or open menus behind it.
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        if (ev.repeat) return;
+        if (ev.key === ' ' || ev.key === 'Enter' || ev.key === 'e' || ev.key === 'E' || ev.key === 'ArrowRight') next();
+      };
+      addEventListener('keydown', onKey, true);
+      root.addEventListener('click', (ev) => {
+        if (ev.target.closest('.skip')) {
+          end();
+          return;
+        }
+        next();
+      });
+
+      function frame(now) {
+        if (!document.body.contains(root)) return;
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        if (brake) {
+          const p = Math.min(1, (now - brake.t0) / 1000 / brake.T);
+          cam = brake.c0 + brake.D * (1 - (1 - p) * (1 - p));
+          speed = CRUISE * (1 - p);
+        } else cam += speed * dt;
+        if (li < 0 && now - t0 > 2500) show(0);
+        if (typing) {
+          typing.t += dt;
+          const n = Math.min(typing.text.length, Math.floor(typing.t * 40));
+          if (n !== typing.n) {
+            typing.n = n;
+            enEl.textContent = typing.text.slice(0, n);
+          }
+          if (n >= typing.text.length) finishTyping();
+        }
+        draw(now);
+        raf = requestAnimationFrame(frame);
+      }
+      raf = requestAnimationFrame(frame);
+    });
+    return playing;
+  }
+
+  // ---- 2. tutorial ------------------------------------------------------------------------------------------------
+  function steps() {
+    const t = isTouch();
+    const name = plainName() || 'Alex';
+    const k = (key) => '<kbd>' + key + '</kbd>';
+    return [
+      {
+        id: 'move',
+        en: t ? 'Use the joystick in the bottom-left corner to walk.' : 'Walk with ' + k('W') + k('A') + k('S') + k('D') + ' or the arrow keys.',
+        vi: t ? 'Dùng cần điều khiển ở góc dưới bên trái để đi lại.' : 'Đi lại bằng các phím W A S D hoặc phím mũi tên.',
+      },
+      {
+        id: 'find',
+        en: 'Mia is waiting for you at the school. Follow the yellow arrow to find her.',
+        vi: 'Mia đang chờ bạn ở trường học. Đi theo mũi tên màu vàng để tìm bạn ấy.',
+      },
+      {
+        id: 'talk',
+        en: t ? 'Stand next to Mia and tap the 💬 button to talk.' : 'Stand next to Mia and press ' + k('E') + ' to talk.',
+        vi: t ? 'Đứng cạnh Mia rồi chạm nút 💬 để nói chuyện.' : 'Đứng cạnh Mia rồi nhấn phím E để nói chuyện.',
+      },
+      {
+        id: 'say',
+        en: 'Type in English and press ' + (t ? 'Enter (Send)' : k('Enter')) + '. Try: <b>“Hello Mia! My name is ' + esc(name) + '.”</b>',
+        vi: 'Gõ tiếng Anh rồi nhấn Enter để gửi. Chưa biết nói gì? Bấm vào câu mẫu bên dưới.',
+        example: 'Hello Mia! My name is ' + name + '.',
+      },
+      {
+        id: 'tips',
+        en:
+          'Well done! <b>✎ Teacher</b> shows you how to fix mistakes. Type <b>?word</b> to learn a word, for example <b>?friend</b>. ' +
+          (t ? 'Tap ✕ to leave the chat.' : 'Press ' + k('Esc') + ' to leave the chat.'),
+        vi:
+          'Giỏi lắm! ✎ Teacher chỉ cho bạn cách sửa lỗi. Gõ ?⁠từ để tra nghĩa, ví dụ ?⁠friend. ' +
+          (t ? 'Chạm ✕ để rời cuộc trò chuyện.' : 'Nhấn Esc để rời cuộc trò chuyện.'),
+      },
+      {
+        id: 'menu',
+        en:
+          (t ? 'Tap <b>☰ Menu</b> at the top right.' : 'Press ' + k('G') + ' to open the Menu.') +
+          ' Your quests, English practice, character and settings are all there.',
+        vi:
+          (t ? 'Chạm ☰ Menu ở góc trên bên phải.' : 'Nhấn phím G để mở Menu.') +
+          ' Nhiệm vụ, luyện tiếng Anh, nhân vật và cài đặt đều ở đó.',
+      },
+      {
+        id: 'quest',
+        en: 'Your first quest: visit <b>Lily</b> at Sunny Cafe and <b>Tom</b> at the Corner Shop. The quest card always shows your next step.',
+        vi: 'Nhiệm vụ đầu tiên: ghé thăm Lily ở Sunny Cafe và Tom ở Corner Shop. Thẻ nhiệm vụ luôn ghi bước tiếp theo của bạn.',
+        next: 'Got it ▸',
+      },
+      {
+        id: 'coach',
+        en: 'Stuck? Ask the <b>🤖 AI Coach</b> at the bottom right, in English or Vietnamese. Have fun in English Town!',
+        vi: 'Bị bí? Hỏi 🤖 AI Coach ở góc dưới bên phải, hỏi bằng tiếng Anh hay tiếng Việt đều được. Chúc bạn chơi vui!',
+        next: 'Finish 🎉',
+      },
+    ];
+  }
+  const stepIndex = (id) => steps().findIndex((s) => s.id === id);
+
+  let coachEl = null;
+  let coachKey = '';
+  let base = null;
+
+  function mountCoach() {
+    if (coachEl && document.body.contains(coachEl)) return coachEl;
+    ensureCss();
+    coachEl = document.createElement('div');
+    coachEl.id = 'lq-tut';
+    coachEl.hidden = true;
+    coachEl.setAttribute('role', 'status');
+    coachEl.setAttribute('aria-live', 'polite');
+    coachEl.innerHTML =
+      '<div class="hd"><span class="tag">🎓 Tutorial <span class="num"></span></span><span class="bar"><i></i></span>' +
+      '<button type="button" class="skip" title="Skip the tutorial (replay it from Menu → Settings)">Skip</button></div>' +
+      '<p class="en"></p><p class="vi"></p><div class="act"></div>';
+    coachEl.querySelector('.skip').addEventListener('click', skip);
+    coachEl.querySelector('.act').addEventListener('click', (ev) => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      b.blur();
+      if (b.dataset.do === 'next') advance();
+      else if (b.dataset.do === 'example') useExample(b.dataset.text);
+    });
+    document.body.appendChild(coachEl);
+    return coachEl;
+  }
+  function hideCoach() {
+    if (coachEl) coachEl.hidden = true;
+  }
+  function renderCoach(i, list, shownStep, note) {
+    const el = mountCoach();
+    const key = i + '|' + shownStep.id + '|' + (note || '') + '|' + isTouch();
+    if (key !== coachKey) {
+      const changed = coachKey.split('|')[0] !== String(i);
+      coachKey = key;
+      el.querySelector('.num').textContent = i + 1 + '/' + list.length;
+      el.querySelector('.bar i').style.width = Math.round((i / list.length) * 100) + '%';
+      el.querySelector('.en').innerHTML = (note ? note.en + ' ' : '') + shownStep.en;
+      el.querySelector('.vi').textContent = (note ? note.vi + ' ' : '') + shownStep.vi;
+      const act = el.querySelector('.act');
+      act.innerHTML = '';
+      if (shownStep.example && !note) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ex';
+        b.dataset.do = 'example';
+        b.dataset.text = shownStep.example;
+        b.textContent = '✍️ ' + shownStep.example;
+        act.appendChild(b);
+      }
+      if (shownStep.next) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.do = 'next';
+        b.textContent = shownStep.next;
+        act.appendChild(b);
+      }
+      if (changed) {
+        el.classList.remove('pop');
+        void el.offsetWidth;
+        el.classList.add('pop');
+      }
+    }
+    el.hidden = false;
+  }
+  function useExample(text) {
+    const sc = getScene();
+    const input = sc && sc.chat && sc.chat.input;
+    if (!input || !sc.chat.isOpen) return;
+    input.value = text;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  }
+
+  function advance() {
+    const g = game();
+    if (!g || !g.tut) return;
+    const list = steps();
+    g.tut.step = Math.min(list.length, (g.tut.step | 0) + 1);
+    base = null;
+    if (g.tut.step >= list.length) finish(false);
+    else save();
+  }
+  function jumpTo(id) {
+    const g = game();
+    const i = stepIndex(id);
+    if (!g || !g.tut || i < 0 || (g.tut.step | 0) >= i) return;
+    g.tut.step = i;
+    base = null;
+    save();
+  }
+  function finish(skipped) {
+    const g = game();
+    if (!g) return;
+    g.tut = Object.assign(g.tut || {}, { done: Date.now(), skipped: !!skipped });
+    save();
+    hideCoach();
+    coachKey = '';
+    if (skipped) toast('🎓 Tutorial skipped', 'You can replay it any time', 'Menu → Settings → Intro & tutorial');
+    else toast('🎓 Tutorial complete', 'Welcome to English Town!', 'Finish “First Day in Town” on the quest card.');
+  }
+  function skip() {
+    finish(true);
+  }
+
+  // Panels that cover the screen: the card waits behind them.
+  const COVERS = ['l11-shell', 'v8-panel', 'ai-panel', 'rpg-panel', 'v10-panel', 'journal', 'quests', 'helper', 'settings', 'briefing', 'lq-guide', 'lq-levels', 'lq-voice', 'lq-cc', 'lq-train', 'lq-device', 'lq-auth', 'lq-title'];
+
+  function tutorialTick() {
+    const sc = getScene();
+    const g = game();
+    if (playing || !sc || !g || !sc.player || !g.tut || !g.tut.intro || g.tut.done) return hideCoach();
+    const list = steps();
+    const i = Math.max(0, Math.min(list.length - 1, g.tut.step | 0));
+    const s = list[i];
+    const msgs = (g.stats && g.stats.messages) || 0;
+    if (!base || base.i !== i) base = { i, x: sc.player.x, y: sc.player.y, msgs };
+    const chatId = sc.chat && sc.chat.isOpen ? sc.chat.currentId : null;
+
+    // Talking to Mia early skips the steps before it.
+    if (chatId === 'kid' && i < stepIndex('say')) return jumpTo('say');
+
+    const mia = sc.npcs && sc.npcs.find((n) => n.def && n.def.id === 'kid');
+    const miaHere = !!(mia && mia.sprite && mia.sprite.visible && !!mia.inside === !!sc.inside);
+    const dMia = miaHere ? Math.hypot(sc.player.x - mia.sprite.x, sc.player.y - mia.sprite.y) : Infinity;
+
+    let shownStep = s;
+    let note = null;
+    if (s.id === 'move' && Math.hypot(sc.player.x - base.x, sc.player.y - base.y) > 80) return advance();
+    if (s.id === 'find' && dMia < 90) return advance();
+    if (s.id === 'talk' && dMia > 220) shownStep = list[stepIndex('find')];
+    if (s.id === 'say') {
+      if (chatId !== 'kid') {
+        shownStep = list[stepIndex('talk')];
+        note = { en: 'Talk to Mia again.', vi: 'Hãy nói chuyện lại với Mia.' };
+        if (dMia > 220) shownStep = list[stepIndex('find')];
+      } else if (msgs > base.msgs) return advance();
+    }
+    if (s.id === 'tips' && !chatId) return advance();
+    if (s.id === 'menu' && shown('l11-shell')) return advance();
+
+    // Hide behind big panels, and while chatting with someone other than Mia (or chatting at all on the last steps).
+    const chatOk = s.id === 'say' || s.id === 'tips';
+    if (COVERS.some(shown) || (chatId && (!chatOk || chatId !== 'kid'))) return hideCoach();
+    renderCoach(i, list, shownStep, note);
+    // On small screens the chat is tall: the card moves up over the minimap so it does not hide the chat's ✕.
+    coachEl.classList.toggle('chatting', !!chatId);
+  }
+
+  // ---- yellow arrow to Mia (steps "find" and "talk") --------------------------------------------------------------
+  function drawGuide(sc, time) {
+    const st = sc.__lqIntro;
+    if (!st) return;
+    const gfx = st.g;
+    gfx.clear();
+    const g = game();
+    if (playing || !g || !g.tut || !g.tut.intro || g.tut.done || !sc.player || sc.switching) return;
+    const id = steps()[Math.max(0, g.tut.step | 0)];
+    if (!id || (id.id !== 'find' && id.id !== 'talk' && id.id !== 'say')) return;
+    if (sc.chat && sc.chat.isOpen) return;
+    const mia = sc.npcs && sc.npcs.find((n) => n.def && n.def.id === 'kid');
+    if (!mia || !mia.sprite || !mia.sprite.visible || !!mia.inside !== !!sc.inside) return;
+    const mx = mia.sprite.x;
+    const my = mia.sprite.y;
+    const b = Math.sin(time * 0.006) * 4;
+    // a bouncing marker over Mia's head
+    const hy = my - 52 + b;
+    gfx.fillStyle(0x3a2a00, 1);
+    gfx.fillTriangle(mx - 10, hy - 2, mx + 10, hy - 2, mx, hy + 12);
+    gfx.fillStyle(0xffd84a, 1);
+    gfx.fillTriangle(mx - 7, hy, mx + 7, hy, mx, hy + 9);
+    // an arrow around the player pointing at her
+    const px = sc.player.x;
+    const py = sc.player.y - 16;
+    const d = Math.hypot(mx - px, my - py);
+    if (d < 110) return;
+    const a = Math.atan2(my - 16 - py, mx - px);
+    const r0 = 30 + Math.sin(time * 0.008) * 3;
+    const tip = { x: px + Math.cos(a) * (r0 + 16), y: py + Math.sin(a) * (r0 + 16) };
+    const l = { x: px + Math.cos(a) * r0 + Math.cos(a + Math.PI / 2) * 9, y: py + Math.sin(a) * r0 + Math.sin(a + Math.PI / 2) * 9 };
+    const rr = { x: px + Math.cos(a) * r0 - Math.cos(a + Math.PI / 2) * 9, y: py + Math.sin(a) * r0 - Math.sin(a + Math.PI / 2) * 9 };
+    gfx.lineStyle(3, 0x3a2a00, 1);
+    gfx.strokeTriangle(tip.x, tip.y, l.x, l.y, rr.x, rr.y);
+    gfx.fillStyle(0xffd84a, 1);
+    gfx.fillTriangle(tip.x, tip.y, l.x, l.y, rr.x, rr.y);
+  }
+  function attach(sc) {
+    if (sc.__lqIntro) return;
+    sc.__lqIntro = { g: sc.add.graphics().setDepth(12) };
+    sc.events.on('update', (time) => drawGuide(sc, time));
+    sc.events.once('shutdown', () => {
+      sc.__lqIntro = null;
+    });
+  }
+
+  // ---- when to start ----------------------------------------------------------------------------------------------
+  // A save counts as new when nothing has happened in it yet.
+  function isNewSave(g) {
+    const quests = Object.values(g.quests || {}).some((v) => Number(v) > 0);
+    const ach = g.ach && g.ach.done && Object.keys(g.ach.done).length > 0;
+    const msgs = (g.stats && g.stats.messages) || 0;
+    return !quests && !ach && msgs === 0 && (g.day || 1) <= 1;
+  }
+  function readyToPlay(sc) {
+    if (!sc || !sc.player || !sc.store || !sc.store.game || sc.switching) return false;
+    if (['lq-title', 'lq-device', 'lq-auth', 'lq-cc', 'lq-train'].some(shown)) return false;
+    if (window.LQCreatorUI && window.LQCreatorUI.hasLook && !window.LQCreatorUI.hasLook()) return false;
+    return true;
+  }
+  function selectFirstQuest() {
+    const v = window.LQV8;
+    try {
+      if (v && v.select && !(v.isDone && v.isDone('first-day'))) v.select('first-day');
+    } catch (e) {}
+  }
+
+  function tick() {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqIntro) {
+      try {
+        attach(sc);
+      } catch (e) {
+        console.warn('intro guide attach failed', e);
+      }
+    }
+    // After "First Day in Town" is finished, the quest card moves on to The Ten Shadows.
+    const v = window.LQV8;
+    try {
+      if (v && v.selected && v.isDone && v.selected() === 'first-day' && v.isDone('first-day')) v.select('ten-shadows');
+    } catch (e) {}
+
+    if (playing || !readyToPlay(sc)) return hideCoach();
+    const g = sc.store.game;
+    if (!g.tut) {
+      // Older saves with progress never see the intro; they can still replay it from the Settings.
+      g.tut = isNewSave(g) ? { step: 0 } : { intro: 'old', done: 'old' };
+      save();
+    }
+    if (!g.tut.intro) {
+      playIntro().then(() => {
+        const gg = game();
+        if (!gg) return;
+        gg.tut = Object.assign(gg.tut || {}, { intro: Date.now(), step: 0 });
+        delete gg.tut.done;
+        base = null;
+        coachKey = '';
+        save();
+        selectFirstQuest();
+      });
+      return;
+    }
+    tutorialTick();
+  }
+  setInterval(() => {
+    try {
+      tick();
+    } catch (e) {
+      console.warn('intro tick failed', e);
+    }
+  }, 300);
+
+  // ?intro=1 plays the opening scene right away (for checking it), without touching the save.
+  try {
+    if (new URLSearchParams(location.search).get('intro') === '1') {
+      const go = () => playIntro();
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go);
+      else go();
+    }
+  } catch (e) {}
+
+  window.LQIntro = {
+    // Opening scene only; does not change the save.
+    preview: () => playIntro(),
+    // Menu → Settings: play the scene again, then start the tutorial from the first step.
+    replay() {
+      const g = game();
+      if (!g) return;
+      g.tut = { step: 0 };
+      base = null;
+      coachKey = '';
+      save();
+      tick();
+    },
+    skip,
+    isPlaying: () => !!playing,
+    status() {
+      const g = game();
+      const t = g && g.tut;
+      const list = steps();
+      return t ? { intro: !!t.intro, done: !!t.done, skipped: !!t.skipped, step: t.step | 0, stepId: (list[t.step | 0] || {}).id || null } : null;
+    },
+  };
+})();
+
+</script>
+    <script>
+/*
+ * Title screen (the lobby). It is the first thing a visitor sees: game name, short intro, a Start button,
+ * "by the New Horizons" and a small "Claude" credit. While it is shown the loader keeps downloading the game
+ * in the background, so pressing Start feels instant.
+ *
+ * window.LQTitle.show() returns a promise that resolves when the player presses Start.
+ */
+(function () {
+  const CSS = `
+#lq-title{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#070a16;color:#eef2ff;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;transition:opacity .6s ease}
+#lq-title.out{opacity:0;pointer-events:none}
+#lq-title canvas{position:absolute;inset:0;width:100%;height:100%;opacity:.55;filter:blur(.6px)}
+#lq-title .glow{position:absolute;inset:0;background:radial-gradient(60% 50% at 50% 38%,#4f6bff33 0%,transparent 70%),radial-gradient(40% 40% at 78% 70%,#8a5cff26 0%,transparent 70%)}
+#lq-title .shade{position:absolute;inset:0;background:linear-gradient(180deg,#070a16cc 0%,#070a1666 40%,#070a16b3 100%)}
+#lq-title .inner{position:relative;text-align:center;padding:24px 22px;max-width:640px}
+#lq-title .eyebrow{display:inline-block;padding:6px 14px;border:1px solid #ffffff22;border-radius:999px;background:#ffffff0d;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#aebbe0;backdrop-filter:blur(6px)}
+#lq-title h1{margin:22px 0 0;display:flex;align-items:center;justify-content:center;gap:14px;font-size:clamp(34px,7.5vw,68px);line-height:1;font-weight:800;letter-spacing:.1em;color:#fff}
+#lq-title h1 b{font-size:.5em;letter-spacing:.08em;padding:.22em .55em;border-radius:.4em;color:#fff;background:linear-gradient(135deg,#4f8cff,#8a5cff)}
+#lq-title .tag{margin:20px 0 0;font-size:clamp(16px,2.6vw,20px);font-weight:500;color:#dfe6ff}
+#lq-title .intro{margin:12px auto 0;font-size:clamp(13px,2.1vw,15.5px);line-height:1.7;color:#9aa8cc;max-width:500px}
+#lq-title .keybox{margin:24px auto 0;max-width:460px;padding:14px 16px;text-align:left;border:1px solid #ffffff26;border-radius:14px;background:#0b1226cc;backdrop-filter:blur(8px)}
+#lq-title .keybox b{display:block;font-size:14px;color:#ffd98a}
+#lq-title .keybox p{margin:6px 0 0;font-size:12.5px;line-height:1.55;color:#a9b6d8}
+#lq-title .key-row{display:flex;gap:8px;margin-top:10px}
+#lq-title .key-row input{flex:1;min-width:0;height:40px;padding:0 12px;border:1px solid #ffffff33;border-radius:10px;background:#050816;color:#fff;font:14px ui-monospace,Consolas,monospace}
+#lq-title .key-row input:focus{outline:2px solid #6f8cff;outline-offset:1px}
+#lq-title .key-row button{height:40px;padding:0 12px;border:1px solid #ffffff33;border-radius:10px;background:#ffffff14;color:#dfe6ff;font-size:13px;cursor:pointer}
+#lq-title .key-links{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:12.5px}
+#lq-title .key-links a{color:#8fb0ff;text-decoration:underline}
+#lq-title .key-state{color:#8be29b}
+#lq-title .key-state.err{color:#ffb4b4}
+#lq-title .start{margin-top:26px;display:inline-flex;align-items:center;gap:12px;border:0;border-radius:999px;padding:0 30px 0 34px;height:54px;font:600 17px Inter,system-ui,sans-serif;letter-spacing:.02em;color:#fff;background:linear-gradient(135deg,#4f8cff,#7c5cff);cursor:pointer;transition:filter .18s ease,background-position .18s ease}
+#lq-title .start svg{width:20px;height:20px;transition:transform .18s ease}
+#lq-title .start:hover{filter:brightness(1.12)}
+#lq-title .start:hover svg{transform:translateX(4px)}
+#lq-title .start:focus-visible{outline:2px solid #fff;outline-offset:4px}
+#lq-title .start:active{filter:brightness(.95)}
+#lq-title .by,#lq-title .credit{position:absolute;bottom:14px;font-size:11px;letter-spacing:.08em;color:#6f7ea6}
+#lq-title .by{left:50%;transform:translateX(-50%)}
+#lq-title .credit{right:16px}
+`;
+  // ---- animated night town drawn at low resolution (pixel art look) ----
+  function startScene(cv) {
+    const cx = cv.getContext('2d');
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const SCALE = 3;
+    let W = 0, H = 0, stars = [], layers = [], raf = 0, last = 0, trainX = -200, trainWait = 3;
+    const rnd = (a, b) => a + Math.random() * (b - a);
+
+    function build() {
+      W = Math.ceil(innerWidth / SCALE);
+      H = Math.ceil(innerHeight / SCALE);
+      cv.width = W;
+      cv.height = H;
+      stars = Array.from({ length: Math.floor((W * H) / 260) }, () => ({ x: Math.random() * W, y: Math.random() * H * 0.6, p: Math.random() * 6, s: Math.random() < 0.15 ? 2 : 1 }));
+      const ground = H - 12;
+      layers = [
+        { col: '#101c33', win: '#27406b', min: 26, max: 62, gap: [0, 2], drift: 0 },
+        { col: '#0a1326', win: '#f3d27a', min: 14, max: 44, gap: [0, 3], drift: 0 },
+      ].map((L) => {
+        const items = [];
+        let x = -4;
+        while (x < W + 10) {
+          const w = Math.floor(rnd(8, 18)), h = Math.floor(rnd(L.min, L.max));
+          const wins = [];
+          for (let wx = x + 2; wx < x + w - 2; wx += 4) for (let wy = ground - h + 3; wy < ground - 3; wy += 5) wins.push({ x: wx, y: wy, on: Math.random() < 0.4, t: rnd(2, 9) });
+          items.push({ x, w, h, wins, roof: Math.random() < 0.3 });
+          x += w + Math.floor(rnd(L.gap[0], L.gap[1] + 1));
+        }
+        return Object.assign({}, L, { items });
+      });
+    }
+
+    function draw(t, dt) {
+      const ground = H - 12;
+      const sky = cx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, '#060917');
+      sky.addColorStop(0.6, '#10163a');
+      sky.addColorStop(1, '#262a66');
+      cx.fillStyle = sky;
+      cx.fillRect(0, 0, W, H);
+      for (const s of stars) {
+        const a = reduce ? 0.8 : 0.45 + 0.55 * Math.abs(Math.sin(t / 900 + s.p));
+        cx.fillStyle = `rgba(255,255,255,${a})`;
+        cx.fillRect(Math.floor(s.x), Math.floor(s.y), s.s, s.s);
+      }
+      // moon
+      const mx = Math.floor(W * 0.8), my = Math.floor(H * 0.2);
+      cx.fillStyle = '#fff6c8';
+      cx.beginPath();
+      cx.arc(mx, my, 7, 0, 7);
+      cx.fill();
+      cx.fillStyle = '#12234a';
+      cx.beginPath();
+      cx.arc(mx + 3, my - 1, 6, 0, 7);
+      cx.fill();
+      // far hills
+      cx.fillStyle = '#0d1a35';
+      for (let x = 0; x < W; x++) cx.fillRect(x, ground - 14 - Math.floor(6 * Math.sin(x / 17) + 4 * Math.sin(x / 7)), 1, 30);
+      // skyline (two layers) with twinkling windows
+      for (const L of layers) {
+        for (const b of L.items) {
+          cx.fillStyle = L.col;
+          cx.fillRect(b.x, ground - b.h, b.w, b.h);
+          if (b.roof) cx.fillRect(b.x + 2, ground - b.h - 3, b.w - 4, 3);
+          for (const w of b.wins) {
+            if (!reduce) {
+              w.t -= dt / 1000;
+              if (w.t <= 0) {
+                w.on = !w.on;
+                w.t = rnd(3, 12);
+              }
+            }
+            if (w.on) {
+              cx.fillStyle = L.win;
+              cx.fillRect(w.x, w.y, 2, 2);
+            }
+          }
+        }
+      }
+      // ground and rails
+      cx.fillStyle = '#060b16';
+      cx.fillRect(0, ground, W, H - ground);
+      cx.fillStyle = '#3b4a66';
+      cx.fillRect(0, ground + 3, W, 1);
+      cx.fillStyle = '#1d2740';
+      for (let x = (Math.floor(t / 60) % 6) - 6; x < W; x += 6) cx.fillRect(x, ground + 4, 2, 2);
+      // a train crossing now and then
+      if (!reduce) {
+        if (trainX > W + 20 || trainWait > 0) {
+          trainWait -= dt / 1000;
+          if (trainWait <= 0 && trainX > W + 20) trainX = -90;
+        }
+        if (trainX <= W + 20 && trainWait <= 0) {
+          trainX += (dt / 1000) * 46;
+          if (trainX > W + 20) trainWait = rnd(6, 11);
+          for (let i = 0; i < 4; i++) {
+            const x = Math.floor(trainX - i * 22);
+            cx.fillStyle = i === 0 ? '#16b3a5' : '#e8eef2';
+            cx.fillRect(x, ground - 9, 20, 8);
+            cx.fillStyle = '#16b3a5';
+            cx.fillRect(x, ground - 4, 20, 2);
+            cx.fillStyle = '#ffe9a8';
+            for (let w = 2; w < 18; w += 5) cx.fillRect(x + w, ground - 7, 3, 2);
+          }
+        }
+      }
+    }
+
+    function frame(now) {
+      const dt = Math.min(80, now - (last || now));
+      last = now;
+      draw(now, dt);
+      raf = requestAnimationFrame(frame);
+    }
+    build();
+    addEventListener('resize', build);
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      removeEventListener('resize', build);
+    };
+  }
+
+  let shown = null;
+
+  function show() {
+    if (shown) return shown;
+    shown = new Promise((resolve) => {
+      const st = document.createElement('style');
+      st.textContent = CSS;
+      document.head.appendChild(st);
+      const el = document.createElement('div');
+      el.id = 'lq-title';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-label', 'LIFEQUEST AI welcome screen');
+      el.innerHTML = `
+        <canvas aria-hidden="true"></canvas><div class="glow"></div><div class="shade"></div>
+        <div class="inner">
+          <span class="eyebrow">Learn English · Role-play</span>
+          <h1><span>LIFEQUEST</span><b>AI</b></h1>
+          <p class="tag">Live in the town, learn English every day</p>
+          <p class="intro">Explore two towns, chat in English with every resident, complete quests, earn money, go shopping and ride the train back and forth. Every sentence you say is a new step forward.</p>
+          <div class="keybox">
+            <b>🔑 Add your Gemini API key before you play (recommended)</b>
+            <p>NPC chats, sentence hints and the AI Coach work best with your own free Gemini key. It is saved only in this browser and sent only to Google. You can skip this and add it later.</p>
+            <div class="key-row"><input id="lq-title-key" type="password" placeholder="Paste your API key here" autocomplete="off" spellcheck="false" aria-label="Gemini API key"><button type="button" id="lq-title-keyshow" aria-label="Show or hide the key">Show</button></div>
+            <div class="key-links"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Get a free API key ↗</a><span class="key-state" id="lq-title-keystate" role="status"></span></div>
+          </div>
+          <button type="button" class="start" id="lq-title-start"><span>Start</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </div>
+        <div class="by">by the New Horizons</div>
+        <div class="credit">Claude</div>`;      document.body.appendChild(el);
+      const stop = startScene(el.querySelector('canvas'));
+      const btn = el.querySelector('#lq-title-start');
+      setTimeout(() => btn.focus({ preventScroll: true }), 50);
+      const keyInput = el.querySelector('#lq-title-key');
+      const keyState = el.querySelector('#lq-title-keystate');
+      const SAVE_KEY = 'english-town-ai';
+      const readCfg = () => {
+        try {
+          return JSON.parse(localStorage.getItem(SAVE_KEY) || '{}') || {};
+        } catch (e) {
+          return {};
+        }
+      };
+      const say = (text, err) => {
+        keyState.textContent = text;
+        keyState.classList.toggle('err', !!err);
+      };
+      if (String(readCfg().geminiKey || '').trim()) {
+        keyInput.placeholder = 'Leave blank to keep the saved key';
+        say('✅ A key is already saved');
+      }
+      el.querySelector('#lq-title-keyshow').addEventListener('click', (ev) => {
+        const show = keyInput.type === 'password';
+        keyInput.type = show ? 'text' : 'password';
+        ev.currentTarget.textContent = show ? 'Hide' : 'Show';
+      });
+      // Returns false (and shows why) when the typed key is unusable; an empty field just means "skip".
+      const saveTypedKey = () => {
+        const v = keyInput.value.trim();
+        if (!v) return true;
+        if (v.length < 20 || /\s/.test(v)) {
+          say('That does not look like an API key', true);
+          keyInput.focus();
+          return false;
+        }
+        try {
+          const cfg = readCfg();
+          cfg.geminiKey = v;
+          localStorage.setItem(SAVE_KEY, JSON.stringify(cfg));
+        } catch (e) {
+          say('Could not save the key in this browser', true);
+          return false;
+        }
+        return true;
+      };
+      let done = false;
+      const go = () => {
+        if (done || !saveTypedKey()) return;
+        done = true;
+        removeEventListener('keydown', onKey, true);
+        el.classList.add('out');
+        setTimeout(() => {
+          stop();
+          el.remove();
+          st.remove();
+        }, 650);
+        resolve();
+      };
+      const onKey = (ev) => {
+        // Typing in the key field, or pressing a key on the Show / link controls, must keep its normal meaning;
+        // only Enter in the key field starts the game.
+        const t = ev.target;
+        if (t !== btn && t && /^(INPUT|BUTTON|A)$/.test(t.tagName) && !(t === keyInput && ev.key === 'Enter')) return;
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          go();
+        }
+      };
+      btn.addEventListener('click', go);
+      addEventListener('keydown', onKey, true);
+    });
+    return shown;
+  }
+
+  window.LQTitle = { show };
+})();
+
+</script>
+    <script>
+!function(t,e){"object"==typeof exports&&"object"==typeof module?module.exports=e():"function"==typeof define&&define.amd?define("Phaser",[],e):"object"==typeof exports?exports.Phaser=e():t.Phaser=e()}(this,()=>(()=>{var t={50792(t){"use strict";var e=Object.prototype.hasOwnProperty,i="~";function r(){}function s(t,e,i){this.fn=t,this.context=e,this.once=i||!1}function n(t,e,r,n,a){if("function"!=typeof r)throw new TypeError("The listener must be a function");var o=new s(r,n||t,a),h=i?i+e:e;return t._events[h]?t._events[h].fn?t._events[h]=[t._events[h],o]:t._events[h].push(o):(t._events[h]=o,t._eventsCount++),t}function a(t,e){0===--t._eventsCount?t._events=new r:delete t._events[e]}function o(){this._events=new r,this._eventsCount=0}Object.create&&(r.prototype=Object.create(null),(new r).__proto__||(i=!1)),o.prototype.eventNames=function(){var t,r,s=[];if(0===this._eventsCount)return s;for(r in t=this._events)e.call(t,r)&&s.push(i?r.slice(1):r);return Object.getOwnPropertySymbols?s.concat(Object.getOwnPropertySymbols(t)):s},o.prototype.listeners=function(t){var e=i?i+t:t,r=this._events[e];if(!r)return[];if(r.fn)return[r.fn];for(var s=0,n=r.length,a=new Array(n);s<n;s++)a[s]=r[s].fn;return a},o.prototype.listenerCount=function(t){var e=i?i+t:t,r=this._events[e];return r?r.fn?1:r.length:0},o.prototype.emit=function(t,e,r,s,n,a){var o=i?i+t:t;if(!this._events[o])return!1;var h,l,u=this._events[o],d=arguments.length;if(u.fn){switch(u.once&&this.removeListener(t,u.fn,void 0,!0),d){case 1:return u.fn.call(u.context),!0;case 2:return u.fn.call(u.context,e),!0;case 3:return u.fn.call(u.context,e,r),!0;case 4:return u.fn.call(u.context,e,r,s),!0;case 5:return u.fn.call(u.context,e,r,s,n),!0;case 6:return u.fn.call(u.context,e,r,s,n,a),!0}for(l=1,h=new Array(d-1);l<d;l++)h[l-1]=arguments[l];u.fn.apply(u.context,h)}else{var c,f=u.length;for(l=0;l<f;l++)switch(u[l].once&&this.removeListener(t,u[l].fn,void 0,!0),d){case 1:u[l].fn.call(u[l].context);break;case 2:u[l].fn.call(u[l].context,e);break;case 3:u[l].fn.call(u[l].context,e,r);break;case 4:u[l].fn.call(u[l].context,e,r,s);break;default:if(!h)for(c=1,h=new Array(d-1);c<d;c++)h[c-1]=arguments[c];u[l].fn.apply(u[l].context,h)}}return!0},o.prototype.on=function(t,e,i){return n(this,t,e,i,!1)},o.prototype.once=function(t,e,i){return n(this,t,e,
