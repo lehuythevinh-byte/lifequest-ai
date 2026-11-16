@@ -1,24 +1,20 @@
-/* LIFEQUEST V70 Gemini API settings — high contrast, responsive, minimal */
-#settings{max-height:min(88dvh,720px);overflow-y:auto;overscroll-behavior:contain;border-radius:17px;border:1px solid #5880a9;background:linear-gradient(155deg,#11223b,#101a2c);box-shadow:0 24px 70px #000a;padding:18px 20px;}
-#settings>h3:first-child{font-size:19px;color:#eff8ff;letter-spacing:.1px}
-#settings>h3:first-child+p{font-size:13px!important;line-height:1.65;color:#b9ccdf!important;margin:6px 0 12px;}
-#settings .lq-api-controls{display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;background:#0b182b;border:1px solid #415b79;border-radius:13px;padding:14px;margin:12px 0;}
-#settings .lq-api-controls>label{grid-column:1/-1;margin:0;font-size:12px;color:#e1eeff;font-weight:700;}
-#settings .lq-api-controls>input{margin:0;min-width:0;grid-column:1/-1;min-height:42px;padding:10px 12px;border:1px solid #536e90;background:#081221;border-radius:9px;color:#f8fbff;font:13px ui-monospace,SFMono-Regular,Consolas,monospace;}
-#settings #ai-key{grid-column:1/2}
-#settings .lq-api-toggle{grid-column:2/3;white-space:nowrap;background:#1b3d5b;padding:10px 12px;border:1px solid #608ab6;}
-#settings .lq-api-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin:5px 0 2px;}
-#settings .lq-api-actions button{flex:1 1 110px;padding:10px 12px;background:#254d75;border:1px solid #5b92bf;font-weight:700;min-height:40px;}
-#settings .lq-api-actions #ai-clear{background:#423142;border-color:#80596a;}
-#settings .lq-api-privacy{grid-column:1/-1;color:#a9bed1;line-height:1.55;font-size:11.5px;margin:2px 0 0;}
-#settings .lq-api-controls>a{grid-column:1/-1;color:#92caff;font-size:12px;text-decoration:underline;text-underline-offset:2px;}
-#settings .status{padding:10px 12px;background:#0b2535;border:1px solid #406582;border-radius:8px;margin:10px 0;font-size:12px;}
-#settings button:focus-visible,#lq-api-quick:focus-visible,#lq-title-keytest:focus-visible{outline:2px solid #ffdc85;outline-offset:3px;}
-#lq-api-quick{pointer-events:auto;cursor:pointer;border:1px solid #6d99c9;border-radius:12px;color:#eaf7ff;background:linear-gradient(155deg,#18385c,#194b5f);padding:10px 12px;font-size:12px;font-weight:750;white-space:nowrap;box-shadow:0 5px 16px #0005;}
-#lq-api-quick:hover{background:linear-gradient(155deg,#245584,#246c7e)}
-#lq-title .key-row{flex-wrap:wrap;}
-#lq-title #lq-title-keytest{background:#23547b;color:#f5fcff;border-color:#498dbd;font-weight:700;}
-#lq-title #lq-title-keytest[disabled]{opacity:.55;cursor:wait;}
-#lq-title .key-links{flex-wrap:wrap;gap:6px;}
-#lq-title .lq-key-warning{font-size:11px;margin-top:10px;line-height:1.5;color:#c3b5a1;}
-@media (max-width:700px){#lq-api-quick{padding:9px 9px;font-size:11px}#settings{width:min(460px,96vw);padding:14px}#settings .lq-api-controls{padding:10px;gap:7px}#lq-title #lq-title-keytest{flex:1 1 auto}}
+/* The Gemini API key is configured by the owner in Render's backend only.
+   Hide ALL old in-game entry / save / clear controls, not gameplay settings. */
+#lq-title .keybox,
+#lq-title #lq-title-key,
+#lq-title #lq-title-keyshow,
+#lq-title #lq-title-keytest,
+#lq-title .key-row,
+#lq-title .key-links,
+#lq-title .lq-key-warning,
+#lq-api-quick,
+#settings #ai-key,
+#settings #ai-model,
+#settings #ai-save,
+#settings #ai-test,
+#settings #ai-clear,
+#settings .lq-api-controls {
+  display: none !important;
+}
+#settings > h3:first-child { color: #c8ebff; }
+#settings > h3:first-child + p { color: #abc5d9; }
