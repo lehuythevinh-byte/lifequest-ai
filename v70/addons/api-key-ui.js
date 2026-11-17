@@ -22,28 +22,64 @@
     window.LIFEQUEST_AI_CONFIG.MODEL = MODEL;
   }
 
-  // Render Free may cold-start. Retry failed probes after a short window instead
-  // of caching the initial offline result forever (as the original game did).
+  // The original NPC provider uses a compiled constant, Pt = '/api/gemini',
+  // rather than LIFEQUEST_AI_CONFIG.PROXY_URL. On a Static Site that path 404s.
+  // Redirect *only* this exact legacy API path; never intercept unrelated traffic.
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    if (typeof input === 'string' || input instanceof URL) {
+      try {
+        const url = new URL(input, location.href);
+        if (url.origin === location.origin && url.pathname === '/api/gemini') {
+          return originalFetch(ENDPOINT, init);
+        }
+      } catch (_) {}
+    }
+    return originalFetch(input, init);
+  };
+
+  // The game defines LQGemini asynchronously after the title screen. Install
+  // the availability probe when that object arrives, not only if already loaded.
+  let checkedUntil = 0, lastResult = false, pending = null;
+  function proxyAvailable() {
+    if (pending) return pending;
+    if (Date.now() < checkedUntil) return Promise.resolve(lastResult);
+    pending = originalFetch(ENDPOINT, {
+      method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(45000),
+    }).then(async (response) => {
+      const data = response.ok ? await response.json() : {};
+      lastResult = data.ok === true;
+      checkedUntil = Date.now() + (lastResult ? 90000 : 12000);
+      return lastResult;
+    }).catch(() => {
+      lastResult = false;
+      checkedUntil = Date.now() + 12000;
+      return false;
+    }).finally(() => { pending = null; });
+    return pending;
+  }
+  function wireHelpers(helpers) {
+    if (helpers && typeof helpers === 'object') {
+      helpers.proxyAvailable = proxyAvailable;
+    }
+    return helpers;
+  }
   if (window.LQGemini) {
-    let checkedUntil = 0, lastResult = false, pending = null;
-    window.LQGemini.proxyAvailable = () => {
-      if (pending) return pending;
-      if (Date.now() < checkedUntil) return Promise.resolve(lastResult);
-      pending = fetch(ENDPOINT, {
-        method: 'GET', cache: 'no-store',
-        signal: AbortSignal.timeout(25000),
-      }).then(async (response) => {
-        const data = response.ok ? await response.json() : {};
-        lastResult = data.ok === true;
-        checkedUntil = Date.now() + (lastResult ? 90000 : 12000);
-        return lastResult;
-      }).catch(() => {
-        lastResult = false;
-        checkedUntil = Date.now() + 12000;
-        return false;
-      }).finally(() => { pending = null; });
-      return pending;
-    };
+    wireHelpers(window.LQGemini);
+  } else {
+    // The original boot loader assigns window.LQGemini before initializing
+    // the NPC provider. Wire it synchronously on that first assignment.
+    let value;
+    Object.defineProperty(window, 'LQGemini', {
+      configurable: true, enumerable: true,
+      get() { return value; },
+      set(next) {
+        value = wireHelpers(next);
+        Object.defineProperty(window, 'LQGemini', {
+          configurable: true, enumerable: true, writable: true, value,
+        });
+      },
+    });
   }
 
   // Gameplay and storage settings remain. Only the former Gemini key

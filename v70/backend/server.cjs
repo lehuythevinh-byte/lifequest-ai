@@ -119,12 +119,23 @@ function checkLimits(req) {
 
 http.createServer(async (req, res) => {
   try {
+    // Opening the service URL in a browser should take players to the game.
+    if (req.url === '/' && ['GET', 'HEAD'].includes(req.method)) {
+      res.writeHead(302, { Location: ORIGIN + '/', 'Cache-Control': 'no-store' });
+      res.end();
+      return;
+    }
     if (req.url === '/health') {
       respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', configured: !!GEMINI_API_KEY });
       return;
     }
     if (req.url !== '/api/gemini') {
       respond(res, 404, { error: 'Not found' }); return;
+    }
+    // A direct browser visit can inspect configuration status. Actual AI use
+    // still requires the configured frontend origin and the normal POST limits.
+    if (req.method === 'GET' && !req.headers.origin) {
+      respond(res, 200, { ok: !!GEMINI_API_KEY, provider: 'Gemini', managedBy: 'Render' }); return;
     }
     if (!allowCors(req, res)) { respond(res, 403, { error: 'Origin not permitted' }); return; }
     if (req.method === 'OPTIONS') { res.writeHead(204, { 'Cache-Control': 'no-store' }); res.end(); return; }
