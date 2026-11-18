@@ -1,0 +1,1227 @@
+rue;return;}
+    const s=SPECS[id],n=count(id),next=ORDER[ORDER.indexOf(id)+1];
+    const staff=id==='tech-co'?`<small style="margin-top:8px;border-top:1px solid #6d9aab88;padding-top:6px">${[...(getAgents(sc)?.values()||[])].map(a=>`${esc(a.t.name)} · ${esc(a.site ? (TECH_ROOMS[a.site]||a.site) : 'campus')} · ${esc(a.mode.toLowerCase())}`).join('<br>')}</small>`:'';
+    hud.hidden=false;hud.innerHTML=`<b>${esc(s.title)} · ${esc(s.level)}</b><div>${n}/3 English missions completed</div><small>${next?'✓ Next map open: '+SPECS[next].title:'All worlds open · The east train returns to English Town'}</small>${staff}`;
+    if(id==='tech-co')updateTechLabels(sc);
+  }
+  function update(sc,time){
+    if(!sc||!sc.player)return;
+    const id=sc.area?.id;
+    if(id!==lastSeenArea){lastSeenArea=id;nearest=null;if(!isNew(id))close();refreshHud(sc);}
+    if(!isNew(id)){sc.__wvAtSpirit=false;if(talkButton)talkButton.hidden=true;return;}
+    if(id==='tech-co'){updateTechAgents(sc,time);if(time-(sc.__careerHudUpdated||0)>2500){sc.__careerHudUpdated=time;refreshHud(sc);}}
+    if(id==='wish-valley')wvLivingUpdate(sc,time);
+    if(id==='vocalt-greedy-land')vUpdate(sc,time);
+    if(id==='old-oriaris'){
+      updateRoyalAgents(sc,time);v26UpdateTownspeople(sc,time);
+      for(const sign of (sc.__v26RoyalSigns||[])){
+        sign.setVisible(!sc.inside && Math.hypot(sc.player.x-sign.x,sc.player.y-sign.y)<210);
+      }
+    }
+    nearest=closestCareer(sc);
+    const livingNear=id==='wish-valley'?wvLivingNearest(sc):null;
+    const exploreNear=id==='wish-valley'?wvDiscoveryNearest(sc):null;
+    sc.__wvLivingNear=livingNear;
+    sc.__wvExploreNear=exploreNear;
+    sc.__wvAtSpirit=id==='wish-valley'&&!sc.inside&&
+      Math.hypot(sc.player.x-(WV_SPIRIT.x*T),sc.player.y-(WV_SPIRIT.y*T))<119;
+    ui();const vocaltNear=id==='vocalt-greedy-land'?vNearest(sc):null;
+    talkButton.hidden=(!nearest&&!sc.__wvAtSpirit&&!livingNear&&!exploreNear&&!vocaltNear)||!modal.hidden;
+    if(sc.__wvAtSpirit)talkButton.textContent='🌿 Trung tâm Tinh thần · E';
+    else if(nearest)talkButton.textContent=`💬 Talk to ${nearest.name} · E`;
+    else if(vocaltNear)talkButton.textContent=`💬 ${vocaltNear.name} · E`;
+    else if(livingNear)talkButton.textContent=`💬 ${livingNear.name} · E`;
+    else if(exploreNear)talkButton.textContent=`🌿 Explore ${exploreNear.name} · E`;
+    if(sc.__careerFx?.active&&sc.__careerFxArea===id && (!sc.inside||(id!=='tech-co'&&id!=='old-oriaris')) && Math.floor(time/66)!==Math.floor((time-16)/66)){
+      const g=sc.__careerFx;g.clear();const ph=time*.002;
+      const spot=(x,y,c)=>{ellipse(g,c,(x+.5)*T,(y+.5)*T,80+Math.sin(ph)*12,37,.05);ellipse(g,c,(x+.5)*T,(y+.5)*T,25,8,.22);};
+      if(id==='tech-co')techPulse(g,time);
+      else if(id==='old-oriaris')v26Pulse(g,time,sc.area);
+      else{
+        spot(id==='wish-valley'?44:27,id==='wish-valley'?9:8,id==='vocalt-greedy-land'?0xffde8b:id==='wish-valley'?0xb5f5e5:0xffdc9a);
+        if(id==='wish-valley'){
+          // Living river highlights and moving ripples.
+          for(let i=0;i<118;i++){
+            const flow=i/117,yy=(15+flow*42)*T,curve=wvRiverX(yy/T),drift=Math.sin(ph*2.2+i*.71)*1.4;
+            const xx=(curve+((i%7)-3)*.82+drift)*T;
+            ellipse(g,i%4===0?0xcffcf3:0xdffdf5,xx,yy+Math.sin(ph*2.4+i*.55)*7,7+(i%3)*4,2,.24+(i%5)*.015);
+            if(i%6===0)ellipse(g,0xa4efe2,xx-8,yy+3,12,3,.16);
+          }
+          // Animated Aylara waterfall: several moving curtains, spray and basin foam.
+          const fallX=44*T;
+          for(let colIdx=0;colIdx<7;colIdx++){
+            const offset=(-3+colIdx)*34;
+            for(let seg=0;seg<14;seg++){
+              const prog=(seg/14),yy=(1.8+prog*13.6)*T + ((ph*90+colIdx*27+seg*12)%26);
+              const swing=Math.sin(ph*3+seg*.6+colIdx)*5;
+              ellipse(g,colIdx%2?0x9ceee7:0xdffef7,fallX+offset+swing,yy,10+(seg%3)*3,18,.16+.03*(seg%4));
+              ellipse(g,0xbff8ef,fallX+offset*0.92+swing*.6,yy-10,5,10,.12);
+            }
+          }
+          for(let m=0;m<24;m++){
+            const mx=fallX-190+(m*17)%380 + Math.sin(ph*2+m)*10;
+            const my=14.9*T + Math.sin(ph*2.8+m*.8)*12 + (m%4)*2;
+            ellipse(g,m%3?0xeafff8:0xcff8ef,mx,my,10+(m%5)*4,4+(m%3),.22);
+          }
+          for(let c=0;c<8;c++){
+            const mx=fallX-100+Math.sin(ph*1.7+c)*85,my=(12.8+c*.45+Math.sin(ph+c)*.18)*T;
+            ellipse(g,0xe9fff5,mx,my,44+(c%3)*14,18+(c%2)*8,.05);
+          }
+          // V35: foam ribbons descend at different rates across four cascades.
+          const view=sc.cameras?.main?.worldView;
+          const near=(x,y,pad=180)=>!view||x>view.x-pad&&x<view.right+pad&&y>view.y-pad&&y<view.bottom+pad;
+          if(near(fallX,8*T,550)){
+            for(let tier=0;tier<4;tier++){
+              const fy=(1.5+tier*3.5)*T;
+              for(let j=0;j<12;j++){
+                const flow=(time*(.048+tier*.009)+j*39+tier*83)%86;
+                const px=fallX+(j-5.5)*(23-tier*2)+Math.sin(ph*1.7+j)*3;
+                ellipse(g,j%3?0xd0f6ed:0x8ddbcf,px,fy+flow,7+(j%3)*3,12+(tier%2)*4,.13+(j%4)*.035);
+              }
+              for(let j=0;j<8;j++){
+                const px=fallX+(j-3.5)*(26-tier*2);
+                ellipse(g,0xe4fff4,px,fy+92+Math.sin(ph*2+j)*4,14+(j%3)*7,4+(j%2)*3,.21);
+              }
+            }
+          }
+          // Moonveil reflections and aquatic leaves (world-space, camera-culled).
+          const lx=WV_WORLD_GEOMETRY.moonveil.x*T,ly=WV_WORLD_GEOMETRY.moonveil.y*T;
+          if(near(lx,ly,140)){
+            for(let i=0;i<8;i++){
+              const px=lx-46+(i%4)*31,py=ly-17+Math.floor(i/4)*27;
+              const ripple=9+((time*.013+i*18)%32);
+              g.lineStyle(1.2,0xb6e5d5,(1-ripple/45)*.28);
+              g.strokeEllipse(px,py,ripple*1.6,ripple*.42);
+            }
+          }
+          for(let i=0;i<20;i++){
+            const py=(22*T+(time*.021+i*73)%(36*T));
+            const {x,half}=WV_WORLD_GEOMETRY.river(py/T);
+            const px=x+Math.sin(i*2.4+ph*.8)*Math.min(half*.52,55);
+            if(!near(px,py,35))continue;
+            g.fillStyle(i%3?0x769e60:0xb8b782,.52);
+            g.fillTriangle(px-4,py-2,px+6,py-1,px,py+3);
+          }
+          // Spirit Heart: restrained shimmering emblems and fireflies, no flashing.
+          {
+            const hx=WV_SPIRIT.x*T,hy=WV_SPIRIT.y*T;
+            for(let k=0;k<12;k++){
+              const ang=k*Math.PI/6+Math.sin(ph*.46)*.09;
+              const rx=hx+Math.cos(ang)*76,ry=hy+Math.sin(ang)*42;
+              ellipse(g,k%3?0xd0dbb0:0xb5edd7,rx,ry+Math.sin(ph*1.2+k)*2,4+(k%3)*2,3,.14+.07*Math.sin(ph*.5+k)**2);
+            }
+            for(let k=0;k<5;k++){
+              const rx=hx-85+k*39+Math.sin(ph*1.1+k)*6;
+              const ry=hy-86-(k%2)*11+Math.cos(ph+k*.8)*6;
+              ellipse(g,0xe7e0ab,rx,ry,5,6,.17);
+            }
+            ellipse(g,0xd6e9b8,hx,hy-21,55+Math.sin(ph*.9)*5,25,.055);
+          }
+          // Warm drifting motes / sunlit particles in the western glade.
+          for(let i=0;i<24;i++)ellipse(g,0xffec9b,(11+i*3.3)*T,(33+Math.sin(ph+i*1.4)*.45)*T,4,4,.27);
+          // Distant birds circling to emphasize scale.
+          for(let b=0;b<5;b++){
+            const bx=(28+b*9+Math.sin(ph*.8+b)*4)*T,by=(6+b*1.2+Math.cos(ph+b)*.6)*T;
+            wvPath(g,0x243230,2,[[bx-6,by],[bx,by-3],[bx+6,by]],.4);
+          }
+        }
+        if(id==='vocalt-greedy-land')for(let i=0;i<5;i++)ellipse(g,0xffe8a8,(25+i)*T,(8+Math.sin(ph+i)*.3)*T,4,3,.48);
+      }
+    }
+  }
+  function isDialogOpen(){return !!modal&&!modal.hidden;}
+  window.addEventListener('keydown',(e)=>{
+    if(isDialogOpen()){if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close();}return;}
+    if(e.repeat||e.key.toLowerCase()!=='e')return;
+    const tag=e.target?.tagName||'';
+    if(['INPUT','TEXTAREA','SELECT'].includes(tag)||e.target?.isContentEditable)return;
+    const sc=window.__lifequestGetScene?.();
+    if(sc?.__wvAtSpirit&&!sc?.doorAhead?.()){
+      e.preventDefault();e.stopImmediatePropagation();openSpirit();return;
+    }
+    const living=sc?.__wvLivingNear;
+    const near=closestCareer(sc);
+    if(living&&!near&&!sc?.doorAhead?.()&&sc.area.id==='wish-valley'){
+      e.preventDefault();e.stopImmediatePropagation();wvLivingOpen(living);return;
+    }
+    const explore=sc?.__wvExploreNear;
+    if(explore&&!near&&!living&&!sc?.doorAhead?.()&&sc?.area?.id==='wish-valley'){
+      e.preventDefault();e.stopImmediatePropagation();wvDiscoveryOpen(explore);return;
+    }
+    if(sc?.area?.id==='vocalt-greedy-land'&&!near&&!sc?.doorAhead?.()&&vNearest(sc)){
+      e.preventDefault();e.stopImmediatePropagation();vTalk(sc,vNearest(sc));return;
+    }
+    if(near&&!sc?.doorAhead?.()&&isNew(sc?.area?.id)){
+      e.preventDefault();e.stopImmediatePropagation();open(near);
+    }
+  },true);
+  function gate(sc,w){if(!w||!isNew(w.to)||allowed(w.to))return true;feedback(sc,w.to);return false;}
+  const api={areas,ASSIGNMENTS,SPECS,ORDER,isNew,paint:ground,attach,update,onInteriorEnter,onInteriorLeave,allowed,gate,lockInfo,feedback,count,state,isDialogOpen,techDebug:(sc)=>[...(getAgents(sc)?.values()||[])].map(a=>({name:a.t.name,x:a.x,y:a.y,site:a.site,mode:a.mode,indoors:a.indoors})),royalDebug:(sc)=>[...(getRoyalAgents(sc)?.values()||[])].map(a=>({name:a.t.name,x:a.x,y:a.y,site:a.site,mode:a.mode})),openById:(id,npc)=>{let t=ASSIGNMENTS[id]?.find(v=>v.id===npc);if(t)open(t);},diagnostics:()=>ORDER.map(id=>({id,quests:ASSIGNMENTS[id].length,blocked:!!lockInfo(id),completed:count(id)}))};
+  window.LQCareerWorlds=Object.freeze(api);
+  window.addEventListener('DOMContentLoaded',ui,{once:true});
+})();
+</script>
+    <script>
+/* LIFEQUEST V14.2 · Signature Worlds, Cinematic Transitions and Living World Art Direction
+ * Non-destructive, deterministic scenery for the eight registered outdoor worlds.
+ * Landscape art is drawn once; animation is camera-culling and runs at 20 fps.
+ * Landmarks are floor decals / readable destinations, not invisible collision walls.
+ * The actual blockers for historical craters and ruins live in front.js.
+ */
+(function () {
+  'use strict';
+  const T = 32, TAU = Math.PI * 2;
+  const PLAN = Object.freeze({
+    'english-town': {
+      tone: 'garden', density: 0.58, particle: 'butterfly',
+      intro: { icon: '🏘️', eyebrow: 'TODAY · CITY HEART', title: 'English Town', subtitle: 'Flower plazas, civic facades, waterside walks and a friendly everyday rhythm.' },
+      pan: [
+        { x: 30, y: 5, zoom: 1.13, ms: 1120 },
+        { x: 52, y: 7, zoom: 1.12, ms: 1020 },
+        { x: 55, y: 41, zoom: 1.05, ms: 920 },
+      ],
+      marks: [
+        ['clocktower', 30, 5, 5.8, 'CLOCKTOWER SQUARE', 'The signature civic landmark of English Town, overlooking the flower plaza and the daily bustle.'],
+        ['plaza', 18, 13, 3.4, 'CLOCK & FLOWER PLAZA', 'A lively civic square with stone mosaics, flower beds and seating.'],
+        ['gazebo', 24, 17, 3.1, 'TOWN GAZEBO', 'An elegant community pavilion for music, notices and weekend gatherings.'],
+        ['garden', 46, 31, 3.1, 'RIVERSIDE WALK', 'A quiet green promenade where residents take their evening walks.'],
+        ['crosswalk', 44, 11, 3, 'CITY CROSSING', 'Road markings, lantern posts and a safe pedestrian route.'],
+        ['garden', 17, 44, 2.8, 'COMMUNITY GARDEN', 'Neighbourhood flowers, shrubs and carefully tended paths.'],
+        ['water', 55, 41, 3, 'LAKESIDE', 'Still blue water, reflections and freshwater reeds.'],
+        ['mosaic', 27, 49, 2.8, 'STATION WALK', 'A decorative paved link leading toward the station.'],
+        ['greenhouse', 12, 34, 2.7, 'GREENHOUSE COURT', 'A bright glasshouse corner that adds colour and life to the district edge.'],
+      ],
+      effects: [['clockhands', 30, 5], ['lantern', 27, 13], ['water', 55, 41], ['butterfly', 17, 44], ['butterfly', 45, 31], ['lantern', 18, 14], ['lantern', 24, 17]],
+    },
+    'mining-town': {
+      tone: 'ore', density: 0.42, particle: 'dust',
+      intro: { icon: '⛏️', eyebrow: 'TODAY · INDUSTRIAL FRONTIER', title: 'Minerals Town', subtitle: 'Minehead frames, ore yards, rail sidings and hardworking industrial streets.' },
+      pan: [
+        { x: 50, y: 13, zoom: 1.13, ms: 1120 },
+        { x: 30, y: 27, zoom: 1.15, ms: 1100 },
+        { x: 40, y: 37, zoom: 1.08, ms: 900 },
+      ],
+      marks: [
+        ['crystalspire', 50, 13, 6.1, 'CRYSTAL SPINE', 'A dramatic ore monument that gives the town a powerful signature silhouette.'],
+        ['minehead', 28, 23, 3.6, 'CENTRAL MINEHEAD', 'The tall frame, pulley housing and hoist platform define the heart of the mining town.'],
+        ['ore', 10, 24, 3.5, 'MINERAL VEIN', 'Coloured rock strata mark the edge of the old extraction yard.'],
+        ['rail', 31, 45, 3, 'FREIGHT SIDING', 'Timber sleepers and a narrow wagon transfer point.'],
+        ['ore', 13, 51, 3, 'STONE CUTTING YARD', 'Worked rock, quartz fragments and dust from the quarry.'],
+        ['wood', 40, 32, 2.8, 'TIMBER DEPOT', 'Seasoned timber for reinforcing mine tunnels.'],
+        ['ore', 48, 23, 2.6, 'GEMSTONE RIDGE', 'A small outcrop with glints of blue-green crystals.'],
+        ['workshop', 43, 38, 2.8, 'BLACKSMITH YARD', 'An outdoor service court with tools, repairs and heavy work benches.'],
+        ['rail', 35, 62, 3, 'RAILWAY LOGISTICS', 'Freight lines connecting the town with neighbouring regions.'],
+      ],
+      effects: [['crystalpulse', 50, 13], ['ore', 30, 27], ['ore', 10, 24], ['ore', 48, 23], ['smoke', 27, 23], ['dust', 36, 45], ['smoke', 43, 38]],
+    },
+    'art-district': {
+      tone: 'creative', density: 0.63, particle: 'confetti',
+      intro: { icon: '🎨', eyebrow: 'TODAY · CREATIVE QUARTER', title: 'Art District', subtitle: 'Murals, sculpture courts, colour canopies and a vivid atmosphere of making.' },
+      pan: [
+        { x: 36, y: 18, zoom: 1.12, ms: 980 },
+        { x: 35, y: 42, zoom: 1.08, ms: 900 },
+        { x: 53, y: 19, zoom: 1.08, ms: 900 },
+      ],
+      marks: [
+        ['artgate', 36, 18, 6.3, 'DREAM GATE', 'A colourful landmark arch announcing the district as a place of music, images and ideas.'],
+        ['canopy', 35, 42, 4.2, 'OPEN AIR GALLERY', 'A lively public plaza under floating colour ribbons and art lights.'],
+        ['paint', 17, 19, 3.6, 'MURAL ALLEY', 'Paint splashes and a trail of sketches beside the studios.'],
+        ['sculpture', 53, 19, 3.2, 'COLOUR COURT', 'A sculptural court framed by bright paving and creative installations.'],
+        ['paint', 15, 49, 2.8, 'MAKERS CORNER', 'Brush marks, posters and the texture of an active workshop.'],
+        ['paint', 56, 48, 2.8, 'PHOTOGRAPHY WALK', 'Painted markers around the photographic studios.'],
+        ['canopy', 23, 33, 2.8, 'POP-UP STAGE', 'A performance corner with banners, lights and room for small shows.'],
+      ],
+      effects: [['prismsweep', 36, 18], ['sparkle', 36, 18], ['confetti', 17, 19], ['confetti', 52, 18], ['sparkle', 35, 42], ['confetti', 55, 48], ['sparkle', 23, 33]],
+    },
+    'english-town-past': {
+      tone: 'heritage', density: 0.43, particle: 'leaves',
+      intro: { icon: '🏰', eyebrow: '70 YEARS AGO · VILLAGE LIFE', title: 'Oriaris Village', subtitle: 'Timber cottages, rice paddies, watch posts and the everyday life of a guarded settlement.' },
+      pan: [
+        { x: 25, y: 10, zoom: 1.09, ms: 940 },
+        { x: 31, y: 18, zoom: 1.06, ms: 880 },
+        { x: 51, y: 32, zoom: 1.03, ms: 820 },
+      ],
+      marks: [
+        ['hallcrest', 30, 5, 5.5, 'ORIARIS GREAT HALL', 'A worn meeting place, where neighbours exchange news and letters.'],
+        ['watchtower', 43, 10, 2.6, 'EASTERN WATCH POST', 'A guarded threshold where the village meets the northern road.'],
+        ['paddy', 51, 32, 3, 'IRRIGATION DIKES', 'Rice fields separated by narrow earthen banks.'],
+        ['paddy', 9, 44, 2.5, 'SOUTHERN RICE FIELDS', 'The farmland that sustains the village families.'],
+        ['market', 31, 18, 2.8, 'MARKET SHELTER', 'A simple timber stall where villagers share bread, rice and small goods.'],
+        ['wood', 41, 26, 2.4, 'CARPENTER CORNER', 'Repaired carts and stacked planks beside the old road.'],
+      ],
+      effects: [['bannerflutter', 30, 5], ['leaves', 13, 16], ['leaves', 38, 20], ['dust', 43, 10], ['lantern', 31, 18]],
+    },
+    'oriaris-trail-1': {
+      tone: 'orchard', density: 0.45, particle: 'butterfly',
+      intro: { icon: '🌿', eyebrow: '70 YEARS AGO · COUNTRY PATH', title: 'North Trail I', subtitle: 'Wild orchard growth, a stream crossing and the first quiet road beyond the village gate.' },
+      pan: [
+        { x: 20, y: 8, zoom: 1.08, ms: 860 },
+        { x: 34, y: 7, zoom: 1.05, ms: 820 },
+      ],
+      marks: [
+        ['valleybridge', 20, 8, 5.7, 'WOODEN STREAM CROSSING', 'A small watercourse and weathered planks on the village trail.'],
+        ['wildflower', 10, 8, 3.2, 'WILD ORCHARD', 'A sheltered slope with wildflowers and low shrubs.'],
+        ['heritage', 34, 7, 2.5, 'OLD MILESTONE', 'A roadside stone that guides messengers towards the north.'],
+        ['watchtower', 41, 17, 2.1, 'TRAIL SHELTER', 'A modest timber lookout where messengers once paused to scan the path ahead.'],
+      ],
+      effects: [['springmist', 20, 8], ['water', 20, 8], ['butterfly', 10, 9], ['leaves', 32, 9], ['butterfly', 41, 17]],
+    },
+    'oriaris-trail-2': {
+      tone: 'scarred', density: 0.23, particle: 'dust',
+      intro: { icon: '🌲', eyebrow: '70 YEARS AGO · SCARRED ROUTE', title: 'North Trail II', subtitle: 'A damaged section of the route where the forest is slowly reclaiming old wartime scars.' },
+      pan: [
+        { x: 26, y: 19, zoom: 1.08, ms: 880 },
+        { x: 22, y: 9, zoom: 1.06, ms: 840 },
+        { x: 36, y: 20, zoom: 1.08, ms: 880 },
+      ],
+      marks: [
+        ['regrowth', 26, 19, 5.3, 'FOREST RECLAIMS THE ROUTE', 'The route still carries its history; a hardy tree and flowers represent renewal.'],
+        ['crater', 13, 5, 3.4, 'OLD BOMB CRATER', 'A large impact hollow, ringed with stones, scrub and regrowing grass.'],
+        ['crater', 36, 20, 3.1, 'SECOND CRATER', 'A second blast scar sits farther from the main path and feels quieter, older and softer.'],
+        ['heritage', 26, 19, 2.6, 'BROKEN WAYMARK', 'A damaged wooden sign among fallen branches.'],
+        ['wildflower', 7, 7, 2.2, 'RECOVERING MEADOW', 'New plants growing around an old damaged route.'],
+        ['trench', 22, 9, 2.5, 'EARTHEN TRENCH', 'A shallow defensive cut now half-covered by grass and loose soil.'],
+      ],
+      effects: [['seedwind', 26, 19], ['dust', 13, 5], ['leaves', 26, 19], ['dust', 35, 20], ['dust', 22, 9]],
+    },
+    'oriaris-trail-3': {
+      tone: 'woodland', density: 0.33, particle: 'leaves',
+      intro: { icon: '🧭', eyebrow: '70 YEARS AGO · DEEP WOODS', title: 'North Trail III', subtitle: 'Mossy bridges, lookout remains and a dim woodland corridor leading to the camp.' },
+      pan: [
+        { x: 22, y: 10, zoom: 1.08, ms: 900 },
+        { x: 31, y: 8, zoom: 1.04, ms: 820 },
+      ],
+      marks: [
+        ['ancienttree', 22, 10, 5.8, 'THE ANCIENT GREEN', 'Weathered planks lead across a shallow forest stream.'],
+        ['heritage', 12, 6, 3, 'OLD LOOKOUT REMAINS', 'Stone foundations left from an abandoned observation shelter.'],
+        ['wildflower', 37, 23, 2.6, 'FOREST CLEARING', 'A quiet patch of ferns, moss and low light beneath the canopy.'],
+        ['watchtower', 31, 8, 2.2, 'GUARD POST RUIN', 'The last visible remains of a timber watch point on the approach to camp.'],
+      ],
+      effects: [['forestmoon', 22, 10], ['water', 22, 10], ['leaves', 12, 7], ['firefly', 37, 22], ['firefly', 31, 8]],
+    },
+    'oriaris-camp': {
+      tone: 'camp', density: 0.26, particle: 'ember',
+      intro: { icon: '⛺', eyebrow: '70 YEARS AGO · FORWARD CAMP', title: 'The North Camp', subtitle: 'Firelit tents, supply corners, resting places and the long road stretching toward the front.' },
+      pan: [
+        { x: 24, y: 15, zoom: 1.13, ms: 1060 },
+        { x: 15, y: 9, zoom: 1.04, ms: 820 },
+        { x: 38, y: 20, zoom: 1.04, ms: 820 },
+      ],
+      marks: [
+        ['campstandard', 24, 15, 5.4, 'NORTH CAMP BEACON', 'A gathering place for the mail carriers and camp residents.'],
+        ['wood', 38, 20, 2.5, 'SUPPLY CORNER', 'Folded blankets, water barrels and neatly stacked provisions.'],
+        ['tentline', 15, 9, 3.2, 'TENT ROW', 'A disciplined line of sleeping tents, bedrolls and travel packs.'],
+        ['heritage', 11, 24, 2.2, 'MEMORY STONE', 'A quiet place to remember families waiting at home.'],
+        ['watchtower', 36, 10, 2.2, 'NORTH ROAD SIGN', 'A timber marker near the long road beyond the camp.'],
+      ],
+      effects: [['canvasflutter', 24, 15], ['fire', 24, 15], ['smoke', 24, 15], ['ember', 24, 15], ['lantern', 32, 11], ['lantern', 15, 9]],
+    },
+  });
+  function hash(a, b, seed) {
+    let n = (Math.imul(a + 21, 1597334677) ^ Math.imul(b + 13, 3812015801) ^ seed) | 0;
+    n = Math.imul(n ^ (n >>> 15), 2246822519); n = Math.imul(n ^ (n >>> 13), 3266489917);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  }
+  function seedFor(s) { return Array.from(s).reduce((n, c) => Math.imul(n ^ c.charCodeAt(0), 16777619), 2166136261) | 0; }
+  function fill(g, c, x, y, w, h, alpha = 1) { g.fillStyle(c, alpha).fillRect(x, y, w, h); }
+  function dot(g, c, x, y, r = 2, alpha = 1) { g.fillStyle(c, alpha).fillCircle(x, y, r); }
+  function oval(g, c, x, y, w, h, alpha = 1) { g.fillStyle(c, alpha).fillEllipse(x, y, w, h); }
+  function stroke(g, c, x, y, x2, y2, width = 1, alpha = 1) { g.lineStyle(width, c, alpha).lineBetween(x, y, x2, y2); }
+  function walkable(a, x, y) {
+    x = Math.floor(x); y = Math.floor(y);
+    return x > 0 && y > 0 && x < a.w - 1 && y < a.h - 1 && !a.isTileBlocked(x, y) && !(a.warpAt && a.warpAt(x, y));
+  }
+  function ground(g, a) {
+    const p = PLAN[a.id]; if (!p) return;
+    const seed = seedFor(a.id);
+    // Hundreds of tailored accents. All are only a few pixels high, so walking remains unobstructed.
+    const palette = p.tone === 'creative' ? [0xffcd58, 0xe774b4, 0x53d9cd, 0x9673e6] :
+      p.tone === 'ore' ? [0x7ea397, 0x5d7d86, 0xc9ba92, 0x61847a] :
+      p.tone === 'scarred' ? [0x917d58, 0x6a694d, 0xb2a37d, 0x81916d] :
+      [0xffffff, 0xffffff];
+    const step = p.tone === 'creative' ? 2 : 3;
+    for (let y = 1; y < a.h - 1; y += step) for (let x = 1; x < a.w - 1; x += step) {
+      const h = hash(x, y, seed);
+      if (h > p.density || !walkable(a, x, y)) continue;
+      const cx = x * T + 4 + hash(x, y, seed ^ 19) * 23;
+      const cy = y * T + 5 + hash(x, y, seed ^ 51) * 20;
+      if (p.tone === 'creative') {
+        const c = palette[Math.floor(h * 139) % palette.length];
+        fill(g, c, cx, cy, 5, 2, 0.52); fill(g, c, cx + 4, cy - 2, 2, 6, 0.32);
+        if (h < .13) dot(g, 0xffffff, cx + 9, cy + 6, 1.8, .45);
+      } else if (p.tone === 'ore') {
+        stroke(g, palette[Math.floor(h * 35) % 4], cx, cy, cx + 9, cy - 3, 1.4, .46);
+        dot(g, 0x9fedd3, cx + 5, cy - 2, 1.3, .44);
+      } else if (p.tone === 'garden') {
+        stroke(g, 0x3b754a, cx, cy + 3, cx + 1, cy - 5, 1.2, .6);
+        dot(g, [0xffd69d, 0xf6b6c4, 0xdceec4][Math.floor(h * 83) % 3], cx + 1, cy - 5, 1.9, .83);
+      } else if (p.tone === 'camp' || p.tone === 'scarred') {
+        oval(g, 0x584936, cx, cy + 1, 6, 2.8, .28);
+        stroke(g, 0xb3a681, cx + 2, cy - 1, cx + 6, cy - 3, 1, .4);
+      } else {
+        stroke(g, 0x57653c, cx, cy + 4, cx - 2, cy - 3, 1.25, .6);
+        stroke(g, 0x788a51, cx, cy + 4, cx + 3, cy - 2, 1.3, .6);
+      }
+    }
+  }
+  function vignette(g, k, x, y, r, tone, seed) {
+    const R = (n) => hash(n + Math.floor(x / 7), Math.floor(y / 7), seed);
+    const col = (color, px, py, rw, rh, alpha) => oval(g, color, px, py, rw, rh, alpha);
+    if (k === 'crater') {
+      col(0x4a4034, x, y + 7, r * 2.02, r * 1.22, .34);
+      col(0x79674f, x - 1, y - 1, r * 1.94, r * 1.12, .94);
+      col(0xaf9872, x - 4, y - 7, r * 1.46, r * .73, .82);
+      col(0x3f3932, x + 1, y + 3, r * 1.34, r * .82, .94);
+      col(0x5f584d, x - 2, y + 1, r * .96, r * .58, .61);
+      for (let i = 0; i < 22; i++) {
+        const a = i * 2.399, rad = r * (.68 + .22 * R(i));
+        dot(g, i % 3 === 0 ? 0xc3b28a : i % 3 === 1 ? 0x6f6352 : 0x879667, x + Math.cos(a) * rad, y + Math.sin(a) * rad * .57, 1.5 + R(i + 17) * 2.2, .78);
+      }
+    } else if (k === 'stream') {
+      for (let i = -11; i <= 11; i++) {
+        const py = y + i * 7;
+        const cur = x + Math.sin(i * .39) * 13;
+        col(0x375d57, cur, py, 40, 11, .77);
+        col(0x749d86, cur - 4, py - 2, 27, 4, .56);
+        if (i % 3 === 0) stroke(g, 0xcce2c2, cur - 4, py - 1, cur + 8, py - 1, 1, .65);
+      }
+      for (let i = -4; i <= 4; i++) {
+        const yy = y + i * 10;
+        fill(g, 0x56432e, x - 36, yy, 72, 7, 1);
+        fill(g, 0xb59b6e, x - 34, yy, 68, 4, 1);
+        fill(g, 0xe0c897, x - 28, yy + 1, 24, 1, .45);
+      }
+      fill(g, 0x433d2c, x - 38, y - 45, 4, 90, .88);
+      fill(g, 0x433d2c, x + 34, y - 45, 4, 90, .88);
+    } else if (k === 'plaza' || k === 'mosaic') {
+      col(0x223142, x, y + 5, r * 2, r * 1.17, .32);
+      col(k === 'plaza' ? 0xdfd1ae : 0x292c47, x, y, r * 2, r * 1.08, .91);
+      col(k === 'plaza' ? 0xf7e8c4 : 0x48506e, x, y - 2, r * 1.74, r * .91, .87);
+      for (let i = -4; i <= 4; i++) for (let j = -2; j <= 2; j++) {
+        const cx = x + i * r / 5, cy = y + j * r / 5;
+        if (((cx - x) / (r * .88)) ** 2 + ((cy - y) / (r * .5)) ** 2 > 1) continue;
+        const c = k === 'plaza' ? [0xe3bc78, 0xf3e1b9, 0xa7bbab, 0xe6ceb2][(i + j + 20) % 4] :
+          [0xffbc53, 0x65d9cc, 0xed7eb1, 0x9579e7][(i + j + 20) % 4];
+        fill(g, c, cx - 2, cy - 2, 6, 4, k === 'plaza' ? .7 : .9);
+      }
+      col(k === 'plaza' ? 0x9b744e : 0xf6d47c, x, y, 22, 15, .7);
+    } else if (k === 'garden' || k === 'wildflower' || k === 'paddy') {
+      col(k === 'paddy' ? 0x72885b : 0x427044, x, y, r * 1.85, r, .52);
+      for (let i = 0; i < (k === 'paddy' ? 36 : 43); i++) {
+        const ax = (R(i) - .5) * r * 1.6, ay = (R(i + 39) - .5) * r * .8;
+        if (k === 'paddy') {
+          stroke(g, 0x506a40, x + ax, y + ay + 5, x + ax + 1, y + ay - 5, 1.1, .72);
+          dot(g, 0xbaca76, x + ax + 1, y + ay - 5, 1.3, .8);
+        } else {
+          stroke(g, 0x345e37, x + ax, y + ay + 4, x + ax + 1, y + ay - 3, 1.1, .78);
+          dot(g, [0xfce5a1, 0xffb9c9, 0xc6def3, 0xffffff][i % 4], x + ax + 1, y + ay - 4, 2.1, .9);
+        }
+      }
+    } else if (k === 'water') {
+      col(0x2e746e, x, y, r * 1.93, r * 1.18, .8);
+      col(0x77c0ad, x - 1, y - 2, r * 1.75, r, .86);
+      col(0x407e87, x, y + 3, r * 1.4, r * .79, .8);
+      for (let i = 0; i < 11; i++) {
+        const ax = (R(i) - .5) * r * 1.15, ay = (R(i + 15) - .5) * r * .58;
+        stroke(g, 0xd7f8db, x + ax, y + ay, x + ax + 8 + 9 * R(i + 22), y + ay, 1, .67);
+      }
+    } else if (k === 'ore') {
+      col(0x4b514d, x, y + 3, r * 1.75, r * .93, .72);
+      for (let i = 0; i < 24; i++) {
+        const ax = (R(i) - .5) * r * 1.64, ay = (R(i + 27) - .5) * r * .78;
+        const clr = [0x7abcb6, 0x618d8e, 0xb1aa89, 0xa2d4c6, 0x596d75][i % 5];
+        fill(g, clr, x + ax, y + ay, 5 + 5 * R(i + 4), 3 + 5 * R(i + 11), .85);
+        if (i % 5 === 0) dot(g, 0xdbf7e2, x + ax + 3, y + ay, 1.8, .9);
+      }
+    } else if (k === 'paint') {
+      for (let i = 0; i < 21; i++) {
+        const ax = (R(i) - .5) * r * 1.8, ay = (R(i + 22) - .5) * r;
+        const c = [0xffaf4a, 0xf26f9a, 0x54c9bd, 0x9673e0, 0xf4e6ab][i % 5];
+        col(c, x + ax, y + ay, 6 + 12 * R(i + 6), 5 + 8 * R(i + 8), .75);
+        dot(g, c, x + ax + 9, y + ay - 5, 1.8, .9);
+      }
+    } else if (k === 'rail') {
+      for (let i = -5; i <= 5; i++) {
+        fill(g, 0x654e32, x - r * .7, y + i * 13 - 3, r * 1.4, 7, .92);
+        fill(g, 0xd2bb8b, x - r * .6, y + i * 13 - 3, r * 1.1, 2, .35);
+      }
+      fill(g, 0x4a5351, x - r * .47, y - 76, 5, 152, .95);
+      fill(g, 0x4a5351, x + r * .47, y - 76, 5, 152, .95);
+      fill(g, 0xb8b6a9, x - r * .47 + 1, y - 76, 1, 152, .62);
+      fill(g, 0xb8b6a9, x + r * .47 + 1, y - 76, 1, 152, .62);
+    } else if (k === 'wood' || k === 'camp') {
+      col(k === 'camp' ? 0x8c7754 : 0x786145, x, y, r * 1.8, r * .96, .46);
+      for (let i = 0; i < 12; i++) {
+        const xx = x - r * .65 + (i % 4) * r * .4;
+        const yy = y - r * .28 + Math.floor(i / 4) * r * .24;
+        fill(g, 0x64482f, xx, yy, r * .34, 6, .95);
+        fill(g, 0xc3a479, xx + 2, yy + 1, r * .22, 2, .9);
+        dot(g, 0x9b7c56, xx + 3, yy + 3, 1, 1);
+      }
+      if (k === 'camp') {
+        for (let i = 0; i < 11; i++) {
+          const a = i * TAU / 11;
+          oval(g, 0x8f8370, x + Math.cos(a) * r * .51, y + Math.sin(a) * r * .27, 11, 6, .93);
+        }
+      }
+    } else if (k === 'heritage') {
+      col(0x6a5d48, x, y + 4, r * 1.8, r * .8, .25);
+      for (let i = 0; i < 17; i++) {
+        const xx = x + (R(i) - .5) * r * 1.55;
+        const yy = y + (R(i + 34) - .5) * r * .62;
+        col(i % 3 ? 0xa89978 : 0x6e6857, xx, yy, 8 + R(i + 60) * 9, 3 + R(i + 3) * 4, .69);
+      }
+      col(0xc9b18a, x, y - 5, 19, 9, .68);
+      col(0x6c5840, x, y - 2, 14, 4, .64);
+    } else if (k === 'crosswalk') {
+      for (let i = -5; i <= 5; i++) {
+        fill(g, 0x3d5360, x + i * 13 - 4, y - 30, 10, 63, .12);
+        fill(g, 0xfff8e1, x + i * 13 - 4, y - 12, 10, 23, .84);
+      }
+    } else if (k === 'gazebo') {
+      col(0x223a3c, x, y + 6, r * 1.8, r * .82, .22);
+      for (let i = -1; i <= 1; i++) fill(g, 0xe5d7ba, x - 20 + i * 20, y - 8, 5, 28, .95);
+      fill(g, 0xe9dec8, x - 28, y + 16, 56, 6, .92);
+      g.fillStyle(0x698c7d, .96).fillTriangle(x - 34, y - 3, x + 34, y - 3, x, y - 32);
+      fill(g, 0xf8efd7, x - 18, y - 9, 36, 6, .7);
+    } else if (k === 'greenhouse') {
+      col(0x284444, x, y + 7, r * 1.9, r * .86, .18);
+      fill(g, 0x8bb8af, x - 28, y - 20, 56, 38, .28);
+      for (let i = -2; i <= 2; i++) fill(g, 0xcfe7df, x + i * 11 - 1, y - 18, 2, 35, .74);
+      for (let i = -1; i <= 1; i++) fill(g, 0xcfe7df, x - 26, y - 8 + i * 11, 52, 2, .66);
+      g.lineStyle(2, 0x5f8a80, .92).strokeRect(x - 28, y - 20, 56, 38);
+      for (let i = 0; i < 8; i++) {
+        const px = x - 22 + i * 6;
+        fill(g, i % 2 ? 0x6e9a5a : 0x8ac46a, px, y + 4 - (i % 3) * 3, 4, 8, .95);
+      }
+    } else if (k === 'minehead') {
+      col(0x222324, x, y + 12, r * 1.9, r * .9, .22);
+      fill(g, 0x564a3b, x - 34, y + 18, 68, 7, .96);
+      fill(g, 0x535c62, x - 24, y - 30, 6, 44, .96); fill(g, 0x535c62, x + 18, y - 30, 6, 44, .96);
+      fill(g, 0x535c62, x - 5, y - 44, 10, 56, .94);
+      stroke(g, 0x8b9499, x - 21, y - 28, x + 22, y - 28, 3, .95);
+      stroke(g, 0x8b9499, x - 21, y - 28, x, y - 46, 3, .9); stroke(g, 0x8b9499, x + 22, y - 28, x, y - 46, 3, .9);
+      col(0x909b9f, x, y - 46, 16, 16, .92);
+      fill(g, 0x2a2d2f, x - 16, y - 8, 32, 16, .78);
+    } else if (k === 'workshop') {
+      col(0x2b2722, x, y + 8, r * 1.7, r * .76, .22);
+      fill(g, 0x7d6550, x - 28, y - 14, 56, 30, .94);
+      g.fillStyle(0x403833, .96).fillTriangle(x - 32, y - 14, x + 32, y - 14, x, y - 34);
+      fill(g, 0xc4aa7a, x - 20, y - 3, 40, 5, .92);
+      fill(g, 0x3a3a3a, x - 10, y + 1, 20, 15, .9);
+      fill(g, 0xd8c59a, x - 26, y + 16, 52, 4, .8);
+    } else if (k === 'canopy') {
+      col(0x282840, x, y + 5, r * 2, r * .9, .18);
+      for (let i = -2; i <= 2; i++) {
+        fill(g, [0xffb95d, 0x62d1c5, 0xf67eaf, 0xffe08a, 0x8b7cf5][i + 2], x - 34 + i * 17, y - 24 + Math.abs(i) * 4, 28, 11, .92);
+      }
+      for (let i = -2; i <= 2; i++) fill(g, 0x5f5f6d, x - 34 + i * 17, y - 13, 2, 28, .84);
+      fill(g, 0xe8e0c8, x - 38, y + 15, 76, 4, .62);
+    } else if (k === 'sculpture') {
+      col(0x2d2e42, x, y + 7, r * 1.8, r * .8, .18);
+      col(0x38415d, x, y + 9, r * 1.55, r * .46, .74);
+      g.fillStyle(0xffbd66, .95).fillTriangle(x - 20, y + 4, x - 2, y - 28, x + 6, y + 10);
+      g.fillStyle(0x61d2c5, .92).fillTriangle(x + 18, y + 4, x + 2, y - 24, x - 7, y + 8);
+      col(0xf582b8, x + 2, y - 6, 9, 17, .84);
+    } else if (k === 'watchtower') {
+      col(0x2d2418, x, y + 8, r * 1.4, r * .63, .18);
+      fill(g, 0x6f563b, x - 18, y - 24, 5, 40, .98); fill(g, 0x6f563b, x + 13, y - 24, 5, 40, .98);
+      fill(g, 0x6f563b, x - 4, y - 30, 8, 46, .98);
+      fill(g, 0xc9b186, x - 22, y - 24, 44, 5, .93);
+      g.fillStyle(0x8a6e4a, .96).fillTriangle(x - 26, y - 24, x + 26, y - 24, x, y - 42);
+      fill(g, 0xe1cfab, x - 14, y - 13, 28, 3, .78);
+    } else if (k === 'clocktower') {
+      const S = Math.max(1, Math.min(2.15, r / 130));
+      col(0x243448, x + 12*S, y + 27*S, 130*S, 37*S, .25);
+      // Main stone facade, side wings and stepped entrance are all one non-colliding mural.
+      fill(g, 0xd8ccb2, x-41*S, y-23*S, 82*S, 59*S, .95);
+      fill(g, 0xf0e2c4, x-39*S, y-22*S, 78*S, 6*S, .74);
+      fill(g, 0xb3a68d, x-45*S, y+32*S, 90*S, 8*S, .96);
+      for (let k=-1;k<=1;k++) {
+        const xx=x+k*24*S;
+        fill(g, 0x6a8ba0, xx-9*S, y-6*S, 18*S, 22*S, .86);
+        fill(g, 0xd1f4f3, xx-7*S, y-4*S, 14*S, 9*S, .68);
+        fill(g, 0xe6d4ae, xx-11*S, y+17*S, 22*S, 4*S, .94);
+      }
+      fill(g,0xd4c7b0,x-20*S,y-60*S,40*S,43*S,.97);
+      fill(g,0x8aabc2,x-17*S,y-57*S,34*S,3*S,.7);
+      g.fillStyle(0x6b8297,.96).fillTriangle(x-26*S,y-60*S,x+26*S,y-60*S,x,y-89*S);
+      fill(g,0xd9c8a9,x-4*S,y-102*S,8*S,15*S,.9);
+      col(0xf5ead4,x,y-36*S,25*S,25*S,.96);
+      col(0x31465a,x,y-36*S,20*S,20*S,.96);
+      stroke(g,0xfff5dc,x,y-36*S,x,y-44*S,2*S,.92);
+      stroke(g,0xfff5dc,x,y-36*S,x+7*S,y-31*S,2*S,.92);
+      for(let k=-2;k<=2;k++) { dot(g, k%2?0xf5d19a:0xf9e2bc, x+k*18*S,y+22*S,2.5*S,.85); }
+    } else if (k === 'crystalspire') {
+      const S=Math.max(1,Math.min(2.15,r/130));
+      col(0x132730,x,y+30*S,123*S,34*S,.3);
+      col(0x57646c,x,y+24*S,102*S,35*S,.92);
+      for(let k=0;k<9;k++){const a=(k/9)*TAU;dot(g,0x8eece6,x+Math.cos(a)*50*S,y+23*S+Math.sin(a)*16*S,2*S,.82);}
+      g.fillStyle(0x387f91,.95).fillTriangle(x-24*S,y+27*S,x-4*S,y-82*S,x+16*S,y+29*S);
+      g.fillStyle(0x91f5ee,.94).fillTriangle(x-24*S,y+27*S,x-4*S,y-82*S,x-1*S,y+17*S);
+      g.fillStyle(0x4fbcae,.95).fillTriangle(x+3*S,y+27*S,x+33*S,y-54*S,x+47*S,y+27*S);
+      g.fillStyle(0xb6fff4,.96).fillTriangle(x+3*S,y+27*S,x+33*S,y-54*S,x+22*S,y+18*S);
+      g.fillStyle(0x5eacbf,.88).fillTriangle(x-41*S,y+24*S,x-46*S,y-25*S,x-14*S,y+18*S);
+      stroke(g,0xdbfffb,x-3*S,y-76*S,x-6*S,y-9*S,2*S,.72);
+      stroke(g,0xf5ffff,x+32*S,y-43*S,x+25*S,y+7*S,2*S,.65);
+      dot(g,0xffffff,x-4*S,y-83*S,3*S,.96);
+    } else if (k === 'artgate') {
+      const S=Math.max(1,Math.min(2.2,r/130));
+      col(0x25253f,x,y+31*S,135*S,33*S,.26);
+      for(let k=0;k<2;k++){
+        const left=x-(53-k*8)*S,right=x+(53-k*8)*S,top=y-(36+k*5)*S;
+        stroke(g,k?0x9a8bec:0x73dad0,left,y+32*S,left+10*S,top,5*S,.95);
+        stroke(g,k?0xf3a4c9:0xffc25b,left+10*S,top,x,top-20*S,5*S,.95);
+        stroke(g,k?0xffca6b:0xf18ac4,x,top-20*S,right-10*S,top,5*S,.95);
+        stroke(g,k?0x70e4d3:0x9e93ff,right-10*S,top,right,y+32*S,5*S,.95);
+      }
+      for(let k=-4;k<=4;k++){
+        const c=[0xffce71,0x76e2d4,0xfba4cc,0xb9a3ff][(k+8)%4];
+        fill(g,c,x+k*12*S,y-15*S+Math.abs(k)*2*S,8*S,18*S,.92);
+        dot(g,0xffffff,x+k*12*S,y-26*S+Math.abs(k)*2*S,2.2*S,.7);
+      }
+      fill(g,0xf1e3bf,x-58*S,y+27*S,13*S,10*S,.92);
+      fill(g,0xf1e3bf,x+45*S,y+27*S,13*S,10*S,.92);
+    } else if (k === 'hallcrest') {
+      const S=Math.max(1,Math.min(2.1,r/130));
+      col(0x252419,x,y+28*S,127*S,34*S,.22);
+      fill(g,0x99856b,x-51*S,y-23*S,102*S,61*S,.98);
+      for(let k=-2;k<=2;k++) {
+        fill(g,0x564838,x+(k*19-3)*S,y-22*S,6*S,58*S,.88);
+        fill(g,0xc1ac87,x+k*19*S,y+14*S,12*S,7*S,.76);
+      }
+      g.fillStyle(0x644b38,.98).fillTriangle(x-59*S,y-25*S,x+59*S,y-25*S,x,y-65*S);
+      g.fillStyle(0xa38459,.85).fillTriangle(x-51*S,y-28*S,x+51*S,y-28*S,x,y-55*S);
+      fill(g,0x382d26,x-12*S,y+12*S,24*S,26*S,.98);
+      fill(g,0xc8a77a,x-15*S,y+9*S,30*S,4*S,.85);
+      for(let k=-1;k<=1;k++){
+        fill(g,0x59432e,x+(k*31-9)*S,y-12*S,18*S,20*S,.94);
+        fill(g,0xf1d19c,x+(k*31-5)*S,y-8*S,10*S,8*S,.58);
+      }
+      fill(g,0x6f4e3a,x+31*S,y-67*S,7*S,44*S,.98);
+      fill(g,0x8b3737,x+38*S,y-64*S,23*S,15*S,.95);
+      stroke(g,0xd6bc8a,x-53*S,y-26*S,x+53*S,y-26*S,2*S,.86);
+    } else if (k === 'valleybridge') {
+      const S=Math.max(1,Math.min(2,r/130));
+      // A green gorge and shallow waterfall crossed by a layered timber bridge.
+      for(let k=-7;k<=7;k++){
+        const py=y+k*8*S,px=x+Math.sin(k*.43)*17*S;
+        col(0x467977,px,py,32*S,12*S,.86);
+        fill(g,0x98d2c0,px-9*S,py-1*S,16*S,2*S,.63);
+      }
+      col(0x304f3f,x,y+10*S,126*S,26*S,.35);
+      for(let k=-5;k<=5;k++){
+        const xx=x+k*11*S;
+        fill(g,0x6e4e31,xx-4*S,y-13*S,9*S,33*S,.97);
+        fill(g,0xb18b58,xx-4*S,y-13*S,9*S,6*S,.8);
+      }
+      for(let t of [-1,1]) {
+        fill(g,0x5b412c,x+t*58*S,y-32*S,6*S,49*S,.92);
+        stroke(g,0xd9c096,x+t*58*S,y-27*S,x,y-26*S,2*S,.85);
+      }
+      for(let k=0;k<11;k++) dot(g,k%2?0xa7c477:0x54764c,x-65*S+k*13*S,y+25*S,3*S,.66);
+    } else if (k === 'regrowth') {
+      const S=Math.max(1,Math.min(2,r/130));
+      col(0x3d4b39,x,y+19*S,116*S,30*S,.27);
+      for(let k=-1;k<=1;k++){
+        const xx=x+k*21*S,ht=(51+Math.abs(k)*9)*S;
+        fill(g,0x65533d,xx-4*S,y+22*S-ht,8*S,ht,.97);
+        for(let j=0;j<3;j++) col(j?0x607b51:0x90a46b,xx+(j-1)*13*S,y-32*S+(j%2)*6*S,32*S,27*S,.84);
+      }
+      for(let k=0;k<19;k++) {
+        const xx=x+(hash(k,24,seed)-.5)*94*S, yy=y+(hash(k,43,seed)-.5)*29*S+18*S;
+        dot(g,[0xe2d59d,0xa4c283,0xc5a7a3][k%3],xx,yy,2*S,.84);
+      }
+    } else if (k === 'ancienttree') {
+      const S=Math.max(1,Math.min(2.1,r/130));
+      col(0x20372b,x+7*S,y+25*S,121*S,30*S,.3);
+      fill(g,0x4e392d,x-13*S,y-49*S,26*S,91*S,.97);
+      fill(g,0x765641,x-9*S,y-45*S,7*S,77*S,.88);
+      stroke(g,0x4f382c,x-2*S,y+24*S,x-49*S,y+43*S,7*S,.92);
+      stroke(g,0x4f382c,x+6*S,y+24*S,x+51*S,y+41*S,7*S,.92);
+      for(let k=-2;k<=2;k++) for(let j=0;j<3;j++) {
+        const xx=x+k*24*S+(j%2)*10*S, yy=y-65*S+j*15*S;
+        col([0x355b49,0x4d7654,0x759b64][j],xx,yy,55*S,38*S,.9);
+        dot(g,0xb6ca8b,xx-13*S,yy-11*S,3*S,.35);
+      }
+    } else if (k === 'campstandard') {
+      const S=Math.max(1,Math.min(2,r/130));
+      col(0x392f24,x,y+27*S,125*S,33*S,.27);
+      // The camp's prominent canvas-and-wood communal shelter, with a bright central beacon.
+      for(let side of [-1,1]){
+        fill(g,0x674d35,x+side*39*S-3*S,y-38*S,6*S,73*S,.96);
+        fill(g,0xcdb487,x+side*39*S-2*S,y-12*S,4*S,4*S,.76);
+      }
+      g.fillStyle(0xcab68c,.97).fillTriangle(x-54*S,y-38*S,x+54*S,y-38*S,x,y-77*S);
+      g.fillStyle(0x9e815d,.93).fillTriangle(x-46*S,y-38*S,x+46*S,y-38*S,x,y-64*S);
+      fill(g,0x86674b,x-43*S,y-37*S,86*S,9*S,.91);
+      fill(g,0x423125,x-32*S,y-27*S,64*S,62*S,.49);
+      fill(g,0x64482e,x-6*S,y-95*S,6*S,43*S,.96);
+      fill(g,0x8d3333,x,y-91*S,27*S,19*S,.94);
+      dot(g,0xffe4ae,x+15*S,y-81*S,3*S,.86);
+      col(0xf3ad53,x,y+19*S,29*S,11*S,.25);
+      g.fillStyle(0xffd47c,.92).fillTriangle(x-7*S,y+24*S,x+7*S,y+24*S,x+2*S,y+4*S);
+    } else if (k === 'market') {
+      col(0x3a332b, x, y + 6, r * 1.6, r * .66, .18);
+      fill(g, 0x7a6040, x - 24, y - 10, 48, 22, .95);
+      g.fillStyle(0xb77d5a, .96).fillTriangle(x - 28, y - 10, x + 28, y - 10, x, y - 28);
+      for (let i = -2; i <= 2; i++) fill(g, i % 2 ? 0xe9c476 : 0xd9966f, x - 22 + i * 11, y - 2, 8, 7, .92);
+      fill(g, 0xcbb490, x - 24, y + 11, 48, 4, .82);
+    } else if (k === 'trench') {
+      col(0x3a332b, x, y + 4, r * 1.8, r * .66, .2);
+      col(0x6a5e49, x, y, r * 1.7, r * .55, .96);
+      col(0x2c2a24, x, y + 1, r * 1.23, r * .29, .98);
+      for (let i = -4; i <= 4; i++) fill(g, i % 2 ? 0x8d7e66 : 0x665a4a, x - 26 + i * 7, y - 13 + (i % 3), 6, 3, .9);
+    } else if (k === 'tentline') {
+      col(0x3a3024, x, y + 8, r * 1.8, r * .8, .18);
+      for (let i = -1; i <= 1; i++) {
+        const ox = x + i * 21;
+        g.fillStyle(0xc9b48b, .96).fillTriangle(ox - 12, y + 8, ox, y - 16, ox + 12, y + 8);
+        fill(g, 0x836b4d, ox - 5, y + 2, 10, 7, .9);
+      }
+      fill(g, 0x8d7a5a, x - 34, y + 10, 68, 4, .8);
+    }
+  }
+  function details(g, a) {
+    const p = PLAN[a.id]; if (!p) return;
+    const seed = seedFor(a.id);
+    for (let i = 0; i < p.marks.length; i++) {
+      const [kind, tx, ty, scale] = p.marks[i];
+      // Fixed monuments have an authored location; floor details do not change the walkable graph.
+      vignette(g, kind, (tx + .5) * T, (ty + .5) * T, scale * (kind === 'crater' ? 19 : 32), p.tone, seed + i * 137);
+    }
+  }
+
+  // V15 scene direction: each fly-through has a distinct micro-story, not just generic panning.
+  const CINEMA_V15 = Object.freeze({
+    'english-town': {name:'A NEW BEGINNING', accent:'#f6cd86', shots:['The Clocktower Awakens','A City Full of Stories','Where Your Journey Begins'], text:'Every street has a story.'},
+    'mining-town': {name:'THE HEART OF THE MOUNTAIN', accent:'#85e7d0', shots:['Over the Crystal Frontier','A Town Built by Hand','Beyond the Railway'], text:'Discover what shines beneath the surface.'},
+    'art-district': {name:'CONCRETE DREAMS', accent:'#f5a3ca', shots:['Through the Dream Gate','The Streets Become a Canvas','Imagination Without Borders'], text:'Every colour begins a story.'},
+    'english-town-past': {name:'70 YEARS AGO', accent:'#e8c899', shots:['A Village in Another Time','Lives Around the Old Market','The Northern Path'], text:'The past lives in the smallest details.'},
+    'oriaris-trail-1': {name:'BEYOND THE VILLAGE', accent:'#b4db9f', shots:['The Wooden Stream Crossing','Toward the Wild Orchard'], text:'Follow the path where the forest begins.'},
+    'oriaris-trail-2': {name:'NATURE REMEMBERS', accent:'#becb94', shots:['The Forest Reclaims the Trail','Traces Along the Path','A Quiet Sign of Renewal'], text:'New life grows where time has passed.'},
+    'oriaris-trail-3': {name:'THE FORGOTTEN FOREST', accent:'#b9dfbe', shots:['A Tree Beyond Time','Under the Ancient Canopy'], text:'Some stories are whispered by the trees.'},
+    'oriaris-camp': {name:'A LIGHT OF HOPE', accent:'#f9cb88', shots:['The Warmth of the Beacon','Stories by the Camp','The Road Ahead'], text:'Even a small light can guide the way.'}
+  });
+
+/* LIFEQUEST AI V16 · ET-only intro configuration.
+   Only English Town plays an automatic origin/location intro. The remaining seven
+   maps retain all geography, visual effects, quests, and existing story films. */
+const INTRO_ENABLED_MAPS = new Set(['english-town']);
+const ORIGIN_STORIES = Object.freeze({
+ 'english-town': {
+  title:'ENGLISH TOWN',film:'THE CITY THAT GREW',tagline:'From a Small Village to a City of Dreams.',
+  before:'The First Houses',foundation:'A Growing Community',reveal:'The Clocktower Rises',
+  narration:['A quiet settlement stood here long ago.','Families built streets, schools and a library.','Together, they created English Town.'],
+  history:'Long ago, this land held a few small homes beside dirt roads. As more families arrived, neighbours widened the streets and built schools, a library and shops. In the central square they raised the Clocktower, which became the symbol of knowledge, shared time and the growing city.',
+  emblem:'Clocktower',art:'city',palette:[0x203c4b,0x558b7a,0x91b78b,0xf1c879,0xd97f63],accent:'#f8d388'
+ },
+ 'mining-town': {
+  title:'MINERALS TOWN',film:'THE CRYSTAL DISCOVERY',tagline:'Built from the Wonders Beneath the Earth.',
+  before:'The Hidden Crystal',foundation:'The First Discovery',reveal:'The Industrial Town',
+  narration:['Blue light gleamed beneath the rock.','Workers opened a mine and built workshops.','A railway connected the new town.'],
+  history:'At first this was a rocky mountain landscape hiding rich veins of crystal. Early explorers spotted a strange glow and began to open paths to the deposits. Workers built a mine, smithy and storehouses; then a railway carried goods beyond the mountains. Families settled nearby, and Minerals Town grew around the Crystal Spine.',
+  emblem:'Crystal Spine',art:'mines',palette:[0x182d3d,0x4b6173,0x697b88,0x5edbca,0xc28d63],accent:'#8ae5d6'
+ },
+ 'art-district': {
+  title:'ART DISTRICT',film:'FROM FORGOTTEN RAILS TO LIVING ART',tagline:'Where Forgotten Places Become Art.',
+  before:'The Forgotten Tunnel',foundation:'The First Artists',reveal:'Art Comes Alive',
+  narration:['Trains once passed abandoned warehouses.','Artists turned the old walls into canvases.','The Dream Gate welcomed a new district.'],
+  history:'This district began as a freight area with rail tunnels and storage warehouses. Over time, traffic moved elsewhere and the buildings fell quiet. A group of artists restored the warehouses, painted the old walls and opened galleries. Their Dream Gate and the district’s star, eye and wave motifs became emblems of a lively creative community.',
+  emblem:'Dream Gate',art:'art',palette:[0x292b49,0x66637a,0x998bae,0xff9d78,0x6ed8d0],accent:'#ffc1d7'
+ },
+ 'english-town-past': {
+  title:'ORIARIS VILLAGE',film:'THE FIRST SETTLEMENT',tagline:'Seventy Years Before English Town.',
+  before:'The First Families',foundation:'The Village Was Built',reveal:'The Oriaris Legacy',
+  narration:['Families first settled among the fields.','They built homes, a market and a great hall.','The village of Oriaris took shape.'],
+  history:'Seventy years before the present-day city, families settled beside rice fields. They built wooden homes, cultivated the land, dug a well and established a market. The Oriaris family built the Great Hall. During difficult times the villagers raised a protective stone wall, standing together to protect the place they called home.',
+  emblem:'Oriaris Great Hall',art:'village',palette:[0x42443a,0x8c9764,0xb6a574,0xe6bc78,0x8e644c],accent:'#edd1a0'
+ },
+ 'oriaris-trail-1': {
+  title:'NORTH TRAIL I',film:'THE FIRST NORTHERN PASSAGE',tagline:'The Path That Connected Two Worlds.',
+  before:'The Untouched Forest',foundation:'Building the Crossing',reveal:'The New Passage',
+  narration:['A stream divided the northern forest.','Villagers built a bridge and cleared a path.','A new northern passage was opened.'],
+  history:'The forests north of Oriaris were once crossed only by streams and wild growth. To transport food, letters and everyday supplies, villagers cleared a narrow trail. They built a timber bridge across the water, making the passage safe for messengers and travellers. This crossing became North Trail I.',
+  emblem:'Wooden Stream Crossing',art:'bridge',palette:[0x204652,0x4b9c88,0x84bd74,0xbdd8a4,0x9f704d],accent:'#c3e6ab'
+ },
+ 'oriaris-trail-2': {
+  title:'NORTH TRAIL II',film:'THE ROAD OF RENEWAL',tagline:'Where Nature Finds a Way.',
+  before:'The Old Road',foundation:'The Passage of Time',reveal:'Nature Returns',
+  narration:['The old northern road kept many memories.','Over time, new grass covered its traces.','Trees and flowers gave the land new life.'],
+  history:'This stretch of the northern route held memories of difficult years. Its old earth road and weathered marks remained even as the landscape changed. As time passed, grass, flowers and young trees returned, and travellers cared for the remaining path. Today Regrowth Grove stands for memory and renewal.',
+  emblem:'Regrowth Grove',art:'regrowth',palette:[0x333f44,0x6b7770,0x97816d,0x9aba75,0xd0ca9a],accent:'#d6e0ad'
+ },
+ 'oriaris-trail-3': {
+  title:'NORTH TRAIL III',film:'THE ANCIENT GREEN',tagline:'The Forest That Time Remembered.',
+  before:'Before the Roads',foundation:'The Forest Through Time',reveal:'The Ancient Light',
+  narration:['An ancient tree grew here before the village.','The people built their path around its roots.','The forest keeps their promise.'],
+  history:'Long before Oriaris was founded, a magnificent tree stood in this northern forest. Its roots spread wide and its canopy sheltered the woodland. When villagers came to extend the path, they protected the tree and routed the trail around it. A little mossy bridge followed; the Ancient Green remained a symbol of the forest and the passage of time.',
+  emblem:'The Ancient Green',art:'ancient',palette:[0x182f35,0x345b50,0x4f8260,0x89b17b,0xd7dc9a],accent:'#c7e5b5'
+ },
+ 'oriaris-camp': {
+  title:'THE NORTH CAMP',film:'THE CAMP OF HOPE',tagline:'Built on Courage, Kept Alive by Hope.',
+  before:'An Empty Clearing',foundation:'The First Camp',reveal:'Letters of Hope',
+  narration:['A small clearing became a resting place.','Families built shelters and a beacon.','Letters kept loved ones connected.'],
+  history:'When Oriaris needed a place to rest, resupply and communicate along the northern road, a small team established a woodland camp. They raised cloth tents, stored food and drinking water, and built a beacon that guided travellers. Messengers brought letters between the camp and families in Oriaris, making the North Camp a place of connection and hope.',
+  emblem:'North Camp Beacon',art:'camp',palette:[0x172f3a,0x3d655c,0x577868,0xe6ba76,0x9b7552],accent:'#ffe1a4'
+ }
+});
+
+// Pixel-precise illustration primitives: intentionally low resolution and deterministic.
+const ORIGIN_PIXELS = (()=>{
+ const rect=(g,c,x,y,w,h,a=1)=>{if(w<=0||h<=0)return;g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h));};
+ const tri=(g,c,ax,ay,bx,by,cx,cy,a=1)=>{g.fillStyle(c,a);g.fillTriangle(Math.round(ax),Math.round(ay),Math.round(bx),Math.round(by),Math.round(cx),Math.round(cy));};
+ const line=(g,c,x1,y1,x2,y2,w=2,a=1)=>{g.lineStyle(w,c,a).lineBetween(x1,y1,x2,y2);};
+ const rr=(g,c,x,y,w,h,a=1)=>{rect(g,0x15272b,x+3,y+5,w,h,.36*a);rect(g,c,x,y,w,h,a);};
+ const reveal=(g,v,when,fn)=>{const alpha=Math.max(0,Math.min(1,(v-when)/.20));if(alpha>0)fn(alpha);};
+ const roof=(g,x,y,w,h,c,a=1)=>{tri(g,0x2a2f35,x-3,y+4,x+w+3,y+4,x+w/2,y-h-4,a);tri(g,c,x-3,y,x+w+3,y,x+w/2,y-h,a);line(g,0xe5cba5,x-3,y,x+w+3,y,2,.5*a);};
+ const home=(g,x,y,w,h,wall,rc,a=1)=>{rr(g,wall,x,y,w,h,a);roof(g,x,y,w,19,rc,a);rect(g,0x344d50,x+w*.17,y+12,10,12,a);rect(g,0xf4c988,x+w*.17+2,y+14,6,8,.68*a);rect(g,0x493f37,x+w*.64,y+h-19,13,19,a);rect(g,0xe8d5a7,x+w*.64+10,y+h-10,2,2,a);rect(g,0x483b33,x,y+h-4,w,4,.4*a);};
+ const tree=(g,x,y,s=1,a=1,p=0)=>{rect(g,0x584536,x-4*s,y,8*s,32*s,a);for(let i=0;i<3;i++){rect(g,[0x294e45,0x3a7358,0x568568][i],x-(22-i*3)*s,y-(36-i*11)*s,(44-i*6)*s,(30-i*4)*s,a);rect(g,0xa1b983,x+(-7+i*9)*s,y-(32-i*9)*s,5*s,3*s,.34*a);}if(p)rect(g,0xc2b86d,x-2*s,y-26*s,3*s,3*s,.7*a);};
+ const rock=(g,x,y,w,h,a=1)=>{tri(g,0x3d4c57,x,y+h,x+w/2,y-5,x+w,y+h,a);tri(g,0x798e98,x+1,y+h,x+w/2,y-5,x+w/2,y+h,a);line(g,0xb3b7ad,x+w/2,y-4,x+w*.72,y+h,1,.36*a);};
+ const crystal=(g,x,y,s,a=1)=>{tri(g,0x287e93,x-s*.6,y+s*.3,x,y-s,x+s*.6,y+s*.3,a);tri(g,0x63e1d6,x-s*.25,y+s*.1,x,y-s,x,y+s*.3,.88*a);tri(g,0xb0f9df,x+s*.05,y+s*.15,x,y-s,x+s*.3,y+s*.24,.72*a);};
+ const path=(g,start=0,end=1,deep=false)=>{rect(g,deep?0x655b48:0x9e875f,270,188,76,172,.82);for(let i=0;i<13;i++)rect(g,deep?0x877960:0xc0a775,279+(i*11)%53,190+i*13,18,3,.55);};
+ const bridge=(g,v=1)=>{rect(g,0x483e32,170,226,305*v,12,.72);for(let j=0;j<11;j++){if(j/11>v)return;rect(g,j%2?0xb48b5c:0xd1a978,175+j*27,222,23,37);rect(g,0x7c6248,178+j*27,248,19,3);rect(g,0xf0d3a1,182+j*27,230,3,3,.52);}for(let i=0;i<5;i++){if(i/5>v)break;rect(g,0x866b4d,178+i*69,210,6,48);}};
+ const tent=(g,x,y,s,a=1)=>{rect(g,0x202d2b,x-7*s,y+18*s,94*s,17*s,.4*a);tri(g,0xb79f79,x,y+25*s,x+75*s,y+25*s,x+37*s,y-28*s,a);tri(g,0xe0c8a0,x,y+25*s,x+37*s,y-28*s,x+37*s,y+25*s,a);tri(g,0x7f6a54,x+37*s,y+25*s,x+75*s,y+25*s,x+37*s,y-28*s,.8*a);rect(g,0x54443a,x+29*s,y+5*s,16*s,20*s,a);line(g,0x9f8969,x+37*s,y-24*s,x+87*s,y+33*s,1,.8*a);};
+ const glyph=(g,x,y,c=0xffd9a0)=>{rect(g,c,x,y,3,3);rect(g,c,x+7,y,2,2,.9);rect(g,c,x+3,y-6,2,2,.7)};
+ function paint(g,d,t,lowMotion){
+   const a=d.art, P=d.palette;
+   const prog=Math.max(0,Math.min(1,(t-1400)/2200));
+   const sec=t/1000;
+   rect(g,P[0],0,0,640,360);rect(g,P[1],0,107,640,100);rect(g,P[2],0,174,640,186);
+   // Staggered pixel skyline, distance haze and foreground edges.
+   for(let i=0;i<14;i++){
+     const x=i*49-4,dy=(i*31)%39;
+     rect(g,P[1],x,142-dy,57,62,.94);rect(g,P[2],x-2,182-dy/4,56,15,.45);
+   }
+   for(let i=0;i<38;i++){
+     const x=(i*97)%640, y=200+(i*31)%143;
+     rect(g,i%3?0xb3bc81:0xdfc68d,x,y,6+(i%4)*3,2,i%3?.25:.33);
+   }
+   rect(g,0x121f2b,0,337,640,23,.30);
+   if(a==='city'){
+     path(g);
+     home(g,65,169,75,79,0xc7b38c,0xa86556);home(g,498,168,65,78,0xd2bca0,0x7c9a9b);
+     tree(g,48,205,1.0);tree(g,578,211,1.15);
+     reveal(g,prog,.07,al=>{rect(g,0xa1a09b,270,190,75,170,al);for(let i=0;i<16;i++)rect(g,0xd7cbb2,278+(i%3)*20,190+i*12,16,2,.7*al);});
+     reveal(g,prog,.23,al=>{home(g,170,165,95,90,0xe8d9b8,0x6c8b90,al);rect(g,0xf6dc97,186,215,64,7,al);});
+     reveal(g,prog,.43,al=>{home(g,358,155,107,102,0xe0d3a9,0xb66e5b,al);rect(g,0x5a756a,371,183,80,4,al);});
+     reveal(g,prog,.65,al=>{rect(g,0xcbb899,281,94,57,127,al);rect(g,0x8d7761,279,94,62,9,al);rect(g,0xe7d3a1,288,67,43,33,al);roof(g,282,67,55,34,0xa86c56,al);rect(g,0x384a52,299,117,21,24,al);rect(g,0xf4e2b8,301,119,17,18,al);rect(g,0x564d47,309,121,2,10,al);rect(g,0x3b4547,297,178,26,43,al);});
+   } else if(a==='mines'){
+     for(let i=0;i<10;i++)rock(g,15+i*68,160+(i%3)*17,78,88,.75);
+     crystal(g,257,189,25,.54);rock(g,355,180,119,101);
+     reveal(g,prog,.05,al=>{crystal(g,257,193,49,al);crystal(g,295,185,29,.8*al);glyph(g,275,130,0xa2f4e6);});
+     reveal(g,prog,.28,al=>{rect(g,0x554837,89,154,13,103,al);rect(g,0x554837,169,154,13,103,al);roof(g,70,156,134,39,0x9c7259,al);rect(g,0x292f34,111,177,48,75,al);line(g,0xc1b397,89,160,175,251,4,al);});
+     reveal(g,prog,.49,al=>{home(g,400,185,122,84,0x957967,0x645d59,al);for(let i=0;i<3;i++)rect(g,0xe7a366,435+i*11,215,8,9,al);});
+     reveal(g,prog,.7,al=>{for(let i=0;i<11;i++){rect(g,0x665c4c,160+i*30,294,22,8,al);}line(g,0xaab9b9,155,296,485,296,3,al);line(g,0xaab9b9,155,314,485,314,3,al);crystal(g,290,192,79,al);});
+   } else if(a==='art'){
+     rect(g,0x6c6871,0,214,640,79,.55);rect(g,0x515862,93,129,180,146);rect(g,0x72717a,360,139,172,135);rect(g,0x28343e,123,201,120,58);
+     for(let j=0;j<7;j++)rect(g,0x3c4754,378+j*20,166,12,54,.6);
+     for(let i=0;i<14;i++){rect(g,0x67727a,0,267+i*6,640,2,.3);}
+     reveal(g,prog,.08,al=>{const cols=[0xeebc7c,0xe38497,0x80cdd2,0xc7acdf];for(let i=0;i<10;i++)rect(g,cols[i%4],113+i*13,168+(i%3)*8,10,42-i%3*4,al);});
+     reveal(g,prog,.33,al=>{rect(g,0xf0cc9c,374,178,130,62,al);for(let i=0;i<6;i++)rect(g,[0x68bbbf,0xc77ca5,0xeea973][i%3],382+i*19,189+(i%2)*12,15,28,al);});
+     reveal(g,prog,.56,al=>{rect(g,0x6f5386,255,105,22,160,al);rect(g,0x6f5386,383,105,22,160,al);rect(g,0xf39b7d,254,103,151,20,al);rect(g,0xf2d8a3,279,103,101,8,al);rect(g,0x88d6d5,276,132,20,13,al);});
+     reveal(g,prog,.73,al=>{for(let i=0;i<16;i++){const xx=50+(i*37)%548;rect(g,[0xffb0af,0xf7c579,0x79d9ce][i%3],xx,108+(i*23)%148,5,5,al);}});
+   } else if(a==='village'){
+     for(let i=0;i<8;i++){rect(g,0xb39e70,6+i*80,227,64,43,.5);line(g,0xe5cc8e,6+i*80,235,66+i*80,235,2,.6);}
+     home(g,54,172,72,72,0xaa8e72,0x8b7050);home(g,478,178,70,75,0xb49a78,0x82654a);
+     rect(g,0x776447,249,210,28,8);rect(g,0xa3a291,258,190,11,25);rect(g,0x362f28,258,194,10,9);
+     reveal(g,prog,.12,al=>{for(let i=0;i<7;i++)rect(g,0xa5916a,160+i*50,235,16,37,al);});
+     reveal(g,prog,.30,al=>{home(g,340,170,86,78,0xbaa081,0xa58d65,al);rect(g,0x8f714f,150,185,63,58,al);roof(g,149,185,65,25,0xc9ac76,al);});
+     reveal(g,prog,.50,al=>{rect(g,0xc9b9a0,239,123,140,123,al);rect(g,0x836e56,235,123,147,10,al);roof(g,229,120,160,48,0x735842,al);for(let i=0;i<3;i++)rect(g,0x604b42,261+i*39,158,22,40,al);rect(g,0x604b42,299,209,28,37,al);});
+     reveal(g,prog,.75,al=>{for(let i=0;i<9;i++)rect(g,0x8f8974,18+i*68,283+(i%2)*2,57,29,al);rect(g,0x9e9180,10,281,620,7,al);rect(g,0xaa7558,315,67,4,56,al);rect(g,0xa64c46,319,72,31,21,al);});
+   } else if(a==='bridge'){
+     rect(g,0x4f9ca3,0,231,640,103,.93);rect(g,0x81c5ae,0,250,640,12,.45);rect(g,0x96c4ab,0,301,640,9,.5);
+     rect(g,0x5c9667,0,210,160,113);rect(g,0x639c6c,480,210,160,113);
+     tree(g,83,174,1.4);tree(g,563,177,1.4);
+     for(let i=0;i<7;i++){rect(g,0xd4e9d0,48+i*91,276+(i%3)*11,20,3,.38);}
+     reveal(g,prog,.15,al=>{rect(g,0x9c8b5b,0,212,210,27,al);rect(g,0x9c8b5b,441,212,198,27,al);});
+     reveal(g,prog,.34,al=>{bridge(g,Math.min(1,Math.max(0,(prog-.34)/.43)));});
+     reveal(g,prog,.72,al=>{for(let i=0;i<17;i++){rect(g,0xe9d598,(i*43)%640,219+i%5*13,5,4,.6*al);}line(g,0xe5b482,180,219,449,219,3,.7*al);});
+   } else if(a==='regrowth'){
+     path(g,0,1,true);for(let i=0;i<12;i++)rock(g,25+i*54,225+(i%3)*17,40,30,.85);
+     for(let i=0;i<8;i++)rect(g,0x554f46,55+i*74,277+(i%3)*12,33,7,.65);
+     reveal(g,prog,.13,al=>{for(let i=0;i<20;i++){const x=27+(i*31)%580,y=223+(i*19)%124;rect(g,0x719663,x,y,3,15*(.4+prog*.6),al);rect(g,0x86ae78,x+5,y+3,6,5,al);}});
+     reveal(g,prog,.46,al=>{for(let i=0;i<7;i++)tree(g,47+i*94,195+(i%2)*22,.45+(i%3)*.15,al);});
+     reveal(g,prog,.73,al=>{tree(g,409,191,1.23,al);tree(g,464,202,1.05,al);for(let i=0;i<16;i++)rect(g,0xe8d9a8,(i*43)%640,210+(i*29)%118,5,4,.68*al);});
+   } else if(a==='ancient'){
+     for(let i=0;i<8;i++)tree(g,10+i*92,182+(i%3)*17,1.1,.63);
+     rect(g,0x5d4939,300,146,42,122);rect(g,0x785c42,307,151,12,114,.85);tree(g,320,147,2.1);
+     reveal(g,prog,.11,al=>{line(g,0x513e34,305,258,218,292,10,al);line(g,0x513e34,339,258,422,290,10,al);for(let i=0;i<8;i++)rect(g,0x8eaa7b,174+i*40,295,7,9,al);});
+     reveal(g,prog,.35,al=>{rect(g,0x816f53,0,285,257,31,al);rect(g,0x816f53,385,285,255,31,al);for(let i=0;i<8;i++)rect(g,0x9e946b,30+i*78,289,33,8,al);});
+     reveal(g,prog,.6,al=>{rect(g,0x827963,370,270,140,31,al);for(let i=0;i<9;i++)rect(g,0x4c8f68,375+i*15,265,12,6,al);});
+     reveal(g,prog,.76,al=>{for(let i=0;i<18;i++)glyph(g,235+(i*37)%190,87+(i*11)%170,0xe5e6a8);});
+   } else if(a==='camp'){
+     for(let i=0;i<8;i++)tree(g,20+i*88,179+(i%2)*23,1.1,.81);
+     rect(g,0x907750,163,208,325,115,.55);rect(g,0x9b8b62,251,219,147,66,.42);
+     reveal(g,prog,.10,al=>{tent(g,162,208,1,al);});
+     reveal(g,prog,.33,al=>{tent(g,393,217,.85,al);rect(g,0x796048,280,250,45,28,al);rect(g,0xc9ad77,284,251,37,4,al);});
+     reveal(g,prog,.55,al=>{rect(g,0x80644d,339,135,12,137,al);rect(g,0xc9ac7e,314,111,65,30,al);roof(g,304,113,85,25,0x9e744f,al);rect(g,0xf9df98,331,145,30,22,al);rect(g,0xe9b86f,336,151,20,9,al);});
+     reveal(g,prog,.75,al=>{rect(g,0xefdbab,273,177,40,27,al);rect(g,0x917558,273,177,40,4,al);tri(g,0xab916d,273,177,293,194,313,177,al);rect(g,0xf6ce8a,299,267,15,13,.7*al);});
+   }
+   if(!lowMotion){
+     for(let i=0;i<6;i++){
+       const x=(89+i*93+sec*(i%2?3:-3))%640;
+       const y=39+(i*31)%83+Math.sin(sec*1.4+i)*2;
+       rect(g,i%2?0xebd8aa:0xe4f4e2,x,y,4,2,.2);
+     }
+   }
+   rect(g,0xe9e6cb,10,10,620,2,.16);rect(g,0xe9e6cb,10,348,620,2,.16);
+ }
+ return {paint};
+})();
+
+let __originUi=null, __originActive=null;
+function getOriginUi(){
+ if(__originUi)return __originUi;
+ const style=document.createElement('style');style.id='lq-origin-v16-css';
+ style.textContent=`
+ #lq-origin-v16{position:fixed;inset:0;z-index:10060;display:none;pointer-events:none;color:#f9f3de;font:500 14px system-ui, sans-serif;--oc:#f8d388}
+ #lq-origin-v16.play{display:block;pointer-events:auto}
+ #lq-origin-v16 .origin-bg{position:absolute;inset:0;background:linear-gradient(180deg,#0a182ecc 0%,transparent 21%,transparent 73%,#081422dd 100%);pointer-events:none}
+ #lq-origin-v16 .origin-header{position:absolute;top:clamp(14px,3vh,40px);left:4%;right:4%;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+ #lq-origin-v16 .origin-kicker{letter-spacing:.23em;font:800 10px system-ui;color:var(--oc);margin-bottom:7px}
+ #lq-origin-v16 .origin-film{font:800 clamp(18px,2.7vw,29px) Georgia,serif;line-height:1.13;max-width:75vw;text-shadow:0 3px 10px #0009}
+ #lq-origin-v16 .origin-skip{cursor:pointer;background:#102438e8;border:1px solid var(--oc);color:#fff;padding:9px 15px;border-radius:8px;font:800 12px system-ui;min-width:76px}
+ #lq-origin-v16 .origin-subtitle{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);text-align:center;background:#071625d9;border:1px solid #ffffff35;box-shadow:0 7px 25px #0007;padding:12px 20px;width:min(610px,82vw);border-radius:9px;box-sizing:border-box}
+ #lq-origin-v16 .origin-beat{font:800 11px system-ui;letter-spacing:.15em;color:var(--oc);margin-bottom:6px}
+ #lq-origin-v16 .origin-line{font:500 clamp(13px,1.6vw,17px)/1.4 system-ui;color:#f7f1e0}
+ #lq-origin-v16 .origin-bar{margin-top:9px;height:3px;background:#ffffff31;overflow:hidden;border-radius:8px}
+ #lq-origin-v16 .origin-fill{height:100%;background:var(--oc);width:0}
+ #lq-origin-v16 .origin-map{font:800 18px Georgia,serif;color:#fff3d4;letter-spacing:.07em;margin-bottom:4px}
+ #lq-origin-v16 .origin-tag{color:#e2e5d8;font:500 12px/1.3 system-ui}
+ #journal .lq-origin-journal{border-top:1px solid #8a9da750;margin:14px 0 10px;padding-top:10px}
+ #journal .lq-origin-journal h4{margin:5px 0 10px;color:#f5dda9;font-size:16px}
+ #journal .lq-origin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px}
+ #journal .lq-origin-card{padding:11px;border:1px solid #7b8c877d;background:#0b2537dd;border-radius:9px;min-height:91px}
+ #journal .lq-origin-card.locked{opacity:.65}
+ #journal .lq-origin-card .emblem{font-size:11px;color:#b2d8cb;margin:4px 0 7px}
+ #journal .lq-origin-card p{font-size:12px;line-height:1.5;margin:6px 0;color:#e5ecdf}
+ #journal .lq-origin-card button{border:1px solid #a8c7b4;background:#213e4b;color:#fff;margin:5px 6px 0 0;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px}
+ @media(max-width:600px){#lq-origin-v16 .origin-header{left:4%;right:4%}#lq-origin-v16 .origin-film{font-size:17px}#lq-origin-v16 .origin-subtitle{bottom:7%;width:92vw;padding:10px}#lq-origin-v16 .origin-line{font-size:13px}}
+ @media(prefers-reduced-motion:reduce){#lq-origin-v16 *{transition:none!important}}
+ `;
+ document.head.appendChild(style);
+ const ui=document.createElement('div');ui.id='lq-origin-v16';ui.setAttribute('aria-label','Origin cinematic');
+ ui.innerHTML='<div class="origin-bg"></div><div class="origin-header"><div><div class="origin-kicker">WORLD ORIGINS · DISCOVERY</div><div class="origin-film"></div></div><button class="origin-skip" type="button">Skip »</button></div><div class="origin-subtitle" aria-live="off"><div class="origin-map" hidden></div><div class="origin-beat"></div><div class="origin-line"></div><div class="origin-tag" hidden></div><div class="origin-bar"><div class="origin-fill"></div></div></div>';
+ document.body.appendChild(ui);__originUi=ui;return ui;
+}
+function originSeen(scene,id){return scene?.store?.game?.originStoriesSeen?.[id]===true;}
+function commitOrigin(scene,id){if(!scene?.store?.game)return;const g=scene.store.game;if(!g.originStoriesSeen||typeof g.originStoriesSeen!=='object'||Array.isArray(g.originStoriesSeen))g.originStoriesSeen={};g.originStoriesSeen[id]=true;scene.store.save();}
+function originRestore(scene,active,mark){
+ if(!active||active.closed)return;
+ active.closed=true;
+ clearTimeout(active.wake);clearTimeout(active.deadline);
+ try{scene.events.off('update',active.onFrame);}catch(e){}
+ try{active.art?.destroy();}catch(e){}
+ // Camera return started at 6700ms. Snap on completion/Skip; never add a timer past 7500ms.
+ try{scene.cameras.main.setZoom(active.zoom0);scene.cameras.main.centerOn(scene.player.x,scene.player.y);}catch(e){}
+ try{scene.cameras.main.startFollow(scene.player,true,.12,.12);}catch(e){}
+ if(active.keyboard)active.keyboard.enabled=active.keyboardWasOn;
+ if(scene.__lqAreaCine===active)scene.__lqAreaCine=null;
+ if(__originActive===active)__originActive=null;
+ if(__originUi)__originUi.classList.remove('play');
+ if(active.keyHandler)window.removeEventListener('keydown',active.keyHandler,true);
+ if(active.skipBtn)active.skipBtn.removeEventListener('click',active.finish);
+ if(mark && !active.replay && scene.area?.id===active.id)commitOrigin(scene,active.id);
+}
+function drawOriginFrame(scene,active,elapsed){
+ if(active.closed||!scene.sys?.isActive?.())return;
+ const t=Math.min(7500,elapsed),d=ORIGIN_STORIES[active.id],ui=__originUi;
+ let beat=t<1400?0:t<3600?1:2;
+ if(active.beat!==beat){active.beat=beat;ui.querySelector('.origin-beat').textContent=[d.before,d.foundation,d.reveal][beat].toUpperCase();ui.querySelector('.origin-line').textContent=d.narration[beat];}
+ if(t>=5600){ui.querySelector('.origin-map').hidden=false;ui.querySelector('.origin-map').textContent=d.title;ui.querySelector('.origin-tag').hidden=false;ui.querySelector('.origin-tag').textContent=d.tagline;ui.querySelector('.origin-beat').textContent='ORIGIN REVEALED';}
+ ui.querySelector('.origin-fill').style.width=(t/75).toFixed(1)+'%';
+ if(t>=3600&&!active.panned&&scene.area?.id===active.id){
+   active.panned=true;
+   const spot=PLAN[active.id]?.marks?.[0],cam=scene.cameras.main;
+   if(spot){const x=Math.max(0,Math.min(scene.area.w*32,(spot[1]+.5)*32));const y=Math.max(0,Math.min(scene.area.h*32,(spot[2]+.5)*32));try{cam.pan(x,y,1050,'Sine.easeInOut',true);cam.zoomTo(active.zoom0*1.06,1050,'Sine.easeInOut',true);}catch(e){}}
+ }
+ if(t>=6700&&!active.returning){
+   active.returning=true;
+   try{scene.cameras.main.pan(scene.player.x,scene.player.y,760,'Sine.easeInOut',true);scene.cameras.main.zoomTo(active.zoom0,760,'Sine.easeInOut',true);}catch(e){}
+ }
+ const art=active.art;
+ if(!art)return;
+ const reduced=active.reduced;
+ // The illustrated before/foundation layers fade away to reveal the ACTUAL landmark on the current map.
+ const archiveReplay=active.replay&&scene.area?.id!==active.id;
+ const opacity=archiveReplay?(t<6700?1:Math.max(0,1-(t-6700)/800)):(t<=3600?1:Math.max(0,1-(t-3600)/1750));
+ art.setAlpha(opacity);
+ if(!opacity)return;
+ if(t-active.frameAt< (reduced?160:64))return;
+ active.frameAt=t;
+ art.clear();
+ ORIGIN_PIXELS.paint(art,d,t,reduced);
+}
+function startOrigin(scene,id,replay=false){
+ // Never play or replay an origin intro outside English Town.
+ if(!INTRO_ENABLED_MAPS.has(id))return false;
+ const d=ORIGIN_STORIES[id];if(!scene||!d||__originActive||!scene.player?.active)return false;
+ if(!replay && scene.area?.id!==id)return false;
+ const cam=scene.cameras.main,keyboard=scene.input?.keyboard;
+ const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ if(scene.__lqAreaCine)stopAreaCinematic(scene);
+ const ui=getOriginUi();ui.style.setProperty('--oc',d.accent);
+ ui.querySelector('.origin-film').textContent=d.film;
+ ui.querySelector('.origin-map').hidden=true;ui.querySelector('.origin-tag').hidden=true;
+ ui.classList.add('play');
+ const g=scene.add.graphics().setDepth(9000).setScrollFactor(0);
+ const w=scene.scale?.width||window.innerWidth||900,h=scene.scale?.height||window.innerHeight||580;
+ const scale=Math.max(w/640,h/360);
+ g.setPosition((w-640*scale)/2,(h-360*scale)/2).setScale(scale);
+ const active={id,replay,art:g,closed:false,zoom0:cam.zoom||1,keyboard,keyboardWasOn:keyboard?.enabled??true,
+   start:performance.now(),frameAt:-1000,beat:-1,reduced,panned:false,returning:false,onFrame:null,finish:null,wake:0,deadline:0};
+ __originActive=active;scene.__lqAreaCine=active;
+ if(keyboard){keyboard.enabled=false;try{keyboard.resetKeys();}catch(e){}}
+ try{cam.stopFollow();}catch(e){}
+ active.finish=()=>originRestore(scene,active,true);
+ active.keyHandler=e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.key==='Tab')return; e.preventDefault();e.stopImmediatePropagation();if(['Escape','Enter',' '].includes(e.key))active.finish();};
+ window.addEventListener('keydown',active.keyHandler,true);
+ const btn=ui.querySelector('.origin-skip');btn.addEventListener('click',active.finish);active.skipBtn=btn;
+ ui.querySelector('.origin-kicker').textContent=replay?'WORLD ORIGINS · ARCHIVE REPLAY':'WORLD ORIGINS · FIRST DISCOVERY';
+ // For cross-map Journal replays, camera remains on the actual current area; the illustration is still replayable.
+ if(replay&&scene.area?.id!==id)active.panned=true;
+ active.onFrame=()=>{
+   if(active.closed)return;
+   if(!scene.sys?.isActive?.()||scene.switching||scene.inside){originRestore(scene,active,false);return;}
+   if(!active.replay && (window.LQArtDistrict?.isFilming?.() || window.LQPast?.isFilming?.() || window.LQIntro?.isPlaying?.())){
+     originRestore(scene,active,false);queueAreaCinematic(scene,PLAN[active.id]);return;
+   }
+   const elapsed=performance.now()-active.start;
+   drawOriginFrame(scene,active,elapsed);
+   if(elapsed>=7500)active.finish();
+ };
+ scene.events.on('update',active.onFrame);
+ drawOriginFrame(scene,active,0);
+ active.deadline=setTimeout(()=>{if(!active.closed){drawOriginFrame(scene,active,7500);active.finish();}},7500);
+ return true;
+}
+function renderOriginJournal(root,store){
+ if(!root||!store)return;
+ const wrapper=document.createElement('section');wrapper.className='lq-origin-journal';
+ const head=document.createElement('h4');head.textContent='🌍 World Origins · English Town';wrapper.appendChild(head);
+ const sub=document.createElement('p');sub.textContent='Discover English Town to unlock its origin story and replay its intro.';wrapper.appendChild(sub);
+ const grid=document.createElement('div');grid.className='lq-origin-grid';
+ for(const [id,d] of Object.entries(ORIGIN_STORIES).filter(([id])=>INTRO_ENABLED_MAPS.has(id))){
+  const opened=store.game?.originStoriesSeen?.[id]===true;
+  const card=document.createElement('div');card.className='lq-origin-card'+(opened?'':' locked');
+  const name=document.createElement('b');name.textContent=opened?'✦ '+d.title:'🔒 Undiscovered Origin';card.appendChild(name);
+  if(opened){
+   const emblem=document.createElement('div');emblem.className='emblem';emblem.textContent='LANDMARK · '+d.emblem;card.appendChild(emblem);
+   const teaser=document.createElement('p');teaser.textContent=d.tagline;card.appendChild(teaser);
+   const read=document.createElement('button');read.type='button';read.textContent='Read Story';
+   read.addEventListener('click',()=>{const prev=card.querySelector('.lq-origin-history');if(prev){prev.remove();read.textContent='Read Story';return;}const p=document.createElement('p');p.className='lq-origin-history';p.textContent=d.history;card.appendChild(p);read.textContent='Close Story';});
+   const replay=document.createElement('button');replay.type='button';replay.textContent='Replay Cinematic';
+   replay.addEventListener('click',()=>{
+     const sc=window.LQOrigins?.currentScene?.();
+     if(!sc)return;
+     if(sc.journal?.root)sc.journal.root.style.display='none';
+     if(!canPlayCinematic(sc,sc.area?.id))return;
+     startOrigin(sc,id,true);
+   });
+   card.append(read,replay);
+  }else{
+   const info=document.createElement('p');info.textContent='ORIGIN STORY — UNDISCOVERED';card.appendChild(info);
+  }
+  grid.appendChild(card);
+ }
+ wrapper.appendChild(grid);root.appendChild(wrapper);
+}
+window.LQOrigins=Object.freeze({
+ version:'16.0-et-only-intro',catalog:()=>Array.from(INTRO_ENABLED_MAPS),stories:Object.freeze({'english-town':ORIGIN_STORIES['english-town']}),
+ isPlaying:scene=>!!(__originActive&&!__originActive.closed&&(!scene||scene.__lqAreaCine===__originActive)),
+ seen:(scene,id)=>originSeen(scene,id),renderJournal:renderOriginJournal,
+ currentScene:()=>{
+  const active=window.__lifequestGetScene?.();
+  if(active?.area&&active?.store&&active?.player)return active;
+  const scenes=window.game?.scene?.getScenes?.(true)||window.__lqTownGame?.scene?.getScenes?.(true)||[];
+  return scenes.find(s=>s?.area&&s?.store&&s?.player)||null;
+ },
+ replay:(scene,id)=>{if(!INTRO_ENABLED_MAPS.has(id)||!originSeen(scene,id)||!canPlayCinematic(scene,scene?.area?.id))return false;return startOrigin(scene,id,true);},
+ status:()=>({playing:!!(__originActive&&!__originActive.closed),id:__originActive?.id||null})
+});
+
+    let introRoot = null, introHideTimer = 0, introLast = { id: '', at: 0 };
+  function ensureIntroUi() {
+    if (introRoot) return introRoot;
+    const st = document.createElement('style');
+    st.id = 'lq-area-intro-css';
+    st.textContent = `#lq-area-intro{position:fixed;inset:0;pointer-events:none;z-index:10020;opacity:0;transition:opacity .45s ease;font-family:system-ui,'Segoe UI',sans-serif}#lq-area-intro.show{opacity:1}#lq-area-intro .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,8,14,.84),rgba(5,8,14,.22) 34%,rgba(5,8,14,0) 55%,rgba(5,8,14,.48));}#lq-area-intro .topline,#lq-area-intro .botline{position:absolute;left:50%;transform:translateX(-50%);height:2px;width:min(680px,76vw);background:linear-gradient(90deg,transparent,rgba(255,230,173,.88),transparent);box-shadow:0 0 12px rgba(255,230,173,.5)}#lq-area-intro .topline{top:16%}#lq-area-intro .botline{bottom:18%}#lq-area-intro .card{position:absolute;left:50%;top:19%;transform:translateX(-50%);width:min(720px,84vw);padding:20px 26px 24px;border:1px solid rgba(255,237,181,.42);border-radius:24px;background:linear-gradient(180deg,rgba(17,24,37,.86),rgba(17,24,37,.38));box-shadow:0 24px 70px rgba(0,0,0,.42);backdrop-filter:blur(3px);text-align:center;color:#fff}#lq-area-intro .eyebrow{font:800 12px/1.1 system-ui,sans-serif;letter-spacing:.38em;text-transform:uppercase;color:#ffe6ab;margin-bottom:10px}#lq-area-intro .title{font:800 clamp(28px,5vw,54px)/1.05 Georgia,'Times New Roman',serif;letter-spacing:.02em;text-shadow:0 8px 18px rgba(0,0,0,.4)}#lq-area-intro .subtitle{margin-top:10px;font:500 clamp(13px,2vw,16px)/1.6 system-ui,sans-serif;color:#dce7f6}#lq-area-intro .icon{display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;border-radius:18px;background:rgba(255,227,164,.12);border:1px solid rgba(255,227,164,.38);font-size:31px;margin-bottom:14px;box-shadow:0 0 22px rgba(255,206,108,.14)}#lq-area-intro .hint{margin-top:14px;font:600 12px/1.3 system-ui,sans-serif;color:#b8cde8}`;
+    st.textContent += `
+#lq-area-intro{--v15-accent:#f6cd86;transition:opacity .33s ease}
+#lq-area-intro .veil{background:linear-gradient(180deg,rgba(8,14,21,.30) 0%,transparent 27%,transparent 54%,rgba(8,14,21,.68) 100%)}
+#lq-area-intro .topline{top:5%;width:min(900px,88vw);opacity:.55}
+#lq-area-intro .botline{bottom:5%;width:min(900px,88vw);opacity:.55}
+#lq-area-intro .card{top:auto;bottom:11%;left:clamp(20px,5vw,70px);transform:none;width:min(470px,85vw);padding:19px 22px;border:1px solid color-mix(in srgb,var(--v15-accent),transparent 56%);background:linear-gradient(105deg,rgba(9,18,29,.93),rgba(11,20,31,.70));box-shadow:0 12px 45px #0008;border-radius:13px;text-align:left;backdrop-filter:blur(5px)}
+#lq-area-intro .icon{float:right;width:40px;height:40px;margin:0 0 4px 8px;border-radius:11px;font-size:22px}
+#lq-area-intro .eyebrow{font-size:10px;letter-spacing:.23em;margin-bottom:7px;color:var(--v15-accent)}
+#lq-area-intro .title{font:800 clamp(26px,4vw,40px)/1.04 Georgia,serif;letter-spacing:.01em}
+#lq-area-intro .subtitle{font:500 clamp(12px,1.4vw,14px)/1.5 system-ui,sans-serif;margin-top:7px;color:#eef1ef}
+#lq-area-intro .chapter{font:800 10px/1.45 system-ui,sans-serif;letter-spacing:.23em;color:var(--v15-accent);margin:12px 0 5px}
+#lq-area-intro .shot{font:600 12px/1.5 system-ui,sans-serif;color:#f2e6d1;min-height:18px}
+#lq-area-intro .progress{width:100%;height:2px;background:#ffffff33;margin-top:12px;overflow:hidden}
+#lq-area-intro .progress span{display:block;height:100%;width:0;background:var(--v15-accent);transition:width .4s ease}
+#lq-area-intro .hint{font:500 10px/1.3 system-ui,sans-serif;color:#cfdbdf;margin-top:10px}
+#lq-area-intro.revisit .chapter,#lq-area-intro.revisit .shot,#lq-area-intro.revisit .progress{display:none}
+@media(max-width:650px){#lq-area-intro .card{bottom:12%;left:5%;width:90%;box-sizing:border-box;padding:13px 15px}#lq-area-intro .subtitle{max-width:100%}#lq-area-intro .hint{display:none}#lq-area-intro .title{font-size:27px}#lq-area-intro .topline{top:3%}#lq-area-intro .botline{bottom:4%}}
+@media(prefers-reduced-motion:reduce){#lq-area-intro *{transition:none!important}}
+`;
+    document.head.appendChild(st);
+    introRoot = document.createElement('div');
+    introRoot.id = 'lq-area-intro';
+    introRoot.innerHTML = '<div class="veil"></div><div class="topline"></div><div class="card"><div class="icon">🗺️</div><div class="eyebrow"></div><div class="title"></div><div class="subtitle"></div><div class="chapter"></div><div class="shot"></div><div class="progress"><span></span></div><div class="hint">Press ESC / ENTER to skip · Control returns automatically</div></div><div class="botline"></div>';
+    document.body.appendChild(introRoot);
+    return introRoot;
+  }
+  function showIntro(areaId, meta, holdMs = 2850) {
+    if (!INTRO_ENABLED_MAPS.has(areaId) || !meta) return;
+    const now = Date.now();
+    if (introLast.id === areaId && now - introLast.at < 1200) return;
+    introLast = { id: areaId, at: now };
+    const root = ensureIntroUi();
+    root.querySelector('.icon').textContent = meta.icon || '🗺️';
+    root.querySelector('.eyebrow').textContent = meta.eyebrow || 'WORLD';
+    root.querySelector('.title').textContent = meta.title || areaId;
+    root.querySelector('.subtitle').textContent = (CINEMA_V15[areaId]?.text || meta.subtitle || '');
+    root.querySelector('.chapter').textContent = CINEMA_V15[areaId]?.name || '';
+    root.querySelector('.shot').textContent = CINEMA_V15[areaId]?.shots?.[0] || '';
+    root.querySelector('.progress span').style.width = '0%';
+    root.style.setProperty('--v15-accent', CINEMA_V15[areaId]?.accent || '#f6cd86');
+    root.classList.add('show');
+    clearTimeout(introHideTimer);
+    introHideTimer = setTimeout(() => root.classList.remove('show'), holdMs);
+  }
+
+  const cinematicSeen = new Map();
+  function canPlayCinematic(scene, areaId) {
+    if (!scene || scene.area?.id !== areaId || scene.switching || scene.inside || scene.sleeping) return false;
+    if (!scene.player?.active || !scene.cameras?.main || !scene.sys?.isActive?.()) return false;
+    if (scene.chat?.isOpen || scene.briefing?.isOpen || scene.settings?.isOpen || scene.quests?.isOpen) return false;
+    // Story films, boot tutorial and the title screen own the camera whenever present.
+    for(const id of ['lq-art','lq-past','lq-intro','lq-shrine']){const el=document.getElementById(id);if(el&&!el.hidden&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).opacity!=='0')return false;}
+    if(window.LQArtDistrict?.isFilming?.() || window.LQPast?.isFilming?.() || window.LQIntro?.isPlaying?.()) return false;
+    const lobby=document.getElementById('lq-title');
+    if(lobby && !lobby.hidden && getComputedStyle(lobby).display!=='none' && getComputedStyle(lobby).visibility!=='hidden') return false;
+    return true;
+  }
+  function stopAreaCinematic(scene) {
+    if(!scene)return;
+    const active=scene.__lqAreaCine;
+    if(!active)return;
+    if(active===__originActive){originRestore(scene,active,false);return;}
+    active.closed=true;
+    clearTimeout(active.timer);
+    if(active.keyHandler)window.removeEventListener('keydown',active.keyHandler,true);
+    if(active.skipBtn)active.skipBtn.remove();
+    scene.__lqAreaCine=null;
+    try{scene.cameras.main.pan(scene.player.x,scene.player.y,150,'Sine.easeOut',true);
+      scene.cameras.main.zoomTo(active.zoom0,150,'Sine.easeOut',true);
+      scene.cameras.main.startFollow(scene.player,true,.12,.12);}catch(e){}
+    if(active.keyboard)active.keyboard.enabled=active.keyboardWasOn;
+    if(introRoot)introRoot.classList.remove('show');
+  }
+  function queueAreaCinematic(scene,p){
+    if(!scene||!p)return;
+    clearTimeout(scene.__lqAreaCinePending);
+    // Seven non-ET maps enter gameplay immediately; no origin film and no V15 intro card.
+    if(!INTRO_ENABLED_MAPS.has(scene.area?.id))return;
+    const id=scene.area.id;
+    let checked=false;
+    const attempt=()=>{
+      if(scene.area?.id!==id || scene.__lqWorldFx?.id!==id || !scene.sys?.isActive?.())return;
+      if(scene.__lqAreaCine || !canPlayCinematic(scene,id)){
+        // Don't consume first-discovery state during a story film, title screen, or modal.
+        scene.__lqAreaCinePending=setTimeout(attempt,650);
+        return;
+      }
+      if(originSeen(scene,id)){
+        // Revisit: a short non-blocking location card; no long camera tour.
+        showIntro(id,p.intro,900);
+        ensureIntroUi().classList.add('revisit');
+        return;
+      }
+      startOrigin(scene,id,false);
+    };
+    scene.__lqAreaCinePending=setTimeout(attempt,600);
+  }
+  function attach(scene) {
+    const p = PLAN[scene.area?.id]; if (!p) return;
+    const cache = scene.__lqWorldFx;
+    if (cache) detach(scene);
+    const layer = scene.add.graphics().setDepth(7);
+    const nodes = [layer];
+    const labels = [];
+    p.marks.forEach(([kind, x, y, r, name, description], i) => {
+      // Labels are intentionally small and below NPC/player depth; click for a short world-building fact.
+      if (i > 5 || !name) return;
+      const discoveryId = scene.area.id + ':' + i;
+      const discovered = (scene.store?.game?.worldDiscoveries || []).includes(discoveryId);
+      const label = scene.add.text((x + .5) * T, (y - .8) * T, (discovered ? '✦ ' : '◇ ') + name, {
+        fontFamily: 'monospace', fontSize: '10px', color: discovered ? '#ffda81' : (p.tone === 'creative' ? '#ffe3a1' : '#fff0cf'),
+        backgroundColor: '#13212ad9', padding: { x: 5, y: 3 },
+      }).setOrigin(.5, .5).setDepth(8).setInteractive({ useHandCursor: true });
+      label.on('pointerdown', () => {
+        if (scene.inside || scene.switching) return;
+        const save = scene.store?.game;
+        let found = false;
+        if (save) {
+          if (!Array.isArray(save.worldDiscoveries)) save.worldDiscoveries = [];
+          if (!save.worldDiscoveries.includes(discoveryId)) {
+            save.worldDiscoveries.push(discoveryId); found = true;
+            scene.store.save();
+            label.setText('✦ ' + name).setColor('#ffda81');
+          }
+        }
+        scene.quests?.toast?.([`${found ? '✦ Location discovered' : '🧭 Landmark'} · ${name}`, description]);
+      });
+      labels.push(label); nodes.push(label);
+    });
+    const seed = seedFor(scene.area.id);
+    const motes = [];
+    const lowMotion = (window.innerWidth || 1280) <= 600 || !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const count = lowMotion ? (scene.area.theme === 'past' ? 9 : 7) : (scene.area.theme === 'past' ? 18 : 14);
+    for (let i = 0; i < count; i++) {
+      const x = 20 + hash(i * 9, 31, seed) * (scene.area.w * T - 40);
+      const y = 20 + hash(i * 7, 47, seed) * (scene.area.h * T - 40);
+      if (!walkable(scene.area, x / T, y / T)) continue;
+      motes.push({ x, y, p: hash(i, 23, seed) * TAU, vx: .3 + hash(i, 48, seed), type: p.particle });
+    }
+    scene.__lqWorldFx = { id: scene.area.id, layer, nodes, labels, motes, time: 0, frame: 0, effects: p.effects, lowMotion, reducedMotion: !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches };
+    queueAreaCinematic(scene, p);
+    // Since these items are in areaObjs they are destroyed by the existing area cleanup.
+    scene.areaObjs?.push(...nodes);
+  }
+  function detach(scene) {
+    if(!scene)return;
+    clearTimeout(scene.__lqAreaCinePending);
+    stopAreaCinematic(scene);
+    if(scene.__lqWorldFx) scene.__lqWorldFx=null;
+  }
+  function update(scene, ms) {
+    const fx = scene?.__lqWorldFx;
+    if (!fx || fx.id !== scene.area.id) return;
+    if (scene.inside || scene.switching) { fx.layer.setVisible(false); fx.labels.forEach(n => n.setVisible(false)); return; }
+    fx.layer.setVisible(true);
+    fx.labels.forEach(n => n.setVisible(true));
+    const dt = Math.min(100, ms || 16);
+    fx.time += dt / 1000; fx.frame += dt;
+    if (fx.frame < (fx.lowMotion ? 110 : 55)) return;
+    fx.frame = 0;
+    const g = fx.layer; g.clear();
+    if (fx.reducedMotion) return;
+    const left = scene.cameras.main.scrollX - 100, top = scene.cameras.main.scrollY - 100;
+    const right = left + scene.cameras.main.width + 200, bottom = top + scene.cameras.main.height + 200;
+    const visible = (x,y) => x > left && x < right && y > top && y < bottom;
+    const t = fx.time;
+    function animate(type, x, y, phase, amp = 1) {
+      if (!visible(x,y)) return;
+      const bob = Math.sin(t * 2.3 + phase);
+      if (type === 'clockhands') {
+        // The civic clock hand advances gently; a restrained warm light marks its face.
+        const cy=y-48, ang=t*.07+phase;
+        oval(g,0xffecb7,x,cy,24,24,.055);
+        stroke(g,0xfff1cf,x,cy,x+Math.sin(ang)*9,cy-Math.cos(ang)*9,1.8,.73);
+        stroke(g,0xfff1cf,x,cy,x+Math.sin(ang*.25)*6,cy-Math.cos(ang*.25)*6,1.6,.62);
+      } else if(type === 'crystalpulse') {
+        const beat=.35+.28*(1+Math.sin(t*1.7+phase))*.5;
+        fo

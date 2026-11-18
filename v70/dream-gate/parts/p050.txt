@@ -1,0 +1,1065 @@
+witching) return;
+            if (sc.area?.id === id) return;
+            close();
+            sc.switchArea(destination.id, destination.spawn, '🧭 Travelled using the Map Menu');
+            return;
+          }
+          if (a === 'map') {
+            close();
+            const x = el('v8-map-hide'); // do not mutate prefs without using the original shortcut handler
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
+            return;
+          }
+          if (a === 'ai' || a === 'ai:quiz') {
+            close();
+            el('ai-open')?.click();
+            if (a === 'ai:quiz') {
+              const inp = el('ai-input');
+              if (inp) {
+                inp.value = 'quiz';
+                inp.focus();
+              }
+            }
+            return;
+          }
+          if (a === 'helper') {
+            close();
+            el('group-menu')?.querySelector('[data-act="helper"]')?.click();
+            return;
+          }
+          if (a === 'settings') {
+            close();
+            el('group-menu')?.querySelector('[data-act="settings"]')?.click();
+            return;
+          }
+          if (a === 'guide') {
+            close();
+            el('guide-open')?.click();
+            return;
+          }
+          if (a === 'device') {
+            close();
+            window.LQDevice?.change();
+            return;
+          }
+          if (a === 'tutorial') {
+            close();
+            window.LQIntro?.replay();
+            return;
+          }
+          if (a === 'voice') {
+            close();
+            el('voice-open')?.click();
+            return;
+          }
+          if (a === 'levels') {
+            close();
+            el('level-open')?.click();
+            return;
+          }
+          if (a.startsWith('v10:')) return adapt('v10', a.slice(4));
+          if (a.startsWith('rpg:')) return adapt('rpg', a.slice(4));
+          if (a.startsWith('v8:')) return adapt('v8', a.slice(3));
+        }
+        function updateHUD() {
+          const sc = window.__lifequestGetScene?.(),
+            g = sc?.store?.game;
+          if (!sc || !g) return;
+          const inside = sc.inside;
+          const q = V8?.currentQuest?.();
+          const step = V8?.nextStep?.();
+          const place = sc.area?.name || 'English Town';
+          const loc = inside?.b?.name
+            ? ` · ${inside.b.name}${inside.floor ? ' · floor ' + inside.floor : ''}`
+            : '';
+          const l = `${place}${loc} · ${window.LQPast?.dayLabel ? window.LQPast.dayLabel(g.day) : `Day ${g.day || 1}`} ·${String(Math.floor((g.minutes || 0) / 60)).padStart(2, '0')}:${String(Math.floor((g.minutes || 0) % 60)).padStart(2, '0')}`;
+          if (el('l11-place')?.textContent !== l) el('l11-place').textContent = l;
+          const chatNode = el('chat');
+          const talking = !!chatNode && getComputedStyle(chatNode).display !== 'none';
+          el('l11-current').hidden = talking;
+          el('ai-open').hidden = talking;
+          const a = adventure?.state?.() || {};
+          const r = a.level || 1,
+            xp = a.xp || 0;
+          const hud = `Lv. ${r} · $${g.money || 0}`;
+          if (hud !== lastHud) {
+            lastHud = hud;
+            el('l11-stats').textContent = hud;
+            el('l11-xp').textContent = `${xp} XP`;
+          }
+          // V8 objective is authoritative; fallback to original quest log when unavailable.
+          let title = q?.title || 'Explore & learn English',
+            detail = step?.text || 'Press G to see your quests';
+          if (!q?.title) {
+            const goal = sc.quests?.hudLine?.();
+            if (goal) detail = String(goal).slice(0, 95);
+          }
+          if (el('l11-objective').textContent !== title) el('l11-objective').textContent = title;
+          if (el('l11-objdetail').textContent !== detail) el('l11-objdetail').textContent = detail;
+        }
+        function init() {
+          const menu = el('l11-menu-btn');
+          if (!menu) return;
+          menu.addEventListener('click', toggle);
+          el('l11-close')?.addEventListener('click', close);
+          shell()?.addEventListener('click', (e) => {
+            if (e.target === shell()) close();
+          });
+          el('l11-nav')?.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-l11-page]');
+            if (b) page(b.dataset.l11Page);
+          });
+          el('l11-page')?.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-l11-action]');
+            if (b) action(b.dataset.l11Action);
+          });
+          document.addEventListener(
+            'keydown',
+            (e) => {
+              if (
+                e.isComposing ||
+                ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName) ||
+                e.target?.isContentEditable
+              )
+                return;
+              if (e.altKey || e.ctrlKey || e.metaKey) return;
+              if (!shell().hidden) {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  e.stopImmediatePropagation();
+                  close();
+                  return;
+                }
+                if (e.key === 'Tab') {
+                  const focus = [...shell().querySelectorAll('button:not([disabled])')].filter(
+                    (b) => b.offsetParent !== null,
+                  );
+                  if (focus.length) {
+                    const start = focus[0],
+                      end = focus.at(-1);
+                    if (e.shiftKey && document.activeElement === start) {
+                      e.preventDefault();
+                      end.focus();
+                    } else if (!e.shiftKey && document.activeElement === end) {
+                      e.preventDefault();
+                      start.focus();
+                    }
+                  }
+                }
+                if (e.key === 'g' || e.key === 'G') e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+              }
+              if ((e.key === 'g' || e.key === 'G') && !e.repeat && !existingIsOpen()) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                open();
+              }
+            },
+            true,
+          );
+          // Older visible shortcuts route through the one-nav shell; the targets themselves still retain native callbacks.
+          el('group-btn')?.addEventListener(
+            'click',
+            (e) => {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              toggle();
+            },
+            true,
+          );
+          el('v8-menu-btn')?.addEventListener(
+            'click',
+            (e) => {
+              if (e.isTrusted) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                open('maps');
+              }
+            },
+            true,
+          );
+          updateHUD();
+          setInterval(updateHUD, 650);
+          window.LQ11_UI = { open, close, page, action };
+        }
+        return { init };
+      })();
+
+      adventure.init();
+      V8.init();
+      LQ10.init();
+      startGame();
+      LQ11.init();
+      $('lq-loading').hidden = true;
+    
+
+</script>
+<script>
+/*
+ * LifeQuest loader.
+ * The game used to be one huge function inside index.html. It is now split into small files under js/game/.
+ * The files are plain slices of that function body, so they share one scope: we download them in order,
+ * join them and run them as a single function. (This needs http://, i.e. localhost or GitHub Pages — not file://.)
+ */
+(function () {
+  const startupInfo = document.getElementById('lq-loading');
+
+  function displayError(message) {
+    startupInfo.hidden = false;
+    startupInfo.innerHTML =
+      '<strong>Could not load the game</strong><p>' +
+      message +
+      '</p><small>Reload the page. The Phaser 4.2.1 graphics library is loaded from vendor/phaser.min.js (or a CDN if that file is missing).</small>';
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(Error(src));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadPhaser() {
+    // The single-file build already embeds Phaser, so window.Phaser exists and nothing is downloaded.
+    if (window.Phaser) return window.Phaser;
+    for (const u of [
+      // Local copy first (split/ and LIFEQUEST_deploy ship vendor/phaser.min.js), so the game starts without Internet.
+      'vendor/phaser.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/phaser/4.2.1/phaser.min.js',
+      'https://cdn.jsdelivr.net/npm/phaser@4.2.1/dist/phaser.min.js',
+      'https://unpkg.com/phaser@4.2.1/dist/phaser.min.js',
+    ]) {
+      try {
+        await loadScript(u);
+        if (window.Phaser) return window.Phaser;
+      } catch (e) {
+        console.warn('Could not load Phaser from', u);
+      }
+    }
+    throw Error('Could not load the Phaser library');
+  }
+
+  const PARTS = [
+    'js/game/01-services.js',
+    'js/game/02-core-npcs-and-schedules.js',
+    'js/game/03-core-areas-and-map.js',
+    'js/game/04-core-quest-helpers.js',
+    'js/game/05a-core-npc-dialogue-profiles.js',
+    'js/game/05b-core-npc-dialogue-profiles.js',
+    'js/game/06-core-npc-chat-engine.js',
+    'js/game/07a-core-ai-provider-and-world-art.js',
+    'js/game/07b-core-ai-provider-and-world-art.js',
+    'js/game/08-core-interiors.js',
+    'js/game/09-core-graphics-v9.js',
+    'js/game/10-core-characters-and-scene.js',
+    'js/game/11-study-lab.js',
+    'js/game/12-adventure-rpg.js',
+    'js/game/13-assistant-core.js',
+    'js/game/14-v8-quests-and-minimap.js',
+    'js/game/15-ui-assistant-panel.js',
+    'js/game/16-economy.js',
+    'js/game/17-train-and-tickets.js',
+    'js/game/18-economy-shop-and-npc-hooks.js',
+    'js/game/19-menu-v11.js',
+    'js/game/20-startup.js',
+  ];
+
+  async function loadGameSource() {
+    // The single-file build (build-single.ps1) embeds the game source in the page.
+    const embedded = document.getElementById('lq-game-src');
+    if (embedded) return embedded.textContent + '\n//# sourceURL=lifequest-game.js';
+    if (location.protocol === 'file:') {
+      throw new Error(
+        'Open the game over http (e.g. http://localhost:8080/) or GitHub Pages, not directly via file://.',
+      );
+    }
+    const texts = await Promise.all(
+      // 22 files at once: a simple local server (python -m http.server) sometimes drops a connection ("Failed to
+      // fetch"), so each file is tried up to 3 times before giving up.
+      PARTS.map(async (url) => {
+        let last;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            const res = await fetch(url, { cache: 'no-cache' });
+            if (res.ok) return res.text();
+            last = new Error('Could not load ' + url + ' (' + res.status + ')');
+          } catch (e) {
+            last = e;
+          }
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+        }
+        throw last;
+      }),
+    );
+    return texts.join('\n') + '\n//# sourceURL=lifequest-game.js';
+  }
+
+  async function boot() {
+    try {
+      // Start downloading Phaser and the game while the title screen is shown.
+      const phaserReady = loadPhaser();
+      const sourceReady = loadGameSource();
+      phaserReady.catch(() => {});
+      sourceReady.catch(() => {});
+      if (window.LQTitle) await window.LQTitle.show();
+      // How the player plays (computer / phone / tablet): asked once, right after Start (device.js).
+      if (window.LQDevice) await window.LQDevice.ask();
+      if (window.LQAuth && !window.__lqVocaltPreviewMode) await window.LQAuth.start();
+      const Phaser = await phaserReady;
+      const source = await sourceReady;
+      const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+      const running = new AsyncFunction('Phaser', source)(Phaser);
+      if (window.LQCreatorUI) window.LQCreatorUI.watch();
+      await running;
+    } catch (e) {
+      console.error('LifeQuest HTML failed to start:', e);
+      displayError('Could not start: ' + (e?.message || e));
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
+</script>
+  <!-- V10 economy module: overlay only, Phaser world unchanged. -->
+<div id="v10-panel" hidden aria-label="LIFEQUEST AI V10 Economy" role="dialog" aria-modal="true">
+ <section id="v10-dialog">
+  <header><h2>🏦 LIFEQUEST V10 · SMART ECONOMY</h2><button id="v10-close" aria-label="Close economy (B)">✕</button></header>
+  <div id="v10-balance" aria-live="polite">Loading balance…</div>
+  <nav id="v10-tabs" aria-label="Economy sections">
+   <button data-v10-tab="shop" class="active">🛒 Shop</button>
+   <button data-v10-tab="bag">🎒 Bag</button>
+   <button data-v10-tab="bank">🏦 Bank</button>
+   <button data-v10-tab="home">🏠 Home</button>
+   <button data-v10-tab="learning">🎓 Lessons</button>
+   <button data-v10-tab="ledger">🧾 Receipts</button>
+  </nav>
+  <div id="v10-content"></div>
+  <div id="v10-quiz" hidden></div>
+  <p id="v10-status" role="status">Press B to open/close the economy. Every transaction must be confirmed.</p>
+  <small style="color:#92b9d8">WASD / ↑↓←→ move · E talk · B economy · No real-money purchases</small>
+ </section>
+</div>
+
+
+<!-- V11 One-navigation shell. The original RPG / V8 / V10 / AI panels remain untouched as reusable adapters. -->
+<div id="l11-top">
+  <div id="l11-brand"><b>✦ LIFEQUEST AI <span style="color:#f6ce85">V48</span></b><span id="l11-place">Opening the town…</span></div>
+  <div id="l11-headright"><div id="l11-current"><b id="l11-objective">Quest</b><span id="l11-objdetail">Explore the city and practise English.</span></div><button type="button" id="l11-menu-btn" aria-haspopup="dialog" aria-controls="l11-shell" aria-expanded="false">☰ Menu (G)</button></div>
+</div>
+<div id="l11-bottom"><div id="l11-progress">⭐ <span id="l11-stats">Lv. 1 · $100</span><span class="sub" id="l11-xp"></span></div></div>
+<div id="l11-hint" hidden></div>
+<div id="l11-shell" hidden role="dialog" aria-modal="true" aria-label="LIFEQUEST Map & Game Menu">
+ <div id="l11-dialog">
+  <header><div><h2>✦ LIFEQUEST AI · HUB</h2><p>Select any existing map or open your quests, inventory and settings</p></div><button id="l11-close" aria-label="Close the hub" type="button">✕</button></header>
+  <div id="l11-menu-layout"><nav id="l11-nav" aria-label="Feature groups">
+   <button type="button" data-l11-page="maps">🧭 Maps</button><button type="button" data-l11-page="world">🌍 World</button><button type="button" data-l11-page="quests">📜 Quests</button><button type="button" data-l11-page="learn">🎓 English</button><button type="button" data-l11-page="economy">💰 Economy</button><button type="button" data-l11-page="character">👤 Character</button><button type="button" data-l11-page="achievements">🏆 Achievements</button><button type="button" data-l11-page="settings">⚙️ Settings</button>
+  </nav><main id="l11-page" aria-live="polite"></main></div>
+  <footer id="l11-foot">Choose Maps to travel · WASD: move · E: interact · G: Menu · Esc: Close</footer>
+ </div>
+</div>
+
+
+
+
+<script>
+/* Wish Valley preview & lightweight self-contained cinematic. No save-data writes. */
+(()=>{
+'use strict';
+const style=document.createElement('style');
+style.textContent=`
+#wv-launch{position:fixed;left:12px;bottom:14px;z-index:43;background:linear-gradient(120deg,#1b5340,#287b67);border:1px solid #b4f4c9;color:#fff;border-radius:11px;padding:10px 12px;cursor:pointer;font:bold 12px system-ui;box-shadow:0 8px 24px #0008}
+#wv-intro{position:fixed;inset:0;z-index:205;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(180deg,#122744 0%,#3b777b 42%,#23593d 72%,#112b2b 100%);color:#fff;font-family:system-ui,sans-serif}
+#wv-intro[hidden]{display:none!important}
+#wv-intro .sky{position:absolute;inset:0;background:radial-gradient(ellipse at 76% 12%,#eedab2a6,transparent 45%);animation:wvsky 14s ease-in-out infinite alternate}
+#wv-intro .ridge{position:absolute;bottom:0;width:150%;left:-20%;height:61%;clip-path:polygon(0% 84%,9% 46%,19% 69%,30% 19%,41% 54%,53% 5%,64% 56%,78% 16%,89% 58%,100% 27%,100% 100%,0% 100%);background:linear-gradient(#1b5756,#123a3b);animation:wvridge 11s ease-in-out infinite alternate}
+#wv-intro .ridge.back{bottom:7%;opacity:.6;transform:scale(1.1);background:#5a9390;animation-duration:17s}
+#wv-intro .waterfall{position:absolute;left:49%;bottom:0;width:11%;height:52%;background:repeating-linear-gradient(100deg,#7de7eac0 0px,#beecea 5px,#3b98a2 17px);clip-path:polygon(14% 0,80% 0,93% 100%,0 100%);animation:wvwater 2s linear infinite}
+#wv-intro .plane{position:absolute;width:165px;height:64px;left:42%;top:34%;filter:drop-shadow(8px 12px 8px #0018);animation:wvfly 9s ease-in-out infinite}
+#wv-intro .plane:before{content:'';position:absolute;top:22px;left:10px;width:150px;height:27px;border-radius:60% 40% 30% 40%;background:#e9dec0;transform:skew(-13deg)}
+#wv-intro .plane:after{content:'';position:absolute;left:58px;top:0;border-left:27px solid transparent;border-right:55px solid transparent;border-bottom:53px solid #578f9e;transform:rotate(-8deg)}
+#wv-intro .glass{position:absolute;left:46px;top:23px;width:42px;height:12px;border-radius:55%;background:#285a6c;z-index:2}
+#wv-intro .panel{position:relative;z-index:3;width:min(660px,90vw);margin-top:34vh;text-align:center;border:1px solid #d2e9d18a;border-radius:22px;background:#091b28bd;backdrop-filter:blur(13px);padding:19px;box-shadow:0 20px 60px #001a}
+#wv-intro h2{font:900 clamp(25px,5vw,46px) Georgia,serif;letter-spacing:.12em;color:#d5f9d5;margin:8px 0}
+#wv-intro p{font-size:14px;color:#e4f4ee;min-height:40px;line-height:1.5}
+#wv-intro button{border:1px solid #a9f1d4;border-radius:10px;background:#276e65;color:#fff;padding:10px 16px;cursor:pointer;font-weight:bold;margin:4px}
+#wv-intro #wv-skip{background:#253e49}
+#wv-intro small{color:#c6d8d1}
+@keyframes wvsky{to{filter:brightness(.63) saturate(.7)}}@keyframes wvridge{to{transform:translateX(-4%)}}@keyframes wvwater{to{background-position:0 110px}}@keyframes wvfly{0%{transform:translate(-65%,-10%) rotate(-8deg)}50%{transform:translate(12%,10%) rotate(7deg)}100%{transform:translate(35%,30%) rotate(-3deg)}}
+@media(prefers-reduced-motion:reduce){#wv-intro *{animation:none!important}}
+`;document.head.appendChild(style);
+const build=()=>{
+ if(document.getElementById('wv-launch'))return;
+ const b=document.createElement('button');b.id='wv-launch';b.textContent='🌿 WISH VALLEY · PREVIEW';b.title='Experience Wish Valley without changing your saved unlock flags';document.body.appendChild(b);
+ const overlay=document.createElement('section');overlay.id='wv-intro';overlay.hidden=true;overlay.innerHTML=`<div class="sky"></div><div class="ridge back"></div><div class="ridge"></div><div class="waterfall"></div><div class="plane"><div class="glass"></div></div><div class="panel" role="dialog" aria-modal="true"><small id="wv-scene">NICKO'S EXPEDITION · SKYFINCH-01</small><h2 id="wv-title">FLIGHT INTO THE STORM</h2><p id="wv-dialogue">Every great journey begins with a dream.</p><button id="wv-next">CONTINUE ›</button><button id="wv-skip">SKIP INTRO</button><small style="display:block;margin-top:10px">B2 · Wishes · Hypotheticals · Advice</small></div>`;document.body.appendChild(overlay);
+ const stages=[
+ ['THE DREAM','Every great journey begins with a dream. — Nicko'],
+ ['ABOVE THE CLOUDS','Look at the mountains! I wish we could stay above the clouds forever.'],
+ ['THE STORM',"This storm wasn't on our map! — Nicko"],
+ ['THE UNKNOWN VALLEY','Beyond the clouds, the magnificent Aylara waterfall comes into view.'],
+ ['STORMFALL CLEARING',"Where are we? I've never seen a place like this. — Nicko"],
+ ['WISH VALLEY','THE SACRED WORLD OF MAORAI · Where Nature Guards Every Wish']
+ ];
+ let step=0,shown=false,preview=false;
+ function end(){overlay.hidden=true;shown=false;step=0;}
+ function stage(){document.getElementById('wv-title').textContent=stages[step][0];document.getElementById('wv-dialogue').textContent=stages[step][1];document.getElementById('wv-next').textContent=step===stages.length-1?'EXPLORE VALLEY ›':'CONTINUE ›';}
+ function begin(){step=0;shown=true;overlay.hidden=false;stage();}
+ document.getElementById('wv-next').onclick=()=>{if(++step>=stages.length)end();else stage();};
+ document.getElementById('wv-skip').onclick=end;
+ b.onclick=()=>{
+   const sc=window.__lifequestGetScene?.();
+   if(!sc||!sc.switchArea){b.textContent='Loading game — try again';return;}
+   preview=true;
+   try{sc.switchArea('wish-valley',{x:29,y:51},'WISH VALLEY · PREVIEW');begin();}
+   catch(e){console.error('Wish Valley preview:',e);b.textContent='Preview could not start';}
+ };
+ window.addEventListener('keydown',e=>{if(overlay.hidden)return;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();end();}},true);
+ // Story entry shows the same one-time intro without mutating story progress.
+ setInterval(()=>{
+   let sc=window.__lifequestGetScene?.(),inWish=sc?.area?.id==='wish-valley';
+   if(inWish&&!preview&&!window.__wvStoryIntroSeen){window.__wvStoryIntroSeen=true;begin();}
+   if(!inWish)preview=false;
+ },850);
+ window.LQWishValleyPreview={open:()=>b.click(),replay:begin};
+};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',build,{once:true});else build();
+})();
+</script>
+
+<style>
+#lq-v45-zones{position:fixed;right:14px;bottom:75px;z-index:180;display:none;flex-wrap:wrap;max-width:390px;gap:5px;
+  background:#1c2b37de;border:1px solid #876d4f;border-radius:10px;padding:7px;box-shadow:0 6px 18px #0006}
+#lq-v45-zones button{background:#263a43;color:#efdfbd;border:1px solid #756d64;border-radius:7px;
+  font:600 11px system-ui;padding:6px;cursor:pointer}
+#lq-v45-zones button:hover{background:#36525e}
+@media(max-width:700px){#lq-v45-zones{right:6px;bottom:119px;max-width:220px}#lq-v45-zones button{padding:5px;font-size:10px}}
+</style>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+ const el=document.createElement('div');el.id='lq-v45-zones';
+ const stops=[['◈ Sapphire Arcade',40,14],['◈ Grand Bazaar',40,25],['◈ Common Market',27,38],['◈ Caravan Quarter',53,40]];
+ for(const [name,x,y] of stops){const b=document.createElement('button');b.type='button';b.textContent=name;
+   b.onclick=()=>{const sc=window.__lifequestGetScene?.();if(!sc||sc.area?.id!=='vocalt-greedy-land'||sc.inside)return;
+     // Find a legal tile near the intended street stop, and avoid any building portals.
+     for(let radius=0;radius<4;radius++){let located=false;
+       for(let dy=-radius;dy<=radius&&!located;dy++)for(let dx=-radius;dx<=radius;dx++){
+         const tx=x+dx,ty=y+dy;if(tx<0||ty<0||tx>=sc.area.w||ty>=sc.area.h)continue;
+         if(!sc.area.isTileBlocked(tx,ty)&&!sc.area.warpAt(tx,ty)){
+           sc.player.setPosition((tx+.5)*32,(ty+.5)*32);sc.cameras?.main?.centerOn?.((tx+.5)*32,(ty+.5)*32);located=true;break;
+         }
+       }
+       if(located)break;
+     }
+   };el.appendChild(b);
+ }
+ document.body.appendChild(el);setInterval(()=>{const sc=window.__lifequestGetScene?.();el.style.display=sc?.area?.id==='vocalt-greedy-land'&&!sc.inside?'flex':'none';},1100);
+});
+</script>
+<style>
+#lq-vocalt-preview{position:fixed;bottom:14px;left:15px;z-index:260;background:linear-gradient(120deg,#3d6870,#795b78);border:2px solid #edc994;border-radius:12px;color:#fff3d3;padding:12px 16px;font:700 14px system-ui,sans-serif;box-shadow:0 7px 21px #0009;cursor:pointer}
+#lq-vocalt-preview:hover{filter:brightness(1.18)}
+@media(max-width:600px){#lq-vocalt-preview{bottom:67px;left:6px;padding:8px 9px;font-size:11px}}
+</style>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+  const button=document.createElement('button');button.id='lq-vocalt-preview';button.type='button';
+  button.textContent='◆ Chơi thử VOCALT V48.1 · Distinct Interiors';button.title='Mở trực tiếp map Vocalt trong LifeQuest AI';
+  let queued=false,checkId=null;
+  const enterVocalt=()=>{
+    const sc=window.__lifequestGetScene?.();const id='vocalt-greedy-land';
+    const area=window.LQCareerWorlds?.areas?.find(a=>a.id===id);
+    if(!sc||!sc.switchArea||!area||sc.switching)return false;
+    if(sc.area?.id!==id)sc.switchArea(id,{x:2,y:24},area.name);
+    queued=false;
+    const loading=document.getElementById('lq-loading');
+    if(loading)loading.hidden=true;
+    button.textContent='◆ Chơi thử VOCALT V48.1 · Distinct Interiors';return true;
+  };
+  // Preview-only auto-skip: the old English Town train intro does not belong to Vocalt.
+  let cleanupIntro=null;
+  button.onclick=()=>{
+    window.__lqVocaltPreviewMode=true;
+    if(!cleanupIntro)cleanupIntro=setInterval(()=>{
+      if(!window.__lqVocaltPreviewMode)return;
+      const intro=document.querySelector('#lq-intro');
+      const skip=intro?.querySelector('button.skip');
+      if(skip && skip.getClientRects().length)skip.click();
+      const sc=window.__lifequestGetScene?.();
+      if(sc?.area?.id==='vocalt-greedy-land'){
+        const loading=document.getElementById('lq-loading');
+        if(loading)loading.hidden=true;
+      }
+    },420);
+    queued=true;
+    if(enterVocalt())return;
+    // Clicking from the title screen starts the normal user onboarding.
+    const start=[...document.querySelectorAll('button')].find(x=>x!==button&&x.textContent.trim()==='Start'&&x.getClientRects().length);
+    if(start)start.click();
+    button.textContent='◆ VOCALT sẽ mở sau khi vào game';
+    if(!checkId)checkId=setInterval(()=>{
+      if(!queued){clearInterval(checkId);checkId=null;return;}
+      const sc=window.__lifequestGetScene?.();
+      if(!sc){
+        // The start menu may appear AFTER the preview button was pressed.
+        const start=[...document.querySelectorAll('button')].find(x=>x!==button&&x.textContent.trim()==='Start'&&x.getClientRects().length);
+        if(start && !start.dataset.v44Autostart){start.dataset.v44Autostart='1';start.click();}
+      }
+      if(enterVocalt()){clearInterval(checkId);checkId=null;}
+    },450);
+  };
+  document.body.appendChild(button);
+});
+</script>
+<style>
+#v48-preview-nav{position:fixed;z-index:265;right:14px;bottom:94px;background:#16283bea;color:#ffedd0;border:1px solid #d7b77d;border-radius:12px;padding:10px;max-width:min(410px,calc(100vw - 28px));font:12px system-ui,sans-serif;box-shadow:0 10px 30px #0005}
+#v48-preview-nav strong{display:block;margin-bottom:5px}
+#v48-preview-nav button{background:#2d4654;color:#fff;border:1px solid #6c8b94;border-radius:6px;padding:6px 7px;margin:2px;font:11px system-ui;cursor:pointer}
+@media(max-width:700px){#v48-preview-nav{right:5px;bottom:10px;font-size:10px}}
+</style>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+ const p=document.createElement('div');p.id='v48-preview-nav';
+ p.innerHTML='<strong>V48 · XEM THỬ PHÂN KHU / INTERIOR</strong>';
+ const stops=[['Quý tộc',40,14],['Phố thương gia',40,25],['Chợ sạp nhỏ',27,36],['Kho vận',53,40]];
+ for(const [label,tx,ty] of stops){const b=document.createElement('button');b.textContent=label;
+   b.onclick=()=>{const sc=window.__lifequestGetScene?.();if(!sc||sc.area?.id!=='vocalt-greedy-land'||sc.inside)return;
+    for(let r=0;r<5;r++){for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){
+      const x=tx+dx,y=ty+dy;if(x<1||y<1||x>=sc.area.w-1||y>=sc.area.h-1)continue;
+      if(!sc.area.isTileBlocked(x,y)&&!sc.area.warpAt(x,y)){
+        sc.player.setPosition((x+.5)*32,(y+.5)*32);
+        sc.cameras?.main?.centerOn?.((x+.5)*32,(y+.5)*32);return;
+      }
+    }}
+   };p.appendChild(b);
+ }
+ const btn=document.createElement('button');btn.textContent='Vào tiệm kim loại';
+ btn.onclick=()=>{const sc=window.__lifequestGetScene?.();if(!sc||sc.inside||sc.area?.id!=='vocalt-greedy-land')return;
+   sc.enterBuilding(sc.area.buildings.find(b=>b.name==='BRAM · ROYAL METALWORKS'));
+ };p.appendChild(btn);
+ const exit=document.createElement('button');exit.textContent='Ra khỏi cửa hàng';
+ exit.onclick=()=>{const sc=window.__lifequestGetScene?.();if(sc?.inside)sc.leaveBuilding()};p.appendChild(exit);
+ document.body.appendChild(p);
+});
+</script>
+
+<style id="v481-ui">
+/* Old direct district shortcuts should not cover the game viewport. */
+#lq-v45-zones { display:none !important; }
+#v48-preview-nav { bottom:15px !important;right:15px!important;max-width:335px!important;padding:6px!important;z-index:265!important; }
+#v48-preview-nav:not(.v481-open) > :not(#v481-panel-toggle) { display:none!important; }
+#v48-preview-nav #v481-panel-toggle {display:block;border:1px solid #9b8369;background:#1c3641;color:#f2e4c5;
+  border-radius:8px;padding:8px 12px;margin:0;cursor:pointer;font:600 12px system-ui;}
+#v48-preview-nav.v481-open {padding:10px!important;}
+#v48-preview-nav.v481-open #v481-panel-toggle {margin-bottom:7px;}
+body.v481-game-on #lq-vocalt-preview,body.v481-game-on #wv-launch {display:none!important;}
+@media(max-width:720px){#v48-preview-nav {bottom:80px!important;right:7px!important;max-width:min(260px,90vw)!important}}
+</style>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+  let lastArea = null;
+  const update=()=>{
+    const area=window.__lifequestGetScene?.()?.area?.id || '';
+    document.body.classList.toggle('v481-game-on',area==='vocalt-greedy-land');
+    if(area!==lastArea){
+      if(area==='vocalt-greedy-land'){
+        // Built-in '-' control can expand it again when the player needs quests.
+        document.getElementById('v8-navigation')?.classList.add('collapsed');
+      }
+      lastArea=area;
+    }
+  };
+  // Single lightweight timer instead of multiple overlapping panels.
+  const id=setInterval(update,900);update();
+  const nav=document.getElementById('v48-preview-nav');
+  if(nav){
+    nav.classList.remove('v481-open');
+    const toggle=document.createElement('button');toggle.type='button';toggle.id='v481-panel-toggle';
+    toggle.textContent='☷ Kiểm tra phân khu';toggle.setAttribute('aria-expanded','false');
+    toggle.onclick=()=>{const expanded=nav.classList.toggle('v481-open');toggle.textContent=expanded?'✕ Thu gọn':'☷ Kiểm tra phân khu';toggle.setAttribute('aria-expanded',String(expanded));};
+    nav.prepend(toggle);
+  }
+});
+</script>
+
+<script id="lq-lost-letters-module">
+/* LifeQuest AI — The Lost Letters. Additive narrative adapter; no map unlock or reward mutation. */
+(function(){'use strict';
+const KEY='lifequest_lost_letters_v1';
+const CHAPTERS=[
+ {id:'english-town',title:'A New Beginning',level:'A1–A2',topic:'Làm quen, hỏi thông tin',aim:'Khám phá nguồn gốc một lá thư thất lạc.',lead:'Ms. Green',hint:'Hoàn thành First Day in Town; sau đó hỏi Ms. Green về lịch sử.',grammar:'Do you know who wrote this letter?'},
+ {id:'mining-town',title:'The Forgotten Route',level:'A2',topic:'Chỉ đường, hồ sơ',aim:'Tìm dấu vết các tuyến vận chuyển cũ.',lead:'Tomas',hint:'Khám phá ga và trò chuyện với người dân Minerals Town.',grammar:'Where did the travelers go?'},
+ {id:'past',title:'Fourteen Days of Letters',level:'A2–B1',topic:'Thì quá khứ, chuyển thư',aim:'Hoàn tất tuyến đưa thư Oriaris 70 năm trước.',lead:'Tom Brown / Gusest',hint:'Hoàn tất The Old Map trước khi vào quá khứ.',grammar:'I delivered the letter yesterday.'},
+ {id:'art-district',title:'Concrete Dreams',level:'B1',topic:'Diễn đạt ý kiến',aim:'Giúp bảy nghệ sĩ hoàn thiện Art Garden.',lead:'Noor, Ivo, Ada, Kai, Mira, Ren, Sol',hint:'Giữ các điều kiện mở Art District vốn có.',grammar:'I agree with you, but we should leave more space.'},
+ {id:'tech-co',title:'The Silent Signal',level:'B1',topic:'Giao tiếp công việc',aim:'Điều tra một tuyến đường bị thiếu trên bảng thông tin.',lead:'Priya',hint:'Đi Tech-Co theo hệ thống tàu và điều kiện The Ten Shadows gốc.',grammar:'Could we meet at three to compare the records?'},
+ {id:'old-oriaris',title:'The Bell That Remembered',level:'B1–B2',topic:'Quá khứ tiếp diễn',aim:'Đối chiếu ký ức và thời gian tại tháp chuông.',lead:'Người quản lý tư liệu',hint:'Old Oriaris là hiện tại, khác Oriaris 70 năm trước.',grammar:'While the bells were ringing, Tom arrived.'},
+ {id:'wish-valley',title:'The Voice of the Mother Falls',level:'B2',topic:'Giả định, lời khuyên',aim:'Tìm manh mối trên tuyến thương nhân gần Thác Mẹ Aylara.',lead:'Các bô lão Maorai',hint:'Khám phá làng Maorai và các con đường bên thác.',grammar:'If I were you, I would protect the river.'},
+ {id:'vocalt-greedy-land',title:'The Price of a Promise',level:'B2–C1',topic:'Thương lượng, quan điểm',aim:'Thuyết phục lãnh chúa cân nhắc giá trị của bức thư.',lead:'Lord Vocalt',hint:'Hỏi về sổ hàng và những món đồ cổ.',grammar:'In my opinion, the letter should return to its family.'}
+];
+const ALIASES={'english-town-past':'past','oriaris-trail-1':'past','oriaris-trail-2':'past','oriaris-trail-3':'past','oriaris-camp':'past','oriaris-70-years-ago':'past','oriaris-village':'past','oriaris-past':'past','newla-valley':'wish-valley','techco':'tech-co','minerals':'mining-town'};
+let data;try{data=JSON.parse(localStorage.getItem(KEY)||'null')}catch{}
+if(!data||data.version!==1||typeof data!=='object')data={version:1,clues:{},visits:{},talks:{},events:{},choice:null,history:[]};
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){console.warn('Lost Letters save',e)}}
+function log(type,message){data.history.unshift({type,message,at:new Date().toISOString()});data.history=data.history.slice(0,90);persist();render()}
+function mark(id,title,english,vietnamese,area,origin){if(data.clues[id])return false;data.clues[id]={id,title,english,vietnamese,area,origin,at:new Date().toISOString()};log('clue',`Tìm thấy: ${title}`);return true}
+const scene=()=>window.__lifequestGetScene?.();
+function normalize(v){return ALIASES[v]||v||''}
+function validSentence(text,exp){let t=String(text||'').trim();return t.length>=12&&exp.test(t)}
+function onNpc(id,text,area){const a=normalize(area),m=String(text||'').toLowerCase();if(!id||!m.trim())return [];
+ const k=a+':'+id;data.talks[k]=(data.talks[k]||0)+1;persist();
+ if(id==='librarian'&&a==='english-town'&&/(letter|history|oriaris|map|old|bell)/i.test(m)){
+ mark('oriaris-crest','Huy hiệu Oriaris','The old crest is linked to Oriaris.','Huy hiệu cổ liên quan tới Oriaris.','english-town','Hội thoại với Ms. Green');
+ }
+ if(a==='mining-town'&&/(route|station|compass|history|oriaris|brown)/i.test(m)){
+ mark('old-route','Tuyến đường cổ','Merchants and couriers used to travel between the towns.','Thương nhân và người đưa thư từng kết nối các thị trấn.','mining-town','Hội thoại ở Minerals Town');
+ }
+ if(a==='tech-co'&&/(schedule|record|route|north|problem|map)/i.test(m))mark('digital-route','Bản đồ thiếu thông tin','An old northern route is missing from the digital display.','Một tuyến đường phía bắc chưa hiện đủ trên bảng số.','tech-co','Hội thoại về thông tin tuyến đường');
+ if(a==='old-oriaris'&&validSentence(text,/\b(while|when|was|were)\b/i))mark('bell-memory','Ký ức tháp chuông','The bell connects past events to the present records.','Tháp chuông nối những sự kiện quá khứ với tư liệu hiện tại.','old-oriaris','Câu mô tả sự kiện thời gian');
+ if(a==='wish-valley'&&validSentence(text,/\b(if i were|i wish|i would|because)\b/i))mark('valley-route','Tuyến thương nhân qua thung lũng','Traders carried old keepsakes towards Vocalt.','Thương nhân từng mang vật kỷ niệm cũ về Vocalt.','wish-valley','Đối thoại bảo vệ thung lũng');
+ if(a==='vocalt-greedy-land'&&validSentence(text,/\b(i prefer|i would rather|in my opinion|i agree|we should)\b/i))mark('promise-value','Giá trị của lời hứa','A family letter carries a meaning beyond its price.','Lá thư của gia đình có giá trị hơn giá bán.','vocalt-greedy-land','Lập luận với người dân Vocalt');
+ if(a==='art-district'&&validSentence(text,/\b(agree|prefer|because|should|rather)\b/i))mark('art-voices','Bảy góc nhìn','Art can hold many different opinions without one being wrong.','Nghệ thuật đón nhận nhiều góc nhìn.','art-district','Trao đổi với nghệ sĩ');
+ return [];
+}
+function onEvent(kind,payload){if(kind==='inspect'&&payload?.area==='english-town'&&/stone|helmet|well/i.test(String(payload.object||payload.item||''))){data.events['original-relic']=true;persist()}}
+function refresh(){const sc=scene();if(!sc||!sc.area)return;let a=normalize(sc.area.id);if(!data.visits[a]){data.visits[a]=new Date().toISOString();log('travel',`Đến ${sc.area.name||a}`);}if(window.LQOldMap?.foundCount?.()>=3&&!data.events.relics){data.events.relics=true;mark('three-relics','Ba di vật của The Old Map','Stone, brass plate and helmet form a link to Oriaris.','Hòn đá, bảng đồng và mũ sắt nối tới Oriaris.','english-town','Hệ thống The Old Map đã xác nhận');}if(window.LQPast?.isDone?.()&&!data.events.pastDone){data.events.pastDone=true;mark('homecoming','Ngày Vinh Quang','The return of Tom Brown was remembered.','Tom Brown trở về trong Ngày Vinh Quang.','past','Chương quá khứ hoàn thành');} renderCompact()}
+function esc(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+let panel,tab='story';
+function status(c){let visit=!!data.visits[c.id],clues=Object.values(data.clues).filter(x=>x.area===c.id).length;return `${visit?'Đã ghé thăm':'Chưa ghé thăm'} · ${clues} manh mối`}
+function render(){if(!panel||panel.hidden)return;const content=panel.querySelector('#ll-body');if(!content)return;
+ if(tab==='story')content.innerHTML=`<p class="ll-lead">Một lá thư chưa về nhà. Hãy kết nối các dấu vết bằng những cuộc trò chuyện và hành trình thật.</p><div class="ll-grid">${CHAPTERS.map((c,i)=>`<article class="ll-ch"><small>CHAPTER ${i+1} · ${esc(c.level)} · ${esc(status(c))}</small><h3>${esc(c.title)}</h3><p>${esc(c.aim)}</p><p class="ll-note">${esc(c.hint)}</p><div class="ll-grammar">${esc(c.grammar)}</div></article>`).join('')}</div>`;
+ else if(tab==='clues')content.innerHTML=Object.keys(data.clues).length?Object.values(data.clues).map(e=>`<article class="ll-clue"><h3>✉ ${esc(e.title)}</h3><p>${esc(e.english)}</p><p>${esc(e.vietnamese)}</p><small>${esc(e.area)} · ${esc(e.origin||'')}</small></article>`).join(''):'<p>Chưa có manh mối. Hãy tiếp tục tương tác với NPC, The Old Map và các địa điểm trong game.</p>';
+ else if(tab==='journey')content.innerHTML=CHAPTERS.map((c,i)=>`<div class="ll-place">${data.visits[c.id]?'✓':'○'} ${i+1}. ${esc(c.title)} <small>${data.visits[c.id]?new Date(data.visits[c.id]).toLocaleDateString('vi-VN'):'Chưa khám phá'}</small></div>`).join('');
+ else if(tab==='skills')content.innerHTML=CHAPTERS.map(c=>`<article class="ll-clue"><strong>${esc(c.title)} · ${esc(c.level)}</strong><p>${esc(c.topic)}</p><div class="ll-grammar">${esc(c.grammar)}</div></article>`).join('');
+ else content.innerHTML=data.history.length?data.history.map(x=>`<p class="ll-place">${esc(x.message)}<small>${new Date(x.at).toLocaleString('vi-VN')}</small></p>`).join(''):'<p>Chuyến phiêu lưu sắp bắt đầu.</p>';
+ panel.querySelectorAll('[data-ll-tab]').forEach(b=>b.classList.toggle('active',b.dataset.llTab===tab));}
+function renderCompact(){const s=scene();const c=CHAPTERS.find(x=>x.id===normalize(s?.area?.id));const b=document.getElementById('ll-current');if(b&&c)b.textContent=`✉ ${c.title} · ${c.level}`;else if(b)b.textContent='✉ The Lost Letters';}
+function init(){if(document.getElementById('ll-open'))return;const css=document.createElement('style');css.textContent=`#ll-open{position:fixed;left:12px;bottom:15px;z-index:42;background:#1c293dee;color:#ffdc92;border:1px solid #7d93b2;border-radius:10px;padding:9px 12px;font:600 12px system-ui;cursor:pointer;box-shadow:0 7px 18px #0008}#ll-panel{position:fixed;inset:0;z-index:240;background:#050917bd;display:grid;place-items:center;padding:14px;color:#e8efff;font:14px system-ui}#ll-panel[hidden]{display:none!important}.ll-dialog{width:min(850px,96vw);max-height:87vh;overflow:hidden;background:#141e31;border:1px solid #7588b2;border-radius:16px;display:flex;flex-direction:column;box-shadow:0 18px 70px #000a}.ll-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#21314b}.ll-head h2{margin:0;font-size:18px;color:#ffdd91}.ll-close{background:#334564;color:white;border:1px solid #8294b1;border-radius:8px;cursor:pointer;padding:6px 11px}.ll-tabs{display:flex;overflow-x:auto;padding:9px;gap:5px;border-bottom:1px solid #39475e}.ll-tabs button{white-space:nowrap;background:#263752;color:#bfcfe6;border:1px solid #435774;border-radius:7px;padding:8px 11px;cursor:pointer}.ll-tabs button.active{background:#5a4875;color:#fff;border-color:#c1a0e9}#ll-body{padding:14px 18px;overflow:auto;line-height:1.55}.ll-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.ll-ch,.ll-clue{background:#1b2b42;border:1px solid #3a536f;border-radius:11px;padding:11px;margin-bottom:9px}.ll-ch h3,.ll-clue h3{margin:5px 0;color:#ffe0a5;font-size:15px}.ll-ch p,.ll-clue p{margin:6px 0}.ll-ch small,.ll-clue small{color:#a5bdd6}.ll-note{color:#a9c2dc;font-size:12px}.ll-grammar{border-left:3px solid #8bb7e7;background:#213752;padding:7px 9px;font-size:12px;color:#d7e9ff;margin-top:8px}.ll-place{border-bottom:1px solid #3b4b61;padding:10px 2px;margin:0}.ll-place small{display:block;color:#9eb6ce}.ll-lead{color:#ced9e8;margin:0 0 12px}@media(max-width:700px){#ll-open{bottom:74px;left:6px}#ll-body{padding:9px}.ll-dialog{max-height:90vh}.ll-head h2{font-size:15px}}`;document.head.appendChild(css);
+ const button=document.createElement('button');button.id='ll-open';button.type='button';button.innerHTML='<span id="ll-current">✉ The Lost Letters</span> · L';button.onclick=()=>open();document.body.appendChild(button);
+ panel=document.createElement('section');panel.id='ll-panel';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Adventure Journal');panel.innerHTML='<div class="ll-dialog"><header class="ll-head"><h2>✉ THE LOST LETTERS · Adventure Journal</h2><button class="ll-close" type="button">✕ Đóng</button></header><nav class="ll-tabs" aria-label="Journal tabs"><button data-ll-tab="story">Cốt truyện</button><button data-ll-tab="clues">Manh mối</button><button data-ll-tab="journey">Hành trình</button><button data-ll-tab="skills">Tiếng Anh</button><button data-ll-tab="history">Nhật ký</button></nav><div id="ll-body"></div></div>';document.body.appendChild(panel);panel.querySelector('.ll-close').onclick=close;panel.addEventListener('click',e=>{if(e.target===panel)close();const t=e.target.closest?.('[data-ll-tab]');if(t){tab=t.dataset.llTab;render()}});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){e.preventDefault();close()}else if((e.key==='l'||e.key==='L')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName||'')&&!document.querySelector('#chat[style*="block"]')){if(!panel.hidden)return;open();}});refresh();}
+function open(){if(!panel)return;panel.hidden=false;render();}
+function close(){if(panel)panel.hidden=true}
+window.LQStory={chapters:CHAPTERS,getCurrent(){const c=CHAPTERS.find(x=>x.id===normalize(scene()?.area?.id));return c||null},onNpc,onEvent,mark,open,close,getState:()=>JSON.parse(JSON.stringify(data)),syncExisting:refresh};
+window.LQStoryBridge={syncExisting:refresh};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+setInterval(refresh,2500);
+})();
+
+</script>
+<script id="lq-mine-intro-v50">
+/* LIFEQUEST AI V50 — MINERALS TOWN: THE LIGHT THEY LEFT BEHIND
+ * Additive, replayable, bilingual cinematic attached to the REAL mining-town map.
+ * The existing Phaser world, player position, NPC schedules, unlock logic, quests,
+ * inventory, and V49 story progress remain authoritative.
+ */
+(function(){
+'use strict';
+const AREA='mining-town';
+const KEY='lq_v50_mine_elias_intro';
+const LANTERN_KEY='lq_v50_mine_lantern_choice';
+const T=32;
+const nodes=[
+ {id:'arrival',duration:17000,location:[30.5,60.8],zoom:1.12,
+  eyebrow:'I · THE TOWN OF A THOUSAND LIGHTS',title:'Một thị trấn từ lòng núi',
+  lines:[
+   ['Narrator','The train slows as Minerals Town comes into view. A thousand little lights shine between the mountains.','Con tàu chậm lại. Minerals Town hiện ra giữa núi rừng, nơi những ngọn đèn nhỏ đang sáng lên.'],
+   ['Mr. Hale','Welcome to Minerals Town. The trains bring people here, but their stories make this place a home.','Chào mừng đến Minerals Town. Tàu đưa mọi người tới đây, còn những câu chuyện khiến nơi này trở thành mái nhà.']
+  ],art:null},
+ {id:'work',duration:22500,location:[30,24],zoom:1.06,
+  eyebrow:'II · THE PEOPLE WHO BUILT THE TOWN',title:'Những con người thầm lặng',
+  lines:[
+   ['Narrator','Beyond the station, miners return from a long day. Every stone has passed through someone’s hands.','Phía sau nhà ga, những người thợ trở về sau ngày dài. Mỗi viên đá đều đã đi qua đôi bàn tay của một người.'],
+   ['Tomas','The mine gave us work. But the people here gave us a reason to come home.','Mỏ cho chúng tôi công việc. Nhưng chính con người nơi đây mới cho chúng tôi lý do để trở về.']
+  ],art:null},
+ {id:'bench',duration:22000,location:[24.5,61],zoom:1.28,
+  eyebrow:'III · THE LITTLE LANTERN',title:'Chiếc đèn trên băng ghế',
+  lines:[
+   ['Young Girl','Do you think a light can remember someone?','Anh có nghĩ một ngọn đèn có thể nhớ một người không?'],
+   ['Mr. Hale','Maybe not. But people can. That lantern belonged to a miner named Elias.','Có lẽ không. Nhưng con người thì có. Chiếc đèn ấy từng thuộc về người thợ mỏ Elias.']
+  ],art:'bench'},
+ {id:'promise',duration:30500,location:[24.5,61],zoom:1.25,
+  eyebrow:'IV · MANY YEARS EARLIER',title:'Lời hứa bên sân ga',
+  lines:[
+   ['Little Daughter','Dad, what is the most beautiful thing in the world?','Bố ơi, điều gì đẹp nhất trên thế giới?'],
+   ['Elias','It is not gold. It is not diamonds.','Không phải vàng. Cũng không phải kim cương.'],
+   ['Elias','It is coming home… and seeing someone waiting for you.','Mà là được trở về nhà… và thấy có một người vẫn đang đợi mình.']
+  ],art:'memory'},
+ {id:'years',duration:29000,location:[24.5,61],zoom:1.24,
+  eyebrow:'V · WHEN THE YEARS PASSED',title:'Năm tháng vẫn trôi',
+  lines:[
+   ['Narrator','The seasons changed. The trains kept coming and going. Elias grew old and never returned to this station.','Mùa này nối tiếp mùa khác. Những chuyến tàu vẫn đi rồi đến. Elias đã già đi và không còn trở lại nhà ga này.'],
+   ['His Daughter','Dad, I found my way home. Just like you taught me.','Bố ơi, con đã tìm được đường về nhà. Đúng như bố từng dạy.'],
+   ['Narrator','She placed his lantern on the bench where they had once watched the trains together.','Cô đặt chiếc đèn lên băng ghế nơi hai cha con từng ngồi ngắm những đoàn tàu.']
+  ],art:'years'},
+ {id:'newlight',duration:23000,location:[30,57],zoom:1.12,
+  eyebrow:'VI · A NEW LIGHT',title:'Ánh sáng còn ở lại',
+  lines:[
+   ['Tomas','Elias believed every journey should lead to something worth protecting.','Elias tin rằng mỗi chuyến đi đều nên dẫn ta đến một điều đáng trân trọng.'],
+   ['Young Girl','Maybe your journey will help someone find their way home, too.','Biết đâu hành trình của anh cũng giúp một người khác tìm được đường về nhà.'],
+   ['Mr. Hale','Wait… that crest on the old route board. It looks like the one in your letter.','Khoan đã… huy hiệu trên bảng tuyến đường cũ. Nó giống ký hiệu trên mảnh thư của cháu.']
+  ],art:'ending'},
+ {id:'reveal',duration:11000,location:[21,51],zoom:1.2,
+  eyebrow:'CHAPTER II · THE FORGOTTEN ROUTE',title:'THE LIGHT THEY LEFT BEHIND',
+  lines:[
+   ['Narrator','Some journeys end. Their stories never do.','Có những hành trình kết thúc. Nhưng câu chuyện của chúng thì không.']
+  ],art:'title'}
+];
+const total=nodes.reduce((a,b)=>a+b.duration,0);
+let active=null, ui=null, canvas=null, ctx=null, animationId=0, watcher=null, lastScene=null;
+let lanternScene=null, lantern=null, board=null, lanternTween=null, nearObject=null, modal=null;
+let music=null, settingSound=false, forcePreview=false, booted=false;
+const read=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
+const write=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){console.warn('Mine intro save:',e)}};
+const sc=()=>window.__lifequestGetScene?.();
+const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const visible=(node)=>{if(!node)return false;const cs=getComputedStyle(node);return !node.hidden&&cs.display!=='none'&&cs.visibility!=='hidden'&&cs.opacity!=='0'};
+function ready(scene){
+ if(!scene?.sys?.isActive?.()||scene.area?.id!==AREA||scene.inside||scene.switching||!scene.player?.active)return false;
+ if(scene.chat?.isOpen||scene.briefing?.isOpen||scene.helper?.isOpen||scene.settings?.isOpen||scene.journal?.isOpen||scene.quests?.isOpen)return false;
+ if(window.LQOrigins?.isPlaying?.(scene)||window.LQIntro?.isPlaying?.()||window.LQPast?.isFilming?.()||window.LQArtDistrict?.isFilming?.())return false;
+ for(const id of ['lq-title','lq-past','lq-art','lq-intro','lq-shrine','ll-panel','lq-mine-choice'])if(visible(document.getElementById(id)))return false;
+ return true;
+}
+function styles(){
+ const st=document.createElement('style');st.id='lq-mine-style';st.textContent=`
+ #lq-mine-film[hidden],#lq-mine-choice[hidden],#lq-mine-continue[hidden]{display:none!important}
+ #lq-mine-film{--gold:#f5d899;position:fixed;inset:0;z-index:350;color:#fff2d6;font-family:Georgia,'Times New Roman',serif;pointer-events:none;isolation:isolate}
+ #lq-mine-film .mine-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#0000 33%,#02091592 100%),linear-gradient(to bottom,#071322bb 0%,transparent 23%,transparent 44%,#060c18da 100%);pointer-events:none}
+ #lq-mine-film .mine-bar{position:absolute;left:0;right:0;height:clamp(36px,6.5vh,66px);background:#050b12ea;z-index:2;pointer-events:none}
+ #lq-mine-film .mine-bar.top{top:0}#lq-mine-film .mine-bar.bottom{bottom:0}
+ #lq-mine-film header{position:absolute;z-index:5;top:clamp(42px,8.6vh,90px);left:clamp(16px,5vw,90px);right:clamp(16px,5vw,90px);display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+ #lq-mine-film header .chapter{font:700 10px/1.6 system-ui,sans-serif;letter-spacing:.26em;color:#f8d08c;text-shadow:0 2px 10px #000}
+ #lq-mine-film header .name{font:700 clamp(19px,3.8vw,42px)/1.1 Georgia,serif;margin-top:3px;color:#fff6e4;text-shadow:0 3px 12px #000a}
+ #lq-mine-film header .mini-sub{font:italic 12px Georgia,serif;color:#c8bfaf;margin-top:5px}
+ #lq-mine-film .mine-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;pointer-events:auto}
+ #lq-mine-film button,#lq-mine-choice button,#lq-mine-replay{touch-action:manipulation;cursor:pointer;border:1px solid #a79478;background:#172236ec;color:#ffe8b1;border-radius:8px;padding:8px 11px;font:600 12px system-ui,sans-serif}
+ #lq-mine-film button:hover,#lq-mine-choice button:hover,#lq-mine-replay:hover{background:#3e3a3a;color:#fff}
+ #lq-mine-film .mine-art{position:absolute;z-index:3;left:50%;top:44.5%;transform:translate(-50%,-50%);width:min(78vw,640px,78vh);aspect-ratio:16/9;border:3px solid #a08259;box-shadow:0 15px 100px #000c,0 0 0 9px #0c1018ba;overflow:hidden;border-radius:6px;opacity:0;transition:opacity .7s ease;pointer-events:none}
+ #lq-mine-film .mine-art.open{opacity:1}
+ #lq-mine-film canvas{image-rendering:pixelated;display:block;width:100%;height:100%}
+ #lq-mine-film .mine-art:after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 80px 25px #0c0a139e;pointer-events:none}
+ #lq-mine-film .mine-dialogue{position:absolute;z-index:6;bottom:clamp(72px,12vh,140px);left:50%;transform:translateX(-50%);width:min(780px,calc(100vw - 26px));box-sizing:border-box;text-align:center;background:linear-gradient(90deg,#07111ae5,#141a26f6,#07111ae5);border-top:1px solid #dab87385;border-bottom:1px solid #dab87385;padding:13px clamp(12px,3vw,28px);box-shadow:0 10px 40px #0008;min-height:112px}
+ #lq-mine-film .mine-dialogue .who{color:#f6d38f;font:700 11px/1.3 system-ui,sans-serif;letter-spacing:.17em;text-transform:uppercase;margin-bottom:7px}
+ #lq-mine-film .mine-dialogue .en{font:italic clamp(15px,2.5vw,22px)/1.32 Georgia,serif;min-height:22px;color:#fff8ea;text-wrap:balance}
+ #lq-mine-film .mine-dialogue .vi{font:400 clamp(12px,1.7vw,15px)/1.5 system-ui,sans-serif;color:#d1dae1;margin-top:9px;text-wrap:balance}
+ #lq-mine-film .mine-foot{position:absolute;z-index:6;bottom:clamp(44px,7.6vh,83px);left:clamp(15px,5vw,80px);right:clamp(15px,5vw,80px);display:flex;align-items:center;justify-content:space-between;gap:12px;font:11px system-ui,sans-serif;color:#cbd4dd;pointer-events:auto}
+ #lq-mine-film .mine-progress{width:min(270px,28vw);height:3px;background:#6a6b7180;overflow:hidden;border-radius:3px}
+ #lq-mine-film .mine-progress>span{display:block;height:100%;background:#f6d08b;width:0;transition:width .3s}
+ #lq-mine-film .mine-foot .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+ #lq-mine-film .mine-foot button{background:#aa88512f;border-color:#d6af72;color:#fff5d9}
+ #lq-mine-film #lq-mine-next{background:#66512bdb}
+ #lq-mine-replay{position:fixed;z-index:32;left:12px;top:130px;background:#1b2e36e9;color:#ffe2a6;font-size:12px;display:none}
+ body.lq-mine-area:not(.lq-mine-playing) #lq-mine-replay{display:block}
+ body.lq-mine-playing #ll-open,body.lq-mine-playing #lq-toolbar,body.lq-mine-playing #group-btn,body.lq-mine-playing #v48-preview-nav,body.lq-mine-playing #ai-open,body.lq-mine-playing #v8-navigation,body.lq-mine-playing #lq-mine-replay,body.lq-mine-playing #lq-mine-lantern-action{visibility:hidden!important;pointer-events:none!important}
+ #lq-mine-lantern-action{position:fixed;z-index:32;left:50%;bottom:16px;transform:translateX(-50%);background:#263548e9;border:1px solid #d6aa69;border-radius:10px;color:#ffdfaa;padding:9px 15px;font:600 13px system-ui;cursor:pointer;box-shadow:0 4px 20px #000a}
+ #lq-mine-lantern-action[hidden]{display:none!important}
+ #lq-mine-choice{position:fixed;inset:0;z-index:360;display:grid;place-items:center;background:#060913dc;color:#fbf0da;font-family:system-ui;padding:15px}
+ #lq-mine-choice .choice-card{width:min(580px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#25364c,#141e2f);border:1px solid #d2b785;border-radius:15px;box-shadow:0 20px 80px #000b;padding:24px}
+ #lq-mine-choice h2{font:700 25px Georgia,serif;color:#f6d698;margin:0 0 12px}
+ #lq-mine-choice p{font-size:14px;line-height:1.6}
+ #lq-mine-choice .choice-options{display:grid;gap:11px;margin-top:18px}
+ #lq-mine-choice .choice-options button{text-align:left;padding:14px;font-size:13px;line-height:1.5}
+ #lq-mine-choice .choice-result{color:#ffe5b0;font:italic 18px/1.4 Georgia,serif;border-left:3px solid #e5c98d;padding:10px 14px;margin:16px 0}
+ #lq-mine-choice .close-option{margin-top:12px;background:#333d50}
+ @media(max-width:700px){#lq-mine-film header{top:40px;left:12px;right:12px;gap:5px}#lq-mine-film header .chapter{font-size:8px;letter-spacing:.1em}#lq-mine-film header .name{font-size:17px}#lq-mine-film header .mini-sub{display:none}#lq-mine-film .mine-tools button{font-size:10px;padding:5px 6px}#lq-mine-film .mine-art{width:min(91vw,70vh);top:41%}#lq-mine-film .mine-dialogue{bottom:82px;padding:8px 10px;min-height:95px}#lq-mine-film .mine-dialogue .en{font-size:14px}#lq-mine-film .mine-dialogue .vi{font-size:11px;margin-top:6px}#lq-mine-film .mine-foot{bottom:42px;left:12px;right:12px}#lq-mine-film .mine-foot .chapter-count{display:none}#lq-mine-film .mine-progress{width:100px}#lq-mine-replay{top:83px;left:7px}#lq-mine-film .mine-foot button{padding:7px}}
+ @media(prefers-reduced-motion:reduce){#lq-mine-film .mine-art{transition:none!important}}
+ `;document.head.appendChild(st);
+}
+function initUI(){
+ if(ui)return;
+ styles();
+ ui=document.createElement('section');ui.id='lq-mine-film';ui.hidden=true;ui.setAttribute('role','dialog');ui.setAttribute('aria-modal','true');ui.setAttribute('aria-label','Minerals Town — The Light They Left Behind');
+ ui.innerHTML='<div class="mine-vignette"></div><div class="mine-bar top"></div><div class="mine-bar bottom"></div><header><div><div class="chapter">LIFEQUEST AI · THE LOST LETTERS</div><div class="name">THE LIGHT THEY LEFT BEHIND</div><div class="mini-sub">Ánh sáng mà những người đi trước để lại</div></div><div class="mine-tools"><button type="button" id="lq-mine-audio" aria-pressed="false">♪ Bật nhạc</button><button type="button" id="lq-mine-skip">Bỏ qua ↗</button></div></header><div class="mine-art"><canvas width="320" height="180" aria-label="Ký ức dạng pixel art về chiếc đèn tại nhà ga"></canvas></div><div class="mine-dialogue" aria-live="polite"><div class="who"></div><div class="en"></div><div class="vi"></div></div><div class="mine-foot"><div><div class="chapter-count">CINEMATIC · MINERALS TOWN</div><div class="mine-progress"><span></span></div></div><div class="controls"><span class="mine-stage">1 / 7</span><button type="button" id="lq-mine-next">Tiếp cảnh →</button></div></div>';
+ document.body.appendChild(ui);
+ canvas=ui.querySelector('canvas');ctx=canvas.getContext('2d',{alpha:false});ctx.imageSmoothingEnabled=false;
+ ui.querySelector('#lq-mine-skip').onclick=()=>finish(true);
+ ui.querySelector('#lq-mine-next').onclick=next;
+ ui.querySelector('#lq-mine-audio').onclick=()=>{settingSound=!settingSound;if(settingSound)startMusic();else stopMusic();ui.querySelector('#lq-mine-audio').textContent=settingSound?'♫ Tắt nhạc':'♪ Bật nhạc';ui.querySelector('#lq-mine-audio').setAttribute('aria-pressed',String(settingSound));};
+ const replay=document.createElement('button');replay.type='button';replay.id='lq-mine-replay';replay.textContent='↻ Xem lại intro Mine';replay.onclick=()=>play(true);document.body.appendChild(replay);
+ const action=document.createElement('button');action.type='button';action.id='lq-mine-lantern-action';action.hidden=true;action.textContent='✦ E · Xem kỷ vật';action.onclick=inspectNearest;document.body.appendChild(action);
+ document.addEventListener('keydown',onKey,true);
+}
+function onKey(e){
+ if(active){if(['Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();finish(true);}else if(['Enter',' '].includes(e.key)&&!e.repeat&&!e.ctrlKey&&!e.metaKey){e.preventDefault();e.stopImmediatePropagation();next();}else if(!['Tab','Shift','Control','Alt'].includes(e.key)) {e.preventDefault();e.stopImmediatePropagation();}return;}
+ if(modal&&!modal.hidden){if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeChoice();}return;}
+ if((e.key==='e'||e.key==='E')&&nearObject&&!(document.activeElement?.matches?.('input,textarea,select,[contenteditable="true"]'))){e.preventDefault();e.stopImmediatePropagation();inspectNearest();}
+}
+function startMusic(){
+ if(!active || music)return;
+ try{
+   const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
+   const ac=new Audio();ac.resume?.();const master=ac.createGain();master.gain.value=.12;master.connect(ac.destination);
+   const tones=[220,277.18,329.63,246.94,293.66,369.99,196,246.94,329.63,220,277.18,329.63];
+   let step=0;const playNote=()=>{if(!active||ac.state==='closed')return;
+      const f=tones[step++%tones.length],now=ac.currentTime;
+      for(const [frequency,volume] of [[f,.21],[f/2,.09]]){
+       const osc=ac.createOscillator(),g=ac.createGain();osc.type='sine';osc.frequency.setValueAtTime(frequency,now);
+       g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(volume,now+.04);g.gain.exponentialRampToValueAtTime(.0001,now+1.5);
+       osc.connect(g);g.connect(master);osc.start(now);osc.stop(now+1.6);
+      }
+   };playNote();const timer=setInterval(playNote,950);music={ac,timer};
+ }catch(e){console.warn('Mine cinematic audio:',e)}
+}
+function stopMusic(){if(!music)return;clearInterval(music.timer);try{music.ac.close()}catch{}music=null;}
+function play(replay){
+ const scene=sc(); if(active||!ready(scene))return false;
+ initUI();
+ const cam=scene.cameras?.main;if(!cam)return false;
+ const kb=scene.input?.keyboard,ctrl=window.__townControls;
+ active={scene,area:AREA,cam,zoom:cam.zoom||1,keyboard:kb,keyboardWasOn:kb?.enabled??true,replay:!!replay,
+   start:performance.now(),sceneIndex:-1,stepStart:0,closed:false,position:{x:scene.player.x,y:scene.player.y},
+   playerWasVisible:scene.player.visible,playerBadgeVisible:scene.badge?.visible};
+ try{window.cancelTownAutopilot?.();}catch{}
+ if(ctrl)ctrl.up=ctrl.down=ctrl.left=ctrl.right=ctrl.actionRequested=false;
+ if(kb){kb.enabled=false;try{kb.resetKeys();}catch{}}
+ try{cam.stopFollow()}catch{}
+ document.body.classList.add('lq-mine-playing');ui.hidden=false;
+ // Mark viewed only on completion or explicit skip; interrupted films play again safely.
+ go(0);animationId=requestAnimationFrame(frame);
+ return true;
+}
+function go(n){
+ if(!active||n>=nodes.length){finish(false);return;}
+ active.sceneIndex=n;active.stepStart=performance.now();active.lastLine=-1;
+ const shot=nodes[n],a=active;
+ ui.querySelector('.mine-stage').textContent=`${n+1} / ${nodes.length}`;
+ ui.querySelector('.mine-dialogue .who').textContent='';ui.querySelector('.mine-dialogue .en').textContent='';ui.querySelector('.mine-dialogue .vi').textContent='';
+ const art=ui.querySelector('.mine-art');art.classList.toggle('open',!!shot.art);
+ if(a.scene.area?.id===AREA){
+  try{a.cam.pan((shot.location[0]+.5)*T,(shot.location[1]+.5)*T,reducedMotion()?0:2400,'Sine.easeInOut',true);
+      a.cam.zoomTo(shot.zoom,reducedMotion()?0:2100,'Sine.easeInOut',true);}catch(err){console.warn('Mine camera:',err)}
+ }
+ updateLine(0);paint(shot.art,0);
+}
+function updateLine(progress){
+ const a=active;if(!a)return;const shot=nodes[a.sceneIndex];const index=Math.max(0,Math.min(shot.lines.length-1,Math.floor(progress*shot.lines.length)));
+ if(index===a.lastLine)return;a.lastLine=index;
+ const [who,en,vi]=shot.lines[index];
+ const obj=ui.querySelector('.mine-dialogue');obj.querySelector('.who').textContent=who;
+ obj.querySelector('.en').textContent=en;obj.querySelector('.vi').textContent=vi;
+}
+function frame(now){
+ if(!active)return;
+ const a=active;
+ if(!a.scene?.sys?.isActive?.()||a.scene.area?.id!==AREA||a.scene.inside||a.scene.switching){finish(true);return;}
+ const shot=nodes[a.sceneIndex];const elapsed=Math.max(0,now-a.stepStart),progress=Math.max(0,Math.min(1,elapsed/shot.duration));
+ updateLine(progress);
+ let done=0;for(let i=0;i<a.sceneIndex;i++)done+=nodes[i].duration;
+ ui.querySelector('.mine-progress span').style.width=((done+Math.min(shot.duration,elapsed))/total*100).toFixed(2)+'%';
+ if(shot.art){if(!a.lastDraw||now-a.lastDraw>90){a.lastDraw=now;paint(shot.art,elapsed/1000)}}
+ if(elapsed>=shot.duration){go(a.sceneIndex+1);if(!active)return;}
+ animationId=requestAnimationFrame(frame);
+}
+function next(){if(active)go(active.sceneIndex+1);}
+function finish(skipped){
+ if(!active)return;
+ const a=active;active=null;cancelAnimationFrame(animationId);
+ stopMusic();if(ui){ui.hidden=true;ui.querySelector('.mine-art')?.classList.remove('open');}
+ document.body.classList.remove('lq-mine-playing');
+ const s=a.scene;
+ if(s&&s.area?.id===AREA&&s.cameras?.main){
+  try{s.cameras.main.stopFollow();s.cameras.main.zoomTo(a.zoom,250,'Sine.easeOut',true);s.cameras.main.pan(s.player.x,s.player.y,250,'Sine.easeOut',true);s.cameras.main.startFollow(s.player,true,.12,.12);}catch(e){console.warn('Mine camera restore:',e)}
+ }
+ if(a.keyboard)a.keyboard.enabled=a.keyboardWasOn;
+ // Skipping counts as viewed, never forces a clue, NPC reward, or mission completion.
+ if(s?.area?.id===AREA)write(KEY,skipped?'skipped':'seen');
+ settingSound=false;if(ui){ui.querySelector('#lq-mine-audio').textContent='♪ Bật nhạc';ui.querySelector('#lq-mine-audio').setAttribute('aria-pressed','false')}
+}
+// Custom original 320x180 pixel scene. The existing Phaser terrain is not redrawn or replaced.
+const rc=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))};
+const line=(x1,y1,x2,y2,c,w=1)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
+function person(x,y,h,coat,child=false){
+ const head=child?8:10,body=child?15:20;
+ rc(x-4,y-h+2,8,head,'#d9aa81');rc(x-5,y-h+1,10,3,'#392b31');
+ rc(x-6,y-h+head+2,12,body,coat);
+ rc(x-8,y-h+head+8,3,12,coat);rc(x+5,y-h+head+8,3,12,coat);
+ rc(x-5,y-7,4,7,'#34313d');rc(x+1,y-7,4,7,'#34313d');
+ rc(x+2,y-h+6,1,1,'#46342a');
+}
+function drawLantern(x,y,glow){
+ const r=glow?15+Math.sin(performance.now()/350)*3:11;
+ ctx.fillStyle=`rgba(255,188,78,${glow?.13:.07})`;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+ rc(x-6,y+7,12,4,'#332b2a');rc(x-5,y-7,10,15,'#594331');rc(x-3,y-5,6,10,'#ffc763');rc(x-2,y-4,4,8,'#ffe5a3');
+ rc(x-6,y-7,12,2,'#ac9164');rc(x-4,y-11,8,4,'#89745d');rc(x-1,y-13,3,3,'#d3b77d');
+}
+function paint(kind,t){
+ if(!ctx)return;
+ const sepia=kind==='memory'||kind==='years';
+ const sky=sepia?'#302c42':kind==='title'?'#111e35':'#202c4b';
+ rc(0,0,320,180,sky);
+ // pixelated mountain silhouettes and warm village windows
+ for(let x=0;x<320;x+=6){let p=58+Math.round(15*Math.sin(x/41)+11*Math.sin(x/20));rc(x,p,6,96,sepia?'#514451':'#2d4155')}
+ for(let x=0;x<320;x+=8){let p=86+Math.round(7*Math.sin(x/18));rc(x,p,8,75,sepia?'#54424b':'#2b4952')}
+ rc(0,132,320,48,sepia?'#57494a':'#39505a');
+ // windows, station and track. Low-res style persists across the flashback cuts.
+ for(let x=14;x<320;x+=36){rc(x,90,24,43,sepia?'#675451':'#506477');rc(x,83,27,8,sepia?'#45363b':'#2e3e50');rc(x+7,104,6,7,'#f1c77c');rc(x+16,104,5,7,'#bca078');}
+ rc(0,145,320,3,'#25262b');rc(0,160,320,3,'#25262b');for(let x=0;x<320;x+=16)rc(x,145,6,20,'#8b7661');
+ for(let i=0;i<25;i++){const x=(i*53+17)%320,y=10+(i*23)%80;rc(x,y,1,1,'#d5bb94')}
+ // station bench — fixed across decades
+ rc(174,128,58,5,'#705043');rc(174,136,58,6,'#7b5545');rc(178,142,4,18,'#59413b');rc(223,142,4,18,'#59413b');
+ if(kind==='bench'){drawLantern(198,119,true);person(127,152,44,'#5a6476',true);}
+ if(kind==='memory'){
+  // a father and daughter meet a train in the past
+  person(133+Math.sin(t*.4)*2,157,62,'#53626a');person(157,157,43,'#95746b',true);
+  drawLantern(143,117,true);
+  rc(30,114,58,24,'#89776b');rc(30,105,58,8,'#b4a194');for(let x=37;x<82;x+=15)rc(x,117,9,7,'#f1d8a7');rc(35,138,12,4,'#25262b');rc(76,138,12,4,'#25262b');
+ }
+ if(kind==='years'){
+  // passing seasons: drifting leaves -> rain -> pale dawn light; adult daughter + child
+  const season=Math.floor(t/7.2)%4;
+  if(season===0){for(let i=0;i<24;i++){let x=(i*43+Math.floor(t*6))%320,y=(i*19+Math.floor(t*3))%140;rc(x,y,2,2,'#c89e65')}}
+  if(season===1){for(let i=0;i<55;i++){let x=(i*47+Math.floor(t*23))%320,y=(i*29+Math.floor(t*45))%180;line(x,y,x-2,y+7,'#9eb4c5')}}
+  if(season>=2){rc(0,0,320,12,season===2?'#85808a':'#aaa4a1');for(let i=0;i<42;i++){let x=(i*31+Math.floor(t*6))%320,y=(i*51+Math.floor(t*2))%180;rc(x,y,2,2,'#d6cbc4')}}
+  person(151,157,62,'#665c6b');person(168,157,40,'#7f716a',true);drawLantern(197,119,true);
+ }
+ if(kind==='ending'){person(151,157,61,'#656071');person(164,157,40,'#8b7d71',true);drawLantern(200,119,true);rc(14,16,35,22,'#ac9a79');rc(17,19,29,16,'#e8d6aa');rc(29,21,6,12,'#755648');rc(26,26,12,4,'#78654e')}
+ if(kind==='title'){
+  drawLantern(160,88,true);
+  ctx.fillStyle='#f6d49a';ctx.textAlign='center';ctx.font='bold 13px Georgia';ctx.fillText('THE FORGOTTEN ROUTE',160,40);
+  ctx.font='italic 8px Georgia';ctx.fillText('Some journeys end. Their stories never do.',160,115);ctx.textAlign='left';
+ }
+}
+function clearLantern(){
+ if(lanternTween){try{lanternTween.stop();lanternTween.remove()}catch{}lanternTween=null;}
+ if(lantern){try{lantern.destroy()}catch{}lantern=null;}
+ if(board){try{board.destroy()}catch{}board=null;}
+ lanternScene=null;nearObject=null;
+ const b=document.getElementById('lq-mine-lantern-action');if(b)b.hidden=true;
+}
+function installLantern(s){
+ if(lanternScene===s&&lantern?.active)return;
+ clearLantern();if(!s?.add||s.area?.id!==AREA||s.inside)return;
+ lanternScene=s;
+ // This is scenery only: no collision or changed navigation graph.
+ const pos={x:24.5*T,y:60.55*T};
+ const halo=s.add.circle(0,-6,21,0xffcf7d,.12).setBlendMode?.('ADD');
+ const g=s.add.graphics();g.fillStyle(0x302b34).fillRect(-8,5,16,5);
+ g.fillStyle(0x816b50).fillRect(-6,-11,12,18);
+ g.fillStyle(0xe6b46e).fillRect(-4,-9,8,14);g.fillStyle(0xffe6a2).fillRect(-2,-8,4,12);
+ g.fillStyle(0x42343b).fillRect(-8,-12,16,3);g.fillStyle(0xc7a16d).fillRect(-5,-16,10,4);
+ const sparkle=s.add.text(0,-33,'✦',{fontSize:'12px',color:'#ffe4ac',backgroundColor:'#151c2b99',padding:{x:3,y:2}}).setOrigin(.5);
+ lantern=s.add.container(pos.x,pos.y,[halo,g,sparkle]).setDepth(14);
+ s.areaObjs?.push(lantern); // Phaser area lifecycle remains authoritative.
+ lanternTween=s.tweens.add({targets:halo,alpha:{from:.08,to:.35},scale:{from:.92,to:1.25},duration:1400,yoyo:true,repeat:-1});
+ // Real discoverable historical route notice at station forecourt, drawn in the
+ // existing Phaser world as a decorative overlay. It never changes collision.
+ const notice=s.add.graphics();
+ notice.fillStyle(0x453c33).fillRect(-21,-19,42,30).fillRect(-17,9,5,15).fillRect(12,9,5,15);
+ notice.fillStyle(0xd1bd90).fillRect(-18,-17,36,24);
+ notice.fillStyle(0x987f60).fillRect(-14,-12,28,2).fillRect(-14,-6,22,2).fillRect(-14,1,29,2);
+ notice.fillStyle(0x745c55).fillRect(8,-14,6,6);
+ notice.fillStyle(0xd1bd90).fillRect(10,-12,2,2);
+ const boardLabel=s.add.text(0,-34,'✉',{fontSize:'12px',color:'#f0cf89',backgroundColor:'#131b28b9',padding:{x:4,y:2}}).setOrigin(.5);
+ board=s.add.container(21.5*T,51.5*T,[notice,boardLabel]).setDepth(12.5);
+ s.areaObjs?.push(board);
+}
+function near(s){
+ if(!s||s.area?.id!==AREA||s.inside||s.switching||active||visible(modal)||!read(KEY))return null;
+ if(s.chat?.isOpen||s.journal?.isOpen||s.settings?.isOpen||s.helper?.isOpen||s.quests?.isOpen)return null;
+ const x=s.player?.x||0,y=s.player?.y||0;
+ const dist=(tx,ty)=>Math.hypot(x-tx*T,y-ty*T);
+ if(dist(24.5,60.55)<100)return 'lantern';
+ if(dist(21.5,51.5)<112)return 'board';
+ return null;
+}
+function inspectNearest(){
+ const s=sc();if(!s||!nearObject)return;
+ if(nearObject==='board')showBoard();else showChoice();
+}
+function showBoard(){
+ const s=sc();const first=window.LQStory?.mark?.('mine-route-board-crest','Huy hiệu tại bảng tuyến đường cổ',
+ 'The railway notice shows an old Oriaris crest. The route record may hold the missing link.',
+ 'Bảng tuyến đường cũ có huy hiệu Oriaris. Hồ sơ đường tàu có thể giữ manh mối còn thiếu.',AREA,'Khảo sát bảng thông báo tại sân ga Minerals Town');
+ showModal('<h2>✧ THE OLD ROUTE BOARD</h2><p><strong>"An old line once carried letters and supplies beyond the hills."</strong></p><p><em>"Một tuyến đường cũ từng chuyển thư và vật tư qua những ngọn đồi."</em></p><p>Trên bảng xuất hiện một huy hiệu Oriaris mờ. Đây là manh mối cho <strong>The Forgotten Route</strong>. Hãy tiếp tục hỏi người dân và xem hồ sơ tại ga.</p><button class="close-option" data-close>Đóng · Tiếp tục khám phá</button>');
+ if(first)s?.quests?.toast?.(['✉ Đã lưu manh mối: Huy hiệu tuyến đường cổ']);
+}
+function showChoice(){
+ const saved=read(LANTERN_KEY);
+ if(saved){showModal('<h2>✦ THE LITTLE LANTERN</h2><p>"The lantern is still warm."</p><p><em>"Ngọn đèn vẫn còn ấm."</em></p><div class="choice-result">'+(saved==='share'?'Some lights are meant to be shared.':'A promise lives as long as someone remembers it.')+'</div><p>Đây là kỷ vật của Elias và gia đình ông. Bạn có thể quay lại thăm nó bất cứ khi nào.</p><button class="close-option" data-close>Đóng</button>');return;}
+ showModal('<h2>✦ THE LITTLE LANTERN</h2><p><em>"The lantern is still warm."</em> — Ngọn đèn vẫn còn ấm.</p><p>Bạn muốn làm gì với chiếc đèn Elias để lại bên sân ga?</p><div class="choice-options"><button data-mine-choice="share">Để chiếc đèn lại cho những người cần ánh sáng.<br><small>Leave it here for anyone who needs the light.</small></button><button data-mine-choice="care">Giúp Tomas chăm sóc chiếc đèn mỗi lần trở lại nhà ga.<br><small>Promise to help care for the lantern.</small></button></div><button class="close-option" data-close>Quyết định sau</button>');
+}
+function showModal(html){
+ if(!modal){modal=document.createElement('div');modal.id='lq-mine-choice';modal.hidden=true;modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest?.('[data-close]'))closeChoice();const b=e.target.closest?.('[data-mine-choice]');if(b)choose(b.dataset.mineChoice);});document.body.appendChild(modal);}
+ modal.innerHTML='<div class="choice-card">'+html+'</div>';modal.hidden=false;
+ const kb=sc()?.input?.keyboard;if(kb&&!modal._kb){modal._kb=kb;modal._prev=kb.enabled;kb.enabled=false;try{kb.resetKeys()}catch{}}
+}
+function closeChoice(){if(!modal)return;modal.hidden=true;if(modal._kb){modal._kb.enabled=modal._prev;modal._kb=null}}
+function choose(c){if(!['share','care'].includes(c))return;write(LANTERN_KEY,c);
+ window.LQStory?.mark?.('elias-lantern','Chiếc đèn của Elias',
+ 'Elias left a lantern at the station. His family kept the promise of remembering him.',
+ 'Chiếc đèn mỏ của Elias nhắc rằng ký ức và tình yêu thương có thể được gìn giữ qua nhiều thế hệ.',AREA,'Tương tác kỷ vật trong nhà ga');
+ showModal('<h2>✦ A PROMISE REMEMBERED</h2><div class="choice-result">'+(c==='share'?'Some lights are meant to be shared.':'A promise lives as long as someone remembers it.')+'</div><p>'+(c==='share'?'Có những ánh sáng sinh ra để được sẻ chia.':'Một lời hứa vẫn sống khi còn có người ghi nhớ.')+'</p><p>Lựa chọn đã được ghi vào nhật ký riêng, không làm khóa nhiệm vụ hoặc ảnh hưởng phần thưởng.</p><button class="close-option" data-close>Quay lại Minerals Town</button>');
+}
+function tick(){
+ const s=sc();const isMine=s?.area?.id===AREA&&!s.inside;
+ document.body.classList.toggle('lq-mine-area',!!isMine);
+ if(s!==lanternScene||!isMine){if(lantern)clearLantern();}
+ if(!isMine){lastScene=s;return;}
+ if(read(KEY)&&!lantern)installLantern(s);
+ nearObject=near(s);
+ const b=document.getElementById('lq-mine-lantern-action');
+ if(b){b.hidden=!nearObject;b.textContent=nearObject==='lantern'?'✦ E · Chiếc đèn của Elias':'✉ E · Bảng tuyến đường cũ';}
+ if(!active&&!read(KEY)&&ready(s)){
+  // Only first arrival starts the film. Wait for map transition and game title to settle.
+  if(lastScene!==s){lastScene=s;return;}
+  play(false);
+ }
+ lastScene=s;
+}
+function init(){if(booted)return;booted=true;initUI();watcher=setInterval(tick,650);tick();}
+window.LQMineIntro=Object.freeze({version:'50.0',isPlaying:(s)=>!!active&&(!s||active.scene===s),play:()=>play(false),replay:()=>play(true),skip:()=>finish(true),status:()=>({seen:read(KEY),choice:read(LANTERN_KEY),playing:!!active,beat:active?.sceneIndex??null}),inspect:inspectNearest});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+
+</script>
+
+<!-- LifeQuest V51: new optional world content, isolated from the original core. -->
+<script>
+/* LIFEQUEST AI V51 — Living Worlds, safe additive expansion.
+ * New opt-in exploration, per-region interactive activities, visible state changes,
+ * NPC conversations remembered as counts (never raw conversation content),
+ * basic stuck recovery, and map-safe world markers.
+ * Does NOT replace the original Phaser scene, quest rewards, NPC art, or routes.
+ */
+(() => {
+'use strict';
+if (window.LQ51) return;
+const VER='51.0.1', STORAGE='lifequest_v51_living_worlds_v1', TILE=32;
+const $=id=>document.getElementById(id);
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const scene=()=>window.__lifequestGetScene?.()||null;
+const NOW=()=>new Date().toISOString();
+const REGIONS={
+ 'english-town':{name:'English Town',tag:'A1–A2',mood:'Thành phố thức dậy',events:['Đèn quảng trường còn sáng','Cư dân bắt đầu ngày mới','Giờ sinh hoạt tại thư viện','Quảng trường lên đèn'],accent:'#91d9fa'},
+ 'mining-town':{name:'Minerals Town',tag:'A2',mood:'Những ký ức bên đường ray',events:['Đèn xưởng đêm vẫn sáng','Thợ mỏ đi vào ca sáng','Giờ kiểm tra chuyến hàng','Nhà ga chuẩn bị đón khách'],accent:'#f6ce92'},
+ 'english-town-past':{name:'Oriaris · 70 Years Ago',tag:'A2–B1',mood:'Làng của những lá thư',events:['Làng xưa còn yên giấc','Chuẩn bị thư sáng','Đường làng nhộn nhịp','Gia đình sum họp'],accent:'#efcf9e'},
+ 'oriaris-trail-1':{name:'North Trail I',tag:'A2',mood:'Con đường qua suối',events:['Rừng còn tĩnh lặng','Nắng xuyên tán lá','Người đưa thư nghỉ chân','Đom đóm đầu tối'],accent:'#bbdbac'},
+ 'oriaris-trail-2':{name:'North Trail II',tag:'A2',mood:'Dấu chân lịch sử',events:['Dòng suối êm','Sương trên lối mòn','Khám phá dấu tích','Rừng chuyển sang tối'],accent:'#b8d99e'},
+ 'oriaris-trail-3':{name:'North Trail III',tag:'A2',mood:'Khu rừng bị lãng quên',events:['Đêm rừng trầm lắng','Lối mòn đón nắng','Tiếng gió trên tán cây','Ánh sáng cuối ngày'],accent:'#b6e4c5'},
+ 'oriaris-camp':{name:'Oriaris Camp',tag:'A2–B1',mood:'Ngọn lửa cuối hành trình',events:['Trại yên tĩnh','Chuẩn bị thư từ','Các nhà thám hiểm kể chuyện','Đêm của những lời hứa'],accent:'#f3c78c'},
+ 'art-district':{name:'Art District',tag:'B1',mood:'Nghệ thuật từ nhiều góc nhìn',events:['Các xưởng chuẩn bị','Nghệ sĩ dựng tác phẩm','Sắc màu trên phố','Đèn phòng tranh bật sáng'],accent:'#efa5d0'},
+ 'tech-co':{name:'Tech-Co',tag:'B1',mood:'Một ngày làm việc',events:['Hệ thống chạy tự động','Buổi họp bắt đầu','Giờ giải quyết sự cố','Văn phòng tổng kết'],accent:'#7cdeed'},
+ 'old-oriaris':{name:'Old Oriaris',tag:'B1–B2',mood:'Kinh đô còn ghi nhớ',events:['Đèn cổng hoàng cung','Học viện mở cửa','Sân khấu và nghi lễ','Tháp chuông lên đèn'],accent:'#f1d193'},
+ 'wish-valley':{name:'Wish Valley',tag:'B2',mood:'Sự sống của Thác Mẹ',events:['Tiếng thác vang trong đêm','Người Maorai hái quả','Sinh vật tìm nơi nghỉ','Trò chuyện bên dòng Navae'],accent:'#a8edb7'},
+ 'vocalt-greedy-land':{name:'Vocalt · Greedy Land',tag:'B2–C1',mood:'Thị trấn của những giao dịch',events:['Các cửa hiệu đóng cửa','Thương nhân mở gian hàng','Khách đến từ nhiều vùng','Phiên chợ chiều rộn ràng'],accent:'#f0c787'}
+};
+function q(prompt, options, correct, explain){return {prompt,options,correct,explain};}
+const ACTIVITIES=[
+ {id:'et-board',area:'english-town',title:'Bảng cộng đồng',type:'quiz',anchor:'spawn',dx:4,dy:2,icon:'?',desc:'Giúp một người khách tìm thư viện bằng câu hỏi tiếng Anh.',tasks:[q('Bạn muốn hỏi đường đến thư viện. Câu nào lịch sự và rõ nghĩa?', ['Where the library?', 'Excuse me, where is the library?', 'You library now.'],1,'Hỏi đường lịch sự bằng “Excuse me, where is...?”')],clue:'Một ghi chú ở thư viện nhắc đến con dấu Oriaris.'},
+ {id:'et-archive',area:'english-town',title:'Hồ sơ thư viện',type:'sequence',anchor:'spawn',dx:9,dy:4,icon:'L',desc:'Tra cứu địa chỉ lá thư: hỏi thủ thư, đọc hồ sơ, đối chiếu dấu niêm phong.',tasks:[q('Bước 1: Để tìm một hồ sơ cũ, bạn nên làm gì?', ['Ask the librarian for help.', 'Hide the letter.', 'Leave the library.'],0,'Trước tiên hãy hỏi người phụ trách thư viện.'),q('Bước 2: Câu nào yêu cầu đọc đúng tài liệu?', ['May I see the old map, please?', 'I take everything.', 'The map is blue.'],0,'“May I see...?” là lời đề nghị lịch sự.')],clue:'Tài liệu cũ đã được đối chiếu với bản đồ hành trình.'},
+ {id:'mine-train',area:'mining-town',title:'Lịch trình nhà ga',type:'quiz',at:[35,52],icon:'T',desc:'Đọc dữ liệu chuyến tàu và xác định đúng giờ xuất phát.',tasks:[q('Bảng ghi “Train 12 — departure 09:30”. Câu nào đúng?', ['The train leaves at half past nine.', 'The train leaves at midnight.', 'The train arrives at half past ten.'],0,'09:30 = half past nine. Departure có nghĩa là giờ khởi hành.'),q('Một bưu kiện thiếu thông tin nơi nhận. Bạn hỏi gì?', ['Where should we send this package?', 'This package is yesterday.', 'Package no question.'],0,'Hỏi nơi nhận để kiểm chứng tuyến đường.')],clue:'Hồ sơ ga cho biết một tuyến thư từng đi qua đồi Oriaris.'},
+ {id:'mine-memory',area:'mining-town',title:'Kỷ vật của thị trấn',type:'quiz',at:[38,62],icon:'M',desc:'Khám phá cuộc sống thợ mỏ và cách người dân lưu giữ ký ức.',tasks:[q('Bạn muốn hỏi về một kỷ vật. Câu nào phù hợp?', ['Who did this lantern belong to?', 'Lantern what doing?', 'Where is my money?'],0,'“Belong to” dùng khi hỏi vật đó từng thuộc về ai.')],clue:'Người dân vẫn gìn giữ kỷ vật của những thế hệ trước. Đây là nội dung bổ sung, không thay intro Elias.'},
+ {id:'past-post',area:'english-town-past',title:'Bàn phân loại thư',type:'sequence',anchor:'spawn',dx:5,dy:3,icon:'P',desc:'Xác minh địa chỉ và sắp xếp thư trước khi giao.',tasks:[q('Câu nào diễn tả hành động đã hoàn thành hôm qua?', ['I deliver it tomorrow.', 'I delivered the letter yesterday.', 'I am delivering now.'],1,'Past simple “delivered” dùng với “yesterday”.'),q('Người nhận không có ở nhà. Bạn nên làm gì?', ['Confirm the address and return later.', 'Throw the letter away.', 'Say nothing and leave it outside.'],0,'Đưa thư cần kiểm chứng người nhận và đảm bảo thư được trao đúng nơi.')],clue:'Một lá thư trong sổ giao nhận vẫn chưa tìm thấy người nhận.'},
+ {id:'trail-one',area:'oriaris-trail-1',title:'Tấm biển gần cầu',type:'quiz',anchor:'spawn',dx:4,dy:2,icon:'1',desc:'Đọc biển chỉ đường trước khi qua suối.',tasks:[q('Biển ghi “Cross the wooden bridge, then turn left”. Bạn làm gì?', ['Cross the bridge and turn left.', 'Go back and turn right.', 'Wait at the market.'],0,'“Then” xác định hành động tiếp theo.')],clue:'Biển chỉ đường xác nhận một trong các tuyến vận chuyển thư.'},
+ {id:'trail-two',area:'oriaris-trail-2',title:'Dấu tích đường cũ',type:'quiz',anchor:'spawn',dx:3,dy:3,icon:'2',desc:'So sánh những vết mốc đường trong quá khứ.',tasks:[q('“The old path was here.” Câu này nói về điều gì?', ['A present plan.', 'A past location.', 'A future meeting.'],1,'“Was” chỉ trạng thái trong quá khứ.')],clue:'Đường cũ có dấu mốc khớp với bản ghi ở ga.'},
+ {id:'trail-three',area:'oriaris-trail-3',title:'Sổ quan sát rừng',type:'quiz',anchor:'spawn',dx:4,dy:2,icon:'3',desc:'Ghi chép dấu hiệu tự nhiên dọc tuyến hành trình.',tasks:[q('“The tree stood beside the path.” “Beside” nghĩa là gì?', ['Đối diện', 'Bên cạnh', 'Phía dưới'],1,'Beside = bên cạnh.')],clue:'Một thân cây cổ đã làm dấu chỉ đường cho người đưa thư.'},
+ {id:'past-camp',area:'oriaris-camp',title:'Bản đồ bên lửa trại',type:'sequence',anchor:'spawn',dx:4,dy:3,icon:'C',desc:'Tổng hợp ba dấu tích trước khi tiếp tục hành trình.',tasks:[q('Điều nào nên làm khi kết hợp manh mối?', ['Check the dates and places.', 'Guess without checking.', 'Ignore the letters.'],0,'Đối chiếu thời gian và địa điểm là bước hợp lý.'),q('Câu nào diễn tả một việc đã xảy ra?', ['We found the old route.', 'We will found a route.', 'We finds a route.'],0,'“Found” là quá khứ của “find”.')],clue:'Các dấu mốc trên đường được nối thành một tuyến giao thư.'},
+ {id:'art-mural',area:'art-district',title:'Tường tranh của cộng đồng',type:'mural',anchor:'spawn',dx:5,dy:3,icon:'A',desc:'Tạo một tác phẩm pixel-art với bảng màu của riêng bạn.',clue:'Tác phẩm của bạn trở thành một dấu ấn mới tại Art District.'},
+ {id:'art-council',area:'art-district',title:'Hội đồng bảy nghệ sĩ',type:'quiz',anchor:'spawn',dx:10,dy:4,icon:'7',desc:'Lắng nghe quan điểm khác nhau để đưa ra một đề xuất.',tasks:[q('Noor muốn thêm màu xanh, Ivo muốn có thêm khoảng trống. Bạn phản hồi thế nào?', ['I agree with both ideas. We should balance colour and space.', 'Only my idea matters.', 'Your ideas are bad.'],0,'Luyện nêu ý kiến và tìm sự đồng thuận.')],clue:'Bảy góc nhìn có thể tạo ra một tác phẩm chung.'},
+ {id:'tech-report',area:'tech-co',title:'Bàn hỗ trợ kỹ thuật',type:'write',at:[27,16],icon:'B',desc:'Viết một báo cáo sự cố ngắn bằng tiếng Anh.',placeholder:'First, I opened the login page. Then I pressed the button. We should check it, please.',validation:[{re:/\b(first|firstly)\b/i,fail:'Cần có First / Firstly để bắt đầu quy trình.'},{re:/\b(then|next|after that)\b/i,fail:'Cần có Then / Next để mô tả bước tiếp theo.'},{re:/\b(should|please|could)\b/i,fail:'Cần đề xuất lịch sự với should / please / could.'}],clue:'Nhóm hỗ trợ phát hiện một bảng tuyến đường còn thiếu dữ liệu.'},
+ {id:'tech-route',area:'tech-co',title:'Bảng tuyến đường số',type:'sequence',at:[27,25],icon:'D',desc:'So sánh dữ liệu hiện đại với hồ sơ ga và tư liệu cũ.',tasks:[q('Một tuyến đường không xuất hiện trên màn hình. Nên làm gì đầu tiên?', ['Compare it with verified records.', 'Delete all the data.', 'Ignore the error.'],0,'Kiểm chứng bằng hồ sơ là bước điều tra hợp lý.'),q('Bạn muốn lên lịch họp. Câu nào lịch sự?', ['Could we meet at three to review the route?', 'Meet now, no.', 'Why is map?'],0,'“Could we meet...?” phù hợp môi trường công việc.')],clue:'Bản đồ số xác nhận từng tồn tại một lối đi cũ.'},
+ {id:'royal-bell',area:'old-oriaris',title:'Tháp chuông ký ức',type:'sequence',at:[44,35],icon:'B',desc

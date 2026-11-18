@@ -1,0 +1,642 @@
+c='opera';else if(area==='vocalt-greedy-land'&&/chronos/.test(name))spec='chronos';
+    return{area,name,kind,spec,p:theme(area),w:s.w*TILE,h:s.h*TILE,complete:done(s),items:s.items||[],id:hash(area+name)}}
+  function brick(b,x,y,w,h,col,dim){b.r(x+2,y+3,w,h,0x0a1522,.30);b.r(x,y,w,h,col);b.r(x+2,y+2,w-4,Math.max(1,Math.round(h*.18)),dim,.5)}
+  function frame(b,x,y,w,h,wood,inner,edge){b.r(x-6,y-6,w+12,h+12,edge);b.r(x-3,y-3,w+6,h+6,wood);b.r(x,y,w,h,inner);b.r(x+w*.48,y,4,h,edge,.73);b.r(x,y+h*.48,w,3,edge,.64);b.r(x+5,y+5,w*.19,3,0xf7e6b8,.26);}
+  function gear(b,x,y,r,outer,inner,phase=0){b.c(x+2,y+3,r+3,0x0b1422,.32);b.c(x,y,r,outer);for(let i=0;i<12;i++){const a=i*Math.PI/6+phase;b.r(x+Math.cos(a)*r-2,y+Math.sin(a)*r-2,5,5,outer)}b.c(x,y,r*.74,0x3d3540);b.c(x,y,r*.5,inner);for(let i=0;i<6;i++){const a=i*Math.PI/3+phase;b.l(x,y,x+Math.cos(a)*r*.47,y+Math.sin(a)*r*.47,outer,.84,2)}b.c(x,y,3,0x252e35)}
+  function lantern(b,x,y,col){b.l(x,y-21,x,y-13,0x3a3333,.9,2);brick(b,x-8,y-13,16,22,0x4e3c37,0x9b7452);b.r(x-5,y-9,10,13,col,.91);b.r(x-3,y-7,5,7,0xffe7ae,.9);b.o(x,y+12,31,7,col,.14)}
+  function leaf(b,x,y,scale,seed){let r=8*scale;for(let i=0;i<7;i++){const a=(i/7)*6.28+seed;b.o(x+Math.cos(a)*r,y+Math.sin(a)*r,10*scale,7*scale,i%2?0x639b6d:0xa8c97d,.88)}b.c(x,y,2.2*scale,0xedde9c)}
+  function clockface(b,x,y,r,seed){b.c(x+2,y+3,r+3,0x172024,.36);b.c(x,y,r+2,0x3f2932);b.c(x,y,r,0xd4b575);b.c(x,y,r-5,0x6b4b42);b.c(x,y,r-8,0xe0ca9b);for(let i=0;i<12;i++){let a=i*Math.PI/6;b.r(x+Math.sin(a)*(r-11)-1,y-Math.cos(a)*(r-11)-1,3,3,0x514033)}b.l(x,y,x+Math.sin(seed)*r*.46,y-Math.cos(seed)*r*.46,0x352c2e,.9,3);b.l(x,y,x-r*.34,y-r*.39,0x352c2e,.9,2);b.c(x,y,3,0xc7984e)}
+  // Regional material language. Ground inlays deliberately introduce ZERO collision.
+  function materialFloor(g,s){if(!s?.__lq58)return;const a=room(s),b=graphics(g),W=a.w,H=a.h,X=17,Y=99,WW=W-34,HH=H-145;
+    if(WW<90||HH<60)return;
+    const r=(x,y,w,h,c,t)=>b.r(x,y,w,h,c,t);
+    // Sunward contact rim and warm ambient occlusion at the wall-foot joint.
+    r(15,93,W-30,7,0x081c27,.26);r(19,100,W-38,2,a.p.light,.17);
+    switch(a.kind){
+      case 'valley': {
+        r(X,Y,WW,HH,0x587851,.18);
+        for(let k=0;k<9;k++){let theta=(k/9)*6.283;let cx=W/2+Math.cos(theta)*Math.min(WW*.31,130),cy=Y+HH*.5+Math.sin(theta)*HH*.38;
+          b.o(cx,cy,36,12,0x1d422f,.31);b.l(cx-13,cy,cx+13,cy,0x9cc17f,.25,2)}
+        b.o(W*.5,Y+HH*.48,Math.min(WW*.69,280),Math.min(HH*.91,165),0x483e2f,.54);
+        b.o(W*.5,Y+HH*.48,Math.min(WW*.62,248),Math.min(HH*.80,145),0xa68752,.66);
+        b.o(W*.5,Y+HH*.48,Math.min(WW*.55,215),Math.min(HH*.69,128),0x907744,.66);
+        for(let v=-4;v<=4;v++)b.l(W/2-105,Y+HH*.48+v*10,W/2+105,Y+HH*.48+v*10,0xefc888,.24,1);
+        for(let i=0;i<12;i++){let th=i*Math.PI/6;b.l(W*.5+Math.cos(th)*62,Y+HH*.48+Math.sin(th)*39,W*.5+Math.cos(th)*110,Y+HH*.48+Math.sin(th)*63,0xe0c48b,.27,2)}
+        for(let i=0;i<6;i++){const x=27+i*(W-54)/5;leaf(b,x,H-64,.65,i*.6)}
+        break;
+      }
+      case 'mining': {
+        r(X,Y,WW,HH,0x253b46,.36);
+        for(let y=Y;y<Y+HH;y+=37){r(X+5,y+5,WW-10,3,0x111f2b,.73);for(let x=X+13;x<X+WW-6;x+=41){r(x,y+10,3,3,0xc1bda5,.49);r(x+25,y+27,3,3,0x748f92,.46)}}
+        for(let x of [W*.37,W*.62]){r(x-3,Y+5,7,HH-10,0xb59e76,.69);r(x,Y+5,2,HH-10,0xf5d69b,.49)}
+        for(let y=Y+12;y<Y+HH-2;y+=19){r(W*.37+7,y,W*.25-14,5,0xc3aa83,.56);r(W*.37+9,y+1,W*.25-18,2,0x485e66,.64)}
+        for(let k=0;k<6;k++){let yy=Y+15+k*28;b.r(25,yy,19,4,0xe7a973,.35);b.r(W-53,yy,28,4,0xd8d8c2,.25)}
+        break;
+      }
+      case 'royal': {
+        r(X,Y,WW,HH,0x593f5c,.48);
+        for(let y=Y;y<Y+HH;y+=32)for(let x=X;x<X+WW;x+=32){r(x+1,y+1,30,30,((x+y)/32)%2<1?0x9e7184:0x785977,.31);r(x+4,y+4,22,1,0xffd6a7,.14)}
+        const cw=Math.max(70,WW*.23),cx=W/2-cw/2;r(cx-9,Y,cw+18,HH,0x452943,.85);r(cx-6,Y,cw+12,HH,0xb45d72,.88);r(cx-1,Y,cw+2,HH,0x933d58,.77);
+        for(let y=Y+13;y<Y+HH-8;y+=21){for(let x of [cx-5,cx+cw+5]){b.c(x,y,3,0xf4d6a2,.75);b.c(x,y,1,0x7b5d52)}b.o(W/2,y,8,5,0xf4d6a2,.42)}
+        break;
+      }
+      case 'market': {
+        r(X,Y,WW,HH,0x725244,.38);
+        for(let y=Y;y<Y+HH;y+=26){for(let x=X+((y-Y)/26%2)*23;x<X+WW;x+=46){r(x,y+1,44,23,0x9a6c4e,.19);r(x+3,y+3,37,2,0xf3c887,.14)}}
+        const rad=Math.min(75,HH*.33,WW*.27),cx=W/2,cy=Y+HH*.54;b.c(cx,cy,rad+8,0x2c2932,.73);b.c(cx,cy,rad+4,0xba966a,.8);b.c(cx,cy,rad-4,0x453440,.91);b.c(cx,cy,rad-10,0x997453,.52);
+        for(let i=0;i<12;i++){let t=i*Math.PI/6;b.r(cx+Math.sin(t)*(rad-12)-2,cy-Math.cos(t)*(rad-12)-2,4,4,0xeed3a0,.77)}b.l(cx,cy,cx+rad*.27,cy-rad*.55,0xffe3af,.62,3);b.l(cx,cy,cx-rad*.39,cy-rad*.14,0xffe3af,.63,2);
+        break;
+      }
+      case 'tech': {
+        r(X,Y,WW,HH,0x103b53,.75);
+        for(let y=Y+5;y<Y+HH;y+=31){for(let x=X+4;x<X+WW;x+=49){r(x,y,45,27,0x376d82,.23);r(x+5,y+2,35,2,0x9de7e0,.19)}}
+        for(let x of [W*.19,W*.81]){b.l(x,Y+8,x,Y+HH-15,0x56a9a6,.4,3);for(let i=0;i<5;i++){let y=Y+18+i*33;b.c(x,y,4,0xc8ffff,.38)}}
+        for(let y=Y+19;y<Y+HH-15;y+=45){b.l(W*.23,y,W*.77,y,0x72f7e1,.24,2);b.r(W*.5-3,y-2,6,5,0xacebe9,.38)}
+        break;
+      }
+      case 'art': {
+        r(X,Y,WW,HH,0x504663,.54);
+        const fills=[0xa56b92,0x6387a2,0xb59188,0x8a729c];
+        for(let y=Y;y<Y+HH;y+=54)for(let x=X;x<X+WW;x+=70){const h=hash(a.id+':'+x+':'+y);b.tri(x,y,x+65,y,x+38,y+51,fills[h%4],.24);b.tri(x+70,y+54,x+70,y,x+38,y+51,fills[(h+1)%4],.18);b.l(x+9,y+5,x+52,y+42,0xffe5cd,.13,2)}
+        break;
+      }
+      case 'civic': {
+        r(X,Y,WW,HH,0x5f847b,.32);
+        for(let y=Y;y<Y+HH;y+=21){for(let x=X+(y%2)*11;x<X+WW;x+=35){r(x+1,y+1,32,18,0x9d9880,.22);r(x+4,y+4,26,2,0xf7e6b3,.19)}}
+        break;
+      }
+      default: {
+        r(X,Y,WW,HH,a.kind==='past'?0x93734f:0x41674e,.42);
+        for(let y=Y;y<Y+HH;y+=23){r(X+4,y,WW-8,3,0x352f2c,.37);r(X+6,y+4,WW-11,2,0xd8b483,.19);for(let x=X+12;x<X+WW;x+=39){r(x,y+9,3,3,0xf3d7a7,.13)}}
+        break;
+      }
+    }
+  }
+  // Architectural shell: distinctive silhouette and structural articulation per biome.
+  function architecture(g,s){if(!s?.__lq58)return;const a=room(s),b=graphics(g),{w:W,h:H,kind,complete}=a,side=20,low=H-45,wall=90;
+    // Deliberately no added colliders, and doorway centre remains clear.
+    if(kind==='valley'){
+      // Vaela/forest: organic buttress arcs, breathing root ribs and woven paneling.
+      for(let k=0;k<2;k++){const x=k?W-56:10;b.r(x,43,47,H-94,0x283a2d,.75);for(let yy=63;yy<H-63;yy+=37){const shift=Math.sin((yy+a.id%31)*.035)*6;b.o(x+24+shift,yy,39,64,k?0x426342:0x38563b,.72);b.l(x+13+shift,yy-12,x+35+shift,yy+16,0x9d8159,.5,3)}}
+      for(let i=0;i<11;i++){const x=32+i*(W-64)/10;const hh=12+17*Math.abs(Math.sin(i*.8));b.l(x,38,x-10+Math.sin(i)*9,62+hh,0x597d51,.74,4);b.l(x+3,42,x+9,49+hh,0x9a9b65,.64,2)}
+      for(let j=0;j<6;j++){const x=32+j*(W-64)/5;leaf(b,x,60,1.2,j*.5);if(prefs.light)b.o(x+9,98,21,9,0xffe8ad,.085)}
+      // Woven wooden scalloped floor ring, not a collision object.
+      b.o(W/2,H*.53,Math.min(W*.67,370),Math.min(H*.58,225),0x1c342b,.45);b.o(W/2,H*.53,Math.min(W*.61,342),Math.min(H*.51,198),0xb19a69,.19);
+      for(let i=0;i<10;i++){const t=i*Math.PI/5;b.l(W/2+Math.cos(t)*85,H*.53+Math.sin(t)*52,W/2+Math.cos(t)*145,H*.53+Math.sin(t)*79,0xd1b586,.15,3)}
+      if(a.spec==='vaela'){for(let i=0;i<6;i++){const t=i*.57;b.o(48+i*21,H*.36+(i%3)*10,16,8,i%2?0xd1ae6a:0x72a264,.58)}b.l(W*.28,100,W*.34,123,0xe3ca94,.4,3)}
+    }else if(kind==='mining'){
+      // Furnace ribs, six structural bays, pipes and pressure gauges.
+      b.r(12,24,W-24,64,0x233846,.86);for(let i=0;i<6;i++){const x=20+i*(W-40)/5;brick(b,x-8,20,16,76,0x41565f,0x92a2a0);b.r(x-10,45,20,5,0xb2a388,.7);b.r(x-5,72,10,3,0x263742)}
+      b.l(34,51,W-34,51,0xa5a8a4,.74,5);b.l(35,58,W-37,58,0x314b53,.95,6);
+      for(let i=0;i<3;i++){let x=W*.21+i*W*.28;clockface(b,x,54,13,i*.86)}
+      for(let i=0;i<4;i++){const xx=38+i*(W-76)/3;b.r(xx,85,36,7,0x6e8489);b.r(xx+6,88,6,3,i%2?0x9bddc0:0xffbd7b)}
+      if(a.spec==='mine'){for(let j=0;j<3;j++){let x=20+j*(W-45)/2;b.l(x,H*.42,x+35,H*.42,0xd1bd91,.37,3);gear(b,x+22,H*.42-3,12,0x80949a,0xe0c392,j*.33)}}
+      if(prefs.light)for(let x of [44,W-46])b.o(x,94,57,12,0xffc48a,.17);
+    }else if(kind==='royal'){
+      // Truly repeated arches, columns, raised proscenium; avoid doorway.
+      b.r(13,14,W-26,75,0x3a2c46,.86);for(let i=0;i<5;i++){const x=29+i*(W-58)/4;b.r(x-11,45,22,51,0x68536d,.86);b.r(x-15,32,30,13,0xc4a18b);b.o(x,30,40,23,0x9b778f,.9);b.r(x-4,47,8,43,0xc2a68d,.36);b.r(x-13,82,26,6,0xecd39e,.7)}
+      for(let i=0;i<4;i++){const x=44+i*(W-88)/3;frame(b,x-17,30,34,36,0xc9a56e,i%2?0x4b6385:0x785d93,0x49394d)}
+      b.r(W*.38,102,W*.24,7,0xe1bb8b,.55);for(let j=0;j<6;j++)b.r(W*.43+j*W*.025,111,2,10,0xf3ddab,.3);
+      if(a.spec==='opera'){b.r(W*.22,107,W*.56,47,0x3c2338,.91);b.r(W*.24,109,W*.52,7,0xf9d898,.74);for(let i=0;i<12;i++){let x=W*.25+i*W*.045;b.r(x,116,W*.025,36,i%2?0x96394c:0xbc5365,.95);b.l(x,117,x,147,0xffa999,.35,1)}b.r(W*.23,154,W*.54,4,0xd0a66a,.84)}
+    }else if(kind==='market'){
+      // Merchant-grade carved wood and brass beams, no repeated rectangle wallpaper.
+      b.r(12,23,W-24,69,0x352a31,.88);for(let i=0;i<7;i++){let x=24+i*(W-48)/6;b.r(x-5,15,10,80,0x6d4d42);b.r(x-3,20,4,63,0xbc8d60,.56);gear(b,x,30,6,0xc89c60,0xe8c28a,i)}
+      for(let i=0;i<4;i++){let x=40+i*(W-80)/3;b.r(x-25,66,50,19,0x5d3c3d);b.r(x-22,69,44,3,0xe2b17b,.66);clockface(b,x,52,14,.7+i*.32)}
+      if(a.spec==='chronos'){clockface(b,W*.5,51,30,1.2);for(let i=0;i<4;i++){const x=25+i*(W-50)/3;gear(b,x,114,10+i%2*4,0xbd985d,0xf3c17f,i*.3)}}
+    }else if(kind==='tech'){
+      b.r(13,15,W-26,77,0x163d51,.95);for(let i=0;i<7;i++){let x=21+i*(W-42)/6;b.r(x,22,5,67,0x478b9e,.7);b.r(x+7,26,Math.max(9,(W-60)/7-12),44,0x2b6f82,.61);b.r(x+10,30,Math.max(4,(W-60)/7-19),3,0x7ddce1,.47)}
+      for(let i=0;i<5;i++){let x=35+i*(W-70)/4;b.c(x,80,5,0xa6eff2,.57);b.l(x,83,x+12,93,0x77cdd3,.28,1)}
+    }else if(kind==='art'){
+      for(let i=0;i<7;i++){const x=20+i*(W-40)/6;b.r(x,25,26,61,[0x524063,0x694d74,0xa87591,0x60718c][i%4],.85);b.tri(x,25,x+26,25,x+20,45,0xe0b3cf,.55);b.l(x,84,x+37,42,0xf2c9a4,.34,3)}
+      for(let i=0;i<6;i++){const x=31+i*(W-62)/5;frame(b,x-14,49,28,29,0x9d7182,[0x9f6a98,0x689ab0,0xcb9b88][i%3],0x35273c)}
+    }else{
+      // Civic, heritage and woodland have distinct beams + window shape.
+      b.r(14,16,W-28,76,kind==='past'?0x675039:0x315057,.86);
+      for(let i=0;i<6;i++){let x=19+i*(W-38)/5;b.r(x,18,9,75,kind==='past'?0x946e49:0x627b74);b.l(x+9,25,x+(W-38)/5-2,63,0xead5a6,.25,2)}
+      for(let i=0;i<4;i++){const x=38+i*(W-76)/3;frame(b,x-15,43,30,30,0x9d815c,kind==='past'?0xa2ad82:0x75a4ab,0x314139)}
+    }
+    if(complete&&prefs.story){for(let i=0;i<7;i++){const x=W*.35+i*(W*.3)/6;b.r(x,93,4,4,i%2?0xfbdc8b:0x8ce6b8,.75)}b.r(W*.48,95,W*.04,4,0xffdaa3,.85)}
+    // Intentional unbroken interior doorway apron; marker is NON-SOLID.
+    b.r(W*.5-19,low+3,38,2,0xeac98c,.3);
+    drawStats.interior++;
+  }
+  // Localized details are painted over existing object's INSIDE ITS ORIGINAL HITBOX.
+  function itemDetail(g,item,s){if(!item||!s?.__lq58||!Number.isFinite(item.x))return;const a=room(s),b=graphics(g),x=item.x*32,y=item.y*32,w=item.w*32,h=item.h*32,k=String(item.k||'').toLowerCase();if(w<25||h<22)return;
+    const w0=Math.max(1,w-14),h0=Math.max(1,h-12);
+    const plate=(color)=>{b.r(x+8,y+9,w0,h0,0x0e1a23,.36);b.r(x+7,y+7,w0,h0,color,.52);b.l(x+10,y+10,x+w-12,y+10,0xffe7c2,.35,2)};
+    if(/desk|counter|table|workbench|terminal|anvil/.test(k)){
+      plate(a.kind==='mining'?0x8c9792:a.kind==='valley'?0x9f865c:0xab8064);
+      const n=Math.max(1,Math.floor((w-21)/19));for(let i=0;i<n;i++){let xx=x+13+i*(w-26)/n;const col=a.kind==='tech'?0x86d8db:a.kind==='mining'?0xd4b282:a.kind==='valley'?0x9fd08c:0xf2d9a7;b.r(xx,y+14,Math.min(12,(w-26)/n-2),6,col,.76);b.r(xx+3,y+16,3,2,0xfff5cd,.45)}
+      b.r(x+11,y+h-7,7,4,0x29333b,.78);b.r(x+w-19,y+h-7,7,4,0x29333b,.78);
+    }else if(/clock|gear|mechanism/.test(k)){clockface(b,x+w/2,y+h/2,Math.min(w,h)*.32,.6)}
+    else if(/forge|oven|stove|fireplace/.test(k)){plate(0x684c45);for(let i=0;i<5;i++){let xx=x+w*.3+i*w*.10;b.r(xx,y+h*.48-8-i%2*5,Math.max(3,w*.065),13+i%2*5,i%2?0xffbd70:0xe47a54,.73)}b.o(x+w/2,y+h-7,w*.72,8,0xffd28d,.1)}
+    else if(/shelf|rack|cabinet|bookcase|display|case/.test(k)){plate(0x775c4e);for(let i=0;i<2;i++){let yy=y+15+i*(h-30)*.56;b.r(x+9,yy,w-18,3,0xd1ab79,.79);for(let j=0;j<Math.min(9,Math.floor(w/13));j++){let xx=x+12+j*(w-25)/Math.max(1,Math.min(9,Math.floor(w/13)));b.r(xx,yy-8,5,8,[0x789e99,0xe0af76,0x8f9fc1,0xd29fae][(j+i)%4],.81)}}}
+    else if(/bed|sofa|bench|couch/.test(k)){plate(a.kind==='valley'?0x9aa785:a.kind==='royal'?0x9d718a:0x8e9390);b.r(x+10,y+9,w*.35,8,0xf6e7c5,.75);for(let j=0;j<5;j++)b.l(x+8+j*8,y+h-12,x+18+j*8,y+h-7,0xd3b896,.34,1)}
+    else if(/plant|herbs|tree/.test(k)){leaf(b,x+w*.5,y+h*.47,safe(Math.min(w,h)/32,.5,1.4),a.id%7)}
+  }
+  function architectureFront(g,s){if(!s?.__lq58)return;const a=room(s),b=graphics(g),W=a.w,H=a.h,kind=a.kind;
+    // Front edge with visual doorway, never painted across lower central route.
+    b.r(8,83,W-16,4,a.p.dark,.72);for(let i=0;i<7;i++){const x=13+i*(W-26)/6;b.r(x,84,Math.max(5,W*.04),2,a.p.light,.32)}
+    for(let x of [14,W-20]){b.r(x,90,6,H-145,a.p.dark,.6);b.r(x+2,94,2,H-153,a.p.light,.2)}
+    // Finishing border helps depth without masking player or doors.
+    b.r(W*.5-20,H-40,40,3,a.p.base,.64);b.r(W*.5-14,H-38,28,2,a.p.light,.32);
+    if(kind==='royal'){for(let x of [W*.17,W*.83]){b.r(x-10,88,20,5,0xedcf9c,.82);b.r(x-7,93,14,7,0x906d77,.74)}}
+    if(kind==='valley'){for(let i=0;i<4;i++){const x=18+i*(W-36)/3;leaf(b,x,92,.55,i)}}
+  }
+  function indoorAccent(sc,ms){if(!sc?.inside||!sc.add?.graphics)return;
+    const identifier=(sc.area?.id||'')+'|'+(sc.inside?.b?.name||'')+'|'+sc.inside.floor;
+    if(roomRef!==identifier||!indoorG){roomRef=identifier;indoorG=null;const g=sc.add.graphics().setDepth(8.85);sc.inside.objs.push(g);indoorG=g;}
+    const g=indoorG;g.clear();if(!prefs.light&&!prefs.wind)return;const spec=sc.inside.spec;if(!spec?.__lq58)return;
+    const b=graphics(g),a=room(spec),unit=32*(sc.inside.k||1),ox=(typeof Yr!=='undefined'?Yr:20000),oy=(typeof Xr!=='undefined'?Xr:0),K=sc.inside.k||1,t=sc.time?.now*.001||0,p=clock(sc);
+    const px=x=>ox+x*K,py=y=>oy+y*K;
+    const glow=(x,y,r,col,al)=>{if(!prefs.light)return;b.o(px(x),py(y),r*K,r*.38*K,col,al)};
+    if(prefs.light){const c=p.night?0xffc77a:p.dusk?0xffddb0:0xfff4c9,alpha=p.night?.21:p.dusk?.13:.09;
+      for(let i=0;i<3;i++){let x=(a.w*(.20+i*.30));let y=88+((i+a.id)%3)*16;glow(x,y,48,c,alpha)}
+    }
+    if(prefs.wind&&prefs.quality!=='performance'){
+      const wave=Math.sin(t*.9+a.id%10);
+      if(a.kind==='market'){for(let i=0;i<4;i++){const x=px(a.w*(.2+i*.2)),y=py(41+i%2*8);b.l(x,y,x+5*K*wave,y+10*K,0xffdb98,.27,2)}}
+      else if(a.kind==='valley'){for(let i=0;i<5;i++){let x=px(30+i*(a.w-60)/4),y=py(58+i%2*9);b.o(x+wave*5*K,y,7*K,3*K,0xbde9a5,.31)}}
+      else if(a.kind==='mining'){for(let i=0;i<3;i++){let x=px(42+i*(a.w-84)/2),y=py(68+(Math.sin(t+i)*4));b.r(x,y,3*K,2*K,0xffd593,.53)}}
+      else if(a.kind==='royal'){for(let i=0;i<3;i++){const x=px(a.w*.25+i*a.w*.25),y=py(62);b.r(x,y+Math.sin(t+i)*2*K,3*K,9*K,0xffcb8d,.27)}}
+    }
+  }
+  function outdoors(sc,dt){if(!sc?.area||!sc.player||!sc.add?.graphics)return;
+    const id=sc.area.id,R=theme(id),P=clock(sc),Q=QUALITY[prefs.quality],x0=sc.player.x,y0=sc.player.y,t=(sc.time?.now||0)/1000;
+    if(!outdoorG||outRef!==id||sceneRef!==sc){if(outdoorG)try{outdoorG.destroy()}catch{};if(debugG)try{debugG.destroy()}catch{};outdoorG=sc.add.graphics().setDepth(7.65);debugG=sc.add.graphics().setDepth(17.4);outRef=id;sceneRef=sc}
+    const g=outdoorG,b=graphics(g);g.clear();const gd=debugG;gd.clear();const tiles=sc.area;
+    // Strict visible-area effect cap: no persistent world object/collider created.
+    let drawn=0;const density=QUALITY[prefs.quality].limit,span=prefs.quality==='cinematic'?98:112;
+    const lx=Math.floor((x0-440)/span),hx=Math.ceil((x0+440)/span),ly=Math.floor((y0-305)/span),hy=Math.ceil((y0+305)/span);
+    for(let yy=ly;yy<=hy&&drawn<density;yy++)for(let xx=lx;xx<=hx&&drawn<density;xx++){
+      let z=seeded(xx,yy,hash(id)),px=xx*span+15+Math.floor(z*75),py=yy*span+21+Math.floor(seeded(yy,xx,hash(id))*59);
+      const gx=Math.floor(px/32),gy=Math.floor(py/32);
+      if(gx<1||gy<1||gx>=(tiles.w||100)-1||gy>=(tiles.h||100)-1)continue;
+      // Never place scenery over a building's circulation footprint or on a warp.
+      if(tiles.warpAt?.(gx,gy)||tiles.isTileBlocked?.(gx,gy))continue;
+      let road=!!tiles.isRoad?.(gx,gy),a=.20+.11*Math.sin(t*.8+z*16),motion=prefs.wind?Math.sin(t*R.wind+z*11)*4:0;
+      if(R.key==='valley'||R.key==='forest'){
+        if(prefs.particles){b.o(px,py+2,11,4,0x122c29,.16);if(!road)b.o(px,py+motion*.35,13,6,z>.5?0x90bc76:0x70a16b,.3)}
+        if(prefs.wind){b.l(px-3,py-3,px+motion,py-13,R.light,.3,1);b.c(px+motion,py-14,2.1,R.light,.32)}
+      }else if(R.key==='mining'){
+        if(prefs.particles){b.r(px-6,py,12,3,0x273b45,.3);b.r(px+motion*.12,py-7,3,3,z>.5?0x9be2d6:0xe2ae76,.36)}
+        if(prefs.light)b.o(px,py-8,15,7,R.light,.065);
+      }else if(R.key==='tech'){
+        if(prefs.particles){b.r(px,py,10,2,0x7fd4d9,.2);b.r(px+5,py-4,2,3,0x9ef8e9,.34)}
+      }else if(R.key==='royal'){
+        if(prefs.particles&&!road){b.r(px-5,py-5,2,12,0x5f4d6e,.28);b.c(px,py,2,0xffd7a8,.27)}}
+      else if(R.key==='market'||R.key==='art'){
+        if(prefs.wind){b.l(px,py,px+motion,py-8,R.light,.3,1)}if(prefs.particles)b.r(px+4,py,4,2,R.light,.23)
+      }else{if(prefs.particles&&!road){b.r(px-5,py+2,10,2,R.light,.15);b.r(px+motion,py-1,2,2,R.light,.3)}}
+      drawn++;
+    }
+    // Physically plausible camera-local water ripples when a mapped water tile is present.
+    if(prefs.water&&prefs.quality!=='performance'){
+      let count=0;for(let yy=Math.floor((y0-180)/32);yy<=Math.floor((y0+180)/32)&&count<7;yy+=3){for(let xx=Math.floor((x0-225)/32);xx<=Math.floor((x0+225)/32)&&count<7;xx+=4){
+        if(xx<0||yy<0||xx>=tiles.w||yy>=tiles.h)continue;
+        const tile=tiles.tiles?.[yy]?.[xx];let water=typeof tiles.isWater==='function'?tiles.isWater(xx,yy):false;
+        if(!water&&tile)water=/water|river|stream|lake/.test(String(tile.kind||tile.type||''));
+        if(!water)continue;const xxp=xx*32+16,yyp=yy*32+16;let d=(t*.55+(xx+yy)*.13)%1;
+        g.lineStyle(1,R.light,.07*(1-d)).strokeEllipse(xxp,yyp,8+d*17,2+d*5);count++;
+      }}
+    }
+    // Contact shadow is intentionally below player sprite, drawn as a 1-ellipse overlay.
+    if(prefs.light){b.o(x0,y0+10,23,7,R.dark,.2)}
+    if(prefs.debug){
+      gd.lineStyle(1,0xffd66f,.9).strokeRect(Math.floor(x0/32)*32,Math.floor(y0/32)*32,32,32);
+      const buildings=(sc.area.buildings||[]).filter(it=>Math.hypot((it.x+it.w/2)*32-x0,(it.y+it.h/2)*32-y0)<350).slice(0,12);
+      for(const obj of buildings){gd.lineStyle(1,0xf3c675,.36).strokeRect(obj.x*32,obj.y*32,obj.w*32,obj.h*32);gd.fillStyle(0x9fffe4,.8).fillCircle((obj.door+.5)*32,(obj.y+obj.h+.5)*32,3)}
+    }
+    drawStats.objects=drawn;drawStats.particles=drawn;
+  }
+  function paletteOverlay(sc){const key=sc?.area?.id;return key?theme(key):null}
+  function maybeExteriorConsequence(sc){ // Subtle story status light at completed region objective building, no new physics.
+    if(!prefs.story||!sc?.area?.buildings?.length)return;
+    const v=sc?.store?.game?.v60?.regions?.[sc.area.id];if(!v?.complete)return;
+    const chosen=window.LQWorldV60?.MAPS?.[sc.area.id]?.building;const building=sc.area.buildings.find(b=>b.name===chosen);if(!building)return;
+    const x=(building.door+.5)*32,y=(building.y+building.h+.1)*32;
+    if(Math.hypot(sc.player.x-x,sc.player.y-y)>490)return;
+    const b=graphics(outdoorG),t=sc.time?.now*.001||0,c=theme(sc.area.id).light;
+    b.o(x,y+4,43,9,c,.10);for(let i=0;i<5;i++){let dx=(i-2)*9;b.r(x+dx,y-6+Math.sin(t+i)*2,4,3,c,.2)}
+  }
+  function onEnter(sc){if(sc!==sceneRef){roomRef='';sceneRef=sc;}indoorG=null;}
+  function onLeave(){roomRef='';indoorG=null;if(outdoorG)outdoorG.clear();}
+  function update(sc,dt){if(!sc||!sc.add||!sc.player)return;const Q=QUALITY[prefs.quality],delta=safe(Number(dt)||16,0,150);frameMs=frameMs*.92+delta*.08;elapsed+=delta;
+    if(elapsed<Q.ms)return;elapsed=0;
+    if(sc.inside){if(outdoorG)outdoorG.clear();if(debugG)debugG.clear();indoorAccent(sc,Q.ms)}
+    else{roomRef='';indoorG=null;outdoors(sc,Q.ms);maybeExteriorConsequence(sc)}
+    if(openPanel&&!openPanel.hidden)refreshInfo(sc);
+  }
+  function makeUI(){if(typeof document==='undefined'||document.getElementById('lq61-view'))return;
+    let css=document.createElement('style');css.textContent=`#lq61-view[hidden]{display:none!important}#lq61-view{position:fixed;inset:0;z-index:96000;background:#07121ac9;backdrop-filter:blur(5px);display:grid;place-items:center;padding:14px;font-family:system-ui,Arial,sans-serif;color:#e7f5fa}#lq61-view .dialog{width:min(620px,96vw);max-height:88vh;overflow:auto;background:linear-gradient(145deg,#132b35,#182b42);border:1px solid #7eb7bc;border-radius:16px;box-shadow:0 18px 60px #000a;padding:22px}#lq61-view h2{font-size:20px;margin:0 0 7px;color:#ffdda2}#lq61-view p{font-size:13px;color:#c2d5df;line-height:1.6}#lq61-view .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}#lq61-view button{font:inherit;color:#f4ffff;background:#294e64;border:1px solid #6b9da8;border-radius:8px;cursor:pointer;padding:9px 11px}#lq61-view button[aria-pressed=true]{background:#397e86;border-color:#e0d49c}#lq61-view button:focus-visible{outline:2px solid #ffdc91;outline-offset:2px}#lq61-view .choice{display:grid;gap:4px;margin:12px 0}#lq61-view footer{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:17px}#lq61-stats{background:#0e202c;border:1px solid #355669;border-radius:8px;padding:10px;font-size:12px;line-height:1.7;white-space:pre-wrap}@media(max-width:500px){#lq61-view .grid{grid-template-columns:1fr}#lq61-view .dialog{padding:14px}}`;
+    document.head.appendChild(css);let el=document.createElement('div');el.id='lq61-view';el.hidden=true;el.innerHTML=`<section class="dialog" role="dialog" aria-modal="true" aria-label="LifeQuest V61 visual settings"><h2>✦ V61 — The Art of Living Worlds</h2><p>Hệ đồ họa môi trường, vật liệu, kiến trúc và hiệu ứng theo từng vùng. Thay đổi chỉ ảnh hưởng hình ảnh; không sửa cửa, nhiệm vụ hoặc va chạm.</p><div class="choice"><b>Chất lượng đồ họa</b><div class="grid" id="lq61-quality"></div></div><div class="choice"><b>Điều chỉnh hiệu ứng</b><div class="grid" id="lq61-options"></div></div><div id="lq61-stats" aria-live="polite"></div><footer><small>F8: mở/đóng · Esc: đóng</small><button type="button" id="lq61-close">Vào lại game</button></footer></section>`;
+    document.body.appendChild(el);openPanel=el;
+    let q=el.querySelector('#lq61-quality'),op=el.querySelector('#lq61-options');
+    for(const [value,title] of [['performance','Tiết kiệm'],['balanced','Cân bằng'],['cinematic','Điện ảnh']]){let bt=document.createElement('button');bt.dataset.q=value;bt.textContent=title;bt.onclick=()=>{prefs.quality=value;persist();refreshButtons()};q.appendChild(bt)}
+    for(const [key,label] of [['wind','Chuyển động gió'],['water','Gợn nước'],['light','Ánh sáng & bóng'],['particles','Hạt không khí'],['story','Dấu vết nhiệm vụ'],['debug','Kiểm tra va chạm']]){let bt=document.createElement('button');bt.dataset.setting=key;bt.onclick=()=>{prefs[key]=!prefs[key];persist();refreshButtons()};bt.textContent=label;op.appendChild(bt)}
+    function refreshButtons(){q.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.q===prefs.quality)));op.querySelectorAll('button').forEach(b=>{b.setAttribute('aria-pressed',String(!!prefs[b.dataset.setting]));let prefix=prefs[b.dataset.setting]?'✓':'○';b.textContent=prefix+' '+({wind:'Gió & vải',water:'Nước',light:'Ánh sáng',particles:'Hạt môi trường',story:'Dấu vết nhiệm vụ',debug:'Kiểm tra va chạm'}[b.dataset.setting]);})}
+    refreshButtons();el.querySelector('#lq61-close').onclick=()=>el.hidden=true;
+    // Discoverable in the main menu, even when a cinematic captures the keyboard.
+    const mountEntry=()=>{for(const root of [document.querySelector('#l11-page'),document.querySelector('#l11-dialog')]){
+      if(!root||root.querySelector('#lq61-menu-entry'))continue;
+      const btn=document.createElement('button');btn.id='lq61-menu-entry';btn.type='button';btn.textContent='✦ V61 · Đồ họa & hiệu ứng';btn.style.cssText='border:1px solid #73adab;border-radius:9px;background:#1d5661;color:#efffff;padding:9px 12px;margin:7px;cursor:pointer';btn.onclick=()=>{el.hidden=false;refreshButtons()};root.appendChild(btn);
+    }};
+    mountEntry();setInterval(mountEntry,4000);
+    window.addEventListener('keydown',e=>{
+      const tag=String(e.target?.tagName||'').toLowerCase();if(['input','textarea','select'].includes(tag)||e.repeat)return;
+      if(e.code==='F8'){e.preventDefault();e.stopImmediatePropagation();el.hidden=!el.hidden;if(!el.hidden)refreshButtons()}
+      if(e.code==='Escape'&&!el.hidden){e.preventDefault();e.stopImmediatePropagation();el.hidden=true}
+    },true);
+  }
+  function refreshInfo(sc){const e=document.getElementById('lq61-stats');if(!e)return;const r=paletteOverlay(sc);const c=clock(sc);
+    e.textContent='Khu vực: '+(r?.name||'—')+' | Chất liệu: '+(r?.material||'—')+'\nThời gian game: '+Math.floor(c.m/60)+':'+String(c.m%60).padStart(2,'0')+' | Thời tiết: '+c.w+'\nChế độ: '+prefs.quality+' | Khung hình gần nhất: '+(frameMs||0).toFixed(1)+' ms\nĐiểm hiệu ứng hiển thị: '+drawStats.objects+' | Cảnh phòng đã dựng: '+drawStats.interior;
+  }
+  if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',makeUI,{once:true});else makeUI()}
+  return Object.freeze({VERSION,REGIONS,settings:()=>({...prefs}),setQuality:q=>{if(!QUALITY[q])return false;prefs.quality=q;persist();return true},drawBack:(g,s)=>{materialFloor(g,s);architecture(g,s)},drawItem:itemDetail,drawFront:architectureFront,onEnter,onLeave,update,open:()=>{makeUI();openPanel.hidden=false},diagnostics:()=>({version:VERSION,settings:{...prefs},stats:{...drawStats},room:roomRef,area:outRef}),test:{room,theme,clock,architecture,materialFloor,itemDetail,architectureFront,graphics}});
+})();
+window.LQVisualV61=LQ61;
+/* LIFEQUEST AI V62 · ART DIRECTOR ENGINE
+ * Designed to extend V61 without mutating existing rooms, NPC sprites,
+ * collision rectangles, entrances, quest state or localStorage progress.
+ * Authored region silhouettes + semantic composition + live overlap diagnostics.
+ */
+const LQ62 = (() => {
+ 'use strict';
+ const VERSION='62.0.0',T=32;
+ const STYLE={
+ 'english-town':{id:'civic',label:'Layered Urban Life',base:0x4d716b,trim:0xe2bb83,deep:0x1f3d44,shine:0xe5f4da},
+ 'mining-town':{id:'mine',label:'Industrial Stratification',base:0x365969,trim:0xf0bc79,deep:0x172e3b,shine:0x9cdae1},
+ 'english-town-past':{id:'heritage',label:'Handcrafted Settlement',base:0x795a40,trim:0xe8c38c,deep:0x362e29,shine:0xece0b7},
+ 'oriaris-trail-1':{id:'forest',label:'Woodland Outpost',base:0x51755c,trim:0xe3ca97,deep:0x264637,shine:0xaad8a2},
+ 'oriaris-trail-2':{id:'forest',label:'Ancient Woodland',base:0x51755c,trim:0xe3ca97,deep:0x264637,shine:0xaad8a2},
+ 'oriaris-trail-3':{id:'forest',label:'Old Canopy',base:0x51755c,trim:0xe3ca97,deep:0x264637,shine:0xaad8a2},
+ 'oriaris-camp':{id:'forest',label:'Camp Hearth',base:0x51755c,trim:0xe3ca97,deep:0x264637,shine:0xaad8a2},
+ 'art-district':{id:'art',label:'Asymmetric Creative Space',base:0x7e6086,trim:0xf5cba4,deep:0x33263c,shine:0xa6e5d5},
+ 'tech-co':{id:'tech',label:'Visible Infrastructure',base:0x235b77,trim:0x82dbe2,deep:0x122c41,shine:0xbafbef},
+ 'old-oriaris':{id:'royal',label:'Processional Royal Architecture',base:0x8b6a85,trim:0xf6d59b,deep:0x30253c,shine:0xe2badf},
+ 'wish-valley':{id:'roots',label:'Root-Grown Civilization',base:0x638051,trim:0xd5bf84,deep:0x253f30,shine:0xc3f2ab},
+ 'vocalt-greedy-land':{id:'guild',label:'Architecture of Trade',base:0x846046,trim:0xf1cc8a,deep:0x3d2930,shine:0xe0b178}
+ };
+ const signature = {
+  'vaela':{label:'Vaela · Hearth in the Roots',role:'family',shape:'radial',zones:['Hearth','Herbs','Alcove']},
+  'mine':{label:'Great Mine · Working Machine Hall',role:'industry',shape:'parallel',zones:['Conveyor','Control','Workshop']},
+  'opera':{label:'Grand Opera · Performance Hall',role:'theatre',shape:'fan',zones:['Stage','Audience','Backstage']},
+  'chronos':{label:'Chronos · The Clockmaker Guild',role:'craft',shape:'nested',zones:['Showcase','Workbench','Collection']}
+ };
+ let prefs={enabled:true,outdoors:true,inspector:false,quality:'balanced'};
+ try{let v=JSON.parse(localStorage.getItem('lq62_visual')||'null');if(v&&typeof v==='object')prefs={...prefs,...v};}catch{}
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const hash=s=>{let n=2166136261;for(const c of String(s)){n=Math.imul(n^c.charCodeAt(0),16777619)}return n>>>0};
+ const H=(s,n)=>((hash(s+'_'+n)%10000)/10000);
+ const gfx=g=>({
+  r:(x,y,w,h,c,a=1)=>{if(w>0&&h>0)g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))},
+  e:(x,y,w,h,c,a=1)=>{if(w>0&&h>0)g.fillStyle(c,a).fillEllipse(x,y,w,h)},
+  c:(x,y,r,c,a=1)=>{if(r>0)g.fillStyle(c,a).fillCircle(x,y,r)},
+  l:(x,y,xx,yy,c,a=.8,t=2)=>g.lineStyle(t,c,a).lineBetween(Math.round(x),Math.round(y),Math.round(xx),Math.round(yy)),
+  tri:(x,y,x2,y2,x3,y3,c,a=1)=>g.fillStyle(c,a).fillTriangle(x,y,x2,y2,x3,y3),
+  ring:(x,y,r,c,a=.8,t=2)=>g.lineStyle(t,c,a).strokeCircle(x,y,r),
+ });
+ const roomKey=s=>String(s?.__lq58?.area||'english-town')+'|'+String(s?.__lq58?.building||'room')+'|'+String(s?.__lq58?.floor||0);
+ const style=s=>STYLE[s?.__lq58?.area]||STYLE['english-town'];
+ function identity(s){const name=String(s?.__lq58?.building||s?.__lq60?.building||'').toLowerCase(),region=style(s).id;
+  if(region==='roots'&&/vaela/.test(name))return 'vaela';
+  if(region==='mine'&&/great mine|workshop|freight/.test(name))return 'mine';
+  if(region==='royal'&&/opera/.test(name))return 'opera';
+  if(region==='guild'&&/chronos|clock/.test(name))return 'chronos';
+  return region;
+ }
+ function occupational(s){const k=identity(s),n=String(s?.__lq58?.building||'').toLowerCase();
+  if(/bakery|baker|cafe|kitchen/.test(n))return 'kitchen';
+  if(/academy|library|archive|school/.test(n))return 'archive';
+  if(/market|bazaar|exchange|stall|shop|jewel|cloth|smith|craft/.test(n))return 'trade';
+  if(/house|home|cottage|hut/.test(n))return 'home';
+  if(/office|nexus|lab|data/.test(n))return 'office';
+  if(['opera','mine','vaela','chronos'].includes(k))return signature[k].role;
+  return 'community';
+ }
+ const memo=new WeakMap();const visits=new Map();
+ function plan(s){if(!s||!s.__lq58)return null;if(memo.has(s))return memo.get(s);
+  const key=roomKey(s),id=identity(s),p=style(s),seed=hash(key),W=s.w*T,HH=s.h*T,role=occupational(s);
+  const styleId=p.id,variant=seed%5;
+  // Decor motifs are computed from room role and geometry, not random clutter.
+  const items=(s.items||[]).filter(i=>Number.isFinite(i.x)&&Number.isFinite(i.y)&&Number.isFinite(i.w)&&Number.isFinite(i.h));
+  const occupied=items.map(i=>({x:i.x*T,y:i.y*T,w:i.w*T,h:i.h*T,kind:i.k||''}));
+  const safeZones=[]; const walkX=W/2, doorSafe={x:walkX-32,y:HH-117,w:64,h:112};
+  const rects=[
+   {x:W*.08,y:HH*.32,w:W*.25,h:HH*.31,kind:'left'},
+   {x:W*.67,y:HH*.32,w:W*.25,h:HH*.31,kind:'right'},
+   {x:W*.32,y:HH*.39,w:W*.36,h:HH*.22,kind:'center'},
+   {x:W*.09,y:HH*.67,w:W*.22,h:HH*.15,kind:'lowerLeft'},
+   {x:W*.68,y:HH*.67,w:W*.22,h:HH*.15,kind:'lowerRight'}];
+  for(const r of rects){let hits=0;for(const o of occupied){const sx=Math.max(r.x,o.x),ex=Math.min(r.x+r.w,o.x+o.w),sy=Math.max(r.y,o.y),ey=Math.min(r.y+r.h,o.y+o.h);if(ex>sx&&ey>sy)hits+=(ex-sx)*(ey-sy)}
+   const ratio=hits/(r.w*r.h);if(ratio<.45&&r.y+r.h<HH-55&&!(r.x<doorSafe.x+doorSafe.w&&r.x+r.w>doorSafe.x&&r.y<doorSafe.y+doorSafe.h&&r.y+r.h>doorSafe.y))safeZones.push({...r,free:1-ratio});
+  }
+  const main=['roots','mine','heritage','forest','art','tech','royal','guild','civic'].indexOf(styleId);
+  const shape=signature[id]?.shape||['split','parallel','offset','angled','zigzag'][variant];
+  const motif=seed%7;
+  const itemBias=occupied.length?Math.round((occupied.reduce((a,o)=>a+o.x+o.w/2,0)/occupied.length)/Math.max(1,W)*4):0;
+  const footprint=[shape,role,Math.round(W/128),Math.round(HH/128),occupied.length<4?'low':occupied.length<10?'mid':'high',main,`motif${motif}`,`bias${itemBias}`].join('|');
+  const out={key,id,p,role,shape,variant,motif,W,H:HH,occupied,safeZones,seed,items,signature:signature[id]||null,footprint,building:String(s.__lq58.building||'')};memo.set(s,out);visits.set(key,out);return out;
+ }
+ function ornament(b,x,y,kind,p,scale=1){let f=scale; if(kind==='plant'){
+   b.r(x-2*f,y,4*f,15*f,p.deep,.84);for(let j=0;j<5;j++)b.e(x+Math.sin(j*2.5)*8*f,y-11*f-(j%2)*8*f,12*f,9*f,j%2?0x92bc79:0x6f9e74,.9);
+   b.c(x+3*f,y-18*f,2*f,p.shine,.7);
+  }else if(kind==='lamp'){
+   b.r(x-2*f,y-15*f,4*f,18*f,p.deep);b.r(x-8*f,y-20*f,16*f,15*f,p.trim);b.r(x-5*f,y-17*f,10*f,8*f,0xffdf9e,.92);b.e(x,y+2*f,28*f,7*f,p.trim,.16);
+  }else if(kind==='dial'){
+   b.c(x+1*f,y+2*f,12*f,p.deep,.6);b.c(x,y,11*f,p.trim);b.c(x,y,8*f,0x70503f);b.l(x,y,x+4*f,y-5*f,p.shine,.9,2*f);b.l(x,y,x-4*f,y+2*f,p.shine,.9,1*f);
+  }else if(kind==='column'){
+   b.r(x-9*f,y-2*f,18*f,29*f,p.deep);b.r(x-5*f,y,10*f,27*f,p.trim,.65);b.r(x-12*f,y-5*f,24*f,6*f,p.shine,.88);
+  }else if(kind==='gear'){
+   b.c(x,y,13*f,p.deep);for(let i=0;i<8;i++){let a=i*Math.PI/4;b.r(x+Math.cos(a)*12*f-3*f,y+Math.sin(a)*12*f-3*f,6*f,6*f,p.trim)}b.c(x,y,9*f,p.trim);b.c(x,y,4*f,p.deep);
+  }
+ }
+ const safeUnit=(v,min,max)=>clamp(Math.round(v),min,max);
+ function drawBack(g,s){if(!prefs.enabled)return;let m=plan(s);if(!m)return;
+  const b=gfx(g),{W,H:HH,p,variant,id,shape,role}=m,cx=W/2,top=98,bot=HH-49,fh=bot-top;
+  if(fh<72||W<200)return;
+  // Floor composition: 1 primary motive, side counterpoint, intentionally quiet central travel lane.
+  const inset=20;
+  b.r(inset,top,W-inset*2,5,p.deep,.57);b.r(inset+6,top+4,W-inset*2-12,2,p.trim,.3);
+  if(id==='vaela'||p.id==='roots'){
+   b.e(cx,top+fh*.48,Math.min(W*.74,370),fh*.72,p.deep,.65);
+   b.e(cx,top+fh*.48,Math.min(W*.66,338),fh*.64,0xa5905e,.69);
+   b.e(cx,top+fh*.48,Math.min(W*.58,304),fh*.54,0xc6ad72,.56);
+   for(let i=0;i<12;i++){let a=i*Math.PI/6,mx=cx+Math.cos(a)*W*.27,my=top+fh*.48+Math.sin(a)*fh*.29;
+    b.l(cx+Math.cos(a)*43,top+fh*.48+Math.sin(a)*20,mx,my,0x5e503a,.42,3);}
+   b.e(cx,top+fh*.47,82,53,0x664b34,.83);b.e(cx,top+fh*.47,69,39,0x8a613b,.88);
+   // Branch-like nested loggias, a different shape from the rectangular industrial halls.
+   for(let i=0;i<4;i++){let xx=32+i*(W-64)/3;b.e(xx,76,67,39,p.deep,.74);b.e(xx,69,55,31,i%2?0x6b9668:0x91b46d,.84);
+    ornament(b,xx,91,'plant',p,.75);}
+   b.l(18,45,84,100,0x6c8151,.73,8);b.l(W-18,45,W-84,100,0x6c8151,.73,8);
+  }else if(id==='mine'||p.id==='mine'){
+   // Three functional machine bays with visual connecting rails; machines never create phantom collisions.
+   const s1=W*.26,s2=W*.74;
+   for(let j=0;j<2;j++){let x=j?s2:s1;
+    b.r(x-70,top+fh*.10,140,fh*.6,p.deep,.55);b.r(x-62,top+fh*.14,124,fh*.52,0x556d77,.62);
+    for(let i=0;i<4;i++){let xx=x-53+i*34;b.r(xx,top+fh*.16,22,fh*.36,i%2?0x576c70:0x6a7c79,.67);b.r(xx+4,top+fh*.17,3,fh*.2,p.shine,.25)}
+    ornament(b,x,top+fh*.39,'gear',p,1.4);
+   }
+   for(let x of [cx-20,cx+20]){b.r(x,top+fh*.04,5,fh*.87,p.trim,.7);b.r(x+1,top+fh*.04,2,fh*.87,p.shine,.5)}
+   for(let y=top+fh*.12;y<bot-12;y+=20)b.r(cx-13,y,26,5,0x8e8882,.8);
+   for(let i=0;i<7;i++){let x=33+i*(W-66)/6;b.r(x,25,10,73,p.deep,.81);b.r(x+3,28,4,66,p.trim,.54)}
+  }else if(id==='opera'||p.id==='royal'){
+   // Aristocratic fan-shaped procession, outer arc and framed stage, not a room-wide wallpaper.
+   b.r(W*.24,96,W*.52,52,0x4a263d,.9);b.r(W*.25,98,W*.50,9,p.trim,.75);
+   for(let k=0;k<18;k++){let x=W*.26+k*W*.027;b.r(x,108,W*.018,36,k%2?0x8f435b:0xb4506c,.91)}
+   for(let ring=0;ring<4;ring++){
+    const yy=top+fh*.40+ring*21;
+    for(let i=0;i<11+ring*2;i++){let a=Math.PI*.15+Math.PI*.70*i/(10+ring*2),rad=W*.22+ring*18;
+     let x=cx+Math.cos(a)*rad,y=yy+Math.sin(a)*19;
+     if(x>35&&x<W-35&&y<bot-38)b.e(x,y,14,8,0xd0a487,.32)}
+   }
+   for(let i=0;i<4;i++){let x=27+i*(W-54)/3;ornament(b,x,67,'column',p,1.05)}
+   b.r(cx-35,top+fh*.17,70,fh*.68,0xa78566,.27);b.r(cx-19,top+fh*.17,38,fh*.68,p.trim,.14);
+  }else if(id==='chronos'||p.id==='guild'){
+   const mx=W*.35,rx=W*.71;
+   b.r(26,top+15,W*.39,fh*.68,p.deep,.56);b.r(W*.56,top+15,W*.39,fh*.68,0x6d443b,.58);
+   b.r(35,top+24,W*.35,4,p.trim,.67);b.r(W*.58,top+24,W*.34,4,p.trim,.67);
+   for(let i=0;i<4;i++){let y=top+39+i*38;ornament(b,mx,y,'dial',p,.82+i*.05)}
+   for(let i=0;i<4;i++){let x=W*.62+i*W*.078;ornament(b,x,top+fh*.46+(i%2)*21,'gear',p,.92)}
+   // Curved inlay separating public showcase and private workbench.
+   b.e(cx,top+fh*.52,77,75,p.deep,.92);b.e(cx,top+fh*.52,63,61,p.trim,.86);b.e(cx,top+fh*.52,50,50,0x735741,.9);
+   for(let k=0;k<12;k++){let a=k*Math.PI/6;b.r(cx+Math.cos(a)*25-1,top+fh*.52+Math.sin(a)*25-1,3,3,p.shine,.72)}
+   for(let i=0;i<5;i++){let x=26+i*(W-52)/4;ornament(b,x,60,'dial',p,.75)}
+  }else if(p.id==='tech'){
+   // Technological circulation spine, modular screen cells, glass partitions.
+   for(let side of [0,1]){let x=side?W*.59:W*.08,w=W*.33;
+    b.r(x,top+8,w,fh*.64,p.deep,.57);b.r(x+7,top+14,w-14,fh*.56,0x2d627b,.57);
+    for(let k=0;k<3;k++){let yy=top+25+k*30;b.r(x+18,yy,w-36,13,k%2?0x59a6a8:0x34758d,.64);b.r(x+22,yy+4,Math.max(7,w-76),2,p.shine,.55)}}
+   for(let k=0;k<9;k++){let yy=top+17+k*fh*.07;b.r(cx-10,yy,20,3,p.trim,.44)}
+   for(let i=0;i<5;i++){const x=30+i*(W-60)/4;b.r(x,28,5,63,p.trim,.49);b.r(x+7,31,21,33,0x64bbbd,.28)}
+  }else if(p.id==='art'){
+   // Gallery: unequal diagonal galleries, painterly inlay without gridded noise.
+   for(let k=0;k<4;k++){let x=25+k*(W-50)/4,w=92+((variant+k)%3)*21;
+    b.tri(x,top+16,x+w,top+18,x+w-15,top+fh*.62,[0x9b698c,0x64879b,0xba8d8e][k%3],.43);
+    b.l(x,top+16,x+w-15,top+fh*.62,p.shine,.36,3)}
+   b.r(cx-24,top+fh*.26,48,fh*.57,p.deep,.28);
+   for(let i=0;i<5;i++){let x=23+i*(W-46)/4;b.r(x,28,35,43,p.deep,.91);b.r(x+4,32,27,35,[0xa275a7,0x86bca9,0xd9a37f][i%3],.91)}
+  }else if(p.id==='heritage'||p.id==='forest'){
+   for(let k=0;k<5;k++){let x=24+k*(W-48)/4,w=43+((variant+k)%2)*14;
+    b.r(x,top+17,w,fh*.48,0x977554,.33);b.l(x,top+17,x+w*.35,top+fh*.52,0xdabb7a,.29,4)}
+   b.e(W*.32,top+fh*.49,120,72,0x967249,.47);b.e(W*.75,top+fh*.55,103,63,0x5d5038,.49);
+   for(let k=0;k<5;k++){let x=32+k*(W-64)/4;b.l(x,19,x+20+variant*3,91,p.deep,.73,6)}
+  }else{
+   // Civic: street-facing facade with two asymmetrical private/public bays.
+   for(let k=0;k<3;k++){let x=30+k*(W-60)/3,w=k===variant%3?W*.23:W*.16;
+    b.r(x,top+22,w,fh*.46,k%2?0x65847a:0x977f5f,.39);b.r(x+6,top+28,w-12,5,p.trim,.44)}
+   for(let k=0;k<4;k++){let x=32+k*(W-64)/3;b.r(x,31,35,55,p.deep,.83);b.r(x+4,34,27,47,0x7ea6a2,.51);b.l(x+17,34,x+17,80,p.trim,.45,3)}
+  }
+  // Occupation-driven composition: meaningful zones, not random decoration.
+  // Visible variation corresponds to the motif used in the uniqueness inspector.
+  if(!m.signature){
+   const handed=m.motif%2?-1:1,sideX=handed>0?W*.74:W*.26,backY=top+fh*.24;
+   if(role==='home'){
+     b.e(sideX,top+fh*.50,W*.25,fh*.30,p.trim,.21);
+     b.e(sideX,top+fh*.50,W*.18,fh*.20,p.deep,.31);
+     b.r(sideX-17,top+fh*.46,34,6,p.shine,.24);
+   }else if(role==='trade'){
+     b.r(sideX-W*.13,top+fh*.12,W*.26,fh*.59,p.deep,.17);
+     for(let j=0;j<3;j++)b.r(sideX-W*.10,top+fh*.20+j*fh*.13,W*.20,4,p.trim,.33);
+     b.l(sideX-W*.16,top+fh*.78,sideX+W*.16,top+fh*.78,p.trim,.38,3);
+   }else if(role==='archive'){
+     for(let j=0;j<4;j++){
+       const x=sideX-W*.11+j*W*.07;
+       b.r(x,top+fh*.14,5,fh*.56,p.deep,.30);
+       b.r(x+2,top+fh*.16,2,fh*.48,p.trim,.36);
+     }
+   }else if(role==='kitchen'){
+     b.e(sideX,top+fh*.44,W*.23,fh*.24,0xba7a50,.23);
+     for(let j=0;j<6;j++)b.r(sideX-25+j*10,top+fh*.45-(j%2)*3,5,4,j%2?p.shine:p.trim,.54);
+   }else if(role==='community'){
+     b.e(sideX,top+fh*.50,W*.23,fh*.28,p.trim,.22);
+     b.r(sideX-25,top+fh*.50-4,50,8,p.deep,.29);
+   }else if(role==='office'){
+     for(let j=0;j<3;j++){let xx=sideX-35+j*26;b.r(xx,top+fh*.19,19,fh*.29,p.deep,.24);b.r(xx+4,top+fh*.23,11,3,p.shine,.46)}
+   }
+   // A few asymmetrically placed architectural seams, derived from a stable identity.
+   for(let j=0;j<2;j++){
+     const xf=26+(m.motif*19+j*103)%(Math.max(32,W-70));
+     b.r(xf,26,3,50+j*13,p.trim,.23);
+   }
+  }
+  // Quiet passage and contact band: visual only, does not alter collision or navmesh.
+  b.r(cx-20,bot-64,40,66,p.deep,.10);
+  b.r(20,bot-6,W-40,3,p.trim,.29);
+  // Four corners have at most a few semantic props; no random tiling or clutter.
+  for(let k=0;k<Math.min(3,m.safeZones.length);k++){let r=m.safeZones[k],mx=r.x+r.w*.5,my=r.y+r.h*.48;
+   let prop=p.id==='roots'?'plant':p.id==='mine'?'gear':p.id==='guild'?'dial':p.id==='royal'?'column':p.id==='tech'?'lamp':p.id==='forest'?'plant':p.id==='art'?'lamp':'plant';
+   ornament(b,mx,my,prop,p,.52);
+  }
+ }
+ function drawItem(g,it,s){if(!prefs.enabled||!it||!Number.isFinite(it.x))return;let m=plan(s);if(!m)return;
+  const b=gfx(g),p=m.p,kind=String(it.k||''),x=it.x*T,y=it.y*T,w=it.w*T,h=it.h*T;
+  if(!Number.isFinite(w)||w<20||h<18)return;
+  // Shading always fits within the original item footprint (no new hitboxes).
+  if(/table|desk|workbench|counter/.test(kind)){
+   b.r(x+7,y+7,w-14,4,p.trim,.46);b.l(x+9,y+h-8,x+w-9,y+h-8,p.deep,.62,2);
+   if(m.id==='chronos')for(let j=0;j<Math.min(3,Math.floor(w/32));j++)ornament(b,x+20+j*23,y+17,'dial',p,.45);
+   if(m.id==='mine'){for(let j=0;j<4&&j*14<w-23;j++)b.r(x+12+j*14,y+15,9,6,j%2?p.trim:p.shine,.63)}
+  }else if(/shelf|rack|cabinet|display/.test(kind)){
+   for(let j=0;j<Math.min(5,Math.floor(w/19));j++){let xx=x+12+j*17;b.r(xx,y+13,5,Math.min(10,h-17),p.trim,.52);b.r(xx+7,y+13,3,Math.min(6,h-17),p.shine,.53)}
+  }else if(/plant|herb/.test(kind))ornament(b,x+w*.5,y+h*.5,'plant',p,.5);
+ }
+ function drawFront(g,s){if(!prefs.enabled)return;const m=plan(s);if(!m)return;const b=gfx(g),{p,W,H:HH,id}=m;
+  // Thin architectural edge only; never draws across central exit corridor.
+  b.r(14,91,W-28,4,p.deep,.55);b.r(21,93,W-42,2,p.shine,.23);
+  for(let x of [24,W-24]){
+   ornament(b,x,83,id==='chronos'?'dial':id==='mine'?'gear':id==='opera'?'column':p.id==='roots'?'plant':'lamp',p,.54);
+  }
+  b.r(W/2-34,HH-43,68,2,p.trim,.28);
+ }
+ // Live exterior accents: semantic doorstep/travel marks in camera vicinity, decoration only.
+ let outdoors=null,sceneRef=null,areaRef='',tick=0,stats={rendered:0,scanned:0,duplicates:0};
+ function drawWorld(sc,dt){if(sc?.inside){outdoors?.clear();return}if(!sc?.area||!sc?.player||!prefs.enabled||!prefs.outdoors||!sc.add?.graphics)return;
+  tick+=clamp(dt||16,0,150);if(tick<135)return;tick=0;
+  const area=sc.area.id;if(sceneRef!==sc||areaRef!==area||!outdoors?.active){try{outdoors?.destroy()}catch{};outdoors=sc.add.graphics().setDepth(7.52);sceneRef=sc;areaRef=area}
+  outdoors.clear();const b=gfx(outdoors),p=STYLE[area]||STYLE['english-town'],px=sc.player.x,py=sc.player.y,t=(sc.time?.now||0)/1000;
+  let rendered=0;for(const building of (sc.area.buildings||[])){
+   if(rendered>=5)break;const xx=(building.door+.5)*32,yy=(building.y+building.h+.6)*32;
+   if(Math.abs(xx-px)>320||Math.abs(yy-py)>255)continue;
+   // Do not draw over the doorway or interior entrance activation footprint.
+   let sel=(hash(area+building.name)%4),shade=p.deep;
+   for(let side of [-1,1]){let x=xx+side*(40+sel*2),y=yy+4;
+    b.r(x-7,y,14,4,shade,.21);if(p.id==='roots'||p.id==='forest')ornament(b,x,y-3,'plant',p,.52);
+    else if(p.id==='mine')b.r(x-3,y-13,6,13,p.trim,.3);
+    else if(p.id==='royal')b.r(x-4,y-11,8,12,p.trim,.34);
+    else if(p.id==='guild')b.r(x-9,y-7,18,5,p.trim,.43);
+    else b.r(x-4,y-6,9,3,p.trim,.32);
+   }
+   // Real-world narrative footprint — used path, not random clutter.
+   for(let z=0;z<2;z++)b.r(xx-6+z*11,yy+18+(z%2)*5,4,2,p.trim,.19);
+   rendered++;
+  }
+  stats.rendered=rendered;
+ }
+ function onLeave(){/* Outdoor layer is reused across rooms; destroyed on scene change */}
+ function onEnter(){/* Non-structural overlays never change entrance logic */}
+ function compare(a,b){if(!a||!b)return 0;
+  let partsA=a.footprint.split('|'),partsB=b.footprint.split('|');let score=0;
+  for(let k=0;k<partsA.length;k++){score+=(partsA[k]===partsB[k]?[.34,.24,.13,.10,.10,.09][k]:0)}
+  return Math.round(score*100);
+ }
+ function audit(){let arr=[...visits.values()],dupes=[],rooms=[];
+  for(let i=0;i<arr.length;i++){
+   let a=arr[i],top={score:0,key:''};for(let j=0;j<i;j++){let q=compare(a,arr[j]);if(q>top.score)top={score:q,key:arr[j].key}}
+   let occupiedPixels=a.occupied.reduce((t,it)=>t+Math.max(0,it.w)*Math.max(0,it.h),0);
+   const area=a.W*a.H,percent=Math.round(occupiedPixels/area*100);
+   let notes=[];if(percent<5)notes.push('Mật độ vật thể thấp — xem lại công năng, không tự rải đồ');
+   if(percent>32)notes.push('Vật thể dày — cần kiểm tra hành lang');
+   if(top.score>=85)notes.push('Bố cục khá giống '+top.key+' — xem lại silhouette/mặt bằng');
+   rooms.push({key:a.key,name:a.building,area:a.p.label,shape:a.shape,role:a.role,occupiedPercent:percent,nearest:top,notes});
+   if(top.score>=85)dupes.push({a:a.key,b:top.key,score:top.score});
+  }
+  stats.scanned=arr.length;stats.duplicates=dupes.length;
+  return {rooms,duplicates:dupes,stats:{...stats}};
+ }
+ function cssMount(){if(document.getElementById('lq62-style'))return;
+  const e=document.createElement('style');e.id='lq62-style';e.textContent=`#lq62-panel[hidden]{display:none!important}#lq62-panel{position:fixed;inset:0;z-index:96200;background:#071018d8;display:grid;place-items:center;padding:15px;color:#eaf1f2;font-family:system-ui,Arial,sans-serif}#lq62-panel .inner{width:min(750px,96vw);max-height:87vh;overflow:auto;border-radius:17px;background:#172833;border:1px solid #6fa2ab;padding:22px;box-shadow:0 18px 70px #000b}#lq62-panel h2{font-size:20px;color:#f6d699;margin:0 0 9px}#lq62-panel h3{font-size:14px;color:#f3d6a8}#lq62-panel p,#lq62-panel li{font-size:13px;line-height:1.6;color:#c5d6da}#lq62-panel button{background:#294e60;color:#edfaff;border:1px solid #75aab4;border-radius:8px;cursor:pointer;padding:9px 13px;font:inherit}#lq62-panel .actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}#lq62-panel button.active{background:#387168}#lq62-panel .result{font-size:12px;color:#e4f1f5;white-space:pre-wrap;max-height:31vh;overflow:auto;padding:13px;background:#0d1c26;border-radius:9px;border:1px solid #3c6570}#lq62-panel footer{display:flex;justify-content:space-between;align-items:center;margin-top:16px}`;
+  document.head.appendChild(e);
+ }
+ function createPanel(){if(document.getElementById('lq62-panel'))return document.getElementById('lq62-panel');cssMount();let p=document.createElement('div');p.id='lq62-panel';p.hidden=true;
+  p.innerHTML=`<section class="inner" role="dialog" aria-modal="true" aria-label="V62 Art Director"><h2>✦ LIFEQUEST V62 — ART DIRECTOR</h2><p>Kiến trúc có hình dáng riêng, phân vùng theo công năng, kiểm tra mật độ và các phòng tương tự. Đây là lớp mỹ thuật không sửa collision, cửa hoặc nhiệm vụ. Thay đổi lớp đồ họa trong phòng được áp dụng khi vào lại phòng.</p><div class="actions"><button id="lq62-on" type="button">Đồ họa V62</button><button id="lq62-out" type="button">Chi tiết ngoài trời</button><button id="lq62-audit" type="button">Phân tích phòng đã ghé</button><button id="lq62-copy" type="button">Sao chép báo cáo</button></div><div class="result" id="lq62-report" aria-live="polite"></div><footer><small>F7: bật/tắt · Esc: đóng</small><button type="button" id="lq62-close">Tiếp tục chơi</button></footer></section>`;document.body.appendChild(p);
+  const refresh=()=>{p.querySelector('#lq62-on').classList.toggle('active',prefs.enabled);p.querySelector('#lq62-out').classList.toggle('active',prefs.outdoors);let a=audit();p.querySelector('#lq62-report').textContent=`Đã ghi nhận ${a.rooms.length} phòng · ${a.duplicates.length} cặp có bố cục gần giống (theo tiêu chí kỹ thuật).\n\n`+a.rooms.slice(-13).map(x=>`${x.name} · ${x.shape} · ${x.role} · ${x.occupiedPercent}% vật thể\n${x.notes.join('; ')}`).join('\n\n')||'Chưa mở phòng nào.'};
+  p.querySelector('#lq62-on').onclick=()=>{prefs.enabled=!prefs.enabled;save();refresh()};p.querySelector('#lq62-out').onclick=()=>{prefs.outdoors=!prefs.outdoors;save();if(!prefs.outdoors)outdoors?.clear();refresh()};
+  p.querySelector('#lq62-audit').onclick=refresh;p.querySelector('#lq62-close').onclick=()=>p.hidden=true;
+  p.querySelector('#lq62-copy').onclick=()=>{let a=audit();let txt=JSON.stringify(a,null,2);if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).catch(()=>{});else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch{}ta.remove()}};
+  refresh();return p;
+ }
+ const save=()=>{try{localStorage.setItem('lq62_visual',JSON.stringify(prefs))}catch{}};
+ function open(){const p=createPanel();p.hidden=false}
+ if(typeof document!=='undefined'){
+  window.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(String(e.target?.tagName||''))||e.repeat)return;
+   if(e.code==='F7'){e.preventDefault();e.stopImmediatePropagation();let p=createPanel();p.hidden=!p.hidden}
+   if(e.code==='Escape'){let p=document.getElementById('lq62-panel');if(p&&!p.hidden){e.preventDefault();e.stopImmediatePropagation();p.hidden=true}}
+  },true);
+  const menuLink=()=>{let root=document.getElementById('l11-page')||document.getElementById('l11-dialog');if(root&&!root.querySelector('#lq62-launch')){let b=document.createElement('button');b.type='button';b.id='lq62-launch';b.textContent='◆ V62 · Art Director';b.style.cssText='background:#284e59;color:#f2ecda;border:1px solid #83bab7;border-radius:8px;padding:9px 12px;margin:6px;cursor:pointer';b.onclick=open;root.appendChild(b)}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',menuLink,{once:true});else menuLink();setInterval(menuLink,3800);
+ }
+ return Object.freeze({VERSION,STYLE,identity,occupational,plan,compare,audit,drawBack,drawItem,drawFront,onLeave,onEnter,update:drawWorld,open,prefs:()=>({...prefs}),settings:v=>{prefs={...prefs,...v};save()},test:{gfx,ornament}});
+})();
+window.LQVisualV62=LQ62;
+/* LIFEQUEST AI V63 — HANDCRAFTED WORLD EXPANSION
+ * Adds architectural authored wall silhouettes, material-specific inlays,
+ * detailed furniture accents tied to real item footprints, subtle living
+ * set-pieces and a design diagnostics panel. No collision/door mutations.
+ * Works with original Phaser Graphics and the Canvas atlas emulator.
+ */
+const LQ63=(()=>{
+'use strict';
+const TILE=32, VERSION='63.0.0';
+const REGIONS={
+ 'english-town':{kind:'civic',name:'Neighborhood Living',a:0x7fac99,b:0xdcc495,d:0x294c4d,glow:0xf7d9a1},
+ 'mining-town':{kind:'industrial',name:'Railway Foundry',a:0x65838b,b:0xe4b876,d:0x253c48,glow:0x8fe8e7},
+ 'english-town-past':{kind:'heritage',name:'Handmade Oriaris',a:0xb28c62,b:0xe1be83,d:0x503a30,glow:0xffdc96},
+ 'art-district':{kind:'studio',name:'Atelier & Galleries',a:0x9878aa,b:0xe5bd98,d:0x493754,glow:0xb9eee4},
+ 'tech-co':{kind:'tech',name:'Glasswork Systems',a:0x4a91a5,b:0x96dbd5,d:0x1c3d57,glow:0x9bf4e6},
+ 'old-oriaris':{kind:'royal',name:'Royal Architectural Axis',a:0xa37a98,b:0xf0d29a,d:0x45354b,glow:0xffdcb7},
+ 'wish-valley':{kind:'organic',name:'Root-grown Homes',a:0x83a16c,b:0xd9be7d,d:0x314c35,glow:0xe9d69a},
+ 'vocalt-greedy-land':{kind:'merchant',name:'Living Commerce',a:0xac8063,b:0xf3d28c,d:0x56382d,glow:0xffd995},
+ 'oriaris-trail-1':{kind:'heritage',name:'Woodland Outposts',a:0x82a478,b:0xd7c99c,d:0x345244,glow:0xf9d38c},
+ 'oriaris-trail-2':{kind:'heritage',name:'Woodland Outposts',a:0x82a478,b:0xd7c99c,d:0x345244,glow:0xf9d38c},
+ 'oriaris-trail-3':{kind:'heritage',name:'Woodland Outposts',a:0x82a478,b:0xd7c99c,d:0x345244,glow:0xf9d38c},
+ 'oriaris-camp':{kind:'heritage',name:'Woodland Outposts',a:0x82a478,b:0xd7c99c,d:0x345244,glow:0xf9d38c}
+};
+const hash=s=>{let h=2166136261;for(let i=0;i<String(s).length;i++)h=Math.imul(h^String(s).charCodeAt(i),16777619);return h>>>0};
+const lim=(x,a,b)=>Math.max(a,Math.min(b,x));
+const choose=(list,seed)=>list[(seed%list.length+list.length)%list.length];
+const pict={
+ family:['A shared hearth','A family collection','Woven household alcove'],
+ work:['Trade bench','Tool station','Service counter'],
+ learning:['Reference archive','Study alcove','Archive shelves'],
+ cultural:['Ceremonial display','Communal gathering','Preserved records'],
+ tech:['Data instruments','Interface consoles','Laboratory station']
+};
+let options={enabled:true,ambient:true,outdoor:true,annotations:false,contrast:'balanced'};
+try{const j=JSON.parse(localStorage.getItem('lq63_graphics')||'null');if(j&&typeof j==='object')options={...options,...j}}catch{}
+let ui=null,sceneRef=null,insideKey='',insideGraphics=null,outsideGraphics=null,outsideScene=null,lastStep=0,frame=0,rooms=new Map();
+const config=s=>REGIONS[s?.__lq58?.area]||REGIONS['english-town'];
+const classify=s=>{const n=String(s?.__lq58?.building||'').toLowerCase(),region=config(s).kind;
+ if(/vaela/.test(n))return 'vaela';if(/great mine|freight workshop/.test(n))return 'great-mine';
+ if(/grand opera/.test(n))return 'grand-opera';if(/chronos|fine clocks/.test(n))return 'chronos';
+ if(/council|town hall|elder|palace|royal court/.test(n))return 'council';
+ if(/library|academy|archive|school|museum/.test(n))return 'learning';
+ if(/bakery|baker|cafe|food|tavern|kitchen/.test(n))return 'food';
+ if(/shop|market|guild|stall|jewel|cloth|exchange|bazaar/.test(n))return 'store';
+ if(/house|home|cottage|hut|dwelling/.test(n))return 'home';
+ if(/workshop|foundry|station|factory|lab|nexus|office/.test(n))return 'work';
+ return region==='tech'?'work':region==='royal'?'council':'community';
+};
+const G=g=>({
+ rect:(x,y,w,h,c,a=1)=>{if(w>0&&h>0)g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))},
+ circle:(x,y,r,c,a=1)=>{if(r>0)g.fillStyle(c,a).fillCircle(x,y,r)},
+ oval:(x,y,w,h,c,a=1)=>{if(w>0&&h>0)g.fillStyle(c,a).fillEllipse(x,y,w,h)},
+ line:(x,y,X,Y,c,a=1,t=2)=>g.lineStyle(t,c,a).lineBetween(Math.round(x),Math.round(y),Math.round(X),Math.round(Y)),
+ tri:(x,y,X,Y,U,V,c,a=1)=>g.fillStyle(c,a).fillTriangle(x,y,X,Y,U,V),
+ ring:(x,y,r,c,a=1,t=2)=>{if(r>0)g.lineStyle(t,c,a).strokeCircle(x,y,r)}
+});
+const profileCache=new WeakMap();
+function profile(s){if(!s?.__lq58)return null;
+ const signature=[s.w,s.h,s.items?.length||0,s.__lq58.area,s.__lq58.building,s.__lq58.floor||0,s.__lq64Revision||0].join('::');
+ const old=profileCache.get(s);
+ if(old && old.signature===signature && old.items===s.items)return old.p;
+ const area=s.__lq58.area||'english-town',name=s.__lq58.building||'Interior',level=s.__lq58.floor||0;
+ const key=[area,name,level].join('::');const type=classify(s),seed=hash(key),W=s.w*TILE,H=s.h*TILE,region=config(s);
+ const objects=(s.items||[]).filter(o=>Number.isFinite(o.x)&&Number.isFinite(o.y)&&Number.isFinite(o.w)&&Number.isFinite(o.h));
+ const layout=window.LQVisualV62?.plan?.(s)||null;
+ const dominant=type==='vaela'?'branch':type==='great-mine'?'gantry':type==='grand-opera'?'arch':type==='chronos'?'clock':
+ region.kind==='organic'?'branch':region.kind==='industrial'?'gantry':region.kind==='royal'?'arch':region.kind==='merchant'?'arcade':
+ region.kind==='tech'?'glass':region.kind==='studio'?'sawtooth':region.kind==='heritage'?'truss':'townhouse';
+ const layoutVariant=seed%17,role=type==='food'?'work':type==='home'?'family':type==='learning'?'learning':type==='council'?'cultural':
+ type==='store'?'work':region.kind==='tech'?'tech':'cultural';
+ const zoneNames=pict[role]||pict.cultural;
+ let paths=[];const doorX=W*.5,doorY=H-64;
+ for(const item of objects){if(item.w<=0||item.h<=0)continue;
+   paths.push({x:item.x*32,y:item.y*32,w:item.w*32,h:item.h*32,kind:item.k});}
+ // Decorative inlays must not increase physical obstruction. Occupancy covers only existing items.
+ const floorCenterX=W*(.42+(seed%5)*.04);
+ const unique=[region.kind,dominant,type,layoutVariant,Math.round(W/64),Math.round(H/64),objects.length,
+   Math.round(objects.reduce((a,o)=>a+o.x+o.w/2,0)/Math.max(1,objects.length))].join('|');
+ const p={key,area,name,region,type,dominant,role,zoneNames,layoutVariant,seed,W,H,objects,paths,layout,doorX,doorY,floorCenterX,unique};
+ rooms.set(key,p);profileCache.set(s,{signature,items:s.items,p});return p;
+}

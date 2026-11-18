@@ -1,0 +1,2087 @@
+// Architectural strokes are composed in the 0..100 wall band; floor motifs are flat and passable.
+function wallMark(d,x,y,k,p,scale=1){const {a,b,d:dark,glow}=p;
+ if(k==='arched'){
+  d.rect(x-17*scale,y-2*scale,34*scale,32*scale,dark,.90);
+  d.oval(x,y+4*scale,28*scale,29*scale,b,.72);d.rect(x-13*scale,y+4*scale,26*scale,24*scale,b,.72);
+  d.rect(x-9*scale,y+7*scale,18*scale,21*scale,dark,.85);d.oval(x,y+8*scale,18*scale,15*scale,dark,.85);
+  d.line(x,y+5*scale,x,y+28*scale,glow,.65,2*scale);
+ }else if(k==='leaf'){
+  d.line(x,y+20*scale,x,y-6*scale,dark,.90,5*scale);
+  d.oval(x-8*scale,y+1*scale,17*scale,13*scale,a,.86);d.oval(x+7*scale,y-4*scale,20*scale,16*scale,a,.88);
+  d.oval(x-1*scale,y-9*scale,17*scale,10*scale,glow,.33);
+ }else if(k==='dial'){
+  d.circle(x,y,16*scale,dark,.86);d.circle(x,y,13*scale,b,.95);d.circle(x,y,9*scale,0x604832,.95);
+  d.line(x,y,x+5*scale,y-4*scale,glow,1,2*scale);d.line(x,y,x-4*scale,y+1*scale,b,1,2*scale);
+  for(let i=0;i<8;i++){const ang=i*Math.PI/4;d.rect(x+Math.cos(ang)*10*scale-1,y+Math.sin(ang)*10*scale-1,2,2,glow,.89)}
+ }else if(k==='conduit'){
+  d.rect(x-18*scale,y-14*scale,36*scale,29*scale,dark,.83);d.rect(x-14*scale,y-10*scale,28*scale,20*scale,a,.79);
+  for(let z=0;z<3;z++)d.rect(x-10*scale,y-5*scale+z*6*scale,20*scale,2*scale,glow,z===1?.74:.42);
+  d.circle(x+10*scale,y+12*scale,3*scale,b,1);
+ }else if(k==='frame'){
+  d.rect(x-16*scale,y-13*scale,32*scale,27*scale,dark,.98);d.rect(x-13*scale,y-10*scale,26*scale,21*scale,b,.88);
+  d.rect(x-10*scale,y-7*scale,20*scale,15*scale,a,.79);d.line(x-10*scale,y+3*scale,x+10*scale,y-5*scale,glow,.6,2*scale);
+ }else if(k==='loom'){
+  d.rect(x-15*scale,y-11*scale,4*scale,26*scale,dark,.9);d.rect(x+11*scale,y-11*scale,4*scale,26*scale,dark,.9);
+  d.line(x-12*scale,y-11*scale,x+12*scale,y-11*scale,b,.9,3*scale);d.line(x-11*scale,y+11*scale,x+11*scale,y+11*scale,b,.9,3*scale);
+  for(let i=0;i<6;i++)d.line(x-10*scale+i*4*scale,y-8*scale,x-10*scale+i*4*scale,y+10*scale,i%2?glow:a,.8,1*scale);
+ }
+}
+function emblem(p){return p.dominant==='branch'?'leaf':p.dominant==='gantry'?'conduit':p.dominant==='clock'||p.dominant==='arcade'?'dial':p.dominant==='glass'?'conduit':p.dominant==='truss'?'loom':'frame'}
+function heroWalls(d,p){const W=p.W,cx=W/2,c=p.region;
+ switch(p.dominant){
+ case 'branch':{
+  // Organic ceilings use curved silhouettes made from layered triangular root supports.
+  for(let side of [-1,1]){let xx=side<0?30:W-30;
+   d.line(xx,93,xx-side*28,34,0x3e5836,.99,15);d.line(xx,79,xx-side*56,45,0x69805b,.91,9);
+   d.oval(xx-side*39,44,92,46,0x426c49,.92);d.oval(xx-side*47,34,58,37,0x7fa36b,.89);
+   d.line(xx,90,cx+side*28,91,c.d,.65,4);
+  }
+  for(let j=0;j<5;j++)wallMark(d,45+j*(W-90)/4,64,'leaf',c,.78);
+  break;}
+ case 'gantry':{
+  d.rect(16,16,W-32,20,c.d,.94);d.rect(22,20,W-44,5,c.b,.72);
+  for(let j=0;j<6;j++){let x=23+j*(W-46)/5;
+   d.rect(x,36,6,61,c.d,.84);d.rect(x+2,36,2,59,c.b,.74);
+   if(j<5)d.line(x+6,39,x+(W-46)/5,73,c.a,.5,3);
+  }
+  for(let j=0;j<4;j++)wallMark(d,72+j*(W-144)/3,66,'conduit',c,.78);
+  break;}
+ case 'arch':{
+  d.rect(17,13,W-34,15,c.d,.96);d.rect(20,17,W-40,5,c.b,.79);
+  for(let j=0;j<5;j++){const x=35+j*(W-70)/4;
+   d.rect(x-10,42,20,55,c.d,.9);d.rect(x-7,45,14,48,c.a,.84);d.rect(x-13,36,26,10,c.b,.85);
+  }
+  for(let j=0;j<4;j++)wallMark(d,77+j*(W-154)/3,64,'arched',c,.78);
+  break;}
+ case 'clock':case 'arcade':{
+  for(let j=0;j<5;j++){let x=27+j*(W-54)/4;
+   d.rect(x-10,18,20,75,c.d,.91);d.rect(x-7,21,14,70,c.a,.56);
+   wallMark(d,x,56,p.dominant==='clock'?'dial':'arched',c,.75);
+  }
+  d.rect(24,91,W-48,4,c.b,.73);break;}
+ case 'glass':{
+  for(let j=0;j<5;j++){let x=24+j*(W-48)/4;d.rect(x,13,5,82,c.d,.87);d.rect(x+5,18,(W-48)/4-9,49,c.a,.35);
+   d.line(x+6,69,x+(W-48)/4-3,69,c.glow,.67,2);}
+  for(let j=0;j<4;j++)wallMark(d,80+j*(W-160)/3,80,'conduit',c,.64);break;}
+ case 'sawtooth':{
+  for(let j=0;j<6;j++){let x=23+j*(W-46)/5;d.tri(x,20,x+35,20,x+20,62,[0xa6869f,0x9d88b1,0xa98f85][j%3],.77);}
+  for(let j=0;j<4;j++)wallMark(d,82+j*(W-164)/3,76,'frame',c,.85);break;}
+ case 'truss':{
+  for(let j=0;j<5;j++){let x=22+j*(W-44)/4;d.line(x,92,x+24,23,c.d,.75,8);d.line(x+2,85,x+25,28,c.b,.6,2);}
+  for(let j=0;j<4;j++)wallMark(d,80+j*(W-160)/3,79,'loom',c,.78);break;}
+ default:{
+  for(let j=0;j<4;j++){let x=35+j*(W-70)/3;d.rect(x-13,25,26,67,c.d,.86);d.rect(x-9,30,18,54,c.a,.68);}
+  wallMark(d,cx,66,'frame',c,1);break;}
+ }
+}
+function floorStage(d,p){const W=p.W,H=p.H,c=p.region,cy=lim(H*.55,160,H-118),cx=p.floorCenterX;
+ // Floor embellishment is passable and visually subordinate to the actual furniture and door.
+ if(p.type==='vaela'||p.dominant==='branch'){
+  const rx=Math.min(132,W*.29),ry=Math.min(80,(H-130)*.30);
+  d.oval(cx,cy,rx*2+15,ry*2+15,c.d,.24);d.oval(cx,cy,rx*2,ry*2,0xa88755,.28);
+  for(let k=0;k<11;k++){let th=k*Math.PI*2/11;d.line(cx+Math.cos(th)*33,cy+Math.sin(th)*21,cx+Math.cos(th)*rx,cy+Math.sin(th)*ry,c.b,.31,2)}
+  d.ring(cx,cy,35,c.b,.24,3);
+ }else if(p.dominant==='gantry'){
+  for(const dx of [-22,22])d.rect(cx+dx,110,5,H-183,c.b,.34);
+  for(let y=125;y<H-72;y+=25)d.rect(cx-16,y,38,3,c.a,.46);
+  for(let j=0;j<4;j++){let yy=138+j*46;d.rect(42,yy,70,5,c.d,.43);d.rect(W-112,yy,70,5,c.d,.43)}
+ }else if(p.dominant==='arch'){
+  d.rect(cx-26,115,52,H-187,c.d,.34);d.rect(cx-13,114,26,H-186,0xb25e6d,.32);
+  for(let j=0;j<5;j++){let yy=130+j*34;d.line(40,yy,Math.min(W-40,120),yy+14,c.b,.26,2);d.line(W-40,yy,W-120,yy+14,c.b,.26,2)}
+ }else if(p.dominant==='clock'){
+  d.ring(cx,cy,Math.min(W*.21,93),c.d,.30,7);d.ring(cx,cy,Math.min(W*.17,78),c.b,.28,2);
+  for(let k=0;k<12;k++){const a=k*Math.PI/6;d.rect(cx+Math.sin(a)*70-2,cy-Math.cos(a)*70-2,4,4,c.b,.35)}
+ }else if(p.dominant==='glass'){
+  for(let j=0;j<5;j++){let yy=130+j*(H-210)/4;d.rect(cx-25,yy,50,4,c.glow,.24)}
+  for(let dx of [-70,70])d.line(cx+dx,125,cx+dx,H-96,c.a,.33,3);
+ }else if(p.dominant==='sawtooth'){
+  for(let k=0;k<4;k++){let x=42+k*(W-84)/4;d.tri(x,127,x+70,137,x+33,H-128,[0x9e7c97,0x6d9b91,0xc1977e][k%3],.13)}
+ }else if(p.dominant==='truss'){
+  for(let k=0;k<5;k++){let y=129+k*(H-204)/4;d.line(40,y,W-40,y+12,c.b,.20,3)}
+ }else{
+  for(let k=0;k<3;k++){let y=148+k*41;d.rect(35,y,Math.min(72,W*.17),4,c.b,.19);d.rect(W-107,y,Math.min(72,W*.17),4,c.b,.19)}
+ }
+ // Leave the door lane quiet and unmarked to maintain entrance readability.
+ d.line(W*.5-23,H-39,W*.5+23,H-39,c.b,.31,2);
+}
+// Secondary architectural language reflects owner profession and individual layout.
+// All pieces are flat floor inlays or wall-mounted; they are not freestanding props.
+function occupationIdentity(d,p){
+ const W=p.W,H=p.H,c=p.region,v=p.layoutVariant;
+ const flip=(v%2)?1:-1;
+ const anchor=W*(flip>0?.75:.25),second=W-anchor;
+ const upper=130+v%3*8;
+ if(p.role==='family'){
+   // Family rooms: conversational rugs, asymmetrical alcove seams, low wall textile.
+   d.oval(anchor,upper+48,Math.min(93,W*.24),50,c.b,.16);
+   d.oval(anchor,upper+48,Math.min(70,W*.18),35,c.d,.17);
+   for(let k=0;k<5;k++)d.line(anchor-28+k*14,upper+26,anchor-20+k*13,upper+62,c.a,.26,2);
+   wallMark(d,second,66,'loom',c,.57);
+ }else if(p.role==='work'){
+   // Shops and workshops: a visual flow lane points from production to display.
+   const x1=flip>0?35:W-35,x2=flip>0?W*.37:W*.63;
+   for(let j=0;j<3;j++){
+    const xx=x1+(x2-x1)*(j+1)/4;
+    d.rect(xx-13,upper+j*26,26,4,c.d,.33);
+    d.rect(xx-8,upper+j*26+5,16,2,c.b,.35);
+   }
+   wallMark(d,anchor,70,p.region.kind==='merchant'?'dial':'conduit',c,.62);
+ }else if(p.role==='learning'){
+   // Study/archive: a vertical reference strip and a reading zone on the wall.
+   for(let j=0;j<5;j++){
+    const xx=anchor-30+j*13;
+    d.rect(xx,39+(j%2)*5,8,47,c.d,.62);
+    d.rect(xx+2,42+(j%2)*5,4,41,j%2?c.b:c.a,.45);
+   }
+   d.rect(second-32,upper,65,4,c.b,.25);
+   wallMark(d,second,63,'frame',c,.62);
+ }else if(p.role==='tech'){
+   // Routing diagram is an inset on the floor, not an extra blocking console.
+   for(let j=0;j<4;j++){
+    const y=upper+j*19;
+    d.line(anchor-28,y,anchor+18,y,c.glow,.26,2);
+    d.circle(anchor+20,y,2,c.b,.42);
+   }
+   wallMark(d,second,66,'conduit',c,.7);
+ }else{
+   // Communal gathering places: radial floor inlay, ceremonial wall display.
+   d.ring(anchor,upper+48,31,c.b,.24,3);
+   for(let j=0;j<7;j++){
+    const a=j*Math.PI*2/7;
+    d.rect(anchor+Math.cos(a)*35-2,upper+48+Math.sin(a)*35-2,4,4,c.a,.39);
+   }
+   wallMark(d,second,66,p.dominant==='arch'?'arched':'frame',c,.64);
+ }
+ // Individual construction seams, derived from a stable building ID instead of clutter.
+ for(let j=0;j<3;j++){
+   const x=26+((v*41+j*103)%(Math.max(50,W-52)));
+   d.rect(x,21,3,23+(v+j)%4*7,c.d,.25);
+   d.rect(x+3,24,2,13+(v+j)%4*7,c.b,.31);
+ }
+}
+function drawBack(g,s){if(!options.enabled||!s?.__lq58)return;const p=profile(s);if(!p||p.W<250||p.H<220)return;
+ const d=G(g);heroWalls(d,p);floorStage(d,p);occupationIdentity(d,p);
+ // Signature landmarks in the actual upper wall, intentionally different shapes.
+ if(p.type==='vaela'){
+   for(let j=0;j<3;j++)wallMark(d,p.W*.32+j*p.W*.18,67,'leaf',p.region,1.25);
+ }else if(p.type==='great-mine'){
+   d.rect(p.W*.41,13,p.W*.18,19,0x172a35,.96);d.rect(p.W*.43,17,p.W*.14,9,p.region.glow,.74);
+ }else if(p.type==='grand-opera'){
+   d.rect(p.W*.29,16,p.W*.42,21,0x6e3451,.95);d.rect(p.W*.32,19,p.W*.36,7,p.region.b,.76);
+ }else if(p.type==='chronos'){
+   wallMark(d,p.W/2,40,'dial',p.region,1.45);
+ }
+}
+function objectDetail(g,it,s){if(!options.enabled||!it?.k)return;const p=profile(s);if(!p)return;
+ const x=it.x*TILE,y=it.y*TILE,w=it.w*TILE,h=it.h*TILE,k=String(it.k||'').toLowerCase(),d=G(g),c=p.region;
+ if(!Number.isFinite(x+y+w+h)||w<16||h<16)return;
+ const xmin=x+3,xmax=x+w-3,ymin=y+3,ymax=y+h-3;
+ // Every line is clipped conceptually to the real object's own bounding box.
+ if(/shelf|cabinet|book|display|rack/.test(k)){
+   for(let j=0;j<Math.max(1,Math.min(5,Math.floor((w-10)/17)));j++){
+      const xx=xmin+4+j*Math.max(10,(w-15)/Math.max(1,Math.min(5,Math.floor((w-10)/17))));
+      if(xx+5>xmax)break;
+      d.rect(xx,ymin+6,3,Math.min(17,h-12),j%2?c.a:c.b,.86);
+      if(h>33)d.rect(xx+1,ymax-7,4,3,c.glow,.53);
+   }
+ }else if(/desk|table|bench|counter|stove|forge|furnace|machine/.test(k)){
+   const lineY=ymin+Math.min(10,(h-6)*.28);
+   d.line(xmin+6,lineY,xmax-6,lineY,c.b,.62,2);
+   for(let j=0;j<Math.min(4,Math.floor(w/21));j++){
+      const xx=xmin+11+j*21;
+      if(xx+4<xmax&&lineY+9<ymax){d.rect(xx,lineY+5,6,5,j%2?c.glow:c.d,.76);d.rect(xx+1,lineY+6,2,2,c.b,.82)}
+   }
+   if(p.type==='chronos'||p.region.kind==='merchant'){
+      const cx=x+w*.71,cy=y+h*.53;let rr=Math.min(11,w*.11,h*.25);
+      if(rr>3){d.circle(cx,cy,rr,c.b,.83);d.circle(cx,cy,rr*.7,c.d,.81);d.line(cx,cy,cx+rr*.4,cy-rr*.3,c.glow,.86,2)}
+   }
+ }else if(/bed|sofa|chair|seat/.test(k)){
+   d.rect(xmin+4,ymin+4,Math.max(4,w-15),Math.min(6,h-9),c.b,.59);
+   if(h>28)d.rect(xmin+8,ymax-6,Math.max(4,w-23),2,c.d,.51);
+ }else if(/plant|herb|tree/.test(k)){
+   const mid=x+w*.5,top=y+h*.31;
+   d.line(mid,top+5,mid,ymax-7,c.d,.76,2);
+   d.oval(mid-5,top,Math.min(9,w*.25),Math.min(7,h*.2),c.a,.82);
+   d.oval(mid+5,top-4,Math.min(9,w*.25),Math.min(7,h*.2),c.glow,.63);
+ }
+}
+function drawFront(g,s){if(!options.enabled||!s?.__lq58)return;const p=profile(s);if(!p)return;const d=G(g),W=p.W,H=p.H,c=p.region;
+ // Wall cornice and entrance threshold live on the texture, don't block walking.
+ d.rect(14,94,W-28,3,c.d,.8);d.rect(20,96,W-40,2,c.b,.42);
+ for(let side of [-1,1]){let x=side<0?22:W-22;d.rect(x-4,72,8,26,c.d,.82);d.rect(x-1,75,2,18,c.b,.60)}
+ // Personality: meaningful small wall badges, not tiled floor clutter.
+ const motif=emblem(p);wallMark(d,54,88,motif,c,.53);wallMark(d,W-54,88,motif,c,.53);
+}
+function insideAmbient(sc,elapsed){if(!sc?.inside?.spec||!options.enabled||!options.ambient)return;
+ const ins=sc.inside,s=ins.spec,p=profile(s),key=p?.key;if(!p)return;
+ if(sceneRef!==sc||insideKey!==key||!insideGraphics?.active){
+   if(insideGraphics){try{insideGraphics.destroy()}catch{}}
+   insideGraphics=sc.add.graphics().setDepth(1.35);ins.objs.push(insideGraphics);sceneRef=sc;insideKey=key;
+ }
+ frame+=elapsed||16;if(frame<110)return;frame=0;
+ const d=G(insideGraphics),clock=(sc.time?.now||0)/1000,scale=TILE*ins.k,baseX=ins.objs[0].x,baseY=ins.objs[0].y,c=p.region;
+ insideGraphics.clear();const gameMinutes=Number(sc.store?.game?.minutes??720),night=gameMinutes<400||gameMinutes>1130;
+ let n=0;for(const it of p.objects){if(n>=8)break;
+  const k=String(it.k||'').toLowerCase(),ix=baseX+(it.x+it.w*.5)*scale,iy=baseY+(it.y+.5)*scale;
+  if(!Number.isFinite(ix+iy))continue;
+  if(/lamp|candle|torch|fire|forge|furnace|stove|crystal/.test(k)){
+    const r=4+Math.sin(clock*3+n)*1.2;
+    d.circle(ix,iy,Math.max(2,r*ins.k),/crystal/.test(k)?0x9ceaf5:0xffd48c,night?.37:.18);
+    d.circle(ix,iy,Math.max(1,2*ins.k),c.glow,.60);n++;
+  }else if(/clock|gear|machine|engine|meter/.test(k)){
+    const r=Math.max(5,6*ins.k),xx=ix+Math.cos(clock*.8+n)*r*.5,yy=iy+Math.sin(clock*.8+n)*r*.5;
+    d.line(ix,iy,xx,yy,c.glow,.54,Math.max(1,ins.k));n++;
+  }else if(/plant|herb|tree|vase/.test(k)){
+    const wind=Math.sin(clock*1.3+n)*Math.min(4,ins.k*2.0);
+    d.line(ix,iy+2*ins.k,ix+wind,iy-7*ins.k,c.a,.55,2);n++;
+  }
+ }
+}
+function outsideAmbient(sc,elapsed){if(!sc?.area||sc.inside||!options.outdoor||!options.enabled)return;
+ if(outsideScene!==sc||!outsideGraphics?.active){
+  try{outsideGraphics?.destroy()}catch{}
+  outsideGraphics=sc.add.graphics().setDepth(6.6);outsideScene=sc;
+ }
+ frame+=elapsed||16;if(frame<200)return;frame=0;
+ outsideGraphics.clear();let count=0;
+ const d=G(outsideGraphics),c=REGIONS[sc.area.id]||REGIONS['english-town'],clock=(sc.time?.now||0)/1000;
+ const buildingList=(sc.area.buildings||[]).map(b=>({b,x:(b.door+.5)*TILE,y:(b.y+.15)*TILE}))
+  .filter(q=>Math.abs(q.x-sc.player.x)<530&&Math.abs(q.y-sc.player.y)<400)
+  .sort((a,b)=>(a.x-sc.player.x)**2+(a.y-sc.player.y)**2-(b.x-sc.player.x)**2-(b.y-sc.player.y)**2).slice(0,7);
+ for(const entry of buildingList){
+  const {b,x,y}=entry;
+  // Only on the existing upper facade, never inside walkway or door trigger.
+  const cx=x+((hash(sc.area.id+b.name)%3)-1)*11;
+  const t=Math.sin(clock*1.2+count)*2;
+  if(c.kind==='industrial'){
+    d.rect(cx-2,y-2,4,16,c.b,.48);d.rect(cx+8,y+5+t,2,10,c.glow,.56);
+  }else if(c.kind==='organic'||c.kind==='heritage'){
+    d.line(cx-9,y+4,cx-2+t,y-11,c.d,.43,3);d.oval(cx-3+t,y-12,9,5,c.a,.60);
+  }else if(c.kind==='royal'||c.kind==='merchant'){
+    d.rect(cx-4,y-7,9,13,c.b,.40);d.rect(cx-2,y-4,5,6,c.glow,.22+.10*(Math.sin(clock*2)+1));
+  }else if(c.kind==='tech'){
+    d.rect(cx-8,y-6,16,7,c.a,.25);d.rect(cx-7,y-3,5+(Math.floor(clock*2)%8),2,c.glow,.58);
+  }else if(c.kind==='studio'){
+    d.line(cx-7,y+3,cx+7,y-6,c.a,.34,2);d.rect(cx+2,y-2,4,4,c.glow,.37);
+  }else{
+    d.rect(cx-4,y-7,8,14,c.a,.31);d.rect(cx-1,y-5,2,9,c.glow,.31);
+  }
+  count++;
+ }
+}
+function update(sc,dt){if(sc?.inside){outsideGraphics?.clear();insideAmbient(sc,dt)}else{insideGraphics?.clear();outsideAmbient(sc,dt)}}
+function onLeave(){insideGraphics=null;insideKey='';sceneRef=null}
+function onEnter(){insideKey=''}
+function audit(){const all=[...rooms.values()],issues=[],families={},byMap={};let occupied=0;
+ for(const p of all){families[p.dominant]=(families[p.dominant]||0)+1;byMap[p.area]=(byMap[p.area]||0)+1;
+  const sum=p.paths.reduce((a,o)=>a+o.w*o.h,0),ratio=sum/(p.W*p.H);occupied+=ratio;
+  if(ratio>.38)issues.push({room:p.key,type:'crowded',score:Math.round(ratio*100)});
+  if(ratio<.035)issues.push({room:p.key,type:'sparse',score:Math.round(ratio*100)});
+ }
+ const near=[];
+ for(let i=0;i<all.length;i++)for(let j=0;j<i;j++){
+  const a=all[i],b=all[j];if(a.area!==b.area)continue;
+  const matches=['dominant','type','layoutVariant','role'].reduce((n,k)=>n+(a[k]===b[k]),0);
+  if(matches===4&&Math.abs(a.W-b.W)<33&&Math.abs(a.H-b.H)<33)near.push([a.key,b.key]);
+ }
+ return {version:VERSION,rooms:all.length,families,byMap,nearMatches:near.slice(0,25),issues,avgFurniturePercent:Math.round(occupied/Math.max(1,all.length)*100)};
+}
+function mount(){if(typeof document==='undefined')return null;if(ui&&ui.isConnected)return ui;
+ const st=document.createElement('style');st.id='lq63-css';st.textContent=`#lq63-modal[hidden]{display:none!important}#lq63-modal{position:fixed;inset:0;z-index:97030;display:grid;place-items:center;background:#07141de8;padding:16px;font:13px system-ui;color:#eff7f8}#lq63-modal section{width:min(740px,95vw);max-height:88vh;overflow:auto;background:#172831;border:1px solid #8bb3a9;border-radius:16px;padding:23px;box-shadow:0 16px 60px #000a}#lq63-modal h2{margin:0 0 8px;color:#f6dcac;font-size:20px}#lq63-modal p{color:#c5d5d6;line-height:1.6}#lq63-modal .actions{display:flex;gap:9px;flex-wrap:wrap;margin:14px 0}#lq63-modal button{padding:10px 13px;border-radius:9px;background:#24485a;border:1px solid #79ada6;color:white;font:inherit;cursor:pointer}#lq63-modal button.on{background:#31746b}#lq63-modal pre{white-space:pre-wrap;font-size:11px;max-height:30vh;overflow:auto;background:#0a1d26;border:1px solid #345563;border-radius:9px;padding:13px}#lq63-modal footer{display:flex;align-items:center;justify-content:space-between;gap:10px}#lq63-modal small{color:#9cb5b9}`;
+ document.head.appendChild(st);ui=document.createElement('div');ui.id='lq63-modal';ui.hidden=true;
+ ui.innerHTML=`<section role="dialog" aria-modal="true" aria-label="LifeQuest V63 graphics"><h2>◇ V63 · HANDCRAFTED WORLD</h2><p>Nâng cấp theo hình khối, nghề nghiệp và khu chức năng. Đồ vật mới được vẽ trên footprint thật; không thêm collider vô hình.</p><div class="actions"><button id="lq63-v" type="button">Kiến trúc</button><button id="lq63-a" type="button">Chuyển động</button><button id="lq63-o" type="button">Ngoại cảnh</button><button id="lq63-s" type="button">Phân tích</button><button id="lq63-c" type="button">Sao chép báo cáo</button></div><pre id="lq63-report" aria-live="polite"></pre><footer><small>F6: mở/đóng · Esc: thoát · Thay đổi kiến trúc áp dụng khi vào lại nhà.</small><button type="button" id="lq63-close">Tiếp tục chơi</button></footer></section>`;
+ document.body.appendChild(ui);const show=()=>{const a=audit();ui.querySelector('#lq63-report').textContent=`Đã phân tích ${a.rooms} phòng; ${a.nearMatches.length} cặp có cấu trúc tương tự.\n\nSố kiểu hình khối: ${Object.keys(a.families).length}\n${Object.entries(a.families).map(([a,b])=>a+': '+b).join('\n')}\n\nVùng cần xem lại: ${a.issues.slice(0,8).map(x=>x.room+' ('+x.type+')').join('; ')||'Chưa phát hiện theo mật độ đồ vật.'}\n\n* Đây là kiểm tra dữ liệu, không thay thế đánh giá mỹ thuật và QA đường đi.`;
+   ui.querySelector('#lq63-v').classList.toggle('on',options.enabled);ui.querySelector('#lq63-a').classList.toggle('on',options.ambient);ui.querySelector('#lq63-o').classList.toggle('on',options.outdoor)};
+ const save=()=>{try{localStorage.setItem('lq63_graphics',JSON.stringify(options))}catch{}};
+ for(const [id,key] of [['lq63-v','enabled'],['lq63-a','ambient'],['lq63-o','outdoor']])ui.querySelector('#'+id).onclick=()=>{options[key]=!options[key];save();show();if(!options.ambient)insideGraphics?.clear();if(!options.outdoor)outsideGraphics?.clear()};
+ ui.querySelector('#lq63-s').onclick=show;ui.querySelector('#lq63-c').onclick=()=>{const v=JSON.stringify(audit(),null,2);if(navigator.clipboard?.writeText)navigator.clipboard.writeText(v).catch(()=>{});else ui.querySelector('pre').textContent=v};
+ ui.querySelector('#lq63-close').onclick=()=>ui.hidden=true;show();return ui;
+}
+function toggle(){let p=mount();if(p)p.hidden=!p.hidden}
+if(typeof document!=='undefined'){
+ window.addEventListener('keydown',e=>{if(e.repeat||['INPUT','TEXTAREA','SELECT'].includes(String(e.target?.tagName||'')))return;
+  if(e.code==='F6'){e.preventDefault();e.stopImmediatePropagation();toggle()}
+  else if(e.code==='Escape'&&ui&&!ui.hidden){e.preventDefault();e.stopImmediatePropagation();ui.hidden=true}
+ },true);
+ let check=0;const link=()=>{const root=document.getElementById('l11-page')||document.getElementById('l11-dialog');if(root&&!root.querySelector('#lq63-launch')){
+  const b=document.createElement('button');b.id='lq63-launch';b.type='button';b.textContent='◇ V63 · Đồ họa thủ công';b.style.cssText='margin:6px;padding:9px 13px;border-radius:9px;border:1px solid #9aafaa;background:#294b52;color:#edf6ee;cursor:pointer';b.onclick=toggle;root.appendChild(b);
+ }};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',link,{once:true});else link();setInterval(link,3900);
+}
+return Object.freeze({VERSION,REGIONS,profile,classify,drawBack,drawItem:objectDetail,drawFront,onEnter,onLeave,update,audit,toggle,settings:x=>{options={...options,...x}},prefs:()=>({...options}),test:{G,wallMark,heroWalls,floorStage}});
+})();
+window.LQVisualV63=LQ63;
+
+/* LIFEQUEST AI V64 — VISUAL INTELLIGENCE
+   Built for V63. Additional overlays do not change gameplay collision polygons.
+   Diagnostics inspect existing geometry; changes to navigation use the existing physics module.
+*/
+const LQ64 = (() => {
+ 'use strict';
+ const VERSION = '64.0.0', TILE = 32;
+ const storageKey='lifequest_v64_visual';
+ const defaults={enabled:true,ambient:true,quality:'balanced',debug:false};
+ let opts={...defaults};
+ try { const v=JSON.parse(localStorage.getItem(storageKey)||'null');if(v&&typeof v==='object')opts={...opts,...v}; } catch(_){}
+ const save=()=>{try{localStorage.setItem(storageKey,JSON.stringify(opts))}catch(_){}};
+ const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
+ const hash=s=>{let h=2166136261; for(const ch of String(s))h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0;};
+ let roomStore=new Map(), scene=null, insideDraw=null, worldDraw=null, debugDraw=null;
+ let roomKey='', clockMs=0, debugMs=0, ambientStats={objects:0,lastMs:0}, ui;
+ const r=(g,x,y,w,h,c,a=1)=>{if(w<=0||h<=0)return;g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+ const line=(g,x,y,u,v,c,a=1,width=1)=>g.lineStyle(width,c,a).lineBetween(Math.round(x),Math.round(y),Math.round(u),Math.round(v));
+ const circ=(g,x,y,R,c,a=1)=>{if(R<=0)return;g.fillStyle(c,a).fillCircle(x,y,R)};
+ const ell=(g,x,y,w,h,c,a=1)=>{if(w<=0||h<=0)return;g.fillStyle(c,a).fillEllipse(x,y,w,h)};
+ const ring=(g,x,y,R,c,a=.7,width=2)=>{if(R<=0)return;g.lineStyle(width,c,a).strokeCircle(x,y,R)};
+ function collect(s){if(!s?.__lq58)return null;let p=window.LQVisualV63?.profile?.(s);if(p){roomStore.set(p.key,p);}return p||null;}
+ const signed=(v,a=1)=>Math.round(v*a);
+ function back(g,s){
+  if(!opts.enabled)return;let p=collect(s);if(!p)return;
+  const W=p.W,H=p.H,t=p.type,reg=p.region,seed=p.seed;
+  if(W<210||H<180)return;
+  const dark=reg.d,acc=reg.a,trim=reg.b,glow=reg.glow;
+  const wallTop=15,wallBottom=93;
+  // Themed architectural gestures stay in the upper wall band; floor inlays are passable.
+  if(t==='vaela'||reg.kind==='organic'){
+    // Curved roots frame the hearth, anchored to the existing back wall.
+    for(let side of [-1,1]){
+      let x=W/2+side*W*.28;
+      for(let i=0;i<6;i++){
+        let y=86-i*10, drift=side*(4+3*Math.sin(i*.58));
+        line(g,x+drift,y,x+drift-side*8,y-11,dark,.78,4);
+        line(g,x+drift-side*3,y-2,x+drift-side*5,y-7,trim,.56,1);
+      }
+      ell(g,x,65,22,12,acc,.66);ell(g,x+side*12,45,27,14,acc,.49);
+    }
+    ell(g,W/2,154,135,61,dark,.13);ring(g,W/2,154,45,trim,.41,3);ring(g,W/2,154,23,acc,.32,2);
+    for(let i=0;i<9;i++){
+      const a=i*Math.PI*2/9;
+      line(g,W/2+Math.cos(a)*25,154+Math.sin(a)*13,W/2+Math.cos(a)*43,154+Math.sin(a)*23,trim,.30,1);
+    }
+  } else if(t==='great-mine'||reg.kind==='industrial'){
+    // Gantry frames are visually tall, but do not create phantom colliders.
+    for(const x of [W*.17,W*.5,W*.83]){
+      r(g,x-9,18,18,75,dark,.69);r(g,x-5,22,10,64,acc,.65);
+      for(let i=0;i<5;i++)r(g,x-2,24+i*12,4,4,trim,.65);
+    }
+    r(g,22,11,W-44,8,dark,.77);r(g,22,13,W-44,2,trim,.58);
+    const x=W/2-28;
+    r(g,x,33,56,46,dark,.93);r(g,x+5,39,46,28,acc,.68);
+    for(let i=0;i<4;i++)r(g,x+9+i*10,46,5,12,i%2?trim:glow,.48);
+    // Transport markings; these are paint, not tracks with gameplay collision.
+    for(let side of [-1,1]){
+      const xx=W/2+side*18;
+      line(g,xx,109,xx+side*21,H-40,trim,.32,3);
+      for(let y=135;y<H-35;y+=28){let at=xx+side*(y-109)*21/(H-149);r(g,at-side*8,y,16,3,dark,.20)}
+    }
+  } else if(t==='grand-opera'||reg.kind==='royal'){
+    // Main proscenium, orchestra curve and visual aisle.
+    const left=W*.21,right=W*.79;
+    r(g,left,17,right-left,77,dark,.78);r(g,left+9,21,right-left-18,59,0x743449,.75);
+    r(g,left+18,25,right-left-36,9,trim,.58);
+    for(let i=0;i<5;i++){
+      let xx=left+i*(right-left)/4;
+      r(g,xx-6,12,12,83,dark,.91);r(g,xx-3,19,6,64,trim,.67);
+    }
+    const cx=W/2, cy=H*.60;
+    for(let k=0;k<5;k++){
+      const ry=27+k*17,rx=78+k*34;
+      for(let i=0;i<32;i++){
+        let a=Math.PI*.12+(Math.PI*.76*i/31),b=Math.PI*.12+(Math.PI*.76*(i+1)/31);
+        line(g,cx-Math.cos(a)*rx,cy+Math.sin(a)*ry,cx-Math.cos(b)*rx,cy+Math.sin(b)*ry,trim,.13,1);
+      }
+    }
+    r(g,W/2-22,98,44,H-125,0x8c3c4b,.19);
+  } else if(t==='chronos'||(reg.kind==='merchant'&&/clock/i.test(p.name))){
+    // Horological gallery: large numbered dial in wall, tools remain on real item footprints.
+    const cx=W/2,cy=56,R=34;
+    circ(g,cx,cy,R+5,dark,.96);circ(g,cx,cy,R,trim,.92);circ(g,cx,cy,R-6,dark,.93);
+    for(let i=0;i<12;i++){
+      let a=i*Math.PI/6,rr=R-10;
+      r(g,cx+Math.sin(a)*rr-2,cy-Math.cos(a)*rr-2,4,4,glow,.84);
+    }
+    line(g,cx,cy,cx+12,cy-11,trim,.95,3);line(g,cx,cy,cx-2,cy-17,glow,.94,2);
+    for(let side of [-1,1]){
+      const x=cx+side*W*.30;
+      r(g,x-21,31,42,54,dark,.79);r(g,x-17,36,34,43,acc,.7);
+      for(let i=0;i<3;i++){ring(g,x,42+i*15,5,trim,.68,2);circ(g,x,42+i*15,2,glow,.63)}
+    }
+    for(let i=0;i<3;i++)ring(g,W/2,H*.56,27+i*26,trim,.10,2);
+  } else if(reg.kind==='tech'){
+    r(g,27,21,W-54,54,dark,.73);
+    for(let i=0;i<5;i++){
+      let x=40+i*(W-80)/4;
+      r(g,x-8,28,16,36,acc,.67);r(g,x-5,33,10,18,glow,.32);
+      line(g,x,70,x,85,trim,.53,2);
+    }
+    for(let i=0;i<4;i++)line(g,40+i*38,112,W-40-i*12,112+i*17,glow,.17,1);
+  } else if(reg.kind==='studio'){
+    for(let i=0;i<4;i++){
+      let x=36+i*(W-72)/4,y=27+i%2*13;
+      r(g,x,y,26,37,dark,.79);r(g,x+3,y+3,20,31,[0xb39a69,0x6a93ae,0xca7796,0x7fae91][i],.63);
+      line(g,x+7,y+30,x+20,y+12,trim,.46,2);
+    }
+    for(let i=0;i<4;i++)line(g,70+i*40,110,W*.55+i*24,H*.62,trim,.11,2);
+  } else if(reg.kind==='heritage'){
+    for(let i=0;i<6;i++){
+      let x=28+i*(W-56)/5;
+      line(g,x,21,x,92,dark,.69,5);line(g,x+2,26,x+2,88,trim,.44,1);
+    }
+    for(let i=0;i<5;i++){let x=54+i*(W-108)/4;line(g,x,23,x+12,10,acc,.51,2);line(g,x+12,10,x+24,23,acc,.51,2)}
+  } else {
+    // Civic rooms are anchored by windows with shadowed recesses, never a generic tiled overlay.
+    for(let i=0;i<4;i++){
+      let x=40+i*(W-80)/3;
+      r(g,x-15,25,30,48,dark,.71);r(g,x-10,28,20,39,acc,.54);
+      r(g,x-2,30,4,35,trim,.64);r(g,x-10,46,20,3,trim,.51);
+    }
+  }
+  // Per-room material strokes, sparse and seeded; skip the central entrance corridor.
+  const count=opts.quality==='performance'?8:opts.quality==='cinematic'?21:13;
+  for(let i=0;i<count;i++){
+    const seed2=hash(p.key+':'+i),xx=24+seed2%(W-48),yy=112+Math.floor(seed2/71)%Math.max(1,H-150);
+    if(Math.abs(xx-W/2)<31 && yy>H*.66)continue;
+    r(g,xx,yy,(seed2%3)+2,2,i%3?acc:dark,.12);
+  }
+ }
+ function item(g,it,s){
+  if(!opts.enabled||!it?.k)return; const p=collect(s);if(!p)return;
+  const kind=String(it.k).toLowerCase(),x=it.x*TILE,y=it.y*TILE,w=it.w*TILE,h=it.h*TILE,c=p.region;
+  if(!Number.isFinite(x+y+w+h)||w<22||h<22)return;
+  const inner=Math.max(1,Math.min(4,Math.round(Math.min(w,h)/15)));
+  // Every ink stroke is inside the object's real footprint — never draws false solid objects in the aisle.
+  if(/desk|table|bench|counter|anvil|forge|furnace|machine|engine/.test(kind)){
+    r(g,x+5,y+5,w-10,3,c.b,.55);r(g,x+7,y+10,w-14,2,c.d,.65);
+    const n=Math.min(4,Math.floor((w-12)/17));
+    for(let i=0;i<n;i++){
+      const xx=x+10+i*(w-18)/Math.max(1,n);
+      r(g,xx,y+Math.min(h-13,16),6,4,i%2?c.glow:c.a,.82);
+      r(g,xx+1,y+Math.min(h-12,17),2,2,c.d,.83);
+    }
+    if(/machine|engine|forge/.test(kind)){circ(g,x+w*.72,y+h*.59,Math.min(11,h*.23),c.d,.78);ring(g,x+w*.72,y+h*.59,Math.min(8,h*.17),c.b,.76,2)}
+  }else if(/shelf|rack|cabinet|display|books/.test(kind)){
+    const rows=Math.min(3,Math.floor(h/17));
+    for(let i=0;i<rows;i++){
+      const yy=y+7+i*(h-11)/Math.max(1,rows);
+      r(g,x+5,yy,w-10,3,c.b,.57);
+      for(let j=0;j<Math.min(7,Math.floor(w/10));j++){
+        let xx=x+8+j*9;
+        if(xx+6<x+w-5)r(g,xx,yy-6,5,6,j%2?c.a:c.glow,.47);
+      }
+    }
+  }else if(/bed|sofa/.test(kind)){
+    r(g,x+5,y+6,w-10,Math.min(11,h-12),c.b,.44);
+    r(g,x+9,y+8,Math.min(17,w-18),Math.min(8,h-16),c.glow,.60);
+    line(g,x+9,y+h-9,x+w-9,y+h-9,c.d,.62,2);
+  }else if(/plant|herb|flower|tree|bush/.test(kind)){
+    const cx=x+w/2,cy=y+h/2;
+    for(let i=0;i<3;i++){
+      const sign=i-1;
+      line(g,cx,cy+8,cx+sign*8,cy-7-i*2,c.d,.65,2);
+      ell(g,cx+sign*8,cy-7-i*2,Math.min(11,w*.33),Math.min(7,h*.23),c.a,.69);
+    }
+  }else if(/clock|gear|dial/.test(kind)){
+    const cx=x+w*.5,cy=y+h*.5,R=Math.min(12,w*.23,h*.30);
+    ring(g,cx,cy,R,c.b,.80,2);circ(g,cx,cy,2,c.glow,.93);line(g,cx,cy,cx+R*.4,cy-R*.45,c.glow,.79,2);
+  }
+ }
+ function front(g,s){if(!opts.enabled)return;const p=collect(s);if(!p)return;
+   const W=p.W,H=p.H,c=p.region;
+   r(g,24,97,W-48,2,c.b,.44);
+   // Low contrast edge around actual doorway, keeping the entrance visibly walkable.
+   r(g,W/2-27,H-20,54,3,c.b,.30);
+   for(let i=0;i<3;i++){r(g,W/2-27+i*23,H-17,5,2,c.d,.27)}
+ }
+ function unionArea(rects,W,H){
+   const a=rects.map(q=>({x:clamp(q.x,0,W),r:clamp(q.x+q.w,0,W),y:clamp(q.y,0,H),b:clamp(q.y+q.h,0,H)})).filter(q=>q.r>q.x&&q.b>q.y);
+   if(!a.length)return 0;
+   const X=[...new Set(a.flatMap(q=>[q.x,q.r]))].sort((u,v)=>u-v);
+   let total=0;
+   for(let i=0;i<X.length-1;i++){
+     let segments=a.filter(q=>q.x<X[i+1]&&q.r>X[i]).map(q=>[q.y,q.b]).sort((u,v)=>u[0]-v[0]);
+     let lo=-1,hi=-1,covered=0;
+     for(const [u,v] of segments){if(lo<0){lo=u;hi=v;}else if(u>hi){covered+=hi-lo;lo=u;hi=v;}else hi=Math.max(hi,v)}
+     if(lo>=0)covered+=hi-lo;
+     total+=(X[i+1]-X[i])*covered;
+   }
+   return total;
+ }
+ function occupancyGrid(p,c=12,rw=9){
+   let bits=new Uint8Array(c*rw);
+   for(let row=0;row<rw;row++)for(let col=0;col<c;col++){
+     let x0=p.W*col/c,y0=p.H*row/rw,x1=p.W*(col+1)/c,y1=p.H*(row+1)/rw;
+     const q=p.paths||[];
+     bits[row*c+col]=q.some(k=>Math.min(k.x+k.w,x1)-Math.max(k.x,x0)>0.2*(x1-x0)&&Math.min(k.y+k.h,y1)-Math.max(k.y,y0)>0.2*(y1-y0))?1:0;
+   }
+   return bits;
+ }
+ function similarity(a,b){
+   if(!a||!b||a.area!==b.area)return 0;
+   const ga=occupancyGrid(a),gb=occupancyGrid(b);let intersection=0,union=0;
+   for(let i=0;i<ga.length;i++){if(ga[i]&&gb[i])intersection++;if(ga[i]||gb[i])union++;}
+   const spatial=union?intersection/union:0;
+   const size=Math.max(0,1-(Math.abs(a.W-b.W)+Math.abs(a.H-b.H))/(Math.max(a.W,b.W)+Math.max(a.H,b.H)));
+   const typ=a.type===b.type?1:0,dom=a.dominant===b.dominant?1:0;
+   return Math.round(100*(spatial*.58+size*.24+typ*.12+dom*.06));
+ }
+ function report(){
+   const rooms=[...roomStore.values()],issues=[],similar=[],byMap={};
+   for(const p of rooms){
+     byMap[p.area]=(byMap[p.area]||0)+1;
+     const occupied=unionArea(p.paths,p.W,p.H),ratio=occupied/(p.W*p.H);
+     const doorClear=p.paths.every(q=>!(q.x<p.W/2+24&&q.x+q.w>p.W/2-24&&q.y+q.h>p.H-60));
+     if(ratio>.42)issues.push({room:p.key,kind:'dense',coverage:Math.round(ratio*100)});
+     if(ratio<.035)issues.push({room:p.key,kind:'sparse',coverage:Math.round(ratio*100)});
+     if(!doorClear)issues.push({room:p.key,kind:'door-review',coverage:Math.round(ratio*100)});
+   }
+   for(let i=0;i<rooms.length;i++)for(let j=0;j<i;j++){
+     if(rooms[i].area!==rooms[j].area)continue;
+     const score=similarity(rooms[i],rooms[j]);
+     if(score>=86)similar.push({a:rooms[i].key,b:rooms[j].key,score});
+   }
+   similar.sort((a,b)=>b.score-a.score);
+   return {version:VERSION,observedRooms:rooms.length,byMap,similar:similar.slice(0,50),totalSimilar:similar.length,issues,physicsIndex:window.LQPrecisePhysics?.indexStats?.()||null,render:ambientStats,settings:{...opts}};
+ }
+ function drawAmbient(sc,dt){
+   if(!sc||!opts.enabled||!opts.ambient)return;
+   clockMs+=(Number.isFinite(dt)?dt:16);const wait=opts.quality==='performance'?300:opts.quality==='cinematic'?100:160;
+   if(clockMs<wait)return;clockMs=0;
+   if(sc.inside?.spec){
+     const ins=sc.inside,p=collect(ins.spec);if(!p)return;
+     if(!insideDraw?.active||scene!==sc||roomKey!==p.key){
+       try{insideDraw?.destroy()}catch(_){}
+       insideDraw=sc.add.graphics().setDepth(1.33);ins.objs.push(insideDraw);scene=sc;roomKey=p.key;
+     }
+     insideDraw.clear();const gr=insideDraw,k=ins.k,origin=ins.objs[0];
+     if(!origin||!Number.isFinite(origin.x+origin.y))return;
+     const now=(sc.time?.now||0)/1000,xx=origin.x+p.W*k*.5, yy=origin.y+46*k;
+     const gl=p.region.glow;
+     if(p.type==='chronos'){const R=24*k;line(gr,xx,yy,xx+Math.cos(now*.7)*R,yy+Math.sin(now*.7)*R,gl,.55,Math.max(1,k));}
+     else if(p.type==='great-mine'){for(let i=0;i<3;i++)r(gr,xx-17*k+i*14*k,yy+5*k,8*k,4*k,gl,.24+.21*Math.sin(now*2+i)**2)}
+     else if(p.type==='grand-opera'){ell(gr,xx,yy,40*k,8*k,gl,.13+.06*Math.sin(now*1.6));}
+     else if(p.type==='vaela'){
+        line(gr,xx-25*k,yy,xx-23*k+3*k*Math.sin(now),yy-19*k,p.region.a,.42,2);
+        circ(gr,xx+20*k,yy-7*k,2*k,gl,.31+.12*Math.sin(now*2));
+     }
+     ambientStats.objects=1;
+   }else if(sc.area){
+     // Small signature motion near the player's current position; no new colliders.
+     if(!worldDraw?.active||scene!==sc){try{worldDraw?.destroy()}catch(_){}worldDraw=sc.add.graphics().setDepth(5.7);scene=sc;}
+     worldDraw.clear();const map=sc.area,pl=sc.player;if(!pl)return;
+     const nearby=(map.buildings||[]).map(b=>({b,x:(b.door+.5)*TILE,y:(b.y+.3)*TILE}))
+       .filter(q=>Math.abs(q.x-pl.x)<430&&Math.abs(q.y-pl.y)<330)
+       .sort((a,b)=>(a.x-pl.x)**2+(a.y-pl.y)**2-(b.x-pl.x)**2-(b.y-pl.y)**2).slice(0,opts.quality==='performance'?3:6);
+     for(const [i,q] of nearby.entries()){
+       const a=(sc.time?.now||0)/1000 + i;
+       const c=window.LQVisualV63?.REGIONS?.[map.id]||null;
+       if(!c)continue;
+       const x=q.x-12,y=q.y-6;
+       if(c.kind==='organic'||c.kind==='heritage')line(worldDraw,x,y,x+3*Math.sin(a*.7),y-10,c.a,.30,2);
+       else if(c.kind==='industrial')r(worldDraw,x,y,5,3,c.glow,.22+.18*(Math.sin(a*3)+1)/2);
+       else if(c.kind==='merchant')r(worldDraw,x,y,7,3,c.b,.32+.12*Math.sin(a));
+       else r(worldDraw,x,y,4,4,c.glow,.20+.12*Math.sin(a));
+     }
+     ambientStats.objects=nearby.length;
+   }
+ }
+ function debug(sc,dt){
+   if(!sc||!opts.debug){debugDraw?.clear();return}
+   debugMs+=Number.isFinite(dt)?dt:16;if(debugMs<180)return;debugMs=0;
+   if(!debugDraw?.active||debugDraw.scene!==sc){try{debugDraw?.destroy()}catch(_){}debugDraw=sc.add.graphics().setDepth(4000)}
+   debugDraw.clear();const player=sc.player;if(!player)return;
+   if(sc.inside){
+     debugDraw.lineStyle(1,0x6ce7ed,.72);
+     for(const q of sc.inside.rects||[]){
+       if(Math.abs((q.x+q.w/2)-player.x)<360&&Math.abs((q.y+q.h/2)-player.y)<300)
+         debugDraw.strokeRect(q.x,q.y,q.w,q.h);
+     }
+   } else if(sc.area?.__lqPrecise){
+     const all=[...sc.area.__lqPrecise.buildings,...sc.area.__lqPrecise.stalls,...sc.area.__lqPrecise.terrain];
+     for(const shape of all){
+       if(!shape.poly||Math.abs((shape.box.x+shape.box.right)/2-player.x)>340||Math.abs((shape.box.y+shape.box.bottom)/2-player.y)>280)continue;
+       debugDraw.lineStyle(1,shape.category==='building'?0xffd06e:shape.category==='stall'?0x5bf6dd:0xff8a94,.70);
+       debugDraw.strokePoints(shape.poly,true);
+     }
+   }
+   debugDraw.lineStyle(2,0x51eac6,.75);debugDraw.strokeCircle(player.x,player.y,window.LQPrecisePhysics?.radius||4.5);
+ }
+ function onEnter(){roomKey='';}
+ function onLeave(){
+   if(insideDraw?.active){try{insideDraw.destroy()}catch(_){}}
+   insideDraw=null;roomKey='';
+ }
+ function update(sc,dt){drawAmbient(sc,dt);debug(sc,dt)}
+ function mount(){if(typeof document==='undefined')return;let old=document.getElementById('lq64-panel');if(old)return old;
+   const style=document.createElement('style');style.textContent=`#lq64-panel[hidden]{display:none!important}#lq64-panel{position:fixed;inset:0;z-index:99980;background:#07131bdc;display:grid;place-items:center;padding:16px;font:13px system-ui,sans-serif;color:#e8f5f3}#lq64-panel section{width:min(760px,95vw);max-height:91vh;overflow:auto;border-radius:16px;border:1px solid #71b7ac;background:#152c38;padding:20px;box-shadow:0 12px 70px #0009}#lq64-panel h2{color:#f1d7a1;font-size:19px;margin:0 0 8px}#lq64-panel p{line-height:1.5;color:#bdcfd4}#lq64-panel .lq64-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:13px 0}#lq64-panel button,#lq64-panel select{font:inherit;background:#265368;border:1px solid #6dafa6;color:white;padding:9px 11px;border-radius:9px;cursor:pointer}#lq64-panel pre{white-space:pre-wrap;word-break:break-word;background:#0a1c25;padding:13px;border-radius:9px;font:11px ui-monospace,monospace;max-height:45vh;overflow:auto}#lq64-panel .lq64-active{background:#377d66}`;
+   document.head.appendChild(style);
+   const div=document.createElement('div');div.id='lq64-panel';div.hidden=true;
+   div.innerHTML='<section role="dialog" aria-label="Visual Intelligence V64" aria-modal="true"><h2>V64 · VISUAL INTELLIGENCE</h2><p>Kiểm tra thiết kế theo hình học thực, vùng chiếm chỗ hợp nhất, collider và hoạt cảnh. Lớp đồ họa V64 không thay đổi lối đi hoặc dữ liệu nhiệm vụ.</p><div class="lq64-controls"><button id="lq64-visual">Đồ họa</button><button id="lq64-ambient">Chuyển động</button><button id="lq64-physics">Hiện va chạm</button><select id="lq64-quality" aria-label="Quality"><option value="performance">Performance</option><option value="balanced">Balanced</option><option value="cinematic">Cinematic</option></select><button id="lq64-copy">Sao chép QA</button><button id="lq64-refresh">Phân tích lại</button></div><pre id="lq64-report"></pre><div class="lq64-controls"><button id="lq64-close">Tiếp tục chơi</button></div></section>';
+   document.body.appendChild(div);
+   function refresh(){const x=report();const pre=div.querySelector('#lq64-report');pre.textContent=`Đã ghi nhận ${x.observedRooms} phòng, trên ${Object.keys(x.byMap).length} map.\nCặp tương tự ≥ 86/100: ${x.totalSimilar}.\nCác vấn đề mật độ/cửa cần xem lại: ${x.issues.length}.\n\nCÁC CẶP CẦN ĐỐI CHIẾU:\n${x.similar.slice(0,15).map(q=>`${q.score}%: ${q.a} ↔ ${q.b}`).join('\n')||'Chưa phát hiện trong các phòng đã mở'}\n\nCẢNH BÁO BỐ CỤC:\n${x.issues.slice(0,15).map(q=>`${q.kind} ${q.coverage}%: ${q.room}`).join('\n')||'Không phát hiện theo tiêu chí kiểm tra'}\n\nChỉ số va chạm: ${JSON.stringify(x.physicsIndex)}\nHiệu ứng gần camera: ${x.render.objects}\n* Những chỉ số này không chứng minh toàn bộ cửa và nhiệm vụ đã được kiểm thử.`;
+     for(const [id,k] of [['lq64-visual','enabled'],['lq64-ambient','ambient'],['lq64-physics','debug']])div.querySelector('#'+id).classList.toggle('lq64-active',!!opts[k]);div.querySelector('#lq64-quality').value=opts.quality;
+   }
+   for(const [id,k] of [['lq64-visual','enabled'],['lq64-ambient','ambient'],['lq64-physics','debug']])div.querySelector('#'+id).onclick=()=>{opts[k]=!opts[k];save();refresh();if(!opts.ambient){insideDraw?.clear();worldDraw?.clear()}if(!opts.debug)debugDraw?.clear()};
+   div.querySelector('#lq64-quality').onchange=e=>{opts.quality=e.target.value;save();refresh()};
+   div.querySelector('#lq64-refresh').onclick=refresh;
+   div.querySelector('#lq64-copy').onclick=()=>{let t=JSON.stringify(report(),null,2);if(navigator.clipboard?.writeText)navigator.clipboard.writeText(t).catch(()=>{div.querySelector('pre').textContent=t});else div.querySelector('pre').textContent=t};
+   div.querySelector('#lq64-close').onclick=()=>{div.hidden=true};refresh();return div;
+ }
+ function open(){const p=mount();if(p)p.hidden=false;}
+ function toggle(){const p=mount();if(p)p.hidden=!p.hidden;}
+ if(typeof window!=='undefined' && typeof document!=='undefined'){
+  window.addEventListener('keydown',e=>{if(e.repeat||['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName||''))return;
+   if(e.code==='F4'){e.preventDefault();e.stopImmediatePropagation();toggle();}
+   if(e.code==='Escape'){const p=document.getElementById('lq64-panel');if(p&&!p.hidden){e.preventDefault();e.stopImmediatePropagation();p.hidden=true;}}
+  },true);
+  // Opt-in panel link in menu without adding a persistent floating HUD element.
+  const addLink=()=>{const root=document.getElementById('l11-page')||document.getElementById('l11-dialog');if(root&&!root.querySelector('#lq64-launch')){
+     const b=document.createElement('button');b.id='lq64-launch';b.type='button';b.textContent='◇ V64 · Visual Intelligence';b.style.cssText='background:#23596c;color:#f5efe4;border:1px solid #79b6a9;border-radius:8px;padding:9px 12px;margin:6px;cursor:pointer';b.onclick=open;root.appendChild(b);
+  }};
+  window.addEventListener('click',addLink,true);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addLink,{once:true});else addLink();
+ }
+ return Object.freeze({VERSION,collect,back,item,front,update,onLeave,onEnter,report,similarity,unionArea,occupancyGrid,open,toggle,settings:x=>{opts={...opts,...x};save()},prefs:()=>({...opts})});
+})();
+window.LQVisualV64=LQ64;
+
+
+/* LIFEQUEST AI V65 · CALM INTERIORS
+   This is visual-only. No furniture records, collision polygons, NPC coordinates,
+   quest state, entrances, world state or saved progress are edited.
+   Instead of stacking eight visual generations, pick only the meaningful passes.
+*/
+const LQ65 = (()=>{
+ 'use strict';
+ const STORE='lifequest_v65_calm_interiors';
+ const TARGETS=new Set(['wish-valley','old-oriaris','vocalt-greedy-land','mining-town','tech-co','art-district']);
+ const LABELS={
+  'wish-valley':'Maorai · lá và gỗ đan','old-oriaris':'Old Oriaris · kiến trúc hoàng gia',
+  'vocalt-greedy-land':'Vocalt · cửa hàng theo nghề','mining-town':'Minerals · xưởng cơ khí',
+  'tech-co':'Tech-Co · không gian công nghệ','art-district':'Art District · studio sáng tạo',
+  'english-town':'English Town · nhà phố','english-town-past':'Oriaris 70 năm trước · nhà truyền thống'
+ };
+ const defaults={preset:'auto',ambient:true};
+ let preferences={...defaults};
+ try { const x=JSON.parse(localStorage.getItem(STORE)||'null');if(x&&typeof x==='object')preferences={...preferences,...x};}catch(_){}
+ const persist=()=>{try{localStorage.setItem(STORE,JSON.stringify(preferences))}catch(_){}};
+ function area(s){return String(s?.__lq58?.area||s?.__lq60?.area||'english-town');}
+ function roomMode(s){
+  if(preferences.preset==='original')return 'original';
+  if(preferences.preset==='airy')return 'airy';
+  if(preferences.preset==='clean')return 'clean';
+  return TARGETS.has(area(s))?'clean':'balanced';
+ }
+ // Keep the primary furniture. Restrict secondary strokes to a few actual object footprints.
+ const PRIORITY=/bed|desk|table|counter|workbench|anvil|machine|forge|furnace|clock|organ|piano|throne|display|shelf|cabinet|loom|hearth|stove|herb|plant|books/i;
+ const important=new WeakMap();
+ function highlights(s){
+  let q=important.get(s);if(q && q.items===s.items && q.length===s.items?.length)return q.keys;
+  const a=(s.items||[]).filter(it=>PRIORITY.test(String(it.k||'')));
+  a.sort((x,y)=>Math.max(1,y.w*y.h)-Math.max(1,x.w*x.h));
+  const chosen=[];
+  for(const it of a){
+    if(chosen.length>=3)break;
+    const xx=it.x+it.w*.5, yy=it.y+it.h*.5;
+    if(chosen.some(other=>Math.hypot(xx-(other.x+other.w*.5),yy-(other.y+other.h*.5))<2.6))continue;
+    chosen.push(it);
+  }
+  const keys=new Set(chosen);important.set(s,{items:s.items,length:s.items?.length,keys});return keys;
+ }
+ const stroke=(g,x,y,xx,yy,color,alpha=.3,width=1)=>g.lineStyle(width,color,alpha).lineBetween(Math.round(x),Math.round(y),Math.round(xx),Math.round(yy));
+ const box=(g,x,y,w,h,col,alpha=.2)=>{if(w>0&&h>0)g.fillStyle(col,alpha).fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))};
+ function back(g,s){
+  if(!s?.__lq58)return;
+  const A=area(s),w=s.w*32,h=s.h*32;if(w<180||h<170)return;
+  const center=w*.5;
+  // Restrained, region-specific *wall-only* signatures, not new floor clutter.
+  if(A==='wish-valley'){
+    for(const side of [-1,1]){
+      const x=center+side*w*.33;
+      stroke(g,x,23,x-side*13,76,0x385741,.43,4);
+      stroke(g,x-side*3,30,x-side*10,63,0xc5b681,.33,1);
+    }
+  }else if(A==='mining-town'){
+    for(const x of [w*.21,w*.79]){
+      box(g,x-4,18,8,67,0x253f4c,.42);box(g,x-1,23,2,56,0xd8b67b,.31);
+    }
+  }else if(A==='old-oriaris'){
+    for(const x of [w*.23,w*.77]){
+      box(g,x-7,19,14,72,0x49394b,.42);box(g,x-3,20,6,65,0xdfc89f,.37);
+    }
+  }else if(A==='tech-co'){
+    box(g,center-43,23,86,48,0x173d51,.42);box(g,center-36,30,72,30,0x77c9c2,.18);
+    stroke(g,center-25,49,center+23,49,0x94e7d9,.35,1);
+  }else if(A==='vocalt-greedy-land'){
+    box(g,center-52,24,104,44,0x503c30,.36);
+    stroke(g,center-48,26,center+48,26,0xe6c48b,.38,2);
+  }else if(A==='art-district'){
+    const c=[0xb98fa1,0x89b4ab,0xdfc19d];
+    for(let i=0;i<3;i++){let x=center-69+i*47;
+      box(g,x,28,36,43,0x433748,.34);box(g,x+4,32,28,35,c[i],.32);
+    }
+  }else{
+    for(const x of [w*.26,w*.74]){
+      box(g,x-16,23,32,48,0x253d41,.32);box(g,x-12,27,24,39,0xebd1a3,.19);
+    }
+  }
+  // One low-contrast edge above the wall/floor seam. No fake corridors or floors.
+  stroke(g,19,97,w-19,97,0xe3d2af,.14,1);
+ }
+ function item(g,it,s){
+  if(!highlights(s).has(it))return;
+  const x=it.x*32,y=it.y*32,w=it.w*32,h=it.h*32;
+  if(w<28||h<20)return;
+  const colors={'wish-valley':0xc4bf8d,'mining-town':0xc2ac88,'old-oriaris':0xdcc3a0,
+    'tech-co':0x9fe1d9,'art-district':0xd3b8bf,'vocalt-greedy-land':0xe3c492};
+  const c=colors[area(s)]||0xe0cba6;
+  // Small material highlight on *real* furniture, without inventing extra props.
+  stroke(g,x+5,y+5,x+Math.min(w-5,54),y+5,c,.42,2);
+ }
+ function front(g,s){
+  const w=s.w*32,h=s.h*32;
+  // Clear and readable doorway, with no ornament crossing the passage.
+  stroke(g,w/2-23,h-19,w/2+23,h-19,0xe5d4ae,.32,2);
+ }
+ function passInfo(s){const mode=roomMode(s);return {mode,area:area(s),highlights:highlights(s).size};}
+ function open(){
+  let dialog=document.getElementById('lq65-panel');if(!dialog){
+   const style=document.createElement('style');style.textContent=`#lq65-panel[hidden]{display:none!important}#lq65-panel{position:fixed;inset:0;z-index:99994;background:rgba(5,18,23,.85);display:flex;align-items:center;justify-content:center;padding:15px;color:#e9f1ed;font:14px system-ui,sans-serif}#lq65-panel section{width:min(480px,96vw);max-height:92vh;overflow:auto;background:#142a31;border:1px solid #80b7ad;border-radius:14px;padding:22px;box-shadow:0 20px 70px #0009}#lq65-panel h2{font-size:20px;margin:0 0 12px;color:#e5d3a2}#lq65-panel p{color:#c5d4d4;line-height:1.55}#lq65-panel select,#lq65-panel button{font:inherit;color:#edf7f3;background:#2a5258;border:1px solid #76a89a;padding:10px;border-radius:8px;cursor:pointer}#lq65-panel select{width:100%}#lq65-panel .lq65-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}#lq65-panel .lq65-row button{flex:1}`;document.head.appendChild(style);
+   dialog=document.createElement('div');dialog.id='lq65-panel';dialog.hidden=true;
+   dialog.innerHTML=`<section role="dialog" aria-modal="true" aria-label="V65 Clean Interiors"><h2>V65 · Nội thất gọn gàng</h2><p>Bớt các lớp trang trí chồng lên nhau, giữ nguyên đồ dùng, đường đi và nhiệm vụ. Áp dụng khi rời phòng rồi vào lại.</p><label for="lq65-preset">Mức độ chi tiết</label><select id="lq65-preset"><option value="auto">Tự động theo map (khuyên dùng)</option><option value="clean">Gọn gàng trên tất cả map</option><option value="airy">Tối giản, nhiều khoảng thở</option><option value="original">Giữ nguyên đồ họa V64 để so sánh</option></select><p id="lq65-summary"></p><div class="lq65-row"><button type="button" id="lq65-done">Áp dụng và đóng</button><button type="button" id="lq65-compare">Đổi sang V64</button></div><p style="font-size:12px">Thiết lập chỉ thay đổi hình vẽ nội thất, không thay đổi đồ vật tương tác, NPC, collision hay dữ liệu lưu.</p></section>`;
+   document.body.appendChild(dialog);
+   dialog.querySelector('#lq65-preset').addEventListener('change',e=>{preferences.preset=e.target.value;persist();refresh();});
+   dialog.querySelector('#lq65-done').onclick=()=>{dialog.hidden=true;};
+   dialog.querySelector('#lq65-compare').onclick=()=>{preferences.preset=preferences.preset==='original'?'auto':'original';persist();refresh();};
+  }
+  function refresh(){dialog.querySelector('#lq65-preset').value=preferences.preset;
+    const sc=window.__lifequestGetScene?.(),s=sc?.inside?.spec;
+    dialog.querySelector('#lq65-summary').textContent=s?`Phòng hiện tại: ${LABELS[area(s)]||area(s)} — chế độ ${roomMode(s)}.`:'Các map được làm sạch mặc định: Wish Valley, Old Oriaris, Vocalt, Minerals, Tech-Co và Art District.';
+    dialog.querySelector('#lq65-compare').textContent=preferences.preset==='original'?'Quay lại bản sạch':'Đổi sang V64';
+  }
+  refresh();dialog.hidden=false;
+ }
+ if(typeof document!=='undefined'){
+  document.addEventListener('keydown',e=>{if(e.code==='Escape'){const d=document.getElementById('lq65-panel');if(d&&!d.hidden){e.stopImmediatePropagation();d.hidden=true}}},true);
+  // Reuse an existing menu area; no always-on floating button covering the world.
+  document.addEventListener('click',()=>{
+   const root=document.getElementById('l11-page')||document.getElementById('l11-dialog');
+   if(root&&!root.querySelector('#lq65-open')){
+    const b=document.createElement('button');b.id='lq65-open';b.textContent='◇ V65 · Nội thất gọn gàng';b.type='button';
+    b.style.cssText='background:#2c5e57;color:#f2f0db;border:1px solid #6aa995;border-radius:8px;padding:9px 12px;margin:6px;cursor:pointer';
+    b.onclick=open;root.appendChild(b);
+   }
+  },true);
+ }
+ return Object.freeze({VERSION:'65.0.0',TARGETS,roomMode,passInfo,back,item,front,open,prefs:()=>({...preferences}),settings:x=>{if(x?.preset&&['auto','clean','airy','original'].includes(x.preset)){preferences.preset=x.preset;persist()}}});
+})();
+window.LQ65=LQ65;
+
+        function Dr(e,t) {
+          // V65: visual-only room art direction, keeps the exact original room data.
+          (Cr(e,t),wr(e,t),Tr(e,t));
+          const mode=LQ65.roomMode(t),original=mode==='original';
+          if(original){
+            if(t.__lq53)LQ55.drawBack(e,t);
+            if(t.__lq57)LQ57.drawBack(e,t);
+            if(t.__lq58){LQ58.drawBack(e,t);LQ59.drawBack(e,t);LQ60.paintBack(e,t);LQ61.drawBack(e,t);LQ62.drawBack(e,t);LQ63.drawBack(e,t);LQ64.back(e,t)}
+          }else{
+            // One primary material/architectural layer rather than 8 stacked layers.
+            if(t.__lq53 && mode!=='airy')LQ55.drawBack(e,t);
+            LQ65.back(e,t);
+          }
+          const ordered=[...t.items].sort((a,b)=>(hr.has(a.k)?0:mr.has(a.k)?1:2)-(hr.has(b.k)?0:mr.has(b.k)?1:2)||a.y+a.h-(b.y+b.h));
+          for(const item of ordered){
+            if(!LQ55.drawItem(e,item,t))Er(e,item);
+            if(original && t.__lq58){LQ58.drawItem(e,item,t);LQ59.drawItem(e,item,t);LQ61.drawItem(e,item,t);LQ62.drawItem(e,item,t);LQ63.drawItem(e,item,t);LQ64.item(e,item,t)}
+            else if(!original)LQ65.item(e,item,t);
+          }
+          if(t.__lq53)LQ55.drawFront(e,t);
+          else{__lqV7Polish(e,t);__lqV8Decor(e,t);LQ9.drawInterior(e,t);}
+          if(original && t.__lq58){LQ58.drawFront(e,t);LQ59.drawFront(e,t);LQ60.paintFront(e,t);LQ61.drawFront(e,t);LQ62.drawFront(e,t);LQ63.drawFront(e,t);LQ64.front(e,t)}
+          else if(!original)LQ65.front(e,t);
+        }
+        var Or = () => ({ dir: `down`, flip: !1, phase: 0 });
+var kr = 16175792;
+var Ar = 15251594;
+var jr = 13209186;
+var Mr = 9263674;
+var Nr = {
+            barista: {
+              skin: kr,
+              hair: 8014378,
+              style: `long`,
+              outfit: 14715482,
+              pants: 5917290,
+              apron: 16774374,
+            },
+            mayor: {
+              skin: Ar,
+              hair: 9079442,
+              style: `short`,
+              outfit: 4872888,
+              pants: 2764618,
+              tie: 12859962,
+              glasses: !0,
+              collar: !0,
+            },
+            librarian: {
+              skin: kr,
+              hair: 10132132,
+              style: `bun`,
+              outfit: 5223290,
+              pants: 3828298,
+              glasses: !0,
+              dress: !0,
+            },
+            shopkeeper: {
+              skin: Ar,
+              hair: 4861984,
+              style: `short`,
+              outfit: 14205258,
+              pants: 5917242,
+              hat: { kind: `cap`, color: 3119704 },
+              apron: 3119704,
+              beard: 4861984,
+            },
+            kid: { skin: kr, hair: 2760752, style: `long`, outfit: 14183080, pants: 4872858 },
+            doctor: {
+              skin: jr,
+              hair: 2038306,
+              style: `short`,
+              outfit: 15791350,
+              pants: 3836554,
+              glasses: !0,
+              collar: !0,
+            },
+            police: {
+              skin: Mr,
+              hair: 2038306,
+              style: `short`,
+              outfit: 2767498,
+              pants: 2042458,
+              hat: { kind: `police`, color: 2042458 },
+              tie: 1118488,
+            },
+            teacher: {
+              skin: Ar,
+              hair: 6961698,
+              style: `bun`,
+              outfit: 10509e3,
+              pants: 4864618,
+              glasses: !0,
+              dress: !0,
+            },
+            firefighter: {
+              skin: Ar,
+              hair: 3811866,
+              style: `short`,
+              outfit: 14694954,
+              pants: 3816006,
+              hat: { kind: `helmet`, color: 15909424 },
+            },
+            chef: {
+              skin: kr,
+              hair: 3811866,
+              style: `short`,
+              outfit: 16052448,
+              pants: 5921382,
+              hat: { kind: `chef`, color: 16777215 },
+              beard: 3811866,
+              tie: 12859962,
+            },
+            banker: {
+              skin: jr,
+              hair: 2038306,
+              style: `bun`,
+              outfit: 9082544,
+              pants: 3818070,
+              glasses: !0,
+              tie: 14729312,
+              collar: !0,
+            },
+            postman: {
+              skin: Ar,
+              hair: 5913122,
+              style: `short`,
+              outfit: 14178906,
+              pants: 3820154,
+              hat: { kind: `cap`, color: 12073530 },
+            },
+            hotelclerk: {
+              skin: kr,
+              hair: 14727264,
+              style: `bun`,
+              outfit: 13146840,
+              pants: 6965882,
+              collar: !0,
+              dress: !0,
+            },
+            priest: {
+              skin: kr,
+              hair: 12434886,
+              style: `short`,
+              outfit: 4866104,
+              pants: 2761760,
+              collar: !0,
+            },
+            cinema: { skin: Ar, hair: 15255632, style: `long`, outfit: 15231664, pants: 2763322 },
+            foreman: {
+              skin: Ar,
+              hair: 10132132,
+              style: `short`,
+              outfit: 6974034,
+              pants: 3815988,
+              hat: { kind: `helmet`, color: 16053488 },
+              beard: 10132132,
+            },
+            miner: {
+              skin: jr,
+              hair: 2760474,
+              style: `short`,
+              outfit: 14715434,
+              pants: 3817290,
+              hat: { kind: `helmet`, color: 14725152 },
+              beard: 2760474,
+            },
+            blaster: {
+              skin: Mr,
+              hair: 1710618,
+              style: `short`,
+              outfit: 13126186,
+              pants: 3815994,
+              hat: { kind: `helmet`, color: 13646378 },
+              glasses: !0,
+            },
+            carter: {
+              skin: Ar,
+              hair: 6965802,
+              style: `short`,
+              outfit: 4876938,
+              pants: 3820138,
+              hat: { kind: `cap`, color: 2767434 },
+            },
+            sorter: {
+              skin: kr,
+              hair: 12085802,
+              style: `long`,
+              outfit: 6982234,
+              pants: 4868666,
+              apron: 9071162,
+              hat: { kind: `cap`, color: 13136943 },
+            },
+            timberman: {
+              skin: jr,
+              hair: 3811866,
+              style: `bald`,
+              outfit: 9071162,
+              pants: 4864554,
+              hat: { kind: `helmet`, color: 12099680 },
+              beard: 5913122,
+            },
+            smith: {
+              skin: kr,
+              hair: 6961698,
+              style: `bun`,
+              outfit: 6965818,
+              pants: 3816002,
+              apron: 3026484,
+            },
+            gemdealer: {
+              skin: kr,
+              hair: 1710626,
+              style: `short`,
+              outfit: 2764618,
+              pants: 1711406,
+              glasses: !0,
+              tie: 14200880,
+              collar: !0,
+            },
+            medic: {
+              skin: Mr,
+              hair: 2038306,
+              style: `bun`,
+              outfit: 15789280,
+              pants: 4872810,
+              hat: { kind: `cap`, color: 14699082 },
+              apron: 16777215,
+            },
+            innkeeper: {
+              skin: Ar,
+              hair: 12103848,
+              style: `bun`,
+              outfit: 12083258,
+              pants: 5913130,
+              apron: 16049876,
+              dress: !0,
+            },
+            stationmaster: {
+              skin: Ar,
+              hair: 9079442,
+              style: `short`,
+              outfit: 2046559,
+              pants: 2764618,
+              hat: { kind: `police`, color: 2046559 },
+              tie: 12859962,
+              collar: !0,
+            },
+            ticketclerk: {
+              skin: kr,
+              hair: 3811866,
+              style: `bun`,
+              outfit: 2068362,
+              pants: 3828298,
+              collar: !0,
+              dress: !0,
+            },
+            porter: {
+              skin: jr,
+              hair: 2760474,
+              style: `short`,
+              outfit: 14254635,
+              pants: 3817290,
+              hat: { kind: `cap`, color: 3119704 },
+            },
+            etmaster: {
+              skin: kr,
+              hair: 3811866,
+              style: `short`,
+              outfit: 3099247,
+              pants: 2764618,
+              hat: { kind: `police`, color: 3099247 },
+              tie: 12859962,
+              collar: !0,
+            },
+            etclerk: {
+              skin: Ar,
+              hair: 9079442,
+              style: `bun`,
+              outfit: 3121050,
+              pants: 3828298,
+              collar: !0,
+              dress: !0,
+            },
+            etporter: {
+              skin: Ar,
+              hair: 3811866,
+              style: `short`,
+              outfit: 15307323,
+              pants: 3817290,
+              hat: { kind: `cap`, color: 3119704 },
+            },
+            rook: { skin: kr, hair: 4861984, style: `short`, outfit: 16741717, pants: 3818070, hat: { kind: `cap`, color: 4861984 } },
+            vex: { skin: Mr, hair: 2038306, style: `long`, outfit: 3528911, pants: 2764618, hat: { kind: `cap`, color: 2038306 }, glasses: !0 },
+            morrow: { skin: Ar, hair: 9079442, style: `bald`, outfit: 12106410, pants: 3816002, beard: 9079442 },
+            noor: { skin: kr, hair: 10132132, style: `long`, outfit: 16732234, pants: 6961698, hat: { kind: `cap`, color: 9263600 } },
+            // Chapter 2 (js/past.js, js/front.js). Gusest is drawn with marker colours (magenta top, green legs): past.js
+            // repaints them into plate armour, a gold crest and a red cloak. Tom Brown wears a steel helmet.
+            gusest: { skin: 16175792, hair: 4861468, style: `swept`, outfit: 16711935, pants: 65280 },
+            tombrown: { skin: 16175792, hair: 3810328, style: `short`, outfit: 7035461, pants: 3879207, hat: { kind: `helmet`, color: 9343636 } },
+            ivo: { skin: Ar, hair: 4861984, style: `short`, outfit: 3528911, pants: 2764618, glasses: !0 },
+            ada: { skin: jr, hair: 2038306, style: `bun`, outfit: 16753920, pants: 4864618, glasses: !0, collar: !0 },
+            kai: { skin: Ar, hair: 3811866, style: `short`, outfit: 16744272, pants: 2764618, hat: { kind: `cap`, color: 4861984 } },
+            mira: { skin: kr, hair: 12103848, style: `bun`, outfit: 8564863, pants: 3816002, apron: 16777215 },
+            ren: { skin: Mr, hair: 2760474, style: `short`, outfit: 4306175, pants: 2764618, glasses: !0, hat: { kind: `cap`, color: 2764618 } },
+            sol: { skin: jr, hair: 10132132, style: `long`, outfit: 12482290, pants: 3816002, glasses: !0 },
+          };
+        function Pr(e) {
+          return {
+            skin: kr,
+            hair: 5913122,
+            style: `short`,
+            outfit: e,
+            pants: 3820154,
+            hat: { kind: `cap`, color: Ir(e, 0.75) },
+          };
+        }
+        var Fr = 2826800;
+        function Ir(e, t) {
+          let n = Math.min(255, Math.round(((e >> 16) & 255) * t)),
+            r = Math.min(255, Math.round(((e >> 8) & 255) * t)),
+            i = Math.min(255, Math.round((e & 255) * t));
+          return (n << 16) | (r << 8) | i;
+        }
+        function Lr(e, t, n, r, i, a) {
+          (e.fillStyle(Fr, 1).fillRect(t - 1, n - 1, r + 2, i + 2),
+            e.fillStyle(a, 1).fillRect(t, n, r, i));
+        }
+        function Rr(e, t, n, r, i) {
+          (e.fillStyle(Fr, 1).fillCircle(t, n, r + 1), e.fillStyle(i, 1).fillCircle(t, n, r));
+        }
+        function zr(e, t, n, r) {
+          const __eyeColor = typeof t.eye === 'number' ? t.eye : 2236979;
+          // Uniform characters (Gojo) walk in a relaxed way: short steps, arms stay still with hands in the pockets.
+          const __k = t.uniform || t.kimono ? 1 : 2;
+          let i = n === `side`,
+            a = n === `dside` || n === `uside`,
+            o = n === `up` || n === `uside`,
+            s = r === 1 ? __k : 0,
+            c = r === 2 ? __k : 0,
+            l = t.uniform || t.kimono ? 0 : r === 1 ? 1 : r === 2 ? -1 : 0,
+            u = +!!a,
+            d = a ? 0.5 : 0;
+          const __glide = !!t.glide;
+          // Hovering: a smaller, fainter shadow stays on the ground while everything else is lifted. Every walk frame
+          // is identical (it glides, it does not step); the slow up/down bob is done by aura.js on the live sprite.
+          if (__glide) {
+            e.fillStyle(0, 0.16).fillEllipse(12, 35, 11, 4);
+            e.translateCanvas(0, -4);
+          } else if (!t.riding) e.fillStyle(0, 0.28).fillEllipse(12, 35, 16, 6);
+          // Gliding legs: normal-sized legs, tilted 30 degrees backwards when seen from the side (far leg darker).
+          // From the front/back the tilt points along the view direction, so they are drawn as ordinary legs.
+          const __glideLegs = () => {
+            if (i) {
+              const L = 7,
+                h = L * Math.cos(Math.PI / 6),
+                dx = L * Math.sin(Math.PI / 6);
+              const leg = (x, color) => {
+                const pt = (u, side) => [x + side - dx * u, 27 + h * u];
+                const quad = (u0, u1) => [pt(u0, 0), pt(u0, 5), pt(u1, 5), pt(u1, 0)];
+                const fill = (pts, c, stroke) => {
+                  e.beginPath();
+                  e.moveTo(pts[0][0], pts[0][1]);
+                  for (let k = 1; k < pts.length; k++) e.lineTo(pts[k][0], pts[k][1]);
+                  e.closePath();
+                  e.fillStyle(c, 1);
+                  e.fillPath();
+                  if (stroke) {
+                    e.lineStyle(1, Fr, 1);
+                    e.strokePath();
+                  }
+                };
+                fill(quad(0, 1), color, true);
+                fill(quad(0.72, 1), 3811874, false);
+              };
+              leg(8, Ir(t.pants, 0.78));
+              leg(10, t.pants);
+            } else if (a) {
+              f(6, 0);
+              f(12, 0);
+            } else {
+              f(6, 0);
+              f(13, 0);
+            }
+          };
+          let f = (n, r) => {
+            let i = 7 - r;
+            (Lr(e, n, 27, 5, i, t.pants), e.fillStyle(3811874, 1).fillRect(n, 27 + i - 2, 5, 2));
+          };
+          if (
+            (__glide
+              ? __glideLegs()
+              : i
+              ? (f(9 + (r === 1 ? -__k : r === 2 ? __k : 0), 0),
+                f(9 + (r === 1 ? __k : r === 2 ? -__k : 0), 0))
+              : a
+                ? (f(6 + (r === 1 ? -1 : +(r === 2)), s),
+                  f(12 + (r === 1 ? 1 : r === 2 ? -1 : 0), c))
+                : (f(6, s), f(13, c)),
+            !i)
+          ) {
+            let n = a
+              ? [
+                  [3, 3, l],
+                  [17, 4, -l],
+                ]
+              : [
+                  [2, 3, l],
+                  [19, 3, -l],
+                ];
+            for (let [r, i, a] of n)
+              (Lr(e, r, 19 + a, i, 8, t.outfit),
+                t.uniform || e.fillStyle(t.skin, 1).fillRect(r, 19 + a + 6, i, 2));
+          }
+          let p = i ? 7 : a ? 6 : 5,
+            m = i ? 10 : a ? 12 : 14;
+          if (
+            (Lr(e, p, 18, m, 10, t.outfit),
+            e.fillStyle(Ir(t.outfit, 1.2), 1).fillRect(p + 1, 19, m - 2, 2),
+            e.fillStyle(Ir(t.outfit, 0.75), 1).fillRect(p + 1, 26, m - 2, 1),
+            t.dress && Lr(e, i ? 6 : a ? 5 : 4, 26, i ? 12 : a ? 14 : 16, 5, Ir(t.outfit, 0.92)),
+            !o && !i
+              ? (t.collar &&
+                  e
+                    .fillStyle(16777215, 1)
+                    .fillRect(9 + u, 18, 6, 2)
+                    .fillTriangle(9 + u, 19, 15 + u, 19, 12 + u, 23),
+                t.tie && e.fillStyle(t.tie, 1).fillRect(11 + u, 19, 2, 6),
+                t.apron && Lr(e, 7 + u, 21, 10, 7, t.apron))
+              : o
+                ? t.apron && e.fillStyle(t.apron, 1).fillRect(p, 22, m, 1)
+                : t.apron && e.fillStyle(t.apron, 1).fillRect(14, 21, 3, 7),
+            i &&
+              (Lr(e, 10, 19 + l, 4, 8, Ir(t.outfit, 0.9)),
+              t.uniform || e.fillStyle(t.skin, 1).fillRect(10, 19 + l + 6, 4, 2)),
+            t.style === `long` &&
+              (o
+                ? Lr(e, 4, 10, a ? 15 : 16, 12, t.hair)
+                : i
+                  ? Lr(e, 4, 10, 6, 11, t.hair)
+                  : (Lr(e, 3, 10, 5, 11, t.hair), Lr(e, a ? 17 : 16, 10, 5, 11, t.hair))),
+            // Kimono wearers hold their head 1px higher (proud posture); undone after the head/hat are drawn.
+            t.kimono && e.translateCanvas(0, -1),
+            Rr(e, 12 + d, 12, 8.5, t.skin),
+            t.style !== `bald` &&
+              !((t.style === `storm` || t.style === `ryomen` || t.style === `urchin`) && !t.hat) &&
+              Rr(e, 12 + d, 11, 8.5, t.hair),
+            n === `uside` && e.fillStyle(t.skin, 1).fillEllipse(19, 14.5, 3, 7),
+            !o)
+          ) {
+            let n = i || a ? 14.5 : 12,
+              r = i ? 11 : a ? 12 : 14;
+            e.fillStyle(t.skin, 1).fillEllipse(n, 14.5, r, 11);
+            let o = i ? [17] : a ? [11, 16] : [8, 14];
+            for (let t of o)
+              (e.fillStyle(__eyeColor, 1).fillRect(t, 13, 2, 3),
+                e.fillStyle(16777215, 1).fillRect(t, 13, 1, 1));
+            (e.fillStyle(16747146, 0.5),
+              i
+                ? e.fillRect(15, 16, 2, 1)
+                : a
+                  ? e.fillRect(9, 16, 2, 1).fillRect(18, 16, 2, 1)
+                  : e.fillRect(6, 16, 2, 1).fillRect(16, 16, 2, 1),
+              t.beard === void 0
+                ? e.fillStyle(10506826, 1).fillRect(i ? 18 : a ? 14 : 11, 18, 2, 1)
+                : (e.fillStyle(t.beard, 1),
+                  i
+                    ? e.fillRect(14, 17, 6, 4)
+                    : a
+                      ? e.fillRect(9, 17, 9, 4)
+                      : e.fillRect(7, 17, 10, 4)),
+              t.glasses &&
+                (e.lineStyle(1, 2236979, 1),
+                i
+                  ? e.strokeRect(15.5, 12.5, 4.5, 4)
+                  : a
+                    ? e
+                        .strokeRect(10, 12.5, 4, 4)
+                        .strokeRect(15, 12.5, 4, 4)
+                        .lineBetween(14, 14.5, 15, 14.5)
+                    : e
+                        .strokeRect(7, 12.5, 4.5, 4)
+                        .strokeRect(12.5, 12.5, 4.5, 4)
+                        .lineBetween(11.5, 14.5, 12.5, 14.5)));
+          }
+          t.style === `bun` && Rr(e, i ? 7 : 12 + d, i ? 6 : 3.5, 3.5, t.hair);
+          let h = t.hat;
+          if (h) {
+            let t = h.color;
+            if (h.kind === `chef`) {
+              for (let [n, r, i] of [
+                [8, 4, 3.5],
+                [12, 3, 4],
+                [16, 4, 3.5],
+              ])
+                Rr(e, n + d, r, i, t);
+              Lr(e, 6 + d, 5, 12, 5, t);
+            } else
+              h.kind === `helmet`
+                ? (Lr(e, 3 + d, 2, 18, 8, t),
+                  e.fillStyle(Ir(t, 1.2), 1).fillRect(5 + d, 3, 14, 2),
+                  Lr(e, 2, 9, i ? 22 : a ? 21 : 20, 2, Ir(t, 0.85)),
+                  !o && !i && e.fillStyle(13119536, 1).fillRect(10 + d + +!!a, 4, 4, 4))
+                : (Lr(e, 4 + d, 3, 16, o ? 7 : 6, t),
+                  e.fillStyle(Ir(t, 1.25), 1).fillRect(6 + d, 4, 12, 1),
+                  o || Lr(e, i ? 14 : a ? 5 : 3, 8, i ? 9 : a ? 17 : 18, 2, Ir(t, 0.8)),
+                  h.kind === `police` &&
+                    !o &&
+                    !i &&
+                    e.fillStyle(15909424, 1).fillRect(11 + (a ? 2 : 0), 5, 3, 3));
+          }
+          if (t.kimono) e.translateCanvas(0, 1);
+        }
+        // ---- Anime-inspired hairstyles. The sprite is 24x38 and the head top sits near y=2, so volume comes from
+        // overlapping puffs, side spikes, jagged tufts and loose strands instead of tall spikes.
+        // Each view lists: blocks (outlined rectangles, always drawn), puffs/knots (outlined circles),
+        // tris (flat triangles: x1,y1,x2,y2,x3,y3) and lines (strand highlights). Puffs, knots, tris and lines
+        // are hidden when a hat is worn.
+        const __top = (ks, h = 4, tip = 0) =>
+          ks.map((k, i) => [12 + k - 2, h, 12 + k + 2, h, 12 + k + (i % 2 ? -1.5 : 1.5), tip]);
+        const __backBase = { puffs: [[12, 10, 9.2]], tris: __top([-6, -2, 2, 6]) };
+        // Mirror the left half of a polygon (flat [x,y,...] running from the top-centre point to the bottom-centre point)
+        // onto the right half around x=12, so front/back views come out perfectly symmetric.
+        const __sym = (h) => {
+          const out = h.slice();
+          for (let i = h.length - 4; i >= 2; i -= 2) out.push(24 - h[i], h[i + 1]);
+          return out;
+        };
+        const __hairSpecs = {
+          storm: {
+            // Traced from a hand-drawn sketch: ONE solid silhouette (a single polygon, thin dark outline) with three
+            // uneven spikes on top, jagged flicks sticking out at the sides and three short bangs over the forehead
+            // (the middle one longest). 'polys' = closed polygons [x,y,...]; the sprite has 12px of headroom (y>=-12).
+            front: {
+              // Left half only (top-centre spike -> side spike -> two side flicks -> sideburn -> bangs -> centre).
+              polys: [__sym([
+                12, -5, 9.8, 1, 7.3, -3, 5.4, 2, 0.8, 0.8, 4.2, 4.8, 0.3, 9.5, 4.2, 9,
+                3.6, 13, 4.6, 17, 5.8, 12.5, 6.5, 10, 9, 14.5, 10.6, 10, 12, 13,
+              ])],
+              lines: [[9.8, 1, 10.2, 6], [14.2, 1, 13.8, 6], [12, -3, 12, 6]],
+            },
+            side: {
+              polys: [[
+                5, -3, 9.2, 1.2, 11.5, -4.5, 14, 0.8, 16.5, -2.5, 18.2, 1.8,
+                23, 0.5, 20, 4, 23.2, 6.5, 19.5, 7.5, 21.5, 11, 18.8, 9,
+                17.2, 14.5, 14.5, 9.5, 11.5, 12, 7.5, 11, 8.2, 16.5, 4.8, 18, 3.8, 13, 0.8, 12,
+                4.2, 8.5, 0.5, 5.5, 4.6, 5.2, 3, 1.5,
+              ]],
+              lines: [[9.2, 1.2, 10, 6], [14, 0.8, 14.5, 6.5]],
+            },
+            back: {
+              polys: [__sym([
+                12, -5, 9.8, 1, 7.3, -3, 5.4, 2, 0.8, 0.8, 4.2, 4.8, 0.3, 9.5, 4.2, 10,
+                3.4, 15, 6.5, 14, 8.5, 18.5, 10.5, 15, 12, 17.5,
+              ])],
+              lines: [[9.8, 1, 9.5, 12], [14.2, 1, 14.5, 12], [12, -3, 12, 14]],
+            },
+          },
+          // Short, sharp pink spikes swept up and outwards with a bare forehead (so the four eyes and the markings
+          // show). Front/back are mirrored from a left half like 'storm'.
+          ryomen: {
+            front: {
+              polys: [__sym([
+                12, -4, 10.2, 1, 8, -3, 6.4, 2, 4, -1.5, 4.4, 3.5, 1.2, 2.5, 3.6, 7,
+                1.5, 9.5, 4.5, 8.5, 3.8, 13, 5.6, 9.5, 8, 8, 9.5, 10.5, 11, 8.2, 12, 9.5,
+              ])],
+              lines: [[10.2, 1, 10, 6], [13.8, 1, 14, 6], [12, -2, 12, 5]],
+            },
+            side: {
+              // Side view is kept low and wide (tips only ~3px above the skull, flicks reach forwards/backwards) so
+              // the head does not turn into an egg.
+              polys: [[
+                4.5, 2, 8, 3.8, 9.5, -0.5, 12, 3.5, 14.5, -1, 16.5, 3.8, 20.5, 1.5, 18.8, 5,
+                21.5, 7, 18, 8.5, 17.5, 10.5, 14.5, 8.8, 12, 10.5, 9.5, 9, 8.8, 13.5, 6.2, 11.5,
+                3.2, 13, 4.6, 8.8, 0.8, 7, 4.4, 5.8, 1.8, 3.5,
+              ]],
+              lines: [[8, 3.8, 9.2, 7], [12, 3.5, 12.8, 7]],
+            },
+            back: {
+              polys: [__sym([
+                12, -4, 10.2, 1, 8, -3, 6.4, 2, 4, -1.5, 4.4, 3.5, 1.2, 2.5, 3.6, 7,
+                1.5, 9.5, 4.5, 9.5, 3.8, 14.5, 6.5, 13, 8, 17.5, 10, 14.5, 12, 16.5,
+              ])],
+              lines: [[10.2, 1, 10, 12], [13.8, 1, 14, 12], [12, -2, 12, 14]],
+            },
+          },
+          // Sea-urchin hair (Megumi): many long, sharp spikes radiating in every direction, with side spikes pointing
+          // out and down, and short bangs that stop above the eyes. Front/back are mirrored from a left half.
+          urchin: {
+            front: {
+              polys: [__sym([
+                12, -4, 10.5, 1, 8.5, -5, 7, 1.5, 4.5, -3.5, 4.8, 3, 0.5, -0.5, 3.4, 6, -0.3, 6.8, 3.6, 9.5,
+                1.3, 13, 4.4, 12.5, 5, 15, 6.2, 10.5, 7.8, 12.8, 9, 9.5, 10.6, 12.2, 12, 9.8,
+              ])],
+              lines: [[8.2, -2, 9, 6], [15.8, -2, 15, 6], [12, -2, 12, 7]],
+            },
+            side: {
+              polys: [[
+                4, -4, 8.6, 1.2, 10.5, -6, 13, 0.8, 16, -4, 17.8, 1.5, 23.2, -0.5, 20.5, 3.8,
+                23.5, 6, 19.8, 7.5, 21, 10.5, 18.6, 9, 17.4, 12, 14.5, 9.5, 11.5, 11,
+                7.5, 11, 8.2, 16.5, 4.8, 18, 3.8, 13, 0.5, 13.5, 4.2, 8.8, -0.5, 6, 4.6, 5.2, 1.2, 0.8,
+              ]],
+              lines: [[8.6, 1.2, 9.4, 6], [13, 0.8, 13.6, 6.5]],
+            },
+            back: {
+              polys: [__sym([
+                12, -5, 10.2, 0.5, 8.5, -5.5, 7, 1, 4.5, -3.5, 4.8, 3, 0.5, -0.5, 3.4, 6.5, -0.3, 8, 3.8, 10.5,
+                1.5, 14.5, 5, 13.5, 6.5, 17, 8.5, 13.5, 10, 17.5, 12, 15.5,
+              ])],
+              lines: [[8.2, -2, 8.6, 12], [15.8, -2, 15.4, 12], [12, -3, 12, 14]],
+            },
+          },
+          scruffy: {
+            front: {
+              outline: true,
+              puffs: [[7, 7, 3.5], [12, 5, 4.5], [17, 7, 3.5], [4.5, 10.5, 2.5], [19.5, 10.5, 2.5]],
+              tris: [[4, 6, 9, 4, 3, -1], [8, 4, 13, 3, 9, -5], [12, 3, 17, 4, 16, -4], [16, 5, 20, 7, 22, 0], [6, 8, 10, 8, 8, 12], [11, 8, 15, 8, 14, 12], [15, 8, 19, 8, 18, 11]],
+              lines: [[9, 4, 10, 8], [15, 4, 14, 8]],
+            },
+            side: {
+              outline: true,
+              puffs: [[10, 6.5, 4], [15, 5.5, 3.5], [6, 10, 3]],
+              tris: [[6, 5, 11, 4, 5, -2], [10, 3, 15, 3, 12, -5], [13, 4, 18, 6, 19, -2], [14, 8, 20, 8, 19, 11]],
+              lines: [[11, 4, 12, 8]],
+            },
+            back: { outline: true, puffs: [[12, 10, 9.2]], tris: [[4, 6, 9, 4, 3, -1], [8, 4, 13, 3, 9, -5], [12, 3, 17, 4, 16, -4], [16, 5, 20, 7, 22, 0]] },
+          },
+          thorn: {
+            front: {
+              outline: true,
+              puffs: [[6, 6.5, 3.5], [12, 5, 4.5], [18, 6.5, 3.5]],
+              tris: [
+                [3, 6, 8, 4, 2, -3], [6, 4, 11, 3, 6, -8], [10, 3, 14, 3, 11, -10], [13, 3, 18, 4, 17, -8], [16, 5, 21, 7, 23, -3],
+                [4, 7, 5, 13, 0, 9], [3.5, 10, 5, 14, 0.5, 13], [20, 7, 19, 13, 23.5, 9], [20.5, 10, 19, 14, 23.5, 13],
+                [6, 8, 10, 8, 7, 12.5], [10, 8, 14, 8, 12, 12.5], [14, 8, 18, 8, 17, 12.5],
+              ],
+              lines: [[8, 4, 9, 8], [15, 4, 14, 8]],
+            },
+            side: {
+              outline: true,
+              puffs: [[10, 6.5, 4], [15, 6, 3.5]],
+              tris: [[4, 8, 9, 5, 1, -3], [7, 5, 12, 3, 6, -8], [11, 3, 16, 3, 13, -9], [14, 4, 19, 6, 21, -4], [5, 8, 5, 13, 0, 10], [5, 11, 6, 15, 1, 14], [14, 8, 20, 8, 19, 12]],
+              lines: [[11, 4, 12, 8]],
+            },
+            back: {
+              outline: true,
+              puffs: [[12, 10, 9.2]],
+              tris: [[3, 6, 8, 4, 2, -3], [6, 4, 11, 3, 6, -8], [10, 3, 14, 3, 11, -10], [13, 3, 18, 4, 17, -8], [16, 5, 21, 7, 23, -3], [4, 9, 5, 14, 0, 11], [20, 9, 19, 14, 23.5, 11]],
+            },
+          },
+          blaze: {
+            front: {
+              outline: true,
+              blocks: [[3, 10, 2, 6], [19, 10, 2, 6]],
+              puffs: [[7, 7, 3.5], [12, 5, 4.5], [17, 7, 3.5], [4.5, 10.5, 2.5], [19.5, 10.5, 2.5]],
+              tris: [
+                [3, 6, 8, 4, 1, -4], [6, 4, 11, 3, 5, -8], [10, 3, 14, 3, 10, -10], [13, 3, 18, 4, 17, -8], [16, 5, 21, 7, 23, -4],
+                [6, 8, 10, 8, 8, 12], [11, 8, 15, 8, 14, 12], [15, 8, 19, 8, 18, 11], [3, 15, 5, 15, 3, 19], [19, 15, 21, 15, 21, 19],
+              ],
+              lines: [[9, 4, 10, 8], [15, 4, 14, 8]],
+            },
+            side: {
+              outline: true,
+              puffs: [[10, 6.5, 4], [15, 5.5, 3.5], [6, 10, 3]],
+              tris: [[5, 6, 10, 4, 3, -5], [9, 3, 14, 3, 10, -8], [13, 4, 18, 6, 20, -4], [14, 8, 20, 8, 19, 11], [5, 9, 6, 14, 1, 12]],
+              lines: [[11, 4, 12, 8]],
+            },
+            back: {
+              outline: true,
+              puffs: [[12, 10, 9.2]],
+              tris: [[3, 6, 8, 4, 1, -4], [6, 4, 11, 3, 5, -8], [10, 3, 14, 3, 10, -10], [13, 3, 18, 4, 17, -8], [16, 5, 21, 7, 23, -4], [5, 16, 9, 16, 6, 21], [15, 16, 19, 16, 18, 21]],
+            },
+          },
+          tousled: {
+            front: {
+              blocks: [[3, 10, 2, 5], [19, 10, 2, 5]],
+              puffs: [[12, 5.5, 5.5], [7, 8, 3], [17, 8, 3]],
+              tris: [...__top([-3, 0, 3], 4, 1.5), [7, 8, 12, 8, 9, 12], [12, 8, 17, 8, 15, 11]],
+              lines: [[10, 4, 11, 8]],
+            },
+            side: { puffs: [[11, 6, 5], [6, 9.5, 3]], tris: [[13, 8, 20, 8, 19, 11]], lines: [[11, 4, 12, 8]] },
+            back: __backBase,
+          },
+          crop: {
+            front: {
+              puffs: [[12, 5, 5], [6.5, 8, 2.5], [17.5, 8, 2.5]],
+              tris: [...__top([-4, 0, 4], 4, 1), [7, 8, 11, 8, 9, 11], [13, 8, 17, 8, 15, 11]],
+              lines: [[10, 4, 11, 7]],
+            },
+            side: { puffs: [[11, 6, 4.5]], tris: [[14, 8, 20, 8, 19, 11]], lines: [] },
+            back: { puffs: [[12, 10, 8.6]], tris: __top([-4, 0, 4], 4, 1) },
+          },
+          flare: {
+            front: {
+              blocks: [[2, 9, 4, 11], [18, 9, 4, 11]],
+              puffs: [[8, 6.5, 4], [12, 5, 4.5], [16, 6.5, 4]],
+              tris: [[2, 20, 6, 20, 1, 23], [18, 20, 22, 20, 23, 23], [6, 8, 10, 8, 8, 11], [10, 8, 14, 8, 12, 11], [14, 8, 18, 8, 16, 11]],
+              lines: [[9, 4, 10, 8], [15, 4, 14, 8]],
+            },
+            side: { blocks: [[4, 9, 6, 10]], puffs: [[10, 6.5, 4], [15, 6, 3.5]], tris: [[13, 8, 20, 8, 19, 11]], lines: [[11, 4, 12, 8]] },
+            back: { blocks: [[4, 9, 16, 11]], puffs: [[12, 10, 9]], tris: [[3, 18, 8, 18, 3, 22], [16, 18, 21, 18, 21, 22]] },
+          },
+          highpony: {
+            front: {
+              blocks: [[3, 9, 2, 8], [19, 9, 2, 8]],
+              puffs: [[12, 5.5, 5]],
+              knots: [[12, 2.5, 2.5]],
+              tris: [[6, 8, 12, 8, 8, 12], [12, 8, 18, 8, 16, 12]],
+              lines: [[10, 4, 11, 8]],
+            },
+            side: { blocks: [[3, 2, 3, 12]], puffs: [[11, 6, 4.5]], tris: [[13, 8, 20, 8, 19, 12]], lines: [[11, 4, 12, 8]] },
+            back: { blocks: [[11, 3, 3, 16]], puffs: [[12, 10, 9]], tris: [] },
+          },
+          longbun: {
+            front: {
+              blocks: [[2, 10, 4, 13], [18, 10, 4, 13]],
+              puffs: [[12, 5, 5]],
+              knots: [[12, 2.5, 3.2]],
+              tris: [[5, 8, 11, 8, 6, 13], [13, 8, 19, 8, 18, 13]],
+              lines: [[10, 4, 11, 8]],
+            },
+            side: { blocks: [[4, 10, 6, 14]], puffs: [[11, 5.5, 4.5]], knots: [[10, 2.5, 3]], tris: [[13, 8, 20, 8, 19, 13]], lines: [[11, 4, 12, 8]] },
+            back: { blocks: [[4, 10, 16, 14]], puffs: [[12, 10, 9]], knots: [[12, 2.5, 3.2]], tris: [] },
+          },
+          swept: {
+            front: {
+              blocks: [[3, 10, 2, 5], [19, 10, 2, 5]],
+              puffs: [[12, 5, 6], [7, 7, 3], [17, 7, 3]],
+              tris: [...__top([-4, 0, 4], 4, 1.5), [11, 8, 13, 8, 12, 12]],
+              lines: [[8, 3, 16, 3]],
+            },
+            side: { puffs: [[11, 5.5, 5.5], [6, 9, 2.5]], tris: [[14, 8, 19, 8, 17, 11]], lines: [[8, 3, 15, 3]] },
+            back: __backBase,
+          },
+        };
+        function __lqDrawHair(g, c, dir, dx) {
+          const spec = __hairSpecs[c.style];
+          if (!spec) return;
+          const hair = typeof c.hair === 'number' ? c.hair : 0x5a3b2a;
+          const view = dir === 'up' || dir === 'uside' ? spec.back : dir === 'side' ? spec.side : spec.front;
+          if (!view) return;
+          for (const [x, y, w, h] of view.blocks || []) Lr(g, x + dx, y, w, h, hair);
+          if (c.hat) return;
+          for (const p of view.polys || []) {
+            // One filled silhouette with a thin dark outline.
+            g.beginPath();
+            g.moveTo(p[0] + dx, p[1]);
+            for (let i = 2; i < p.length; i += 2) g.lineTo(p[i] + dx, p[i + 1]);
+            g.closePath();
+            g.fillStyle(hair, 1);
+            g.fillPath();
+            g.lineStyle(1, Fr, 1);
+            g.strokePath();
+          }
+          const blobs = [...(view.puffs || []), ...(view.knots || [])];
+          if (view.outline === 'clean') {
+            // All outlines first, then all fills, so overlapping shapes merge into one silhouette without inner seams.
+            g.fillStyle(Fr, 1);
+            for (const [x, y, r] of blobs) g.fillCircle(x + dx, y, r + 1);
+            g.lineStyle(2, Fr, 1);
+            for (const q of view.tris || []) g.strokeTriangle(q[0] + dx, q[1], q[2] + dx, q[3], q[4] + dx, q[5]);
+            g.fillStyle(hair, 1);
+            for (const [x, y, r] of blobs) g.fillCircle(x + dx, y, r);
+          } else for (const [x, y, r] of blobs) Rr(g, x + dx, y, r, hair);
+          g.fillStyle(hair, 1);
+          for (const q of view.tris || []) g.fillTriangle(q[0] + dx, q[1], q[2] + dx, q[3], q[4] + dx, q[5]);
+          if (view.outline === true) {
+            g.lineStyle(1, Fr, 1);
+            for (const q of view.tris || []) g.strokeTriangle(q[0] + dx, q[1], q[2] + dx, q[3], q[4] + dx, q[5]);
+          }
+          const lum = (((hair >> 16) & 255) + ((hair >> 8) & 255) + (hair & 255)) / 3;
+          g.lineStyle(1, Ir(hair, lum < 90 ? 1.9 : 0.8), 1);
+          for (const l of view.lines || []) g.lineBetween(l[0] + dx, l[1], l[2] + dx, l[3]);
+        }        const __v11BaseCharacter = zr;
+        zr = function (g, c, dir, frame) {
+          __v11BaseCharacter(g, c, dir, frame);
+          // Riding a shadow beast (Megumi): eyes shut, relaxed. The open eyes are painted over with skin, then a thin
+          // dark line is drawn where each eye was.
+          if (c.riding && dir !== 'up' && dir !== 'uside') {
+            const exs = dir === 'side' ? [17] : dir === 'dside' ? [11, 16] : [8, 14];
+            for (const ex of exs) {
+              g.fillStyle(c.skin, 1).fillRect(ex, 13, 2, 3);
+              g.fillStyle(0x241c1e, 1).fillRect(ex, 15, 2, 1);
+            }
+          }
+          // A few one-pixel material highlights, carried in cached textures only.
+          const col = typeof c.outfit === 'number' ? c.outfit : 0x5a84bb;
+          const bright = (v, k) => Math.min(255, Math.round(v * k));
+          const hi =
+            (bright((col >> 16) & 255, 1.32) << 16) |
+            (bright((col >> 8) & 255, 1.32) << 8) |
+            bright(col & 255, 1.32);
+          const face = dir === 'down' || dir === 'dside';
+          g.fillStyle(hi, 0.42).fillRect(8, 20, 7, 1);
+          g.fillStyle(0xffffff, 0.16).fillRect(10, 23, 2, 1);
+          g.fillStyle(0x141b2d, 0.34).fillRect(7, 33, 4, 1).fillRect(14, 33, 4, 1);
+          if (face) {
+            g.fillStyle(0xffffff, 0.27).fillRect(7, 11, 2, 1);
+            g.fillRect(15, 11, 2, 1);
+          }
+          if (c.apron) {
+            g.fillStyle(0xffffff, 0.2).fillRect(9, 23, 5, 1);
+          }
+          if (c.glasses) {
+            g.fillStyle(0xd7f1ff, 0.19).fillRect(8, 13, 2, 1);
+          }
+          // Extra hair styles and a backpack for the character creator.
+          const hairColor = typeof c.hair === 'number' ? c.hair : 0x5a3b2a;
+          const isSide = dir === 'side',
+            isDiag = dir === 'dside' || dir === 'uside',
+            isBack = dir === 'up' || dir === 'uside',
+            dx = isDiag ? 0.5 : 0;
+          if (c.style === 'bob') {
+            if (isBack) Lr(g, 4, 10, isDiag ? 15 : 16, 10, hairColor);
+            else if (isSide) Lr(g, 4, 10, 6, 9, hairColor);
+            else {
+              Lr(g, 2, 10, 4, 9, hairColor);
+              Lr(g, 18, 10, 4, 9, hairColor);
+            }
+          } else if (c.style === 'ponytail') {
+            if (isBack) Lr(g, 10, 14, 4, 12, hairColor);
+            else if (isSide) Lr(g, 4, 11, 3, 10, hairColor);
+            else Lr(g, 19, 12, 3, 8, hairColor);
+          } else if (c.style === 'spiky' && !c.hat) {
+            g.fillStyle(hairColor, 1);
+            for (const k of [-6, -2, 2, 6])
+              g.fillTriangle(12 + dx + k - 2.5, 5, 12 + dx + k + 2.5, 5, 12 + dx + k, 0);
+          } else if (c.style === 'curly' && !c.hat) {
+            for (const [cx, cy] of [
+              [5, 7],
+              [19, 7],
+              [8, 3],
+              [16, 3],
+              [12, 2],
+            ])
+              Rr(g, cx + dx, cy, 3.5, hairColor);
+          }
+          // Head details of a kimono wearer follow the raised head (see zr).
+          if (c.kimono) g.translateCanvas(0, -1);
+          // Glowing eyes: a white spark and a pale lower highlight so a light eye colour reads as luminous.
+          if (c.eyeGlow && typeof c.eye === 'number' && dir !== 'up' && dir !== 'uside') {
+            const exs = isSide ? [17] : isDiag ? [11, 16] : [8, 14];
+            for (const ex of exs) {
+              g.fillStyle(c.eye, 1).fillRect(ex, 13, 2, 3);
+              g.fillStyle(0xffffff, 1).fillRect(ex, 13, 1, 1);
+              g.fillStyle(0xc9f4ff, 1).fillRect(ex + 1, 15, 1, 1);
+            }
+          }
+          // Four eyes: the second pair is small and sits out on the cheeks, away from the centre of the face.
+          if (c.extraEyes && typeof c.eye === 'number' && dir !== 'up' && dir !== 'uside') {
+            const lowers = isSide ? [[14, 16]] : isDiag ? [[9, 16], [19, 16]] : [[6, 16], [16, 16]];
+            for (const [ex, ey] of lowers) g.fillStyle(c.eye, 1).fillRect(ex, ey, 2, 1);
+          }
+          // Face markings: a stripe beside each main eye, one on each cheek, a bar across the nose and a dash on
+          // the forehead.
+          if (c.faceMarks && dir !== 'up' && dir !== 'uside') {
+            g.fillStyle(0x23181c, 1);
+            if (isSide) g.fillRect(11, 14, 2, 1).fillRect(11, 18, 3, 1).fillRect(16, 10, 1, 2);
+            else if (isDiag)
+              g.fillRect(8, 14, 2, 1).fillRect(18, 14, 2, 1).fillRect(10, 18, 2, 1).fillRect(17, 18, 2, 1).fillRect(13, 14, 3, 1).fillRect(14, 10, 1, 2);
+            else g.fillRect(5, 14, 3, 1).fillRect(16, 14, 3, 1).fillRect(6, 18, 3, 1).fillRect(15, 18, 3, 1).fillRect(10, 14, 4, 1).fillRect(12, 10, 1, 2);
+          }
+          if (c.kimono) g.translateCanvas(0, 1);
+          // Kimono: one long robe down to the ankles (it hides the legs; only the feet peek out, and they step with
+          // the walk frames), an open V neckline showing the chest, a wide black sash and wide sleeves.
+          if (c.kimono) {
+            // Palette from the reference: white robe, navy borders/scarf, a thin blue-grey sash with a diamond pattern.
+            const navy = 0x2a3558,
+              deep = 0x151a2a,
+              obi = 0x3a4d73,
+              obiHi = 0x86a0c8;
+            const robe = typeof c.outfit === 'number' ? c.outfit : 0xe9e4d6;
+            // Thin patterned sash (2 rows, no heavy outline): light diamond pixels on a blue-grey band.
+            const sash = (x0, x1, y) => {
+              g.fillStyle(obi, 1).fillRect(x0, y, x1 - x0, 2);
+              g.fillStyle(deep, 1).fillRect(x0, y + 2, x1 - x0, 1);
+              g.fillStyle(obiHi, 1);
+              for (let x = x0 + 1; x < x1 - 1; x += 3) g.fillRect(x + 1, y, 1, 1).fillRect(x, y + 1, 1, 1).fillRect(x + 2, y + 1, 1, 1);
+            };
+            // Scarf around the neck, just under the chin (the mouth row stays visible).
+            const scarf = (x, w) => {
+              g.fillStyle(navy, 1).fillRect(x, 19, w, 2);
+              g.fillStyle(deep, 1).fillRect(x, 21, w, 1);
+            };
+            const poly = (pts, color) => {
+              g.beginPath();
+              g.moveTo(pts[0], pts[1]);
+              for (let k = 2; k < pts.length; k += 2) g.lineTo(pts[k], pts[k + 1]);
+              g.closePath();
+              g.fillStyle(color, 1);
+              g.fillPath();
+              g.lineStyle(1, Fr, 1);
+              g.strokePath();
+            };
+            // Skirt of the robe: a plain, nearly straight fall to the ankles (it hides the legs).
+            if (isSide) poly([7, 26, 17, 26, 18.5, 34, 5.5, 34], robe);
+            else poly([5 + dx, 26, 19 + dx, 26, 20 + dx, 34, 4 + dx, 34], robe);
+            // Feet (black zori) just under the hem; one lifts per walk frame.
+            g.fillStyle(0x1f1a1a, 1);
+            if (isSide) g.fillRect(12, 34 - (frame === 1 ? 1 : 0), 4, 2).fillRect(6, 34 - (frame === 2 ? 1 : 0), 4, 2);
+            else g.fillRect(7 + dx, 34 - (frame === 1 ? 1 : 0), 3, 2).fillRect(14 + dx, 34 - (frame === 2 ? 1 : 0), 3, 2);
+            if (isBack) {
+              scarf(6 + dx, 12);
+              sash(5 + dx, 19 + dx, 26);
+              g.fillStyle(navy, 1).fillRect(10 + dx, 24, 4, 2);
+            } else if (isSide) {
+              scarf(9, 10);
+              sash(7, 17, 26);
+              g.fillStyle(navy, 1).fillRect(14, 29, 1, 5);
+            } else {
+              scarf(6 + dx, 12);
+              // Open V neckline with navy borders, the sash, then the navy front band down to the hem.
+              g.fillStyle(c.skin, 1).fillTriangle(8 + dx, 22, 16 + dx, 22, 12 + dx, 25);
+              g.lineStyle(2, navy, 1);
+              g.lineBetween(8 + dx, 21.5, 12 + dx, 25.5);
+              g.lineBetween(16 + dx, 21.5, 12 + dx, 25.5);
+              sash(5 + dx, 19 + dx, 26);
+              g.fillStyle(navy, 1).fillRect(11 + dx, 29, 2, 5);
+            }
+            // Arms folded in the sleeves: the two sleeves cross the belly and meet in the middle, each ending in a
+            // navy cuff (the hands are hidden). They stay still while walking. From behind they just hang.
+            if (isSide) {
+              Lr(g, 7, 22, 12, 5, robe);
+              g.fillStyle(navy, 1).fillRect(18, 22, 1, 5);
+            } else if (isBack) {
+              Lr(g, 0, 20, 6, 9, robe);
+              Lr(g, 18, 20, 6, 9, robe);
+              g.fillStyle(navy, 1).fillRect(0, 28, 6, 1).fillRect(18, 28, 6, 1);
+            } else if (!isDiag) {
+              Lr(g, 0, 19, 5, 4, robe);
+              Lr(g, 19, 19, 5, 4, robe);
+              Lr(g, 1, 22, 22, 5, robe);
+              g.fillStyle(navy, 1).fillRect(8, 22, 1, 5).fillRect(15, 22, 1, 5);
+            }
+          }
+          // Jujutsu-style uniform: black jacket with a tall stand collar that covers the mouth and chin, a hidden
+          // centre placket and a thin purple-black trim along the collar rim and the hem.
+          if (c.uniform) {
+            const base = typeof c.outfit === 'number' ? c.outfit : 0x14141b;
+            const collar = Ir(base, 1.25);
+            // Purple-black trim in three tones: bright rim, mid line and a dark shadow line under it.
+            // A look can carry its own trim colour (Megumi: steel blue); otherwise the purple of the Gojo uniform.
+            const tr = typeof c.trim === 'number' ? c.trim : null;
+            const rim = tr === null ? 0x7a4cc0 : Ir(tr, 1.5),
+              mid = tr === null ? 0x5a3b8c : tr,
+              shade = tr === null ? 0x2e1f47 : Ir(tr, 0.4);
+            // The collar starts one row below the cheeks (y=18, the mouth row) so only the lower face is covered.
+            if (isBack) {
+              Lr(g, 6 + dx, 18, 12, 4, collar);
+              g.fillStyle(rim, 1).fillRect(7 + dx, 18, 10, 1);
+              g.fillStyle(shade, 1).fillRect(7 + dx, 19, 10, 1);
+            } else if (isSide) {
+              // Wraps the jaw but flows back into the torso (x 7..17) instead of sticking out like a box.
+              Lr(g, 8, 18, 12, 4, collar);
+              g.fillStyle(rim, 1).fillRect(9, 18, 10, 1);
+              g.fillStyle(shade, 1).fillRect(9, 19, 10, 1);
+              g.fillStyle(mid, 1).fillRect(9, 21, 6, 1);
+            } else {
+              Lr(g, 5 + dx, 18, 14, 4, collar);
+              g.fillStyle(rim, 1).fillRect(6 + dx, 18, 12, 1);
+              g.fillStyle(shade, 1).fillRect(6 + dx, 19, 12, 1);
+              g.fillStyle(mid, 1).fillRect(6 + dx, 20, 1, 2).fillRect(17 + dx, 20, 1, 2);
+              g.fillStyle(shade, 1).fillRect(12, 20, 1, 8);
+              // Pocket slits: the hands are tucked in.
+              g.fillStyle(shade, 1).fillRect(7 + dx, 25, 3, 1).fillRect(14 + dx, 25, 3, 1);
+              g.fillStyle(mid, 1).fillRect(12, 22, 1, 1).fillRect(12, 25, 1, 1);
+              g.fillStyle(mid, 1).fillRect(7 + dx, 27, 10, 1);
+              g.fillStyle(shade, 1).fillRect(7 + dx, 28, 10, 1);
+            }
+          }
+          if (c.kimono) g.translateCanvas(0, -1);
+          // Blindfold (drawn under the hair so loose strands fall over it).
+          if (c.blindfold) {
+            g.fillStyle(0x14141c, 1);
+            if (isBack) g.fillRect(3 + dx, 12, 18, 2);
+            else if (isSide) g.fillRect(13, 12, 8, 4);
+            else if (isDiag) g.fillRect(8, 12, 13, 4);
+            else g.fillRect(4, 12, 16, 4);
+          }
+          // Anime-inspired hairstyles (see __lqHairSpecs).
+          __lqDrawHair(g, c, dir, dx);
+          if (c.kimono) g.translateCanvas(0, 1);
+          if (c.backpack) {
+            const bag = typeof c.backpack === 'number' ? c.backpack : 0x8a4b2a;
+            if (isBack) Lr(g, 6, 19, 12, 11, bag);
+            else if (isSide) Lr(g, 2, 20, 6, 10, bag);
+            else g.fillStyle(bag, 1).fillRect(7, 19, 2, 8).fillRect(15, 19, 2, 8);
+          }
+        };
+        var Br = [`down`, `up`, `side`, `dside`, `uside`];
+        function Vr(e, t, n) {
+          for (let r of Br)
+            for (let i = 0; i < 3; i++) {
+              let a = `ch_${t}_${r}_${i}`;
+              if (e.textures.exists(a)) continue;
+              let o = e.add.graphics();
+              (zr(o, n, r, i),
+                o.generateTexture(a, 24, 38),
+                o.destroy(),
+                e.textures.get(a).setFilter(Y.Textures.FilterMode.NEAREST));
+            }
+        }
+        // Custom looks get 12 extra pixels above the head so tall spikes are not cut off by the 38px sprite.
+        const __LQ_PAD = 12;
+        function VrTall(e, t, n, pad) {
+          for (let r of Br)
+            for (let i = 0; i < 3; i++) {
+              let a = `ch_${t}_${r}_${i}`;
+              if (e.textures.exists(a)) continue;
+              let o = e.add.graphics();
+              (o.translateCanvas(0, pad),
+                zr(o, n, r, i),
+                o.generateTexture(a, 24, 38 + pad),
+                o.destroy(),
+                e.textures.get(a).setFilter(Y.Textures.FilterMode.NEAREST));
+            }
+        }        // ---- Character creator support: turn the player's saved "look" into a sprite description ----
+        // Hairstyles were renamed; looks saved under the old names keep working.
+        const __lqStyleAlias = { gojo: 'storm', itadori: 'scruffy', megumi: 'thorn', nobara: 'flare', maki: 'highpony', geto: 'longbun', nanami: 'swept', sukuna: 'blaze', yuta: 'tousled', toji: 'crop' };
+        const __lqStyle = (s) => __lqStyleAlias[s] || s || 'short';
+        function __lqLookKey(l) {
+          const s = JSON.stringify([
+            l.skin,
+            l.hair,
+            __lqStyle(l.style),
+            l.eye,
+            l.outfit,
+            l.pants,
+            l.hat && [l.hat.kind, l.hat.color],
+            !!l.glasses,
+            !!l.dress,
+            l.backpack || 0,
+            !!l.blindfold,
+            !!l.collar,
+            l.tie || 0,
+            !!l.uniform,
+            !!l.eyeGlow,
+            l.aura === 'infinity',
+            !!l.extraEyes,
+            !!l.faceMarks,
+            !!l.kimono,
+            l.trim || 0,
+            !!l.riding,
+          ]);
+          let h = 5381;
+          for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+          return 'pl' + h.toString(36);
+        }
+        function __lqLookToAppearance(l) {
+          return {
+            skin: l.skin,
+            hair: l.hair,
+            style: __lqStyle(l.style),
+            eye: l.eye,
+            outfit: l.outfit,
+            pants: l.pants,
+            hat: l.hat ? { kind: l.hat.kind, color: l.hat.color } : undefined,
+            glasses: !!l.glasses,
+            dress: !!l.dress,
+            backpack: l.backpack || undefined,
+            blindfold: !!l.blindfold,
+            collar: !!l.collar,
+            tie: l.tie || undefined,
+            uniform: !!l.uniform,
+            eyeGlow: !!l.eyeGlow,
+            // Infinity users glide: they hover above the ground with their legs trailing behind.
+            glide: l.aura === 'infinity',
+            extraEyes: !!l.extraEyes,
+            faceMarks: !!l.faceMarks,
+            kimono: !!l.kimono,
+            trim: l.trim || undefined,
+            riding: !!l.riding,
+          };
+        }
+        window.LQCharacter = {
+          pad: __LQ_PAD,
+          size: { w: 24, h: 38 + __LQ_PAD },
+          keyFor: __lqLookKey,
+          appearance: __lqLookToAppearance,
+          ensure(scene, look) {
+            const key = __lqLookKey(look);
+            VrTall(scene, key, __lqLookToAppearance(look), __LQ_PAD);
+            return key;
+          },
+          imageFor(scene, look, dir = 'down', frame = 0) {
+            const key = this.ensure(scene, look);
+            return scene.textures.get(`ch_${key}_${dir}_${frame}`).getSourceImage();
+          },
+        };
+        function Hr(e, t, n) {
+          let r = Math.abs(t),
+            i = Math.abs(n);
+          (r < 0.01 && i < 0.01) ||
+            (i < r * 0.4
+              ? ((e.dir = `side`), (e.flip = t < 0))
+              : r < i * 0.4
+                ? (e.dir = n < 0 ? `up` : `down`)
+                : ((e.dir = n < 0 ? `uside` : `dside`), (e.flip = t < 0)));
+        }
+        function Ur(e, t, n, r) {
+          // Sprites flagged lqSlow (kimono wearers) change walk frame 2.4x less often: a slow, dignified pace.
+          let i = r ? 1 + (Math.floor(n.phase / (e.lqSlow ? 24 : 10)) % 2) : 0,
+            a = `ch_${t}_${n.dir}_${i}`;
+          (e.texture.key !== a && e.setTexture(a),
+            e.setFlipX(n.flip && n.dir !== `down` && n.dir !== `up`));
+        }
+        var Wr = 34;
+var Gr = 0.68;
+var Kr = 1;
+var qr = 6;
+var Jr = 90;
+var Yr = 2e4;
+var Xr = 0;
+var Zr = (e) => e >= 1140 || e < 300;
+var Qr = class extends Y.Scene {
+            area;
+            player;
+            playerKey = `player0`;
+            pFace = Or();
+            pMoving = !1;
+            badge;
+            keys;
+            npcs = [];
+            chat;
+            journal;
+            settings;
+            helper;
+            briefing;
+            quests;
+            store = new Be();
+            walls = [];
+            areaObjs = [];
+            switching = !1;
+            dimAlpha = 0;
+            groupBtn = document.getElementById(`group-btn`);
+            groupMenu = document.getElementById(`group-menu`);
+            hud;
+            prompt;
+            dim;
+            ticks = 0;
+            inside = null;
+            doorCooldown = 0;
+            sleeping = !1;
+            constructor() {
+              super(`Town`);
+            }
+            create() {
+              this.store.load();
+              // Free exploration build: Art District is available on every save (old or new).
+              // Only the map access flag changes; NPC missions and achievements are untouched.
+              if (!this.store.game.artDistrictUnlocked) {
+                this.store.game.artDistrictUnlocked = true;
+                this.store.save();
+              }
+              let e = this.store.game;
+              // Development-only map preview (?preview=art-district). It changes the in-memory starting scene, not the saved unlocks.
+              try {
+                this.artDistrictPreview = new URLSearchParams(location.search).get(`preview`) === `art-district`;
+              } catch { this.artDistrictPreview = !1; }
+              this.area = this.artDistrictPreview ? we(`art-district`) : we(e.area);
+              if (!this.artDistrictPreview) e.area = this.area.id;
+              for (let e of De()) console.warn(`[area]`, e);
+              this.chat = new ft(new lr(), this.store, (t) => {
+                let n = this.npcs.find((e) => e.def.id === t.id),
+                  r =
+                    n &&
+                    (n.inside
+                      ? this.area.places[n.slot.place]
+                      : { x: Math.floor(n.sprite.x / 32), y: Math.floor(n.sprite.y / 32) });
+                return {
+                  day: e.day,
+                  minutes: e.minutes,
+                  activity: n?.slot.label ?? `in town`,
+                  rep: e.rep,
+                  here: r,
+                };
+              });
+              let t = () =>
+                void Promise.resolve(window.__lqModelReady)
+                  .catch(() => {})
+                  .then(() => pr())
+                  .then((e) => {
+                    this.chat.setProvider(e);
+                  });
+              (t(),
+                (this.helper = new ut(this.store, () => this.chat.currentProvider)),
+                (this.briefing = new Bt()),
+                (this.settings = new zt(this.store)),
+                (this.settings.onSaved = t),
+                (this.chat.onGoalDone = (e) => this.gain(e.goal.reward, e.goal.rep)),
+                (this.journal = new gt(this.store)),
+                (this.quests = new un(this.store, this.area)),
+                (this.quests.onReward = (e) => this.gain(e.reward.money, e.reward.rep)),
+                (this.chat.onSaid = (e, t) => {
+                  const oldMessages = this.quests.onSaid(e.id, t);
+                  this.checkArtDistrictAccess();
+                  const extra = adventure.onNpcMessage(e.id, t);
+                  // Ten Shadows quest (tenshadows.js): legends and clues; runs before the quest panel hears about this message.
+                  let shadowLines = [];
+                  try {
+                    shadowLines = (window.LQTenShadows && window.LQTenShadows.onNpcMessage(e.id, t, this.area.id)) || [];
+                  } catch (err) {
+                    console.warn('Ten Shadows hook', err);
+                  }
+                  // The Old Map (oldmap.js): Ms. Green's map, the three relics and the past-tense report (Chapter 2).
+                  try {
+                    shadowLines = shadowLines.concat(
+                      (window.LQOldMap && window.LQOldMap.onNpcMessage(e.id, t, this.area.id)) || [],
+                    );
+                  } catch (err) {
+                    console.warn('Old Map hook', err);
+                  }
+                  try {
+                    window.LQV8?.onEvent('npc', { npc: e.id, text: t, area: this.area.id });
+                    window.LQStory?.onNpc?.(e.id, t, this.area.id);
+                  } catch (err) {
+                    console.warn('V8 NPC event', err);
+                  }
+                  return [...oldMessages, ...extra, ...shadowLines];
+                }));
+              let n = mt(e.rep);
+              ((this.playerKey = `player${n.idx}`), Vr(this, this.playerKey, Pr(n.color)));
+              let r = ce(this.area.spawn.x, this.area.spawn.y);
+              ((this.player = this.add
+                .image(r.x, r.y, `ch_${this.playerKey}_down_0`)
+                .setOrigin(0.5, Gr)
+                .setDepth(10)),
+                (this.badge = this.add
+                  .text(0, 0, ``, { fontSize: `16px` })
+                  .setOrigin(0.5, 1)
+                  .setDepth(11)),
+                this.applyRankLook(),
+                this.buildArea(),
+                adventure.restorePosition(this),
+                this.unstick(),
+                this.fitCamera(),
+                this.cameras.main.startFollow(this.player, !0, 0.1, 0.1),
+                this.scale.on(`resize`, () => {
+                  this.inside || this.fitCamera();
+                }),
+                (this.keys = this.input.keyboard.addKeys(`W,A,S,D,UP,DOWN,LEFT,RIGHT`)),
+                this.input.keyboard.on(`keydown-E`, () => this.tryTalk()),
+                window.addEventListener(`keydown`, (e) => {
+                  this.chat.isOpen ||
+                    this.settings.isOpen ||
+                    this.briefing.isOpen ||
+                    this.helper.isOpen ||
+                    this.journal.isOpen ||
+                    this.quests.isOpen ||
+                    (e.key === `h` || e.key === `H`
+                      ? this.act(`helper`)
+                      : e.key === `j` || e.key === `J`
+                        ? this.act(`journal`)
+                        : e.key === `k` || e.key === `K`
+                          ? this.act(`settings`)
+                          : e.key === `q` || e.key === `Q`
+                            ? this.act(`quests`)
+                            : e.key === `F8`
+                              ? this.act(`reset`)
+                              : e.key === `g` || e.key === `G`
+                                ? this.toggleGroup()
+                                : e.key === `Escape` && this.toggleGroup(!1));
+                }),
+                this.groupBtn.addEventListener(`click`, () => {
+                  (this.toggleGroup(), this.groupBtn.blur());
+                }),
+                this.groupMenu.querySelectorAll(`button[data-act]`).forEach((e) => {
+                  e.addEventListener(`click`, () => {
+                    (e.blur(), this.toggleGroup(!1), this.act(e.dataset.act));
+                  });
+                }),
+                window.addEventListener(`beforeunload`, () => {
+                  if (this.inside && this.store.game.rpg) {
+                    this.store.game.rpg.lastInterior = {
+                      area: this.area.id,
+                      building: this.inside.b.name,
+                      floor: this.inside.floor || 0,
+                      tx: +((this.player.x - Yr) / (32 * this.inside.k)).toFixed(3),
+                      ty: +((this.player.y - Xr) / (32 * this.inside.k)).toFixed(3),
+                    };
+                  }
+                  this.store.save();
+                }),
+                (this.hud = this.add
+                  .text(8, 8, ``, {
+                    fontSize: `15px`,
+                    color: `#fff`,
+                    backgroundColor: `#000a`,
+                    padding: { x: 6, y: 4 },
+                  })
+                  .setScrollFactor(0)
+                  .setDepth(100)
+                  .setVisible(!1)),
+                (this.prompt = this.add
+                  .text(0, 0, ``, { fontSize: `13px`, color: `#ffd36b`, backgroundColor: `#000b` })
+                  .setOrigin(0.5)
+                  .setDepth(12)
+                  .setVisible(!1)),
+                this.time.addEvent({ delay: 1e3, loop: !0, callback: () => this.tickClock() }),
+                attachTownScene(this),
+                __lqV7RestoreInterior(this),
+                this.events.once(`shutdown`, () => detachTownScene(this)));
+            }
+            toggleGroup(e = !this.groupMenu.classList.contains(`open`)) {
+              (this.groupMenu.classList.toggle(`open`, e), this.groupBtn.classList.toggle(`on`, e));
+            }
+            act(e) {
+              if (!(this.chat.isOpen || this.settings.isOpen || this.briefing.isOpen)) {
+                if (e === 

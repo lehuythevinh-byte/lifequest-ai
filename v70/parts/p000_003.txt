@@ -1,0 +1,2442 @@
+ x.fillStyle = sun;
+      x.fillRect(0, 0, W, H);
+      // bokeh
+      for (let i = 0; i < 16; i++) {
+        x.fillStyle = `rgba(255,255,255,${rnd(0.04, 0.11)})`;
+        x.beginPath();
+        x.arc(rnd(0, W), rnd(0, H * 0.7), rnd(8, 34), 0, TAU);
+        x.fill();
+      }
+      // rolling hills and grass in front
+      const hill = (base, amp, col, f, ph) => {
+        x.fillStyle = col;
+        x.beginPath();
+        x.moveTo(0, H);
+        for (let px = 0; px <= W; px += 6) x.lineTo(px, H - base - amp * Math.sin(px / f + ph));
+        x.lineTo(W, H);
+        x.fill();
+      };
+      hill(H * 0.15, H * 0.035, '#27506a', W / 5, 1);
+      hill(H * 0.09, H * 0.03, '#183a4f', W / 4, 3);
+      x.strokeStyle = '#0d2434';
+      x.lineWidth = 1.4;
+      for (let px = 0; px < W; px += 5) {
+        const h = rnd(H * 0.03, H * 0.09);
+        x.beginPath();
+        x.moveTo(px, H);
+        x.quadraticCurveTo(px + rnd(-6, 6), H - h * 0.6, px + rnd(-10, 10), H - h);
+        x.stroke();
+      }
+      return c;
+    }
+
+    function makePuff(R) {
+      const S = R * 2.7;
+      const [c, x] = offscreen(S, S);
+      const m = S / 2;
+      const glow = x.createRadialGradient(m, m, R * 0.2, m, m, R * 1.3);
+      glow.addColorStop(0, 'rgba(255,255,255,.28)');
+      glow.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = glow;
+      x.fillRect(0, 0, S, S);
+      // filaments on a sphere, back to front
+      const pts = [];
+      for (let i = 0; i < 190; i++) {
+        const z = rnd(-1, 1),
+          p = rnd(0, TAU),
+          q = Math.sqrt(1 - z * z);
+        pts.push({ x: q * Math.cos(p), y: q * Math.sin(p), z });
+      }
+      pts.sort((a, b) => a.z - b.z);
+      x.lineCap = 'round';
+      for (const p of pts) {
+        const depth = (p.z + 1) / 2;
+        const a = 0.22 + 0.62 * depth;
+        const tx = m + p.x * R,
+          ty = m + p.y * R;
+        x.strokeStyle = `rgba(255,255,255,${(a * 0.75).toFixed(3)})`;
+        x.lineWidth = 0.7 + depth * 0.5;
+        x.beginPath();
+        x.moveTo(m, m);
+        x.lineTo(tx, ty);
+        x.stroke();
+        // feathery tip
+        const tr = R * (0.04 + depth * 0.025);
+        x.strokeStyle = `rgba(255,255,255,${(a * 0.9).toFixed(3)})`;
+        x.lineWidth = 0.6;
+        for (let k = 0; k < 10; k++) {
+          const ang = (k / 10) * TAU;
+          x.beginPath();
+          x.moveTo(tx, ty);
+          x.lineTo(tx + Math.cos(ang) * tr, ty + Math.sin(ang) * tr);
+          x.stroke();
+        }
+        x.fillStyle = `rgba(255,255,255,${(a * 0.9).toFixed(3)})`;
+        x.beginPath();
+        x.arc(tx, ty, 1.1, 0, TAU);
+        x.fill();
+      }
+      x.fillStyle = '#c9d49a';
+      x.beginPath();
+      x.arc(m, m, R * 0.055, 0, TAU);
+      x.fill();
+      return c;
+    }
+
+    // A seed starts on the flower (so it looks like it just left the bloom) or, at first, somewhere in the air.
+    const newSeed = (anywhere) => {
+      let x, y;
+      if (anywhere && Math.random() < 0.5) {
+        x = rnd(0, W);
+        y = rnd(0, H * 0.85);
+      } else {
+        const a = rnd(-1.3, 1.0),
+          r = geo.R * rnd(0.55, 1.0);
+        x = geo.cx + Math.cos(a) * r;
+        y = geo.cy + Math.sin(a) * r;
+      }
+      return { x, y, s: rnd(5, 11), vx: rnd(9, 20), vy: rnd(-12, -4), rot: rnd(-0.7, 0.7), ph: rnd(0, TAU), a: rnd(0.5, 0.9) };
+    };
+    function drawSeed(s, t) {
+      ctx.save();
+      ctx.translate(s.x + Math.sin(t / 900 + s.ph) * 6, s.y);
+      ctx.rotate(s.rot + Math.sin(t / 1300 + s.ph) * 0.15);
+      ctx.globalAlpha = s.a;
+      ctx.strokeStyle = '#fff';
+      ctx.fillStyle = '#fff';
+      ctx.lineWidth = 0.7;
+      for (let k = 0; k <= 10; k++) {
+        const ang = -Math.PI + (k / 10) * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(ang) * s.s, Math.sin(ang) * s.s * 0.9);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(Math.cos(ang) * s.s, Math.sin(ang) * s.s * 0.9, 0.9, 0, TAU);
+        ctx.fill();
+      }
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, s.s * 1.7);
+      ctx.stroke();
+      ctx.fillStyle = '#3a2f26';
+      ctx.beginPath();
+      ctx.ellipse(0, s.s * 1.85, 1.1, 2.2, 0, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function layout() {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      const r = cv.getBoundingClientRect();
+      W = Math.max(2, Math.round(r.width));
+      H = Math.max(2, Math.round(r.height));
+      cv.width = W * dpr;
+      cv.height = H * dpr;
+      geo = { cx: W * 0.52, cy: H * 0.4, R: Math.min(W * 0.33, H * 0.27) };
+      bg = makeBg();
+      puff = makePuff(geo.R);
+      seeds = Array.from({ length: W < 500 ? 8 : 16 }, () => newSeed(true));
+    }
+
+    function draw(t, dt) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(bg, 0, 0, W, H);
+      ctx.save();
+      ctx.strokeStyle = '#2f6e4e';
+      ctx.lineCap = 'round';
+      ctx.lineWidth = Math.max(3, geo.R * 0.045);
+      ctx.beginPath();
+      ctx.moveTo(geo.cx, geo.cy);
+      ctx.quadraticCurveTo(geo.cx - geo.R * 0.16, (geo.cy + H) / 2, geo.cx - geo.R * 0.05, H + 10);
+      ctx.stroke();
+      const pw = puff.width / dpr;
+      ctx.drawImage(puff, geo.cx - pw / 2, geo.cy - pw / 2, pw, pw);
+      ctx.restore();
+      for (const s of seeds) {
+        if (!reduce) {
+          s.x += s.vx * dt;
+          s.y += s.vy * dt;
+          if (s.x > W + 30 || s.y < -30) Object.assign(s, newSeed(false));
+        }
+        drawSeed(s, t);
+      }
+      const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+      v.addColorStop(0, 'rgba(5,8,20,0)');
+      v.addColorStop(1, 'rgba(5,8,20,.45)');
+      ctx.fillStyle = v;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function frame(now) {
+      if (stopped) return;
+      const dt = Math.min(0.05, (now - (last || now)) / 1000);
+      last = now;
+      draw(now, dt);
+      raf = requestAnimationFrame(frame);
+    }
+
+    layout();
+    window.addEventListener('resize', layout);
+    raf = requestAnimationFrame(frame);
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', layout);
+    };
+  }
+
+  window.LQDandelion = { icon, mount };
+})();
+
+</script>
+    <script>
+/*
+ * Accounts and cloud saves (Supabase).
+ *
+ * - Players can sign in with email + password or Google, or play as a guest (progress stays on this device).
+ * - While signed in, the game save (and a few settings) is copied to the table public.saves and restored on
+ *   any other device after signing in.
+ * - Without SUPABASE_URL / SUPABASE_ANON_KEY in js/config.js everything here stays off and the game works as before.
+ *
+ * See SUPABASE_SETUP.md for the one-time setup.
+ */
+(function () {
+  const CFG = window.LIFEQUEST_AI_CONFIG || {};
+  const URL_ = String(CFG.SUPABASE_URL || '').replace(/\/+$/, '');
+  const ANON = String(CFG.SUPABASE_ANON_KEY || '');
+  const ENABLED = !!(URL_ && ANON);
+  const SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+
+  const META_KEY = 'lq-sync-meta'; // not synced: describes this device
+  const SAVE_KEY = 'english-town-save-v1';
+  const PUSH_DELAY = 15000;
+  const MAX_BYTES = 1500000;
+
+  const nativeSet = Storage.prototype.setItem;
+  const nativeRemove = Storage.prototype.removeItem;
+  const store = window.localStorage;
+
+  let client = null,
+    user = null,
+    token = '',
+    suppress = false,
+    blockWrites = false,
+    pushTimer = 0,
+    busy = false,
+    statusText = '',
+    chip = null,
+    lastCheck = 0;
+
+  // ---------- helpers ----------
+  const isSyncKey = (k) =>
+    typeof k === 'string' &&
+    k !== 'english-town-ai' &&
+    (k === SAVE_KEY || /^lifequest[_-][a-z0-9_-]{1,100}$/i.test(k)) &&
+    !/(?:key|secret|token|credential)/i.test(k);
+
+  const syncKeys = () => {
+    const out = [];
+    for (let i = 0; i < store.length; i++) {
+      const k = store.key(i);
+      if (isSyncKey(k)) out.push(k);
+    }
+    return out;
+  };
+  const snapshot = () => {
+    const data = {};
+    for (const k of syncKeys()) {
+      const v = store.getItem(k);
+      if (typeof v === 'string') data[k] = v;
+    }
+    return data;
+  };
+  const readMeta = () => {
+    try {
+      return JSON.parse(store.getItem(META_KEY) || '{}') || {};
+    } catch {
+      return {};
+    }
+  };
+  const writeMeta = (patch) => {
+    const m = Object.assign(readMeta(), patch);
+    nativeSet.call(store, META_KEY, JSON.stringify(m));
+    return m;
+  };
+  // The game saves itself on page unload; after we replaced or cleared the local data that would undo our work.
+  function hardReload() {
+    blockWrites = true;
+    clearTimeout(pushTimer);
+    location.reload();
+  }
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  function describe(data) {
+    try {
+      const g = JSON.parse(data[SAVE_KEY] || 'null');
+      if (!g || !g.game) return 'No progress yet';
+      const look = g.game.rpg && g.game.rpg.look;
+      const parts = [];
+      if (look && look.name) parts.push(look.name);
+      parts.push('Day ' + (g.game.day || 1));
+      parts.push('$' + (g.game.money ?? 0));
+      if (g.game.rpg && g.game.rpg.xp != null) parts.push(g.game.rpg.xp + ' XP');
+      return parts.join(' · ');
+    } catch {
+      return 'Progress could not be read';
+    }
+  }
+  const fmtDate = (iso) => {
+    try {
+      return new Date(iso).toLocaleString('vi-VN');
+    } catch {
+      return iso || '';
+    }
+  };
+
+  function applySnapshot(data) {
+    suppress = true;
+    try {
+      for (const k of syncKeys()) nativeRemove.call(store, k);
+      for (const [k, v] of Object.entries(data || {})) {
+        if (isSyncKey(k) && typeof v === 'string' && v.length < 2e6) nativeSet.call(store, k, v);
+      }
+    } finally {
+      suppress = false;
+    }
+  }
+
+  // ---------- UI ----------
+  const CSS = `
+#lq-auth{position:fixed;inset:0;z-index:97;background:#05080ef2;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;font:15px/1.45 system-ui,sans-serif;color:#eef3ff}
+#lq-auth .card{width:min(420px,100%);background:#141824;border:2px solid #5a6a9a;border-radius:16px;padding:20px 22px;box-shadow:0 20px 60px #000a}
+#lq-auth h2{margin:0 0 4px;font-size:22px;color:#ffd36b}
+#lq-auth .sub{color:#a9b8d0;margin:0 0 14px;font-size:14px}
+#lq-auth .tabs{display:flex;gap:6px;margin-bottom:12px}
+#lq-auth .tabs button{flex:1;background:#1f2a3d;color:#eef3ff;border:1px solid #3b4c6b;border-radius:9px;padding:8px;font:inherit;cursor:pointer}
+#lq-auth .tabs button.on{background:#33405a;border-color:#ffd36b}
+#lq-auth label{display:block;font-size:13px;color:#a9b8d0;margin:8px 0 3px}
+#lq-auth input{width:100%;box-sizing:border-box;background:#0d1320;color:#fff;border:1px solid #3b4c6b;border-radius:9px;padding:10px 12px;font:inherit}
+#lq-auth .btn{width:100%;margin-top:12px;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:700;cursor:pointer}
+#lq-auth .primary{background:#f3b94d;color:#1b2630}
+#lq-auth .google{background:#fff;color:#1f1f1f}
+#lq-auth .ghost{background:#2a3550;color:#eef3ff}
+#lq-auth .link{background:none;border:0;color:#8fc4ff;cursor:pointer;font:inherit;padding:6px 0 0;text-decoration:underline}
+#lq-auth .msg{min-height:20px;margin-top:8px;font-size:13px}
+#lq-auth .msg.err{color:#ff9a9a}#lq-auth .msg.ok{color:#9be3b0}
+#lq-auth .or{text-align:center;color:#7d8aa3;font-size:12px;margin:10px 0 0}
+#lq-auth .cmp{display:grid;gap:8px;margin:10px 0}
+#lq-auth .cmp div{background:#0d1320;border:1px solid #3b4c6b;border-radius:10px;padding:9px 11px;font-size:14px}
+#lq-auth .cmp b{display:block;color:#ffd36b;font-size:13px}
+#lq-chip{position:fixed;left:236px;top:14px;z-index:40;font:600 13px system-ui,sans-serif;color:#eef3ff}
+#lq-chip>button{background:#141824f2;color:#eef3ff;border:1px solid #5a6a9a;border-radius:999px;padding:7px 13px;cursor:pointer;font:inherit;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 4px 14px #0006}
+@media (max-width:640px){#lq-chip{left:160px}#lq-chip>button{max-width:calc(100vw - 272px);padding:7px 10px}#lq-chip .menu{left:auto;right:-90px}}
+#lq-chip .menu{position:absolute;top:38px;left:0;min-width:240px;background:#141824;border:1px solid #5a6a9a;border-radius:12px;padding:8px;box-shadow:0 10px 30px #000a;display:none}
+#lq-chip.open .menu{display:block}
+#lq-chip .menu p{margin:2px 6px 8px;font-weight:400;font-size:12px;color:#a9b8d0}
+#lq-chip .menu button{display:block;width:100%;text-align:left;background:#1f2a3d;color:#eef3ff;border:0;border-radius:8px;padding:8px 10px;margin-top:4px;font:inherit;cursor:pointer}
+#lq-chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#7d8aa3}
+#lq-chip .dot.ok{background:#58c26a}#lq-chip .dot.sync{background:#f3b94d}#lq-chip .dot.bad{background:#e0605a}
+#lq-banner{position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:41;background:#1b2a3aee;border:2px solid #f3b94d;color:#ffe9a8;border-radius:12px;padding:9px 14px;font:600 13px system-ui,sans-serif;display:flex;gap:10px;align-items:center}
+#lq-banner button{background:#f3b94d;color:#1b2630;border:0;border-radius:8px;padding:5px 10px;font:inherit;font-weight:700;cursor:pointer}
+#lq-auth.split{padding:0;align-items:stretch;justify-content:stretch;background:#0a0e1c;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#lq-auth.split .fpane{box-sizing:border-box;flex:0 0 40%;min-width:340px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px 30px 14px;position:relative;overflow:auto;background:linear-gradient(180deg,#0c1124,#0a0e1c)}
+#lq-auth.split .fwrap{width:100%;max-width:370px}
+#lq-auth.split .brand{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:14px}
+#lq-auth.split .ico{color:#dbe6ff}
+#lq-auth.split .word{display:flex;align-items:center;gap:10px;font-size:26px;font-weight:800;letter-spacing:.1em;color:#fff}
+#lq-auth.split .word b{font-size:.55em;letter-spacing:.08em;padding:.22em .55em;border-radius:.4em;background:linear-gradient(135deg,#4f8cff,#8a5cff)}
+#lq-auth.split h2{margin:0 0 6px;font-size:22px;font-weight:700;color:#fff}
+#lq-auth.split .sub{margin:0 0 12px;color:#9aa8cc;font-size:14px}
+#lq-auth.split .tabs{background:#141b33;border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+#lq-auth.split .tabs button{border:0;background:transparent;color:#9aa8cc;border-radius:9px;padding:9px;font-weight:600}
+#lq-auth.split .tabs button.on{background:#27315a;color:#fff}
+#lq-auth.split label{color:#aab6d8;font-size:12.5px;margin:9px 0 4px}
+#lq-auth.split input{background:#111833;border:1px solid #28345e;border-radius:11px;padding:10px 13px;font-size:15px;color:#fff;transition:border-color .15s,box-shadow .15s}
+#lq-auth.split input:focus{outline:none;border-color:#6b8cff;box-shadow:0 0 0 3px #4f6bff33}
+#lq-auth.split .btn{border-radius:12px;padding:12px;font-size:15px;font-weight:600;margin-top:10px}
+#lq-auth.split .primary{background:linear-gradient(135deg,#4f8cff,#7c5cff);color:#fff}
+#lq-auth.split .primary:hover:not(:disabled){filter:brightness(1.1)}
+#lq-auth.split .google{background:#fff;color:#1f1f1f;display:flex;align-items:center;justify-content:center;gap:10px}
+#lq-auth [hidden]{display:none!important}
+#lq-auth.split .ghost{background:transparent;color:#cfd8f2;border:1px solid #2c3866}
+#lq-auth.split .ghost:hover{background:#141b33}
+#lq-auth.split .or{display:flex;align-items:center;gap:12px;color:#6f7ea6;font-size:12px;margin:8px 0 0}
+#lq-auth.split .or::before,#lq-auth.split .or::after{content:"";flex:1;height:1px;background:#222c52}
+#lq-auth.split .note{background:#1a2347;border:1px solid #2c3866;color:#c8d3f2;border-radius:11px;padding:9px 12px;font-size:12.5px;margin-bottom:10px}
+#lq-auth.split .fwrap.off .tabs,#lq-auth.split .fwrap.off .field,#lq-auth.split .fwrap.off #lq-a-go,#lq-auth.split .fwrap.off #lq-a-forgot,#lq-auth.split .fwrap.off #lq-a-google,#lq-auth.split .fwrap.off .or{opacity:.4;pointer-events:none}
+#lq-auth.split .ffoot{margin-top:14px;text-align:center;font-size:11px;letter-spacing:.08em;color:#5f6d96}
+#lq-auth.split .msg{min-height:16px;margin-top:6px}#lq-auth.split .link{padding:2px 0 0}
+#lq-auth.split .apane{box-sizing:border-box;flex:1 1 60%;position:relative;overflow:hidden}
+#lq-auth.split .apane canvas{position:absolute;inset:0;width:100%;height:100%}
+#lq-auth.split .quote{position:absolute;left:34px;bottom:26px;margin:0;max-width:60%;font-size:15px;font-style:italic;color:#ffffffd9;text-shadow:0 2px 12px #0008}
+@media (max-width:820px){#lq-auth.split{flex-direction:column-reverse}#lq-auth.split .fpane{flex:1 1 auto;min-width:0;justify-content:flex-start;padding:22px 20px 40px}#lq-auth.split .apane{flex:0 0 26vh}#lq-auth.split .quote{display:none}}
+`;
+  function addCss() {
+    if (document.getElementById('lq-auth-css')) return;
+    const st = document.createElement('style');
+    st.id = 'lq-auth-css';
+    st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  function overlay(html, split) {
+    addCss();
+    const el = document.createElement('div');
+    el.id = 'lq-auth';
+    if (split) {
+      el.className = 'split';
+      el.innerHTML = html;
+    } else el.innerHTML = '<div class="card">' + html + '</div>';
+    document.body.appendChild(el);
+    return el;
+  }
+  const GOOGLE_G =
+    '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 010-9.4l-7.9-6.1a24 24 0 000 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+
+  function showLogin({ allowGuest, disabled }) {
+    return new Promise((resolve) => {
+      let mode = 'in';
+      const art = window.LQDandelion;
+      const el = overlay(
+        `
+        <section class="fpane">
+          <div class="fwrap${disabled ? ' off' : ''}">
+            <div class="brand"><div class="ico">${art ? art.icon(46) : ''}</div><div class="word"><span>LIFEQUEST</span><b>AI</b></div></div>
+            <h2>Welcome</h2>
+            <p class="sub">Sign in to save your progress and keep playing on any device.</p>
+            ${disabled ? '<div class="note">Sign-in is not enabled in this build. You can still play as a guest right now.</div>' : ''}
+            <div class="tabs"><button type="button" data-m="in" class="on">Sign in</button><button type="button" data-m="up">Sign up</button></div>
+            <div class="field"><label for="lq-a-mail">Email</label><input id="lq-a-mail" type="email" autocomplete="email" placeholder="you@example.com"></div>
+            <div class="field"><label for="lq-a-pass">Password</label><input id="lq-a-pass" type="password" autocomplete="current-password" placeholder="At least 6 characters"></div>
+            <button type="button" class="btn primary" id="lq-a-go">Sign in</button>
+            <div class="msg" id="lq-a-msg" role="status"></div>
+            <button type="button" class="link" id="lq-a-forgot">Forgot password?</button>
+            <div class="or">or</div>
+            <button type="button" class="btn google" id="lq-a-google">${GOOGLE_G}<span>Continue with Google</span></button>
+            ${allowGuest ? '<button type="button" class="btn ghost" id="lq-a-guest">Play as guest</button>' : '<button type="button" class="btn ghost" id="lq-a-cancel">Close</button>'}
+          </div>
+          <div class="ffoot">by the New Horizons</div>
+        </section>
+        <section class="apane"><canvas aria-hidden="true"></canvas><p class="quote">“Every sentence you speak is a seed.”</p></section>
+      `,
+        true,
+      );
+      const stopArt = art ? art.mount(el.querySelector('canvas')) : () => {};
+      const $ = (s) => el.querySelector(s);
+      const say = (t, cls) => {
+        const m = $('#lq-a-msg');
+        m.textContent = t;
+        m.className = 'msg ' + (cls || '');
+      };
+      const setBusy = (b) => el.querySelectorAll('button,input').forEach((x) => (x.disabled = b));
+      const finish = (v) => {
+        stopArt();
+        el.remove();
+        resolve(v);
+      };
+      if (disabled) el.querySelectorAll('.tabs button,#lq-a-mail,#lq-a-pass,#lq-a-go,#lq-a-google,#lq-a-forgot').forEach((x) => (x.disabled = true));
+      // Nút Google ẩn cho đến khi Supabase xác nhận nhà cung cấp Google đã bật
+      // (chưa bật mà bấm thì ra trang lỗi "Unsupported provider: provider is not enabled").
+      if (!disabled) {
+        const g = $('#lq-a-google');
+        const or = $('.or');
+        g.hidden = or.hidden = true;
+        fetch(URL_ + '/auth/v1/settings', { headers: { apikey: ANON } })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((s) => {
+            if (s && s.external && s.external.google) g.hidden = or.hidden = false;
+          })
+          .catch(() => {});
+      }
+      el.addEventListener('click', async (ev) => {
+        const b = ev.target.closest('button');
+        if (!b || b.disabled) return;
+        if (b.dataset.m) {
+          mode = b.dataset.m;
+          el.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+          $('#lq-a-go').textContent = mode === 'in' ? 'Sign in' : 'Create account';
+          $('#lq-a-pass').autocomplete = mode === 'in' ? 'current-password' : 'new-password';
+          say('');
+          return;
+        }
+        if (b.id === 'lq-a-guest') return finish('guest');
+        if (b.id === 'lq-a-cancel') return finish('cancel');
+        const email = $('#lq-a-mail').value.trim();
+        const pass = $('#lq-a-pass').value;
+        if (b.id === 'lq-a-google') {
+          try {
+            setBusy(true);
+            const r = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+            if (r.error) throw r.error;
+          } catch (e) {
+            setBusy(false);
+            say(friendly(e), 'err');
+          }
+          return;
+        }
+        if (b.id === 'lq-a-forgot') {
+          if (!email) return say('Enter your email above, then tap again.', 'err');
+          try {
+            setBusy(true);
+            const r = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+            if (r.error) throw r.error;
+            say('Password reset email sent. Please check your inbox.', 'ok');
+          } catch (e) {
+            say(friendly(e), 'err');
+          }
+          setBusy(false);
+          return;
+        }
+        if (b.id === 'lq-a-go') {
+          if (!email || !pass) return say('Please enter your email and password.', 'err');
+          if (mode === 'up' && pass.length < 6) return say('Password must be at least 6 characters.', 'err');
+          try {
+            setBusy(true);
+            say('Working…');
+            if (mode === 'in') {
+              const r = await client.auth.signInWithPassword({ email, password: pass });
+              if (r.error) throw r.error;
+              user = r.data.user;
+              token = r.data.session ? r.data.session.access_token : '';
+              return finish('user');
+            }
+            const r = await client.auth.signUp({ email, password: pass, options: { emailRedirectTo: location.origin + location.pathname } });
+            if (r.error) throw r.error;
+            if (r.data.session) {
+              user = r.data.user;
+              token = r.data.session.access_token;
+              return finish('user');
+            }
+            say('Account created. Open your email to confirm, then come back and sign in.', 'ok');
+          } catch (e) {
+            say(friendly(e), 'err');
+          }
+          setBusy(false);
+        }
+      });
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' && ev.target.tagName === 'INPUT' && !disabled) $('#lq-a-go').click();
+        ev.stopPropagation();
+      });
+      setTimeout(() => {
+        const f = disabled ? $('#lq-a-guest') : $('#lq-a-mail');
+        if (f) f.focus();
+      }, 60);
+    });
+  }
+  function friendly(e) {
+    const m = String((e && e.message) || e || '');
+    if (/invalid login/i.test(m)) return 'Incorrect email or password.';
+    if (/already registered|already been registered/i.test(m)) return 'This email already has an account. Please sign in.';
+    if (/email not confirmed/i.test(m)) return 'Email not confirmed yet. Please check your inbox.';
+    if (/rate limit|too many/i.test(m)) return 'Too many attempts. Please wait a moment and try again.';
+    if (/password/i.test(m)) return 'Invalid password (at least 6 characters).';
+    if (/network|fetch/i.test(m)) return 'Could not reach the server. Check your connection and try again.';
+    return m || 'Something went wrong. Please try again later.';
+  }
+
+  function chooseSave(local, cloud, why) {
+    return new Promise((resolve) => {
+      const el = overlay(`
+        <h2>Choose which progress to use</h2>
+        <p class="sub">${esc(why)}</p>
+        <div class="cmp">
+          <div><b>☁️ On the server (updated ${esc(fmtDate(cloud.updated_at))})</b>${esc(describe(cloud.data.data || {}))}</div>
+          <div><b>💻 On this device</b>${esc(describe(local))}</div>
+        </div>
+        <button type="button" class="btn primary" data-c="cloud">Use server progress</button>
+        <button type="button" class="btn ghost" data-c="local">Use this device's progress (overwrites server)</button>
+      `);
+      el.addEventListener('click', (ev) => {
+        const b = ev.target.closest('button');
+        if (!b) return;
+        el.remove();
+        resolve(b.dataset.c);
+      });
+    });
+  }
+
+  // ---------- cloud ----------
+  async function loadSdk() {
+    if (window.supabase && window.supabase.createClient) return;
+    // Offline or a very slow school network: give up quickly and let the game start as a guest.
+    if (navigator.onLine === false) throw new Error('No Internet connection');
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      const timer = setTimeout(() => rej(new Error('The sign-in library took too long to load')), 8000);
+      s.src = SDK;
+      s.onload = () => { clearTimeout(timer); res(); };
+      s.onerror = () => { clearTimeout(timer); rej(new Error('Could not load the sign-in library')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function fetchRow() {
+    const r = await client.from('saves').select('data,updated_at').eq('user_id', user.id).maybeSingle();
+    if (r.error) throw r.error;
+    return r.data || null;
+  }
+
+  function sameData(a, b) {
+    const ka = Object.keys(a).sort(),
+      kb = Object.keys(b).sort();
+    return ka.length === kb.length && ka.every((k, i) => k === kb[i] && a[k] === b[k]);
+  }
+
+  async function push(opts = {}) {
+    if (!user || !client || busy) return false;
+    busy = true;
+    setStatus('sync');
+    try {
+      const data = snapshot();
+      if (!data[SAVE_KEY]) {
+        setStatus('ok');
+        return true;
+      }
+      const body = { v: 1, data, savedAt: new Date().toISOString() };
+      if (JSON.stringify(body).length > MAX_BYTES) throw new Error('Save data is too large');
+      const meta = readMeta();
+      if (!opts.force) {
+        const row = await fetchRow();
+        if (row && row.updated_at !== meta.lastCloudAt && !sameData(row.data.data || {}, data)) {
+          busy = false;
+          const pick = await chooseSave(data, row, 'Server progress was changed from another device.');
+          if (pick === 'cloud') {
+            applySnapshot(row.data.data || {});
+            writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false });
+            hardReload();
+            return false;
+          }
+          return await push({ force: true });
+        }
+      }
+      const r = await client.from('saves').upsert({ user_id: user.id, data: body }).select('updated_at').single();
+      if (r.error) throw r.error;
+      writeMeta({ userId: user.id, lastCloudAt: r.data.updated_at, dirty: false, guest: false });
+      setStatus('ok');
+      return true;
+    } catch (e) {
+      console.warn('cloud save failed', e);
+      setStatus('bad', friendly(e));
+      return false;
+    } finally {
+      busy = false;
+    }
+  }
+
+  // Best-effort save while the tab is closing (fetch with keepalive survives page unload).
+  function pushOnLeave() {
+    if (!user || !token || !readMeta().dirty) return;
+    const data = snapshot();
+    if (!data[SAVE_KEY]) return;
+    const body = JSON.stringify({ user_id: user.id, data: { v: 1, data, savedAt: new Date().toISOString() } });
+    if (body.length > 60000) return; // keepalive requests are limited to 64 KB
+    try {
+      fetch(URL_ + '/rest/v1/saves?on_conflict=user_id', {
+        method: 'POST',
+        keepalive: true,
+        headers: { apikey: ANON, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body,
+      });
+      writeMeta({ dirty: false, lastCloudAt: '' });
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function markDirty() {
+    const m = readMeta();
+    if (!m.dirty) writeMeta({ dirty: true });
+    if (user) {
+      setStatus('sync');
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(() => push(), PUSH_DELAY);
+    }
+  }
+
+  /** Decide which copy to keep after signing in. Returns 'applied' when this device's data was replaced. */
+  async function reconcile() {
+    const meta = readMeta();
+    const row = await fetchRow();
+    const local = snapshot();
+    const hasLocal = !!local[SAVE_KEY];
+    if (!row) {
+      if (hasLocal) await push({ force: true });
+      else writeMeta({ userId: user.id, lastCloudAt: '', dirty: false, guest: false });
+      return 'kept';
+    }
+    const cloudData = row.data.data || {};
+    if (hasLocal && sameData(cloudData, local)) {
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false, guest: false });
+      return 'kept';
+    }
+    if (!hasLocal) {
+      applySnapshot(cloudData);
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false, guest: false });
+      return 'applied';
+    }
+    if (meta.userId === user.id && row.updated_at === meta.lastCloudAt) {
+      if (meta.dirty) await push({ force: true });
+      return 'kept';
+    }
+    if (meta.userId === user.id && !meta.dirty) {
+      applySnapshot(cloudData);
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false });
+      return 'applied';
+    }
+    const why = meta.userId === user.id ? 'Both places have unsynced changes.' : 'This device has game progress (guest or another account), and your account also has progress on the server.';
+    const pick = await chooseSave(local, row, why);
+    if (pick === 'cloud') {
+      applySnapshot(cloudData);
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false, guest: false });
+      return 'applied';
+    }
+    await push({ force: true });
+    return 'kept';
+  }
+
+  async function checkRemote() {
+    if (!user || busy || Date.now() - lastCheck < 20000) return;
+    lastCheck = Date.now();
+    try {
+      const row = await fetchRow();
+      const meta = readMeta();
+      if (!row || row.updated_at === meta.lastCloudAt) return;
+      if (sameData(row.data.data || {}, snapshot())) {
+        writeMeta({ lastCloudAt: row.updated_at, dirty: false });
+        return;
+      }
+      if (meta.dirty) await push();
+      else showBanner('Newer progress is available from another device.', 'Reload', () => reloadWithCloud(row));
+    } catch (e) {
+      /* offline: ignore */
+    }
+  }
+  function reloadWithCloud(row) {
+    applySnapshot(row.data.data || {});
+    writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false });
+    hardReload();
+  }
+  function showBanner(text, label, fn) {
+    addCss();
+    let b = document.getElementById('lq-banner');
+    if (b) b.remove();
+    b = document.createElement('div');
+    b.id = 'lq-banner';
+    b.innerHTML = '<span>' + esc(text) + '</span><button type="button">' + esc(label) + '</button>';
+    b.querySelector('button').onclick = fn;
+    document.body.appendChild(b);
+  }
+
+  // ---------- account chip ----------
+  function setStatus(kind, text) {
+    statusText = text || '';
+    if (!chip) return;
+    const dot = chip.querySelector('.dot');
+    if (dot) dot.className = 'dot ' + (kind === 'ok' ? 'ok' : kind === 'sync' ? 'sync' : kind === 'bad' ? 'bad' : '');
+    const note = chip.querySelector('.note');
+    if (note) note.textContent = kind === 'bad' ? 'Sync error: ' + statusText : kind === 'sync' ? 'Syncing…' : kind === 'ok' ? 'Synced' : '';
+  }
+
+  function lookName() {
+    try {
+      const sc = window.__lifequestGetScene && window.__lifequestGetScene();
+      return (sc && sc.store.game.rpg.look.name) || '';
+    } catch {
+      return '';
+    }
+  }
+
+  function mountChip() {
+    addCss();
+    if (!chip) {
+      chip = document.createElement('div');
+      chip.id = 'lq-chip';
+      document.body.appendChild(chip);
+      chip.addEventListener('click', async (ev) => {
+        const b = ev.target.closest('button');
+        if (!b) return;
+        if (b.dataset.a === 'toggle') return chip.classList.toggle('open');
+        chip.classList.remove('open');
+        if (b.dataset.a === 'look') return window.LQCreatorUI && window.LQCreatorUI.open({});
+        if (b.dataset.a === 'sync') return push();
+        if (b.dataset.a === 'out') return signOut();
+        if (b.dataset.a === 'in') {
+          const r = await showLogin({ allowGuest: false });
+          if (r === 'user') {
+            const res = await reconcile();
+            hardReload();
+          }
+        }
+      });
+      document.addEventListener('click', (ev) => {
+        if (!chip.contains(ev.target)) chip.classList.remove('open');
+      });
+    }
+    render();
+    setInterval(render, 5000);
+  }
+  function render() {
+    if (!chip) return;
+    const name = lookName();
+    const label = user ? name || user.email || 'Account' : name ? name + ' (guest)' : 'Guest';
+    chip.innerHTML = `<button type="button" data-a="toggle"><span class="dot"></span>${user ? '👤' : '🎮'} ${esc(label)}</button>
+      <div class="menu">
+        ${user ? `<p>${esc(user.email || '')}<br><span class="note"></span></p><button type="button" data-a="sync">🔄 Sync now</button>` : ENABLED ? '<p>Playing as a guest. Progress is saved only on this device.</p><button type="button" data-a="in">🔐 Sign in / Sign up</button>' : '<p>Progress is saved on this device.</p>'}
+        <button type="button" data-a="look">🎭 Change character</button>
+        ${user ? '<button type="button" data-a="out">🚪 Sign out</button>' : ''}
+      </div>`;
+    setStatus(user ? (readMeta().dirty ? 'sync' : 'ok') : '', statusText);
+  }
+
+  async function signOut() {
+    if (!confirm('Sign out? Your progress will be saved to the server, then removed from this device.')) return;
+    try {
+      clearTimeout(pushTimer);
+      if (readMeta().dirty) await push({ force: false });
+      if (readMeta().dirty) {
+        if (!confirm('Could not save to the server. Sign out anyway and delete data on this device?')) return;
+      }
+      await client.auth.signOut();
+    } catch (e) {
+      console.warn(e);
+    }
+    applySnapshot({});
+    nativeRemove.call(store, META_KEY);
+    hardReload();
+  }
+
+  function installHooks() {
+    Storage.prototype.setItem = function (k, v) {
+      if (this === store && blockWrites && isSyncKey(k)) return;
+      nativeSet.call(this, k, v);
+      if (this === store && !suppress && isSyncKey(k)) markDirty();
+    };
+    Storage.prototype.removeItem = function (k) {
+      if (this === store && blockWrites && isSyncKey(k)) return;
+      nativeRemove.call(this, k);
+      if (this === store && !suppress && isSyncKey(k)) markDirty();
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') pushOnLeave();
+      else checkRemote();
+    });
+    window.addEventListener('pagehide', pushOnLeave);
+    window.addEventListener('lifequest:lookchanged', render);
+    setInterval(() => {
+      if (user && readMeta().dirty && !busy && !pushTimer) pushTimer = setTimeout(() => push(), PUSH_DELAY);
+    }, 60000);
+  }
+
+  // ---------- entry point (called by js/loader.js before the game starts) ----------
+  async function start() {
+    const boot = () => mountChipWhenReady();
+    if (!ENABLED) {
+      await showLogin({ allowGuest: true, disabled: true });
+      boot();
+      return;
+    }
+    try {
+      await loadSdk();
+      client = window.supabase.createClient(URL_, ANON, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    } catch (e) {
+      console.warn('Đăng nhập không khả dụng:', e);
+      boot();
+      return;
+    }
+    installHooks();
+    client.auth.onAuthStateChange((evt, session) => {
+      token = session ? session.access_token : '';
+      if (session) user = session.user;
+      if (evt === 'SIGNED_OUT') user = null;
+    });
+    try {
+      const s = await client.auth.getSession();
+      if (s.data && s.data.session) {
+        user = s.data.session.user;
+        token = s.data.session.access_token;
+      }
+      if (!user) {
+        const r = await showLogin({ allowGuest: true });
+        if (r === 'guest') writeMeta({ guest: true });
+      }
+      if (user) await reconcile();
+    } catch (e) {
+      console.warn('Không đồng bộ được lúc khởi động:', e);
+      setStatus('bad', friendly(e));
+    }
+    boot();
+  }
+
+  function mountChipWhenReady() {
+    const go = () => mountChip();
+    if (document.body) go();
+    else document.addEventListener('DOMContentLoaded', go);
+  }
+
+  window.LQAuth = { start, enabled: ENABLED, syncNow: () => push(), signOut, getUser: () => user };
+})();
+
+</script>
+    <script>
+/*
+ * Character creator.
+ * Lets the player pick a name, gender, skin, hair (style / colour), eyes, clothes, hat, glasses, backpack.
+ * The result is stored in the game save at game.rpg.look, so it follows the account across devices.
+ * Sprite drawing lives in js/game/10-core-characters-and-scene.js (window.LQCharacter).
+ */
+(function () {
+  const SKINS = [0xffe0c8, 0xf6d2b0, 0xe8b88a, 0xc98e62, 0x8d5a3a, 0x5b3a29];
+  const HAIRS = [0x1b1b1b, 0x3a2418, 0x5a3b2a, 0x8a5a3b, 0xe3c16f, 0xb5532a, 0xb8b8b8, 0xeeeeee, 0x3f6fd1, 0xe56fa8, 0x3fae6a, 0xd9877a, 0xc8702a, 0x2a3a35];
+  const EYES = [0x222233, 0x5a3a22, 0x2f6fd0, 0x2f9e55, 0x7a8794, 0x7a3fbf, 0x55c8ff];
+  const OUTFITS = [0x3a63c8, 0xb8433f, 0x3f9b5a, 0xe0a63a, 0x7a4fb5, 0x2f8f8a, 0xd9d9d9, 0x2b2f3a, 0xe56fa8, 0x8a5a3b, 0xff8a3d, 0x5a84bb];
+  const PANTS = [0x2d3a55, 0x3b3b3b, 0x6b4a2e, 0x4a5a3a, 0x2b2f3a, 0x7a7f8a, 0x8a4b2a, 0xb8433f];
+  const HAT_COLORS = [0x2f7de1, 0xb8433f, 0x3f9b5a, 0xe0a63a, 0x2b2f3a, 0xeeeeee, 0x7a4fb5];
+  const HATS = [
+    ['none', 'No hat'],
+    ['cap', 'Cap'],
+    ['police', 'Police cap'],
+    ['chef', 'Chef hat'],
+    ['helmet', 'Hard hat'],
+  ];
+  const STYLES = [
+    ['short', 'Short'],
+    ['long', 'Long'],
+    ['bob', 'Shoulder-length'],
+    ['ponytail', 'Ponytail'],
+    ['bun', 'Bun'],
+    ['spiky', 'Upright'],
+    ['curly', 'Curly'],
+    ['bald', 'Bald'],
+    ['storm', 'Storm spikes'],
+    ['scruffy', 'Short scruffy'],
+    ['thorn', 'Sharp spikes'],
+    ['flare', 'Chin-length flared'],
+    ['highpony', 'High ponytail'],
+    ['longbun', 'Long half-bun'],
+    ['swept', 'Swept back'],
+    ['blaze', 'Wild spikes'],
+    ['tousled', 'Lightly tousled'],
+    ['crop', 'Cropped messy'],
+    ['ryomen', 'Pink upright spikes'],
+    ['urchin', 'Urchin spikes'],
+  ];
+  // Hair colour suggested when one of the styles below is picked (can be changed afterwards).
+  const STYLE_COLORS = { storm: 0xeeeeee, scruffy: 0xd9877a, thorn: 0x1b1b1b, flare: 0xc8702a, highpony: 0x2a3a35, longbun: 0x1b1b1b, swept: 0xe3c16f, blaze: 0xd9877a, tousled: 0x1b1b1b, crop: 0x1b1b1b, ryomen: 0xea8fa0, urchin: 0x15192a };
+  const STYLE_ALIAS = { gojo: 'storm', itadori: 'scruffy', megumi: 'thorn', nobara: 'flare', maki: 'highpony', geto: 'longbun', nanami: 'swept', sukuna: 'blaze', yuta: 'tousled', toji: 'crop' };
+  const BAGS = [0x8a4b2a, 0x3a63c8, 0xb8433f, 0x2b2f3a];
+
+  // Ready-made characters. Picking one fills in the whole look; the player's own name is kept and everything can
+  // still be changed afterwards.
+  const SCHOOL = 0x1f2a44;
+  const PRESETS = [
+    { name: 'The Honored One', lock: 'mineral-trip', note: 'The strongest sorcerer: white hair, blindfold, high-collared black uniform, Infinity aura. Tap Ctrl to open the Six Eyes and see through walls', look: { gender: 'male', skin: 0xffe0c8, hair: 0xf4f7ff, style: 'storm', eye: 0x55c8ff, eyeGlow: true, blindfold: true, aura: 'infinity', sixEyes: true, outfit: 0x14141b, pants: 0x14141b, uniform: true, hat: null } },
+    { name: 'Cursed King', lock: 'sukuna-fingers', note: 'King of Curses: pink upright spiky hair, four red eyes, face markings, white kimono', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xea8fa0, style: 'ryomen', eye: 0xc02a2a, extraEyes: true, faceMarks: true, kimono: true, outfit: 0xe9e4d6, pants: 0x24242d, hat: null } },
+    { name: 'Potential Gentleman', lock: 'ten-shadows', note: 'Cold and calm shadow user: black sea-urchin spikes, black eyes, navy high-collared uniform. Tap Ctrl to summon the Divine Dog and ride it', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x15192a, style: 'urchin', eye: 0x16161e, outfit: 0x12172a, pants: 0x0d111d, uniform: true, trim: 0x2a3f66, shadow: true, hat: null } },
+    { name: 'Haru', note: 'Short scruffy pink-orange hair', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xd9877a, style: 'scruffy', eye: 0x7a4a22, outfit: SCHOOL, pants: SCHOOL, hat: null } },
+    { name: 'Kuro', note: 'Black sharp-spiked hair', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x1b1b1b, style: 'thorn', eye: 0x2a5a6a, outfit: SCHOOL, pants: SCHOOL, hat: null } },
+    { name: 'Mika', note: 'Orange chin-length flared hair, dress', look: { gender: 'female', skin: 0xf6d2b0, hair: 0xc8702a, style: 'flare', eye: 0x7a4a22, outfit: SCHOOL, pants: SCHOOL, dress: true, hat: null } },
+    { name: 'Sora', note: 'High ponytail, glasses', look: { gender: 'female', skin: 0xe8b88a, hair: 0x2a3a35, style: 'highpony', eye: 0x2f9e55, outfit: SCHOOL, pants: SCHOOL, glasses: true, hat: null } },
+    { name: 'Ryu', note: 'Long black hair, half-bun', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x1b1b1b, style: 'longbun', eye: 0x222233, outfit: 0x1b1b24, pants: 0x1b1b24, hat: null } },
+    { name: 'Daiki', note: 'Blond swept-back hair, beige suit, tie', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xe3c16f, style: 'swept', eye: 0x5a3a22, outfit: 0xc9b48a, pants: 0xc9b48a, glasses: true, collar: true, tie: 0xf0c040, hat: null } },
+    { name: 'Akira', note: 'Wild pink spiky hair, red eyes', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xd9877a, style: 'blaze', eye: 0xc0392b, outfit: 0xe8e4d8, pants: 0x2b2f3a, hat: null } },
+    { name: 'Yuki', note: 'Lightly tousled black hair, white uniform', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x1b1b1b, style: 'tousled', eye: 0x222233, outfit: 0xf2f2f2, pants: 0xf2f2f2, collar: true, hat: null } },
+    { name: 'Tora', note: 'Short black hair, green eyes', look: { gender: 'male', skin: 0xe8b88a, hair: 0x1b1b1b, style: 'crop', eye: 0x2f9e55, outfit: 0x1b1b1b, pants: 0x2b2f3a, hat: null } },
+  ];
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const hex = (n) => '#' + (n >>> 0).toString(16).padStart(6, '0');
+
+  function defaults(gender) {
+    return gender === 'female'
+      ? { name: '', gender, skin: SKINS[1], hair: HAIRS[1], style: 'long', eye: EYES[1], outfit: OUTFITS[1], pants: PANTS[0], hat: null, glasses: false, dress: true, backpack: 0, blindfold: false, collar: false, tie: null }
+      : { name: '', gender: 'male', skin: SKINS[1], hair: HAIRS[2], style: 'short', eye: EYES[0], outfit: OUTFITS[0], pants: PANTS[0], hat: { kind: 'cap', color: HAT_COLORS[0] }, glasses: false, dress: false, backpack: 0, blindfold: false, collar: false, tie: null };
+  }
+
+  const CSS = `
+#lq-cc{position:fixed;inset:0;z-index:96;background:#05080ef0;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;font:14px/1.4 system-ui,sans-serif;color:#eef3ff}
+#lq-cc[hidden]{display:none}
+#lq-cc .box{width:min(920px,100%);max-height:100%;overflow:auto;background:#141824;border:2px solid #5a6a9a;border-radius:14px;padding:16px 18px;box-shadow:0 20px 60px #000a}
+#lq-cc h2{margin:0 0 4px;font-size:20px;color:#ffd36b}
+#lq-cc .sub{color:#a9b8d0;margin:0 0 12px}
+#lq-cc .grid{display:grid;grid-template-columns:230px 1fr;gap:18px}
+@media(max-width:700px){#lq-cc .grid{grid-template-columns:1fr}}
+#lq-cc .prev{background:linear-gradient(#27405a,#1b2a3c);border:2px solid #34506e;border-radius:12px;padding:12px;text-align:center}
+#lq-cc canvas{image-rendering:pixelated;width:192px;height:400px;display:block;margin:0 auto 8px}
+#lq-cc .dirs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#lq-cc button{font:inherit;cursor:pointer}
+#lq-cc .dirs button,#lq-cc .opt button,#lq-cc .gender button{background:#1f2a3d;color:#eef3ff;border:1px solid #3b4c6b;border-radius:8px;padding:5px 9px}
+#lq-cc .dirs button.on,#lq-cc .opt button.on,#lq-cc .gender button.on{border-color:#ffd36b;background:#33405a;color:#fff}
+#lq-cc .row{margin:0 0 10px}
+#lq-cc .row>b{display:block;margin-bottom:5px;color:#ffd36b;font-size:13px}
+#lq-cc .sw{display:flex;gap:6px;flex-wrap:wrap}
+#lq-cc .sw button{width:28px;height:28px;border-radius:50%;border:2px solid #0008;padding:0}
+#lq-cc .sw button.on{border-color:#fff;box-shadow:0 0 0 2px #ffd36b}
+#lq-cc .opt{display:flex;gap:6px;flex-wrap:wrap}
+#lq-cc input[type=text]{background:#0d1320;color:#fff;border:1px solid #3b4c6b;border-radius:8px;padding:7px 10px;font:inherit;width:100%;box-sizing:border-box}
+#lq-cc .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;position:sticky;bottom:-16px;background:#141824;padding:10px 0 4px}
+#lq-cc .foot button{border:0;border-radius:9px;padding:9px 16px;font-weight:700}
+#lq-cc .ok{background:#f3b94d;color:#1b2630}
+#lq-cc .ghost{background:#2a3550;color:#eef3ff}
+#lq-cc .err{color:#ff9a9a;min-height:18px;margin-top:6px}
+#lq-cc .tabs{display:flex;gap:6px;margin-bottom:12px}
+#lq-cc .tabs button{flex:1;background:#1f2a3d;color:#eef3ff;border:1px solid #3b4c6b;border-radius:9px;padding:8px}
+#lq-cc .tabs button.on{background:#33405a;border-color:#ffd36b}
+#lq-cc .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+#lq-cc .card{background:#1a2438;border:1px solid #3b4c6b;border-radius:12px;padding:8px;text-align:center;cursor:pointer;color:#eef3ff}
+#lq-cc .card:hover{border-color:#ffd36b;background:#243250}
+#lq-cc .card canvas{width:72px;height:150px;margin:0 auto 4px}
+#lq-cc .card.locked{cursor:not-allowed;opacity:.85}
+#lq-cc .card.locked canvas{filter:brightness(0) opacity(.55)}
+#lq-cc .card.locked span{color:#ffb4b4}
+#lq-cc .card b{display:block;font-size:13px;color:#ffd36b}
+#lq-cc .card span{display:block;font-size:12px;color:#a9b8d0}
+#lq-cc .hint{color:#a9b8d0;font-size:13px;margin:0 0 10px}
+`;
+
+  let root = null,
+    look = null,
+    dir = 'down',
+    tab = 'custom',
+    onDone = null,
+    mandatory = false,
+    guard = null;
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  function currentLook() {
+    const sc = getScene();
+    return sc && sc.store && sc.store.game && sc.store.game.rpg ? sc.store.game.rpg.look : null;
+  }
+
+  function draw() {
+    const sc = getScene();
+    if (!root || !sc || !look) return;
+    const cv = root.querySelector('canvas'),
+      cx = cv.getContext('2d');
+    cx.clearRect(0, 0, cv.width, cv.height);
+    cx.imageSmoothingEnabled = false;
+    try {
+      const img = window.LQCharacter.imageFor(sc, look, dir === 'left' ? 'side' : dir, 0);
+      cx.save();
+      if (dir === 'left') {
+        cx.translate(cv.width, 0);
+        cx.scale(-1, 1);
+      }
+      cx.drawImage(img, 0, 0, cv.width, cv.height);
+      cx.restore();
+    } catch (e) {
+      console.warn('creator preview failed', e);
+    }
+  }
+
+  function swatches(field, colors, hatColor) {
+    return colors
+      .map((c) => {
+        const on = hatColor ? look.hat && look.hat.color === c : look[field] === c;
+        return `<button type="button" data-f="${hatColor ? 'hatcolor' : field}" data-v="${c}" class="${on ? 'on' : ''}" style="background:${hex(c)}" aria-label="${hex(c)}"></button>`;
+      })
+      .join('');
+  }
+
+  function presetLook(p) {
+    return Object.assign(defaults(p.look.gender), p.look);
+  }
+
+  // A preset with `lock` stays unavailable until that achievement is completed (see achievements.js).
+  const isLocked = (p) => !!p.lock && !(window.LQAchievements && window.LQAchievements.isUnlocked(p.lock));
+
+  function renderGallery() {
+    return `<p class="hint">Pick a character as your starting point (your name is kept). You can still customise it further in the "Customise" tab. Characters with 🔒 need an achievement from the Menu to unlock.</p>
+      <div class="gal">${PRESETS.map((p, i) => (isLocked(p)
+        ? `<button type="button" class="card locked" data-lock="${p.lock}"><canvas width="24" height="50" data-pc="${i}"></canvas><b>🔒 ${p.name}</b><span>Achievement required</span></button>`
+        : `<button type="button" class="card" data-p="${i}"><canvas width="24" height="50" data-pc="${i}"></canvas><b>${p.name}</b><span>${p.note}</span></button>`)).join('')}</div>`;
+  }
+
+  function drawGalleryThumbs() {
+    const sc = getScene();
+    if (!sc) return;
+    root.querySelectorAll('canvas[data-pc]').forEach((cv) => {
+      const cx = cv.getContext('2d');
+      cx.imageSmoothingEnabled = false;
+      try {
+        cx.drawImage(window.LQCharacter.imageFor(sc, presetLook(PRESETS[Number(cv.dataset.pc)]), 'down', 0), 0, 0);
+      } catch (e) {
+        console.warn('thumbnail failed', e);
+      }
+    });
+  }
+
+  function renderCustom() {
+    const hatKind = look.hat ? look.hat.kind : 'none';
+    return `
+      <div class="row gender"><b>Gender</b><div class="opt"><button type="button" data-g="male" class="${look.gender === 'male' ? 'on' : ''}">👦 Male</button><button type="button" data-g="female" class="${look.gender === 'female' ? 'on' : ''}">👧 Female</button></div></div>
+      <div class="row"><b>Skin</b><div class="sw">${swatches('skin', SKINS)}</div></div>
+      <div class="row"><b>Hairstyle</b><div class="opt">${STYLES.map(([k, n]) => `<button type="button" data-f="style" data-v="${k}" class="${look.style === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      <div class="row"><b>Hair colour</b><div class="sw">${swatches('hair', HAIRS)}</div></div>
+      <div class="row"><b>Eye colour</b><div class="sw">${swatches('eye', EYES)}</div></div>
+      <div class="row"><b>Top</b><div class="sw">${swatches('outfit', OUTFITS)}</div></div>
+      <div class="row"><b>Trousers</b><div class="sw">${swatches('pants', PANTS)}</div></div>
+      <div class="row"><b>Hat</b><div class="opt">${HATS.map(([k, n]) => `<button type="button" data-hat="${k}" class="${hatKind === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      ${look.hat && look.hat.kind !== 'chef' ? `<div class="row"><b>Hat colour</b><div class="sw">${swatches('hat', HAT_COLORS, true)}</div></div>` : ''}
+      <div class="row"><b>Accessories</b><div class="opt">
+        <button type="button" data-t="glasses" class="${look.glasses ? 'on' : ''}">👓 Glasses</button>
+        <button type="button" data-t="blindfold" class="${look.blindfold ? 'on' : ''}">🕶️ Blindfold</button>
+        <button type="button" data-t="collar" class="${look.collar ? 'on' : ''}">👔 Collar &amp; tie</button>
+        <button type="button" data-t="uniform" class="${look.uniform ? 'on' : ''}">🥋 Sorcerer uniform</button>
+        <button type="button" data-t="eyeGlow" class="${look.eyeGlow ? 'on' : ''}">✨ Glowing eyes</button>
+        <button type="button" data-t="extraEyes" class="${look.extraEyes ? 'on' : ''}">👁️ Four eyes</button>
+        <button type="button" data-t="faceMarks" class="${look.faceMarks ? 'on' : ''}">〰️ Face markings</button>
+        <button type="button" data-t="kimono" class="${look.kimono ? 'on' : ''}">👘 Kimono</button>
+        <button type="button" data-t="dress" class="${look.dress ? 'on' : ''}">👗 Dress</button>
+        <button type="button" data-t="backpack" class="${look.backpack ? 'on' : ''}">🎒 Backpack</button>
+      </div></div>
+      ${look.backpack ? `<div class="row"><b>Backpack colour</b><div class="sw">${swatches('backpack', BAGS)}</div></div>` : ''}`;
+  }
+
+  function render() {
+    root.querySelector('.opts').innerHTML = `
+      <div class="row"><b>Character name</b><input type="text" id="lq-cc-name" maxlength="20" placeholder="Enter your name" value="${String(look.name || '').replace(/"/g, '&quot;')}"></div>
+      <div class="tabs"><button type="button" data-tab="custom" class="${tab === 'custom' ? 'on' : ''}">🎨 Customise</button><button type="button" data-tab="gallery" class="${tab === 'gallery' ? 'on' : ''}">🌟 Preset characters</button></div>
+      ${tab === 'gallery' ? renderGallery() : renderCustom()}`;
+    root.querySelectorAll('.dirs button').forEach((b) => b.classList.toggle('on', b.dataset.d === dir));
+    if (tab === 'gallery') drawGalleryThumbs();
+    draw();
+  }
+  function onClick(ev) {
+    const b = ev.target.closest('button');
+    if (!b || !root.contains(b)) return;
+    if (b.dataset.tab) {
+      tab = b.dataset.tab;
+      render();
+      return;
+    }
+    if (b.dataset.lock) {
+      if (window.LQAchievements) window.LQAchievements.hint(b.dataset.lock);
+      return;
+    }
+    if (b.dataset.p) {
+      const preset = PRESETS[Number(b.dataset.p)];
+      if (isLocked(preset)) return;
+      const typed = (root.querySelector('#lq-cc-name') || {}).value;
+      look = Object.assign(presetLook(preset), { name: (typed || look.name || '').trim() || preset.name });
+      tab = 'custom';
+      render();
+      return;
+    }
+    if (b.dataset.d) {
+      dir = b.dataset.d;
+      render();
+      return;
+    }
+    if (b.dataset.g) {
+      const keep = look.name;
+      look = Object.assign(defaults(b.dataset.g), { name: keep });
+      render();
+      return;
+    }
+    if (b.dataset.hat) {
+      look.hat = b.dataset.hat === 'none' ? null : { kind: b.dataset.hat, color: look.hat ? look.hat.color : HAT_COLORS[0] };
+      render();
+      return;
+    }
+    if (b.dataset.t) {
+      const t = b.dataset.t;
+      if (t === 'backpack') look.backpack = look.backpack ? 0 : BAGS[0];
+      else if (t === 'collar') {
+        look.collar = !look.collar;
+        look.tie = look.collar ? look.tie || 0xb8433f : null;
+      } else look[t] = !look[t];
+      render();
+      return;
+    }
+    if (b.dataset.f) {
+      const f = b.dataset.f,
+        v = b.dataset.v;
+      if (f === 'hatcolor') look.hat = { kind: look.hat.kind, color: Number(v) };
+      else if (f === 'style') {
+        look.style = v;
+        if (STYLE_COLORS[v] !== undefined) look.hair = STYLE_COLORS[v];
+      }
+      else look[f] = Number(v);
+      render();
+      return;
+    }
+    if (b.id === 'lq-cc-random') {
+      const g = pick(['male', 'female']);
+      const name = look.name;
+      look = Object.assign(defaults(g), {
+        name,
+        skin: pick(SKINS),
+        hair: pick(HAIRS),
+        style: pick(STYLES)[0],
+        eye: pick(EYES),
+        outfit: pick(OUTFITS),
+        pants: pick(PANTS),
+        hat: Math.random() < 0.4 ? { kind: pick(HATS.slice(1))[0], color: pick(HAT_COLORS) } : null,
+        glasses: Math.random() < 0.25,
+        dress: g === 'female' && Math.random() < 0.6,
+        backpack: Math.random() < 0.3 ? pick(BAGS) : 0,
+      });
+      render();
+      return;
+    }
+    if (b.id === 'lq-cc-save') save();
+    if (b.id === 'lq-cc-cancel') close(false);
+  }
+
+  function save() {
+    const name = (root.querySelector('#lq-cc-name').value || '').trim().replace(/\s+/g, ' ');
+    const err = root.querySelector('.err');
+    if (!name) {
+      err.textContent = 'Please enter a name for your character.';
+      root.querySelector('#lq-cc-name').focus();
+      return;
+    }
+    look.name = name.slice(0, 20);
+    const sc = getScene();
+    if (!sc || !sc.store || !sc.store.game) {
+      err.textContent = 'The game has not finished loading; try again in a moment.';
+      return;
+    }
+    const g = sc.store.game;
+    if (!g.rpg || typeof g.rpg !== 'object') g.rpg = {};
+    g.rpg.look = JSON.parse(JSON.stringify(look));
+    sc.store.save();
+    try {
+      sc.applyRankLook();
+    } catch (e) {
+      console.warn('applyRankLook failed', e);
+    }
+    window.dispatchEvent(new CustomEvent('lifequest:lookchanged', { detail: g.rpg.look }));
+    close(true);
+  }
+
+  function build() {
+    if (root) return;
+    const st = document.createElement('style');
+    st.textContent = CSS;
+    document.head.appendChild(st);
+    root = document.createElement('div');
+    root.id = 'lq-cc';
+    root.hidden = true;
+    root.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Create character">
+      <h2>🎭 Create character</h2><p class="sub">Choose your look. You can change it again at any time.</p>
+      <div class="grid">
+        <div class="prev"><canvas width="24" height="50"></canvas>
+          <div class="dirs"><button type="button" data-d="down">Front</button><button type="button" data-d="side">Right</button><button type="button" data-d="left">Left</button><button type="button" data-d="up">Back</button></div></div>
+        <div class="opts"></div>
+      </div>
+      <div class="err" role="alert"></div>
+      <div class="foot"><button type="button" class="ghost" id="lq-cc-random">🎲 Random</button><button type="button" class="ghost" id="lq-cc-cancel">Cancel</button><button type="button" class="ok" id="lq-cc-save">✔ Done</button></div>
+    </div>`;
+    document.body.appendChild(root);
+    root.addEventListener('click', onClick);
+    root.addEventListener('input', () => {
+      const n = root.querySelector('#lq-cc-name');
+      if (n) look.name = n.value;
+    });
+  }
+
+  function open(opts = {}) {
+    build();
+    mandatory = !!opts.mandatory;
+    onDone = opts.onDone || null;
+    look = Object.assign(defaults('male'), JSON.parse(JSON.stringify(currentLook() || {})));
+    if (STYLE_ALIAS[look.style]) look.style = STYLE_ALIAS[look.style];
+    dir = 'down';
+    tab = 'custom';
+    root.querySelector('#lq-cc-cancel').hidden = mandatory;
+    root.querySelector('.err').textContent = '';
+    root.hidden = false;
+    render();
+    guard = (ev) => {
+      const typing = ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName);
+      if (ev.key === 'Escape' && !mandatory) {
+        close(false);
+        return;
+      }
+      if (typing) ev.stopPropagation();
+      else {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+      }
+    };
+    window.addEventListener('keydown', guard, true);
+    setTimeout(() => {
+      const n = root.querySelector('#lq-cc-name');
+      if (n && !n.value) n.focus();
+    }, 50);
+  }
+
+  function close(saved) {
+    if (!root) return;
+    root.hidden = true;
+    window.removeEventListener('keydown', guard, true);
+    guard = null;
+    if (onDone) onDone(!!saved);
+    onDone = null;
+  }
+
+  // ---- Quick switch dock: a button on the right edge that lists the ready-made characters; one click swaps the
+  // look immediately (the player's own name is kept). No editing screen involved.
+  const QUICK_CSS = `
+#lq-quick{position:fixed;right:13px;top:50%;transform:translateY(-50%);z-index:41;font:600 13px system-ui,sans-serif;color:#eef3ff;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+#lq-quick>button{background:#141824f2;color:#eef3ff;border:1px solid #5a6a9a;border-radius:999px;padding:9px 13px;cursor:pointer;font:inherit;box-shadow:0 4px 14px #0006}
+#lq-quick>button:hover{border-color:#ffd36b}
+#lq-quick .qp{display:none;width:min(280px,calc(100vw - 26px));max-height:70vh;overflow:auto;background:#141824f5;border:1px solid #5a6a9a;border-radius:14px;padding:10px;box-shadow:0 10px 30px #000a}
+#lq-quick.open .qp{display:block}
+#lq-quick .qp h4{margin:0 0 8px;font-size:13px;color:#ffd36b}
+#lq-quick .qg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#lq-quick .qc{background:#1a2438;border:1px solid #3b4c6b;border-radius:10px;padding:6px 4px;text-align:center;cursor:pointer;color:#eef3ff;font:inherit}
+#lq-quick .qc:hover{border-color:#ffd36b;background:#243250}
+#lq-quick .qc.on{border-color:#ffd36b;box-shadow:0 0 0 2px #ffd36b66}
+#lq-quick .qc.locked{cursor:not-allowed;opacity:.85}
+#lq-quick .qc.locked canvas{filter:brightness(0) opacity(.55)}
+#lq-quick .qc.locked b{color:#ffb4b4}
+#lq-quick .qc small{display:block;font-size:10px;color:#ffb4b4}
+#lq-quick .qc canvas{image-rendering:pixelated;width:48px;height:100px;display:block;margin:0 auto 3px}
+#lq-quick .qc b{display:block;font-size:11px;color:#ffd36b;font-weight:700}
+@media(max-width:700px){#lq-quick{top:auto;bottom:130px;transform:none}}
+`;
+  let quick = null;
+
+  function sameLook(a, b) {
+    return !!a && !!b && a.style === b.style && a.hair === b.hair && a.outfit === b.outfit && a.gender === b.gender;
+  }
+
+  function applyPreset(i) {
+    const sc = getScene();
+    if (!sc || !sc.store || !sc.store.game) return;
+    const preset = PRESETS[i];
+    if (!preset || isLocked(preset)) return;
+    const g = sc.store.game;
+    if (!g.rpg || typeof g.rpg !== 'object') g.rpg = {};
+    const cur = g.rpg.look;
+    const next = Object.assign(presetLook(preset), { name: ((cur && cur.name) || '').trim() || preset.name });
+    g.rpg.look = JSON.parse(JSON.stringify(next));
+    sc.store.save();
+    try {
+      sc.applyRankLook();
+    } catch (e) {
+      console.warn('applyRankLook failed', e);
+    }
+    window.dispatchEvent(new CustomEvent('lifequest:lookchanged', { detail: g.rpg.look }));
+    drawQuick();
+  }
+
+  function drawQuick() {
+    if (!quick) return;
+    const sc = getScene();
+    const cur = currentLook();
+    quick.querySelectorAll('.qc').forEach((c) => {
+      const i = Number(c.dataset.q);
+      const locked = isLocked(PRESETS[i]);
+      c.classList.toggle('locked', locked);
+      c.querySelector('b').textContent = (locked ? '🔒 ' : '') + PRESETS[i].name;
+      let sm = c.querySelector('small');
+      if (locked && !sm) c.appendChild((sm = document.createElement('small')));
+      if (sm) sm.textContent = locked ? 'Achievement required' : '';
+      c.title = locked ? 'Achievement required: complete it in Menu → Achievements' : PRESETS[i].name;
+      c.classList.toggle('on', !locked && sameLook(presetLook(PRESETS[i]), cur));
+      const cv = c.querySelector('canvas');
+      if (!sc || !cv) return;
+      const cx = cv.getContext('2d');
+      cx.clearRect(0, 0, cv.width, cv.height);
+      cx.imageSmoothingEnabled = false;
+      try {
+        cx.drawImage(window.LQCharacter.imageFor(sc, presetLook(PRESETS[i]), 'down', 0), 0, 0);
+      } catch (e) {
+        console.warn('quick thumbnail failed', e);
+      }
+    });
+  }
+
+  function mountQuick() {
+    if (quick) return;
+    const st = document.createElement('style');
+    st.textContent = QUICK_CSS;
+    document.head.appendChild(st);
+    quick = document.createElement('div');
+    quick.id = 'lq-quick';
+    quick.innerHTML = `<div class="qp"><h4>🎭 Choose a character</h4><div class="qg">${PRESETS.map((p, i) => `<button type="button" class="qc" data-q="${i}" title="${p.name}"><canvas width="24" height="50"></canvas><b>${p.name}</b></button>`).join('')}</div></div><button type="button" data-qt="1">🎭 Character</button>`;
+    document.body.appendChild(quick);
+    quick.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      if (b.dataset.qt) {
+        quick.classList.toggle('open');
+        if (quick.classList.contains('open')) drawQuick();
+      } else if (b.dataset.q !== undefined) {
+        const p = PRESETS[Number(b.dataset.q)];
+        if (isLocked(p)) {
+          if (window.LQAchievements) window.LQAchievements.hint(p.lock);
+        } else applyPreset(Number(b.dataset.q));
+      }
+    });
+    window.addEventListener('lifequest:achievements', drawQuick);
+    document.addEventListener('click', (ev) => {
+      if (quick && !quick.contains(ev.target)) quick.classList.remove('open');
+    });
+    window.addEventListener('lifequest:lookchanged', drawQuick);
+  }
+
+  // A save that already wears a locked character (e.g. Gojo picked before the lock existed) is switched to the first
+  // unlocked preset, keeping the player's name.
+  function enforceLocks() {
+    const cur = currentLook();
+    if (!cur) return;
+    const locked = PRESETS.find((p) => isLocked(p) && cur.style === p.look.style && cur.hair === p.look.hair && !!cur.uniform === !!p.look.uniform);
+    if (!locked) return;
+    const i = PRESETS.findIndex((p) => !isLocked(p));
+    if (i >= 0) {
+      applyPreset(i);
+      if (window.LQAchievements) window.LQAchievements.hint(locked.lock);
+    }
+  }
+
+  // Open the creator by itself the first time a player enters the game.
+  function watch() {
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries++;
+      const sc = getScene();
+      if (sc && sc.player && sc.store && sc.store.game) {
+        clearInterval(timer);
+        mountQuick();
+        enforceLocks();
+        if (!currentLook()) open({ mandatory: true });
+      } else if (tries > 240) clearInterval(timer);
+    }, 500);
+  }
+
+  window.LQCreatorUI = { open, close, watch, hasLook: () => !!currentLook(), currentLook, presets: PRESETS, presetLook, applyPreset };
+})();
+
+</script>
+    <script>
+/*
+ * LifeQuest achievements.
+ * Each achievement has steps that are detected from the game state (the area the player is standing in) and an
+ * optional reward: unlocking a ready-made character. Progress is stored in the normal save (game.ach), so it syncs
+ * and survives reloads. The Menu gets an "Achievements" page that renders from ACHIEVEMENTS.
+ */
+(function () {
+  'use strict';
+
+  const MINE = 'mining-town';
+  const TOWN = 'english-town';
+
+  // reward.character = name of a PRESETS entry in creator.js that stays locked until this achievement is done.
+  const ACHIEVEMENTS = [
+    {
+      id: 'mineral-trip',
+      icon: '🚂',
+      title: 'Minerals Town Trip',
+      desc: 'Take the train to Minerals Town, step into the mining town, then return to English Town.',
+      hint: 'Buy a ticket at the English Town train station to reach Minerals Town. To go back, step onto the glowing tile in the south-west corner of Minerals Town, or take the train back.',
+      steps: [
+        { id: 'visit', text: 'Set foot in Minerals Town' },
+        { id: 'return', text: 'Return to English Town' },
+      ],
+      reward: { character: 'The Honored One' },
+    },
+    {
+      id: 'sukuna-fingers',
+      icon: '👆',
+      title: "The Cursed King's Twenty Fingers",
+      desc: "The King of Curses' twenty cursed fingers are scattered across the towns. Find and collect all 20 of them.",
+      hint: 'The fingers glow purple. Walk close to one to pick it up. Explore every corner, both outdoors and indoors.',
+      counter: () => (window.LQFingers ? { done: window.LQFingers.count(), total: window.LQFingers.total } : null),
+      reward: { character: 'Cursed King' },
+    },
+    {
+      id: 'ten-shadows',
+      icon: '🌑',
+      title: 'The Ten Shadows',
+      desc: 'An old legend tells of ten shadow beasts that left their marks across both towns. Learn the legend and find all ten shadows.',
+      hint: 'Ask Ms. Green in the Library about the Ten Shadows, then ask the villagers about the shadows. Each one knows a story and a clue to where a mark is hidden. Check the quest panel (V) for your next clue.',
+      counter: () => (window.LQTenShadows ? { done: window.LQTenShadows.count(), total: window.LQTenShadows.total } : null),
+      reward: { character: 'Potential Gentleman' },
+    },
+  ];
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const esc = (s) =>
+    String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+  function state(create) {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') {
+      if (!create) return { steps: {}, done: {} };
+      g.ach = { steps: {}, done: {} };
+    }
+    if (!g.ach.steps) g.ach.steps = {};
+    if (!g.ach.done) g.ach.done = {};
+    return g.ach;
+  }
+
+  const isUnlocked = (id) => !!(state(false) || { done: {} }).done[id];
+  const byId = (id) => ACHIEVEMENTS.find((a) => a.id === id);
+  const stepDone = (a, sid) => !!((state(false) || { steps: {} }).steps[a.id + ':' + sid]);
+
+  function persist() {
+    const sc = getScene();
+    try {
+      sc.store.save();
+    } catch (e) {
+      console.warn('achievement save failed', e);
+    }
+  }
+
+  // ---- notification -------------------------------------------------------------------------------------------
+  const TOAST_CSS = `
+#lq-ach-toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-140%);z-index:9500;min-width:260px;max-width:min(420px,calc(100vw - 24px));background:linear-gradient(#2b2347,#171326);border:2px solid #ffd36b;border-radius:14px;padding:12px 16px;box-shadow:0 12px 36px #000a;color:#eef3ff;font:14px/1.4 system-ui,sans-serif;transition:transform .45s cubic-bezier(.2,1.2,.3,1);cursor:pointer}
+#lq-ach-toast.on{transform:translate(-50%,0)}
+#lq-ach-toast small{display:block;color:#ffd36b;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px;margin-bottom:2px}
+#lq-ach-toast b{display:block;font-size:15px}
+#lq-ach-toast p{margin:4px 0 0;color:#cdd7ee;font-size:13px}
+`;
+  let toastEl = null,
+    toastTimer = 0;
+
+  function toast(kicker, title, text) {
+    if (!toastEl) {
+      const st = document.createElement('style');
+      st.textContent = TOAST_CSS;
+      document.head.appendChild(st);
+      toastEl = document.createElement('div');
+      toastEl.id = 'lq-ach-toast';
+      toastEl.setAttribute('role', 'status');
+      toastEl.addEventListener('click', () => {
+        toastEl.classList.remove('on');
+        if (window.LQ11_UI) window.LQ11_UI.open('achievements');
+      });
+      document.body.appendChild(toastEl);
+    }
+    toastEl.innerHTML = `<small>${esc(kicker)}</small><b>${esc(title)}</b><p>${esc(text)}</p>`;
+    requestAnimationFrame(() => toastEl.classList.add('on'));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('on'), 7000);
+  }
+
+  function hint(id) {
+    const a = byId(id);
+    if (a) toast('🔒 Achievement required', a.title, 'See how to unlock it in Menu → Achievements.');
+  }
+
+  function complete(a) {
+    const st = state(true);
+    if (!st || st.done[a.id]) return;
+    st.done[a.id] = Date.now();
+    persist();
+    window.dispatchEvent(new CustomEvent('lifequest:achievements', { detail: { id: a.id } }));
+    const reward = a.reward && a.reward.character ? `Unlocked the character ${a.reward.character}! Open Menu → Achievements to wear it.` : 'You completed the achievement.';
+    toast('🏆 Achievement completed', a.title, reward);
+    if (window.LQ11_UI && document.getElementById('l11-shell') && !document.getElementById('l11-shell').hidden)
+      window.LQ11_UI.page('achievements');
+  }
+
+  // ---- progress tracking --------------------------------------------------------------------------------------
+  function mark(a, sid) {
+    const st = state(true);
+    const key = a.id + ':' + sid;
+    if (!st || st.steps[key]) return false;
+    st.steps[key] = Date.now();
+    persist();
+    return true;
+  }
+
+  let greeting = false;
+  function tick() {
+    const sc = getScene();
+    if (!sc || !sc.area || !sc.store || !sc.store.game) return;
+    const area = sc.area.id;
+    const a = byId('mineral-trip');
+    if (!a || isUnlocked(a.id) || greeting) return;
+    // Progress is recorded silently; the how-to lives only on the Menu → Achievements page.
+    if (area === MINE) mark(a, 'visit');
+    // The trip only counts once the player is back, and only if they really stood in Minerals Town first. Gojo's
+    // greeting (gojo.js) plays first; if the page closed during it, the saved 'return' step finishes it next time.
+    if (area === TOWN && stepDone(a, 'visit') && (mark(a, 'return') || stepDone(a, 'return'))) {
+      greeting = true;
+      (window.LQGojo ? window.LQGojo.greet() : Promise.resolve()).then(() => {
+        greeting = false;
+        complete(a);
+      });
+    }
+  }
+
+  // ---- Menu page ----------------------------------------------------------------------------------------------
+  const PAGE_CSS = `
+.ach-list{display:grid;gap:12px}
+.ach-card{background:#162033;border:1px solid #34516c;border-radius:14px;padding:14px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
+.ach-card.done{border-color:#ffd36b;background:#1d2538}
+.ach-ic{font-size:30px;grid-row:span 3;align-self:start}
+.ach-card h4{margin:0;font-size:16px;color:#ffd36b}
+.ach-card p{margin:0;color:#b8c6dd;font-size:13px}
+.ach-steps{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
+.ach-steps li{color:#9fb0cc}.ach-steps li.ok{color:#8be29b}
+.ach-reward{grid-column:1/-1;display:flex;align-items:center;gap:12px;background:#0f1726;border:1px dashed #4a5f86;border-radius:10px;padding:8px 10px}
+.ach-reward canvas{image-rendering:pixelated;width:48px;height:100px;flex:none}
+.ach-reward canvas.lock{filter:brightness(0) opacity(.55)}
+.ach-reward b{display:block;color:#eef3ff;font-size:14px}.ach-reward span{color:#9fb0cc;font-size:12px}
+.ach-reward .ach-go{margin-left:auto;background:#f3b94d;color:#1b2630;border:0;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}
+.ach-tag{margin-left:auto;color:#ffb4b4;font-size:12px;white-space:nowrap}
+`;
+  let cssDone = false;
+
+  function presetIndex(name) {
+    const ui = window.LQCreatorUI;
+    return ui && ui.presets ? ui.presets.findIndex((p) => p.name === name) : -1;
+  }
+
+  function renderPage() {
+    if (!cssDone) {
+      cssDone = true;
+      const st = document.createElement('style');
+      st.textContent = PAGE_CSS;
+      document.head.appendChild(st);
+    }
+    const total = ACHIEVEMENTS.length;
+    const doneCount = ACHIEVEMENTS.filter((a) => isUnlocked(a.id)).length;
+    const cards = ACHIEVEMENTS.map((a) => {
+      const done = isUnlocked(a.id);
+      const list = (a.steps || []).map((s) => ({ ok: stepDone(a, s.id) || done, text: s.text }));
+      const steps = list.map((s) => `<li class="${s.ok ? 'ok' : ''}">${s.ok ? '✅' : '⬜'} ${esc(s.text)}</li>`).join('');
+      // A counter achievement shows only how many are collected, never where the remaining ones are.
+      const c = a.counter ? a.counter() : null;
+      const progress = c ? ` (${done ? c.total : c.done}/${c.total})` : '';
+      const ch = a.reward && a.reward.character;
+      const idx = ch ? presetIndex(ch) : -1;
+      const reward = ch
+        ? `<div class="ach-reward"><canvas width="24" height="50" data-ach-thumb="${idx}" class="${done ? '' : 'lock'}"></canvas>
+            <div><b>${done ? esc(ch) : '🔒 ' + esc(ch)}</b><span>${done ? 'Character unlocked' : 'Complete the achievement to unlock this character'}</span></div>
+            ${done ? `<button type="button" class="ach-go" data-l11-action="ach:wear:${idx}">Wear now</button>` : '<span class="ach-tag">Locked</span>'}</div>`
+        : '';
+      return `<article class="ach-card ${done ? 'done' : ''}"><div class="ach-ic">${done ? '🏆' : a.icon}</div><h4>${esc(a.title)}${progress}</h4><p>${esc(a.desc)}</p>
+        <ul class="ach-steps">${steps}</ul>${done ? '' : `<p>💡 ${esc(a.hint)}</p>`}${reward}</article>`;
+    }).join('');
+    setTimeout(drawThumbs, 0);
+    return `<h3>🏆 Achievements</h3><p class="l11-explain">Complete quests to unlock new characters. Completed ${doneCount}/${total}.</p><div class="ach-list">${cards}</div>`;
+  }
+
+  function drawThumbs() {
+    const sc = getScene();
+    const ui = window.LQCreatorUI;
+    if (!sc || !ui || !window.LQCharacter) return;
+    document.querySelectorAll('canvas[data-ach-thumb]').forEach((cv) => {
+      const p = ui.presets[Number(cv.dataset.achThumb)];
+      if (!p) return;
+      const cx = cv.getContext('2d');
+      cx.clearRect(0, 0, cv.width, cv.height);
+      cx.imageSmoothingEnabled = false;
+      try {
+        cx.drawImage(window.LQCharacter.imageFor(sc, ui.presetLook(p), 'down', 0), 0, 0);
+      } catch (e) {
+        console.warn('achievement thumbnail failed', e);
+      }
+    });
+  }
+
+  // Called by the Menu for data-l11-action="ach:..." buttons.
+  function action(a) {
+    if (a.startsWith('wear:')) {
+      const i = Number(a.slice(5));
+      const ui = window.LQCreatorUI;
+      if (ui && ui.applyPreset) ui.applyPreset(i);
+      if (window.LQ11_UI) window.LQ11_UI.page('achievements');
+    }
+  }
+
+  function start() {
+    setInterval(tick, 500);
+  }
+
+  window.LQAchievements = {
+    list: ACHIEVEMENTS,
+    isUnlocked,
+    hint,
+    renderPage,
+    action,
+    start,
+    toast,
+    complete: (id) => {
+      const a = byId(id);
+      if (a) complete(a);
+    },
+  };
+  start();
+})();
+
+</script>
+    <script>
+/*
+ * Shrine cutscene: plays when the 20th finger is picked up (see fingers.js).
+ *
+ * 1. Four huge red parallelogram eyes fill a white, speckled screen.
+ * 2. The camera pulls back: the eyes shrink up into a blood-red cloudy sky while the white clears, revealing the
+ *    domain - a shrine rising out of cyan, rippling water with its reflection.
+ * 3. Sukuna is a tiny figure on the shrine roof, dead centre between the eyes, so the domain feels vast around him.
+ * 4. The picture holds for a moment, then fades out.
+ *
+ * It is drawn at 480 x 270 "pixels" and scaled up without smoothing for the pixel-art look.
+ * window.LQShrine.play({ freeze }) returns a promise that resolves when the cutscene is over. `freeze` (ms) pins the
+ * picture at that moment and never fades; it is only used to take screenshots while tuning the artwork.
+ */
+(function () {
+  'use strict';
+
+  const VW = 480;
+  const VH = 270;
+  const T_EYES = 600; // eyes fill the screen
+  const T_PULL = 900; // camera pulls back, white clears
+  const T_HOLD = 1100; // the domain, held
+  const T_FADE = 1500; // fade out
+  const RED = '#ed1c24';
+  // Lead-in before the flash: the screen goes dark and a line is typed out letter by letter.
+  const LEAD_TEXT = 'King of Curses has arrived';
+  const LEAD_FONT = 'Cinzel, "Trajan Pro", "Times New Roman", Georgia, serif';
+  const LEAD_FADE = 400; // fade to black
+  const LEAD_CHAR = 55; // ms per letter
+  const LEAD_HOLD = 800; // pause on the finished line before the cut
+  const T_LEAD = LEAD_FADE + LEAD_TEXT.length * LEAD_CHAR + LEAD_HOLD;
+  const HORIZON = 150;
+  const CX = VW / 2;
+
+  // The four eyes at full-screen size (upper pair large, lower pair smaller); right side is the mirror image.
+  const EYES_BIG = [
+    [[34, 52], [212, 96], [212, 150], [34, 106]],
+    [[62, 176], [200, 176], [186, 236], [48, 236]],
+  ];
+  const EYES = [...EYES_BIG, ...EYES_BIG.map((e) => e.map(([x, y]) => [VW - x, y]))];
+  const BIG_CENTER = [CX, 135];
+  const SKY_CENTER = [CX, 50];
+  const SKY_SCALE = 0.38;
+
+  const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 0.75;
+
+  function seeded(seed) {
+    let s = seed | 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function canvas(w, h) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return c;
+  }
+
+  // ---- static backdrops, painted once ---------------------------------------------------------------------------
+  function paintSky() {
+    const c = canvas(VW, HORIZON);
+    const g = c.getContext('2d');
+    const rnd = seeded(7);
+    const bands = ['#1a0610', '#220813', '#2b0a16', '#340c1a', '#3d0f1e', '#481222', '#531526'];
+    const bh = HORIZON / bands.length;
+    bands.forEach((col, i) => {
+      g.fillStyle = col;
+      g.fillRect(0, Math.floor(i * bh), VW, Math.ceil(bh) + 1);
+    });
+    const shades = ['#2a0b15', '#3a0f1c', '#56142a', '#6c1a2e', '#7d2234'];
+    for (let i = 0; i < 130; i++) {
+      const x = rnd() * VW;
+      const y = rnd() * HORIZON;
+      const rx = 18 + rnd() * 52;
+      const ry = 5 + rnd() * 15;
+      g.fillStyle = shades[Math.floor(rnd() * shades.length)];
+      for (const ox of [-VW, 0, VW]) {
+        g.beginPath();
+        g.ellipse(x + ox, y, rx, ry, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    // checkerboard dithering over the clouds
+    g.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let y = 0; y < HORIZON; y += 2) for (let x = (y / 2) % 2 ? 1 : 0; x < VW; x += 4) g.fillRect(x, y, 1, 1);
+    return c;
+  }
+
+  function paintWater() {
+    const h = VH - HORIZON;
+    const c = canvas(VW, h);
+    const g = c.getContext('2d');
+    const rnd = seeded(21);
+    const bands = ['#0f5a6a', '#0d4e5d', '#0b4351', '#09394a', '#073040', '#052837', '#04212e'];
+    const bh = h / bands.length;
+    bands.forEach((col, i) => {
+      g.fillStyle = col;
+      g.fillRect(0, Math.floor(i * bh), VW, Math.ceil(bh) + 1);
+    });
+    for (let i = 0; i < 520; i++) {
+      const y = rnd() * h;
+      const w = 4 + rnd() * 26 * (0.4 + y / h);
+      g.fillStyle = rnd() < 0.5 ? 'rgba(53,198,209,0.28)' : 'rgba(0,0,0,0.28)';
+      g.fillRect(rnd() * VW, y, w, 1);
+    }
+    return c;
+  }
+
+  // ---- the shrine and Sukuna (pixel sprites; feet of the shrine on y = 156) --------------------------------------
+  const BASE = 156;
+  function shrine(g) {
+    const r = (x, y, w, h, col) => {
+      g.fillStyle = col;
+      g.fillRect(x, y, w, h);
+    };
+    r(213, 120, 8, BASE - 120, '#c9341a'); // pillars
+    r(259, 120, 8, BASE - 120, '#c9341a');
+    r(215, 120, 2, BASE - 120, '#e2501f');
+    r(261, 120, 2, BASE - 120, '#e2501f');
+    r(221, 124, 38, BASE - 124, '#15090e'); // dark body
+    r(208, 126, 64, 3, '#8e1f12'); // lower beam
+    // roof: dark gable with a red trim on top
+    g.fillStyle = '#1d0e16';
+    g.beginPath();
+    g.moveTo(204, 114);
+    g.lineTo(224, 102);
+    g.lineTo(256, 102);
+    g.lineTo(276, 114);
+    g.closePath();
+    g.fill();
+    r(224, 101, 32, 1, '#7a1a1e');
+    r(200, 114, 80, 5, '#e2501f'); // upper beam, ends swept up
+    r(200, 114, 80, 1, '#ff8a3a');
+    r(200, 110, 6, 5, '#e2501f');
+    r(274, 110, 6, 5, '#e2501f');
+    // the dark body is a gaping maw with teeth (the shrine itself has no eyes)
+    for (let x = 226; x < 254; x += 2) r(x, 146 + ((x / 2) % 2), 1, 2, '#d9d2bd');
+  }
+
+  function sukuna(g) {
+    const r = (x, y, w, h, col) => {
+      g.fillStyle = col;
+      g.fillRect(x, y, w, h);
+    };
+    // soft red glow: a few faint stacked ellipses instead of one hard disc
+    g.fillStyle = 'rgba(255,40,40,0.045)';
+    for (let i = 0; i < 6; i++) {
+      g.beginPath();
+      g.ellipse(240, 95, 7 + i * 3, 6 + i * 3, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    r(237, 88, 6, 3, '#ea8fa0'); // hair
+    r(236, 87, 1, 2, '#ea8fa0');
+    r(243, 87, 1, 2, '#ea8fa0');
+    r(239, 86, 2, 1, '#ea8fa0');
+    r(238, 91, 4, 3, '#f6d2b0'); // face
+    r(238, 92, 1, 1, '#c02a2a');
+    r(241, 92, 1, 1, '#c02a2a');
+    r(236, 94, 8, 8, '#e9e4d6'); // kimono
+    r(236, 94, 1, 8, '#233a63');
+    r(243, 94, 1, 8, '#233a63');
+    r(237, 97, 6, 1, '#cfc9b8'); // folded arms
+  }
+
+  // ---- animated parts -------------------------------------------------------------------------------------------
+  function ripples(g, t) {
+    const cy = BASE + 4;
+    for (let i = 0; i < 7; i++) {
+      const r = ((t * 0.028 + i * 17) % 119) + 4;
+      const a = 1 - r / 125;
+      g.fillStyle = `rgba(150,235,240,${(0.55 * a).toFixed(3)})`;
+      const steps = Math.floor(r * 4);
+      for (let s = 0; s < steps; s++) {
+        const ang = (s / steps) * Math.PI * 2;
+        g.fillRect(Math.round(CX + Math.cos(ang) * r * 1.6), Math.round(cy + Math.sin(ang) * r * 0.34), 1, 1);
+      }
+    }
+  }
+
+  function sparkles(g, t) {
+    const rnd = seeded(Math.floor(t / 140) + 3);
+    for (let i = 0; i < 90; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(120,230,235,0.8)' : 'rgba(255,255,255,0.6)';
+      g.fillRect(Math.floor(rnd() * VW), HORIZON + 4 + Math.floor(rnd() * (VH - HORIZON - 4)), 1, 1);
+    }
+  }
+
+  function ash(g, t) {
+    const rnd = seeded(99);
+    for (let i = 0; i < 70; i++) {
+      const x0 = rnd() * VW;
+      const y0 = rnd() * HORIZON;
+      const sp = 0.012 + rnd() * 0.02;
+      const y = (((y0 - t * sp) % HORIZON) + HORIZON) % HORIZON;
+      g.fillStyle = rnd() < 0.5 ? 'rgba(255,90,60,0.75)' : 'rgba(255,176,138,0.6)';
+      g.fillRect(Math.floor(x0 + Math.sin(t / 700 + i) * 3), Math.floor(y), 1, 1);
+    }
+  }
+
+  function scene(g, t, sky, water) {
+    const off = (t * 0.006) % VW;
+    g.drawImage(sky, -off, 0);
+    g.drawImage(sky, VW - off, 0);
+    g.fillStyle = 'rgba(160,30,44,0.7)';
+    g.fillRect(0, HORIZON - 1, VW, 1);
+    g.drawImage(water, 0, HORIZON);
+    // reflection of the shrine
+    g.save();
+    g.globalAlpha = 0.32;
+    g.translate(0, BASE * 2);
+    g.scale(1, -1);
+    shrine(g);
+    g.restore();
+    ripples(g, t);
+    sparkles(g, t);
+    shrine(g);
+    sukuna(g);
+    ash(g, t);
+  }
+
+  function eyes(g, e, t) {
+    const lw = 22 + (7 - 22) * e;
+    const flick = e > 0.98 ? 0.93 + 0.07 * Math.sin(t / 90) : 1;
+    g.save();
+    g.globalAlpha = flick;
+    g.lineJoin = 'round';
+    for (const eye of EYES) {
+      const pts = eye.map(([x, y]) => {
+        const sx = SKY_CENTER[0] + (x - BIG_CENTER[0]) * SKY_SCALE;
+        const sy = SKY_CENTER[1] + (y - BIG_CENTER[1]) * SKY_SCALE;
+        return [x + (sx - x) * e, y + (sy - y) * e];
+      });
+      g.beginPath();
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+      g.closePath();
+      g.fillStyle = RED;
+      g.strokeStyle = RED;
+      g.lineWidth = lw;
+      g.fill();
+      g.stroke();
+      g.strokeStyle = '#fff';
+      g.lineWidth = 1;
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  function speckle(g, alpha) {
+    if (alpha <= 0.02) return;
+    g.globalAlpha = alpha;
+    const centers = [[110, 100], [370, 100], [120, 205], [360, 205]];
+    for (let i = 0; i < 9000; i++) {
+      let x = Math.random() * VW;
+      let y = Math.random() * VH;
+      if (Math.random() < 0.7) {
+        const c = centers[Math.floor(Math.random() * 4)];
+        x = c[0] + gauss() * 70;
+        y = c[1] + gauss() * 55;
+      }
+      g.fillStyle = Math.random() < 0.45 ? RED : '#000';
+      g.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+    }
+    g.globalAlpha = 1;
+  }
+
+  function playSound() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ac = new AC();
+      const t = ac.currentTime;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(110, t);
+      o.frequency.exponentialRampToValueAtTime(38, t + 0.9);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.5, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+      o.connect(g).connect(ac.destination);
+      o.start(t);
+      o.stop(t + 1.5);
+      setTimeout(() => ac.close().catch(() => {}), 2000);
+    } catch (e) {
+      /* sound is optional */
+    }
+  }
+
+  let playing = false;
+
+  // Start fetching the lead-in font as soon as the script loads, so it is ready by the time the 20th finger is found.
+  try {
+    if (document.fonts && document.fonts.load) document.fonts.load('800 40px Cinzel').catch(() => {});
+  } catch (e) {
+    /* the serif fallback is used instead */
+  }
+
+  function play(opts) {
+    const freeze = opts && typeof opts.freeze === 'number' ? opts.freeze : null;
+    const leadAt = opts && typeof opts.leadAt === 'number' ? opts.leadAt : null; // screenshots of the lead-in only
+    if (playing) return Promise.resolve();
+    playing = true;
+    return new Promise((resolve) => {
+      const cv = document.createElement('canvas');
+      cv.setAttribute('aria-hidden', 'true');
+      cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;z-index:9800;pointer-events:none;background:#1a0610';
+      document.body.appendChild(cv);
+      const W = (cv.width = Math.max(1, window.innerWidth));
+      const H = (cv.height = Math.max(1, window.innerHeight));
+      const ctx = cv.getContext('2d');
+      const lo = canvas(VW, VH);
+      const g = lo.getContext('2d');
+      const sky = paintSky();
+      const water = paintWater();
+      // wide screens are filled edge to edge; tall ones keep the whole picture and show dark bars
+      const scale = W / H >= 1.4 ? Math.max(W / VW, H / VH) : Math.min(W / VW, H / VH);
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // The dark lead-in: the line is typed in the middle of the screen (split over two lines on narrow screens).
+      const drawLead = (el) => {
+        cv.style.opacity = String(Math.min(1, el / LEAD_FADE));
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#050207';
+        ctx.fillRect(0, 0, W, H);
+        const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.1, W / 2, H / 2, Math.max(W, H) * 0.7);
+        vg.addColorStop(0, 'rgba(120,12,24,0.28)');
+        vg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+        const shown = Math.max(0, Math.min(LEAD_TEXT.length, Math.floor((el - LEAD_FADE) / LEAD_CHAR)));
+        const size = Math.max(18, Math.min(W * 0.04, 52));
+        ctx.font = `800 ${size}px ${LEAD_FONT}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${(size * 0.1).toFixed(1)}px`; // wide, monumental spacing
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        let lines = [LEAD_TEXT];
+        if (ctx.measureText(LEAD_TEXT).width > W * 0.88) {
+          const words = LEAD_TEXT.split(' ');
+          const mid = Math.ceil(words.length / 2);
+          lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+        }
+        const lh = size * 1.5;
+        let left = shown;
+        lines.forEach((ln, i) => {
+          const part = ln.slice(0, Math.max(0, Math.min(ln.length, left)));
+          left -= ln.length + 1;
+          const w = ctx.measureText(ln).width;
+          const x = (W - w) / 2;
+          const y = H / 2 + (i - (lines.length - 1) / 2) * lh;
+          ctx.shadowColor = '#ff1c2c';
+          ctx.shadowBlur = size * 0.5;
+          ctx.fillStyle = '#f4e9e9';
+          ctx.fillText(part, x, y);
+          ctx.shadowBlur = 0;
+          // blinking caret at the end of what has been typed so far
+          if (part.length < ln.length || (i === lines.length - 1 && Math.floor(el / 380) % 2 === 0)) {
+            if (part.length > 0 || i === 0) {
+              ctx.fillStyle = RED;
+              ctx.fillRect(x + ctx.measureText(part).width + 3, y - size * 0.55, Math.max(2, size * 0.06), size * 1.1);
+            }
+          }
+        });
+      };
+      let soundDone = false;
+      const start = performance.now();
+      const frame = (now) => {
+        const el = now - start;
+        if (leadAt !== null || (freeze === null && el < T_LEAD)) {
+          drawLead(leadAt !== null ? leadAt : el);
+          requestAnimationFrame(frame);
+          return;
+        }
+        if (!soundDone && freeze === null) {
+          soundDone = true;
+          playSound();
+        }
+        const t = freeze !== null ? freeze : el - T_LEAD;
+        const total = T_EYES + T_PULL + T_HOLD + T_FADE;
+        if (freeze === null && t >= total) {
+          cv.remove();
+          playing = false;
+          resolve();
+          return;
+        }
+        const fadeStart = T_EYES + T_PULL + T_HOLD;
+        cv.style.opacity = freeze !== null || t < fadeStart ? '1' : String(Math.max(0, 1 - (t - fadeStart) / T_FADE));
+        const e = reduce ? 1 : ease((t - T_EYES) / T_PULL);
+        // the domain, with the camera easing back from a slight zoom
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.fillStyle = '#1a0610';
+        g.fillRect(0, 0, VW, VH);
+        g.save();
+        const zs = 1.22 - 0.22 * e;
+        g.translate(CX, HORIZON);
+        g.scale(zs, zs);
+        g.translate(-CX, -HORIZON);
+        scene(g, t, sky, water);
+        g.restore();
+        // white screen clears away
+        g.fillStyle = `rgba(255,255,255,${(1 - e).toFixed(3)})`;
+        g.fillRect(0, 0, VW, VH);
+        speckle(g, reduce ? 0 : 1 - e);
+        const shake = reduce || freeze !== null ? 0 : Math.max(0, 1 - t / 350) * 3;
+        g.save();
+        g.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+        eyes(g, e, t);
+        g.restore();
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = '#1a0610';
+        ctx.fillRect(0, 0, W, H);
+        ctx.drawImage(lo, Math.round((W - VW * scale) / 2), Math.round((H - VH * scale) / 2), VW * scale, VH * scale);
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+
+  window.LQShrine = { play };
+
+  // Preview without DevTools: open the game with ?shrine=1 in the address bar and the cutscene plays once after loading.
+  if (/[?&]shrine=1\b/.test(location.search)) window.addEventListener('load', () => setTimeout(() => play(), 800));
+})();
+
+</script>
+    <script>
+/*
+ * Sukuna's 20 fingers: 20 cursed fingers lie at 20 different spots across English Town and Minerals Town. Walking over
+ * one picks it up; progress is stored in the normal save (game.ach.fingers), and the 20th finger completes the
+ * 'sukuna-fingers' achievement (see achievements.js). Ten fingers lie outdoors on named place tiles and ten lie
+ * inside buildings, so they are spread out and always reachable on foot.
+ */
+(function () {
+  'use strict';
+
+  const TOWN = 'english-town';
+  const MINE = 'mining-town';
+  const ACH_ID = 'sukuna-fingers';
+  const PICK_RADIUS = 22;
+
+  // Outdoor fingers: x/y are tile coordinates (the same ones used by the areas' `places`).
+  // Indoor fingers: `in` is the building name (a key of the interiors); the finger lies on the building's first
+  // `guests` tile, which NPCs stand on, so it is always walkable. Only the ground floor is used.
+  const FINGERS = [
+    { id: 'f01', area: TOWN, x: 25, y: 15, clue: 'In the middle of the park' },
+    { id: 'f02', area: TOWN, x: 55, y: 41, clue: 'By the lake' },
+    { id: 'f03', area: TOWN, x: 55, y: 22, clue: 'In front of the school' },
+    { id: 'f04', area: TOWN, x: 24, y: 61, clue: 'Waiting bench at the English Town station' },
+    { id: 'f05', area: TOWN, x: 44, y: 58, clue: 'Cargo area at the English Town station' },
+    { id: 'f06', area: TOWN, in: 'Sunny Cafe', clue: 'Inside the Sunny Cafe' },
+    { id: 'f07', area: TOWN, in: 'Bank', clue: 'Inside the bank' },
+    { id: 'f08', area: TOWN, in: 'Library', clue: 'Inside the library' },
+    { id: 'f09', area: TOWN, in: 'Cinema', clue: 'Inside the cinema' },
+    { id: 'f10', area: TOWN, in: 'Church', clue: 'Inside the church' },
+    { id: 'f11', area: MINE, x: 22, y: 18, clue: 'West side of the mine' },
+    { id: 'f12', area: MINE, x: 41, y: 19, clue: 'Ore yard' },
+    { id: 'f13', area: MINE, x: 30, y: 28, clue: 'Mining town square' },
+    { id: 'f14', area: MINE, x: 38, y: 26, clue: 'In front of the tool shop' },
+    { id: 'f15', area: MINE, x: 24, y: 61, clue: 'Waiting bench at the Minerals Town station' },
+    { id: 'f16', area: MINE, in: 'Great Mine', clue: 'Inside the Great Mine' },
+    { id: 'f17', area: MINE, in: 'Smithy', clue: 'Inside the smithy' },
+    { id: 'f18', area: MINE, in: 'Gem Shop', clue: 'Inside the gem shop' },
+    { id: 'f19', area: MINE, in: 'Mining Inn', clue: 'Inside the inn' },
+    { id: 'f20', area: MINE, in: 'First-Aid Post', clue: 'Inside the first-aid post' },
+  ];
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  function foundMap(create) {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return {};
+    if (!g.ach || typeof g.ach !== 'object') {
+      if (!create) return {};
+      g.ach = { steps: {}, done: {} };
+    }
+    if (!g.ach.fingers || typeof g.ach.fingers !== 'object') {
+      if (!create) return {};
+      g.ach.fingers = {};
+    }
+    return g.ach.fingers;
+  }
+
+  const isFound = (id) => !!foundMap(false)[id];
+  const count = () => FINGERS.filter((f) => isFound(f.id)).length;
+
+  let cutsceneBusy = false;
+
+  function collect(sc, f) {
+    foundMap(true)[f.id] = Date.now();
+    try {
+      sc.store.save();
+    } catch (e) {
+      console.warn('finger save failed', e);
+    }
+    const n = count();
+    const A = window.LQAchievements;
+    if (n >= FINGERS.length) {
+      // Unlock only once the cutscene is over; the saved count is enough to finish it later if the page closes now.
+      cutsceneBusy = true;
+      (window.LQShrine ? window.LQShrine.play() : Promise.resolve()).then(() => {
+        cutsceneBusy = false;
+        if (A) A.complete(ACH_ID);
+      });
+    } else if (A) {
+      A.toast('👆 Cursed finger', `Collected ${n}/${FINGERS.length} fingers`, 'Keep going!');
+    }
+    window.dispatchEvent(new CustomEvent('lifequest:fingers', { detail: { count: n } }));
+  }
+
+  // World position (pixels) and scale of a finger in what the player currently sees, or null when it is not here.
+  function spotFor(sc, f) {
+    if (f.area !== sc.area.id) return null;
+    const ins = sc.inside;
+    if (!f.in) return ins ? null : { x: f.x * 32 + 16, y: f.y * 32 + 16, k: 1 };
+    if (!ins || ins.floor !== 0 || ins.b.name !== f.in || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    const t = ins.spec;
+    // objs[0] is the floor image, whose top-left corner is the origin of the interior's tile grid.
+    const at = (pt) => ({ x: ins.objs[0].x + (pt[0] + 0.5) * unit, y: ins.objs[0].y + (pt[1] + 0.5) * unit, k: ins.k });
+    // Take the first guest tile (or the default one) that no furniture covers, so the finger can always be reached.
+    const margin = 12 * ins.k;
+    const covered = (p) => (ins.rects || []).some((r) => p.x > r.x - margin && p.x < r.x + r.w + margin && p.y > r.y - margin && p.y < r.y + r.h + margin);
+    const cands = [...(t.guests || []), [Math.floor(t.w / 2), Math.max(3, t.h - 4)]].map(at);
+    return cands.find((p) => !covered(p)) || cands[0];
+  }
+
+  function drawFinger(g, cx, cy, s, time, seed) {
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.003 + seed);
+    const y = cy + Math.sin(time * 0.002 + seed * 1.7) * 1.5 * s;
+    // Cursed glow: faint violet halo that builds up towards the centre.
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle(0xa23bff, 0.035 + pulse * 0.015);
+      g.fillCircle(cx, y, (20 - i * 3) * s);
+    }
+    // The finger: a withered digit with a dark nail and two joint creases.
+    g.fillStyle(0x000000, 0.3);
+    g.fillEllipse(cx, cy + 9 * s, 12 * s, 4 * s);
+    g.fillStyle(0x6e3b55, 1);
+    g.fillRoundedRect(cx - 3 * s, y - 8 * s, 6 * s, 15 * s, 3 * s);
+    g.fillStyle(0x4a2339, 1);
+    g.fillRect(cx - 3 * s, y - 2 * s, 6 * s, s);
+    g.fillRect(cx - 3 * s, y + 3 * s, 6 * s, s);
+    g.fillStyle(0x1d0f1c, 1);
+    g.fillRoundedRect(cx - 2 * s, y - 8 * s, 4 * s, 4 * s, 2 * s);
+    g.fillStyle(0xff6b8a, 0.5 + pulse * 0.4);
+    g.fillCircle(cx, y + 5 * s, 1.2 * s);
+  }
+
+  function draw(sc, time) {
+    const st = sc.__lqFingers;
+    if (!st) return;
+    const g = st.g;
+    g.clear();
+    if (!sc.area || sc.switching || !sc.player || !sc.store || !sc.store.game) return;
+    if (!window.LQAchievements || window.LQAchievements.isUnlocked(ACH_ID)) return;
+    const found = foundMap(false);
+    const px = sc.player.x;
+    const py = sc.player.y;
+    FINGERS.forEach((f, i) => {
+      if (found[f.id]) return;
+      const p = spotFor(sc, f);
+      if (!p) return;
+      if (Math.hypot(px - p.x, py - p.y) < PICK_RADIUS * p.k) collect(sc, f);
+      else drawFinger(g, p.x, p.y, p.k, time, i);
+    });
+  }
+
+  function attach(sc) {
+    if (sc.__lqFingers) return;
+    sc.__lqFingers = { g: sc.add.graphics().setDepth(8.8) };
+    sc.events.on('update', (time) => draw(sc, time));
+    sc.events.once('shutdown', () => {
+      sc.__lqFingers = null;
+    });
+  }
+
+  setInterval(() => {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqFingers) {
+      try {
+        attach(sc);
+      } catch (e) {
+        console.warn('fingers attach failed', e);
+      }
+    }
+  }, 1000);
+
+  // All 20 collected but the achievement is not marked done (page closed during the cutscene): finish it quietly.
+  setInterval(() => {
+    const A = window.LQAchievements;
+    if (A && !cutsceneBusy && getScene() && count() >= FINGERS.length && !A.isUnlocked(ACH_ID)) A.complete(ACH_ID);
+  }, 2000);
+
+  // LQFingers.preview() replays the cutscene without changing any progress (handy for tuning it).
+  window.LQFingers = {
+    list: FINGERS,
+    count,
+    total: FINGERS.length,
+    isFound,
+    preview: () => (window.LQShrine ? window.LQShrine.play() : null),
+    draw: drawFinger,
+    // Where a finger is in what the player sees right now ({x, y, k}) or null; used by Gojo's Six Eyes (gojo.js).
+    spot: (id) => {
+      const sc = getScene();
+      const f = FINGERS.find((x) => x.id === id);
+      return sc && sc.area && f ? spotFor(sc, f) : null;
+    },
+  };
+})();
+
+</script>
+    <script>
+/*
+ * The Ten Shadows: a guided quest chain that unlocks Megumi.
+ *
+ *  1. Ask Ms. Green (the librarian) about the Ten Shadows: she tells the legend and the quest starts.
+ *  2. Ask the villagers about "the shadows". The ten holders each tell the legend of one shadow beast and a clue to
+ *     where its mark is hidden; everybody else points the player on. Only after a holder has told the clue does that
+ *     shadow's mark appear in the world (a dark pool with a glowing ring and the beast's icon).
+ *  3. Walk over a mark to collect it. The tenth (Mahoraga) only reveals itself once nine are found.
+ *  4. Ten shadows complete the 'ten-shadows' achievement (achievements.js), which unlocks Megumi.
+ *
+ * The quest is also listed in the quest panel (quest 'ten-shadows' in 14-v8-quests-and-minimap.js); its first step
+ * reads its text from status() below, so the panel always shows the next clue. Progress is stored in the normal save
+ * (game.ach.shadows = { started, told, found }). Chat hook: 10-core-characters-and-scene.js calls onNpcMessage().
+ */
+(function () {
+  'use strict';
+
+  const TOWN = 'english-town';
+  const MINE = 'mining-town';
+  const ACH_ID = 'ten-shadows';
+  const QUEST_ID = 'ten-shadows';
+  const PICK_RADIUS = 22;
+
+  // npc = id of the villager who knows this shadow. Outdoor marks use x/y (tile coordinates of the areas' `places`);
+  // indoor marks use `in` (building name, first free guest tile of the ground floor, like the fingers).
+  const SHADOWS = [
+    { id: 'dogs', icon: '🐕', name: 'Divine Dogs', npc: 'police', area: TOWN, x: 19, y: 14,
+      clue: 'In the town plaza, where the paths meet.',
+      legend: 'The Divine Dogs! Two hounds, one white and one black, who never leave their master. I once saw a black shadow run across the town plaza at dusk. Look for it where the paths meet.' },
+    { id: 'nue', icon: '🦉', name: 'Nue', npc: 'teacher', area: TOWN, x: 60, y: 7,
+      clue: 'Near the Fire Station, where the alarm sounds like thunder.',
+      legend: 'The Nue is a night owl wrapped in lightning. My students say it sleeps near the Fire Station, where the alarm sounds like thunder.' },
+    { id: 'serpent', icon: '🐍', name: 'Great Serpent', npc: 'hotelclerk', area: TOWN, in: 'Hotel',
+      clue: 'Inside the Hotel, in the quiet lobby.',
+      legend: 'The Great Serpent slides through the quietest places. A guest told me something long and dark moved across the floor of our hotel. Look in the lobby.' },
+    { id: 'toad', icon: '🐸', name: 'Toad', npc: 'kid', area: TOWN, x: 23, y: 22,
+      clue: 'Near the Market, a dark puddle that never dries.',
+      legend: 'The Toad! My friends say a giant toad hides near the Market when it rains. It leaves a dark puddle that never dries.' },
+    { id: 'elephant', icon: '🐘', name: 'Max Elephant', npc: 'shopkeeper', area: TOWN, in: 'Corner Shop',
+      clue: "Inside the Corner Shop (Tom's shop).",
+      legend: 'Max Elephant never forgets, and neither do I. A shadow with a long trunk appeared in my shop after closing time. Look inside the Corner Shop.' },
+    { id: 'rabbit', icon: '🐇', name: 'Rabbit Escape', npc: 'doctor', area: TOWN, in: 'Hospital',
+      clue: 'Inside the Hospital.',
+      legend: 'Rabbit Escape is a swarm of little rabbits that run away in every direction. At night I found tiny dark footprints in the hospital. Look inside the Hospital.' },
+    { id: 'deer', icon: '🦌', name: 'Round Deer', npc: 'medic', area: MINE, x: 21, y: 37,
+      clue: 'Just outside the First-Aid Post.',
+      legend: 'The Round Deer heals those who are hurt. On quiet mornings a calm shadow stands just outside the First-Aid Post.' },
+    { id: 'ox', icon: '🐂', name: 'Piercing Ox', npc: 'miner', area: MINE, x: 38, y: 18,
+      clue: 'On the east side of the mine.',
+      legend: 'The Piercing Ox charges straight through rock! On the east side of the mine there is a strange mark where the ground was split.' },
+    { id: 'tiger', icon: '🐅', name: 'Tiger Funeral', npc: 'smith', area: MINE, in: 'Tool Shop',
+      clue: 'Inside the Tool Shop, near the anvils.',
+      legend: 'Tiger Funeral is a tiger made of shadow that sleeps next to cold iron. Look inside the Tool Shop, near the anvils.' },
+    { id: 'mahoraga', icon: '⚔️', name: 'Divine General Mahoraga', npc: 'stationmaster', area: MINE, in: 'Rail Station', needs: 9,
+      clue: 'Inside the Rail Station, where all the roads meet.',
+      legend: 'The last one is Divine General Mahoraga, the strongest of all. It waits where all the roads meet: the Rail Station.' },
+  ];
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const A = () => window.LQAchievements;
+  const V8 = () => window.LQV8;
+  const norm = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd');
+  // "ten shadows", "shadow(s)", "shikigami", or the Vietnamese name of the technique.
+  const ASKING = /\bshadows?\b|shikigami|thap chung anh/;
+
+  function data(create) {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') {
+      if (!create) return null;
+      g.ach = { steps: {}, done: {} };
+    }
+    if (!g.ach.shadows || typeof g.ach.shadows !== 'object') {
+      if (!create) return null;
+      g.ach.shadows = { started: 0, told: {}, found: {} };
+    }
+    const d = g.ach.shadows;
+    if (!d.told) d.told = {};
+    if (!d.found) d.found = {};
+    return d;
+  }
+  const save = () => {
+    const sc = getScene();
+    try {
+      sc && sc.store && sc.store.save();
+    } catch (e) {
+      console.warn('ten shadows save failed', e);
+    }
+  };
+
+  const isStarted = () => !!(data(false) && data(false).started);
+  const isFound = (id) => !!(data(false) && data(false).found[id]);
+  const isTold = (id) => !!(data(false) && data(false).told[id]);
+  const count = () => SHADOWS.filter((s) => isFound(s.id)).length;
+  // Villagers of the other town are not in the scene, so keep their display names here.
+  const NAMES = {
+    librarian: 'Ms. Green (Librarian)', police: 'Officer Davis (Police)', teacher: 'Ms. Taylor (Teacher)',
+    hotelclerk: 'Sofia (Hotel Clerk)', kid: 'Mia (Student)', shopkeeper: 'Tom (Shopkeeper)', doctor: 'Dr. Chen (Doctor)',
+    medic: 'Rita (Mine Medic)', miner: 'Ben (Digger)', smith: 'Olga (Blacksmith)', stationmaster: 'Mr. Hale (Station Master)',
+  };
+  const npcName = (sc, id) => {
+    const n = sc && sc.npcs && sc.npcs.find((x) => x.def.id === id);
+    return n ? n.def.name : NAMES[id] || id;
+  };
+  const askWho = (sc, s) => npcName(sc, s.npc) + (s.area === MINE ? ' in Minerals Town' : '');
+
+  // The shadow whose clue was told but not collected yet (the oldest one).
+  const pending = () => {
+    const d = data(false);
+    if (!d) return null;
+    return (
+      SHADOWS.filter((s) => d.told[s.id] && !d.found[s.id]).sort((a, b) => d.told[a.id] - d.told[b.id])[0] || null
+    );
+  };
+
+  // Text for the quest panel's first step.
+  function status() {
+    const sc = getScene();
+    if (!isStarted()) return 'Ask Ms. Green in the Library about the Ten Shadows. Try typing: "Tell me about the Ten Shadows".';
+    const n = count();
+    if (n >= SHADOWS.length) return 'All ten shadows found!';
+    const p = pending();
+    if (p) return `Shadows found: ${n}/10. Next clue: ${p.clue} (${p.name})`;
+    const open = SHADOWS.filter((s) => !isTold(s.id) && !(s.needs && n < s.needs)).slice(0, 3).map((s) => askWho(sc, s));
+    return `Shadows found: ${n}/10. Ask the villagers about the shadows. Try: ${open.join(', ') || 'anyone you have not asked yet'}.`;
+  }
+
+  const refreshQuest = () => {
+    try {
+      V8() && V8().renderQuest();
+    } catch (e) {
+      /* the quest panel is not ready */
+    }
+  };
+
+  function finish() {
+    const a = A();
+    if (a && !a.isUnlocked(ACH_ID)) a.complete(ACH_ID);
+    try {
+      const v = V8();
+      if (v && v.progressOf(QUEST_ID) === 0) {
+       

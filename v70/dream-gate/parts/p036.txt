@@ -1,0 +1,1798 @@
+.key === `Tab` && (e.preventDefault(), this.toggleMic()));
+                }),
+                this.input.addEventListener(`keyup`, (e) => e.stopPropagation()));
+              // Nút ✕: cách rời cuộc trò chuyện trên điện thoại/máy tính bảng (không có phím Esc).
+              this.root
+                .querySelector(`#chat-close`)
+                ?.addEventListener(`click`, (e) => {
+                  e.stopPropagation();
+                  this.close();
+                });
+              let r = `1`;
+              try {
+                r = localStorage.getItem(dt) ?? `1`;
+              } catch {}
+              (this.setTeacher(r !== `0`),
+                this.teacherBtn.addEventListener(`click`, () => {
+                  (this.setTeacher(!this.teacherOn), this.input.focus());
+                }));
+              let vb = this.root.querySelector(`#voice-toggle`);
+              if (vb) {
+                vb.textContent = `🔊 Voice: ${speechService.settings.voiceEnabled ? `ON` : `OFF`}`;
+                vb.addEventListener(`click`, () => {
+                  speechService.setVoiceEnabled(!speechService.settings.voiceEnabled);
+                  vb.textContent = `🔊 Voice: ${speechService.settings.voiceEnabled ? `ON` : `OFF`}`;
+                  vb.classList.toggle(`off`, !speechService.settings.voiceEnabled);
+                  this.input.focus();
+                });
+              }
+              this.setupMic();
+              this.suggestionButton = this.root.querySelector(`#npc-suggest`);
+              this.suggestionList = this.root.querySelector(`#npc-suggestions`);
+              this.suggestionButton?.addEventListener(`click`, () => this.showNpcSuggestions());
+            }
+            async showNpcSuggestions() {
+              const npc = this.npc;
+              if (!npc || this.busy || !this.suggestionButton || !this.suggestionList) return;
+              const last =
+                [...this.history].reverse().find((h) => h.role === `npc`)?.text || npc.greeting;
+              this.suggestionButton.disabled = true;
+              this.suggestionButton.textContent = `⏳ Suggesting...`;
+              try {
+                const choices = await getNpcSuggestions(npc, last, cefrService.getLevel());
+                if (this.npc !== npc) return;
+                this.suggestionList.replaceChildren();
+                for (const choice of choices) {
+                  const button = document.createElement(`button`);
+                  button.type = `button`;
+                  button.textContent = choice;
+                  button.title = `Put this sentence in the chat box`;
+                  button.addEventListener(`click`, () => {
+                    this.input.value = choice;
+                    this.input.focus();
+                  });
+                  this.suggestionList.appendChild(button);
+                }
+              } finally {
+                this.suggestionButton.disabled = false;
+                this.suggestionButton.textContent = `✨ AI suggests a sentence`;
+              }
+            }
+            setupMic() {
+              let e = window,
+                t = e.SpeechRecognition ?? e.webkitSpeechRecognition;
+              if (!t) {
+                this.micBtn.style.display = `none`;
+                return;
+              }
+              let n = new t();
+              ((n.lang = `en-US`),
+                (n.interimResults = !0),
+                (n.continuous = !1),
+                (n.maxAlternatives = 1),
+                (n.onresult = (e) => {
+                  let t = ``;
+                  for (let n = 0; n < e.results.length; n++) t += e.results[n][0].transcript;
+                  ((this.input.value = t.trim()),
+                    e.results[e.results.length - 1].isFinal && this.input.value && this.send());
+                }),
+                (n.onend = () => this.setListening(!1)),
+                (n.onerror = (e) => {
+                  (this.setListening(!1),
+                    e.error === `not-allowed` || e.error === `service-not-allowed`
+                      ? this.append(
+                          `fix`,
+                          `🎤 The microphone is blocked. Allow it in the browser address bar, then try again.`,
+                        )
+                      : e.error === `no-speech`
+                        ? this.append(
+                            `fix`,
+                            `🎤 I did not hear anything. Press the mic and speak again.`,
+                          )
+                        : e.error !== `aborted` &&
+                          this.append(`fix`, `🎤 Speech recognition failed (${e.error}).`));
+                }),
+                (this.rec = n),
+                this.micBtn.addEventListener(`click`, () => {
+                  (this.toggleMic(), this.input.focus());
+                }));
+            }
+            setListening(e) {
+              ((this.listening = e),
+                this.micBtn.classList.toggle(`on`, e),
+                (this.input.placeholder = e
+                  ? `Listening... speak English now`
+                  : `Type in English and press Enter, or press the mic and speak...`));
+            }
+            toggleMic() {
+              if (this.rec && !this.busy) {
+                if (this.listening) {
+                  this.rec.stop();
+                  return;
+                }
+                this.input.value = ``;
+                try {
+                  (this.rec.start(), this.setListening(!0));
+                } catch {}
+              }
+            }
+            setProvider(e) {
+              this.provider = e;
+            }
+            gossipFor(e) {
+              let t = [];
+              for (let n of re)
+                if (n.id !== e.id)
+                  for (let e of this.store.get(n.id).events.slice(-2))
+                    t.push(`${nt[n.id].short} says the player ${e.text} (day ${e.day})`);
+              return t.slice(-6);
+            }
+            summarizing = new Set();
+            async summarize(e) {
+              let t = this.store.get(e.id),
+                n = Math.min(t.turnCounter - t.summarizedCounter, t.transcript.length);
+              if (n < 2 || !this.provider.summarize || this.summarizing.has(e.id)) return;
+              this.summarizing.add(e.id);
+              let r = t.turnCounter;
+              try {
+                let i = await this.provider.summarize(
+                  e,
+                  t.summary,
+                  t.transcript.slice(-n),
+                  this.situation(e).day,
+                );
+                i && ((t.summary = i.slice(0, 900)), (t.summarizedCounter = r), this.store.save());
+              } catch {}
+              this.summarizing.delete(e.id);
+            }
+            get currentProvider() {
+              return this.provider;
+            }
+            get isOpen() {
+              return this.npc !== null;
+            }
+            get currentId() {
+              return this.npc?.id ?? null;
+            }
+            get providerLabel() {
+              return this.provider.label;
+            }
+            open(e) {
+              let t = this.store.get(e.id),
+                n = this.situation(e);
+              ((this.npc = e), (this.prior = [...t.transcript]), (this.counted = !1));
+              if (e.uiTheme) this.root.dataset.npcTheme = e.uiTheme;
+              else delete this.root.dataset.npcTheme;
+              let r = Ee(e.id).npcs.filter(
+                (t) => t !== e.id && this.store.get(t).visits > 0,
+              ).length;
+              ((this.stranger = st(e, t, r)), this.summarize(e));
+              let i = ot(e, t, n.day, n.minutes, this.stranger);
+              ((this.history = [{ role: `npc`, text: i }]),
+                this.suggestionList?.replaceChildren(),
+                (this.logEl.innerHTML = ``),
+                (this.nameEl.textContent = `${e.name} · ${n.activity} · ${Ve(t.affinity)}`),
+                this.updateGoal());
+              let a = nt[e.id].short,
+                o = this.provider.greet
+                  ? this.append(`npc`, `${a} looks at you...`)
+                  : this.append(`npc`, `${a}: ${i}`);
+              (this.provider.greet && this.aiGreeting(e, o, i),
+                (this.root.style.display = `block`),
+                (this.input.value = ``),
+                setTimeout(() => this.input.focus(), 0));
+            }
+            async aiGreeting(e, t, n) {
+              let r = nt[e.id].short,
+                i = this.store.get(e.id),
+                a = {
+                  ...this.situation(e),
+                  memory: i,
+                  prior: this.prior,
+                  gossip: this.gossipFor(e),
+                  stranger: this.stranger,
+                },
+                o = ``;
+              try {
+                o = await Promise.race([
+                  this.provider.greet(e, a),
+                  new Promise((e) => setTimeout(() => e(``), 5e3)),
+                ]);
+              } catch {}
+              if (this.npc !== e) return;
+              let s = lqNpcSafeText(o || n, lqNpcSafeText(n, `Hello! Nice to see you.`));
+              t.textContent = `${r}: ${s}`;
+              if (t.querySelector && !t.querySelector(`.speaker-btn`)) {
+                let spk = document.createElement(`button`);
+                spk.type = `button`;
+                spk.className = `speaker-btn`;
+                spk.textContent = `🔊`;
+                spk.title = `Listen again`;
+                spk.onclick = () => {
+                  speechService.speak(s);
+                };
+                t.appendChild(spk);
+              }
+              speechService.speak(s);
+              this.history.length === 1 && (this.history[0] = { role: `npc`, text: s });
+            }
+            close() {
+              speechService.stop();
+              this.npc &&
+                (this.listening && this.rec?.abort(),
+                this.summarize(this.npc),
+                (this.npc = null),
+                delete this.root.dataset.npcTheme,
+                (this.root.style.display = `none`),
+                this.input.blur(),
+                this.store.save(),
+                this.onClose());
+            }
+            updateGoal() {
+              if (!this.npc) return;
+              let e = this.npc.goal;
+              this.goalEl.textContent = this.store.get(this.npc.id).goalDone
+                ? `Mission complete: ${e.text}`
+                : `Mission: ${e.text}`;
+            }
+            append(e, t) {
+              let n = document.createElement(`div`);
+              n.className = e;
+              if (e === `npc`) {
+                let textSpan = document.createElement(`span`);
+                textSpan.textContent = t;
+                n.appendChild(textSpan);
+
+                // Add replay speaker button
+                let spk = document.createElement(`button`);
+                spk.type = `button`;
+                spk.className = `speaker-btn`;
+                spk.textContent = `🔊`;
+                spk.title = `Listen to pronunciation again`;
+                spk.onclick = (ev) => {
+                  ev.stopPropagation();
+                  let clean = t.replace(/^[^:]+:\s*/, ``);
+                  speechService.speak(clean);
+                };
+                n.appendChild(spk);
+              } else {
+                n.textContent = t;
+              }
+              this.logEl.appendChild(n);
+              this.logEl.scrollTop = this.logEl.scrollHeight;
+              return n;
+            }
+            setTeacher(e) {
+              ((this.teacherOn = e),
+                (this.teacherBtn.textContent = `✎ Teacher: ${e ? `ON` : `OFF`}`),
+                this.teacherBtn.classList.toggle(`off`, !e));
+              try {
+                localStorage.setItem(dt, e ? `1` : `0`);
+              } catch {}
+            }
+            async checkGrammar(e) {
+              if (!this.teacherOn || !this.provider.check || e.split(/\s+/).length < 2) return null;
+              try {
+                return await Promise.race([
+                  this.provider.check(e),
+                  new Promise((e) => setTimeout(() => e(null), 6e3)),
+                ]);
+              } catch {
+                return null;
+              }
+            }
+            async askWordHelper(e) {
+              let t = [...this.history].reverse().find((e) => e.role === `npc`)?.text ?? ``,
+                n = e.slice(1).trim() || t;
+              if (((this.input.value = ``), !n)) return;
+              ((this.busy = !0),
+                this.append(
+                  `me`,
+                  `📖 ${e.slice(1).trim() ? `What does "${n}" mean?` : `Explain the last sentence`}`,
+                ));
+              let r = this.append(`npc`, `Word helper is thinking...`);
+              try {
+                let e = await ct(this.provider, n);
+                (Ae(this.store.game.stats, { term: e.term || n, vi: e.vi, meaning: e.meaning }),
+                  this.store.save(),
+                  r.replaceWith(lt(e)));
+              } catch (e) {
+                (r.remove(), this.append(`fix`, `📖 ${e.message}`));
+              }
+              ((this.logEl.scrollTop = this.logEl.scrollHeight),
+                (this.busy = !1),
+                this.input.focus());
+            }
+            async send() {
+              let e = this.npc,
+                t = this.input.value.trim();
+              if (!e || !t || this.busy) return;
+              if (t.startsWith(`?`)) {
+                await this.askWordHelper(t);
+                return;
+              }
+              let n = this.store.get(e.id),
+                r = nt[e.id].short;
+              ((this.input.value = ``), (this.busy = !0));
+              let i = this.append(`me`, `You: ${t}`),
+                a = document.createElement(`div`);
+              ((a.className = `npc`),
+                (a.textContent = `${r} is thinking...`),
+                this.logEl.appendChild(a));
+              let o = We(t);
+              o && (n.playerName = o);
+              let s = this.situation(e),
+                c = {
+                  ...s,
+                  memory: n,
+                  prior: this.prior,
+                  gossip: this.gossipFor(e),
+                  stranger: this.stranger,
+                },
+                l,
+                u = null;
+              try {
+                // One Gemini call per message: the NPC reply already carries "correction" and "vietnameseTip",
+                // so the separate checkGrammar() call (a second request every turn) is no longer made here.
+                l = await this.provider.respond(e, this.history, t, n.goalDone, c);
+              } catch (e) {
+                (a.remove(),
+                  i.remove(),
+                  this.append(
+                    `fix`,
+                    `⚠ ${r} could not answer (${e.message}). Your message is back in the box: press Enter to try again.`,
+                  ),
+                  (this.input.value = t),
+                  (this.busy = !1),
+                  this.input.focus());
+                return;
+              }
+              ((l = jt(l, n.goalDone)),
+                a.remove(),
+                (this.counted ||= (n.visits++, !0)),
+                (n.lastVisit = { day: s.day, minutes: s.minutes }),
+                Ye(
+                  n,
+                  { day: s.day, minutes: s.minutes, role: `user`, text: t },
+                  { day: s.day, minutes: s.minutes, role: `npc`, text: l.reply },
+                ));
+              for (let e of Ke(t)) qe(n, e);
+              (l.remember && qe(n, l.remember),
+                (n.affinity = Math.max(
+                  -20,
+                  Math.min(100, n.affinity + 1 + (l.affinityDelta ?? 0) + (l.goalDone ? 8 : 0)),
+                )),
+                l.goalDone && ((n.goalDone = !0), Je(n, s.day, e.goal.deed)),
+                (l.affinityDelta ?? 0) <= -3 && Je(n, s.day, `was rude to them`));
+              let d = ``,
+                f = ``;
+              if (this.teacherOn) {
+                if (u) {
+                  if (!u.ok) {
+                    d = u.fixed ? `"${u.fixed}"${u.tip ? ` · ${u.tip}` : ``}` : u.tip;
+                    f = u.fixed ? `Better: "${u.fixed}"${u.tip ? ` (${u.tip})` : ``}` : u.tip;
+                  }
+                } else if (l.correction) {
+                  d = l.correction;
+                  f = l.correction;
+                }
+              }
+              if (d && l.vietnameseTip && l.vietnameseTip.trim()) {
+                d += ` · 🇻🇳 ${l.vietnameseTip.trim()}`;
+              }
+              Ne(this.store.game.stats, t, f);
+              this.store.save();
+              this.history.push({ role: `user`, text: t }, { role: `npc`, text: l.reply });
+              if (d) {
+                let e = document.createElement(`div`);
+                e.className = `fix`;
+                e.textContent = `✎ ${d}`;
+                i.insertAdjacentElement(`afterend`, e);
+              }
+              if (l.vocabulary && l.vocabulary.trim()) {
+                let vocDiv = document.createElement(`div`);
+                vocDiv.className = `voc-badge`;
+                vocDiv.textContent = `📖 Suggested vocabulary: "${l.vocabulary}" (Click or type ?${l.vocabulary.split(/[\s,;:]+/)[0]} to look it up)`;
+                vocDiv.onclick = () => {
+                  this.askWordHelper(`?${l.vocabulary.split(/[\s,;:]+/)[0]}`);
+                };
+                i.insertAdjacentElement(`afterend`, vocDiv);
+              }
+              speechService.speak(l.reply);
+              if (
+                l.naturalAlternative &&
+                l.naturalAlternative.trim() &&
+                l.naturalAlternative.toLowerCase() !== t.toLowerCase()
+              ) {
+                let altDiv = document.createElement(`div`);
+                altDiv.className = `natural-alt`;
+                altDiv.textContent = `💡 Native way: "${l.naturalAlternative}"`;
+                i.insertAdjacentElement(`afterend`, altDiv);
+              }
+              (this.append(`npc`, `${r}: ${l.reply}`),
+                l.notice && this.append(`fix`, `⚠ ${l.notice}`));
+              // n.goalDone was already set above (line ~566); jt() only lets goalDone through when the goal was not
+              // done before, so l.goalDone alone means "completed just now".
+              if (l.goalDone) {
+                this.updateGoal();
+                this.append(
+                  `fix`,
+                  `★ Mission complete! +$${e.goal.reward}, +${e.goal.rep} reputation`,
+                );
+                this.onGoalDone(e);
+              }
+              for (let n of this.onSaid(e, t)) this.append(`quest`, n);
+              ((this.nameEl.textContent = `${e.name} · ${s.activity} · ${Ve(n.affinity)}`),
+                (this.busy = !1),
+                this.input.focus());
+            }
+          };
+var pt = [
+            {
+              idx: 0,
+              title: `Newcomer`,
+              icon: ``,
+              color: 3842303,
+              min: 0,
+              perk: `Start helping your neighbors!`,
+            },
+            {
+              idx: 1,
+              title: `Friendly Neighbor`,
+              icon: `🏠`,
+              color: 4903072,
+              min: 10,
+              perk: `Neighbors know your face now.`,
+            },
+            {
+              idx: 2,
+              title: `Town Helper`,
+              icon: `🤝`,
+              color: 16756794,
+              min: 25,
+              perk: `Daily income grows with every point of reputation.`,
+            },
+            {
+              idx: 3,
+              title: `Local Hero`,
+              icon: `⭐`,
+              color: 16734858,
+              min: 50,
+              perk: `Everyone greets you as a hero.`,
+            },
+            {
+              idx: 4,
+              title: `Town Guardian`,
+              icon: `🛡️`,
+              color: 10514687,
+              min: 90,
+              perk: `The whole town trusts you.`,
+            },
+            {
+              idx: 5,
+              title: `Honorary Mayor`,
+              icon: `👑`,
+              color: 16765498,
+              min: 140,
+              perk: `You are the heart of English Town!`,
+            },
+          ];
+        function mt(e) {
+          let t = pt[0];
+          for (let n of pt) e >= n.min && (t = n);
+          return t;
+        }
+        function ht(e) {
+          return pt.find((t) => t.min > e) ?? null;
+        }
+        var gt = class {
+            store;
+            root = document.getElementById(`journal`);
+            constructor(e) {
+              this.store = e;
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            toggle() {
+              if (this.isOpen) {
+                this.root.style.display = `none`;
+                return;
+              }
+              (this.render(), (this.root.style.display = `block`));
+            }
+            render() {
+              let e = this.store.game.day;
+              this.root.innerHTML = `<h3>Journal - what the townspeople remember</h3>`;
+              let t = this.store.game.stats,
+                n = document.createElement(`div`);
+              n.className = `entry`;
+              let r = document.createElement(`b`);
+              r.textContent = `Your English progress`;
+              let i = document.createElement(`div`);
+              i.className = `meta`;
+              let a = mt(this.store.game.rep);
+              if (
+                ((r.textContent = `Your title: ${a.icon} ${a.title}  |  Your English progress`),
+                (i.textContent = `${t.messages} messages, ${t.words.length} different words, ${t.corrections} corrections, ${t.praised} compliments, ${t.book.length} words in your word book (H)`),
+                n.append(r, i),
+                t.tips.length)
+              ) {
+                let e = document.createElement(`div`);
+                ((e.textContent = `Recent tips: ` + t.tips.join(` | `)), n.appendChild(e));
+              }
+              this.root.appendChild(n);
+              for (let t of re) {
+                let n = this.store.get(t.id),
+                  r = document.createElement(`div`);
+                r.className = `entry`;
+                let i = n.lastVisit ? `last talked ${He(n.lastVisit, e)}` : `not met yet`,
+                  a = document.createElement(`b`);
+                a.textContent = `${nt[t.id].short} - ${Ve(n.affinity)} (${n.affinity})`;
+                let o = document.createElement(`div`);
+                ((o.className = `meta`),
+                  (o.textContent = `${n.visits} conversation(s), ${i}${n.playerName ? `, knows you as ${n.playerName}` : ``}${n.goalDone ? `, mission done` : ``}`));
+                let s = document.createElement(`div`);
+                if (
+                  ((s.textContent = n.facts.length
+                    ? `Remembers: you ` + n.facts.join(`; you `)
+                    : `Remembers nothing about you yet.`),
+                  r.append(a, o, s),
+                  n.events.length)
+                ) {
+                  let e = document.createElement(`div`);
+                  ((e.textContent =
+                    `Events: ` + n.events.map((e) => `day ${e.day}: you ${e.text}`).join(`; `)),
+                    r.appendChild(e));
+                }
+                if (n.summary) {
+                  let e = document.createElement(`div`);
+                  ((e.className = `meta`),
+                    (e.textContent = `Their memory of you: ${n.summary}`),
+                    r.appendChild(e));
+                }
+                this.root.appendChild(r);
+              }
+              let o = document.createElement(`div`);
+              ((o.className = `meta`),
+                (o.textContent = `J: close   |   F8: erase all progress and memories`),
+                this.root.appendChild(o));
+              window.LQOrigins?.renderJournal?.(this.root,this.store);
+            }
+          },
+          _t = `english-town-ai`;
+        function vt() {
+          let e = {};
+          try {
+            e = JSON.parse(localStorage.getItem(_t) || '{}') || {};
+          } catch {}
+          return {
+            geminiKey: String(e.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || ''),
+            geminiModel: String(
+              e.geminiModel || window.LIFEQUEST_AI_CONFIG?.MODEL || 'gemini-2.5-flash',
+            ),
+          };
+        }
+        function yt(e) {
+          try {
+            localStorage.setItem(_t, JSON.stringify(e));
+          } catch {}
+        }
+        var bt = new Map();
+        function xt(e) {
+          let t = bt.get(e.id);
+          return (
+            t === void 0 &&
+              ((t = e.buildings
+                .filter((e) => !e.name.includes(`'`))
+                .map((t) => {
+                  let n = t.x + t.w / 2 - e.w / 2,
+                    r = t.y + t.h / 2 - e.h / 2,
+                    i = Math.abs(r) > 6 ? (r < 0 ? `north` : `south`) : ``,
+                    a = Math.abs(n) > 8 ? (n < 0 ? `west` : `east`) : ``;
+                  return `${t.name} (${[i, a].filter(Boolean).join(`-`) || `centre`})`;
+                })
+                .join(`, `)),
+              bt.set(e.id, t)),
+            t
+          );
+        }
+        function St(e) {
+          let t = nt[e];
+          return [t.lines.howAreYou[0], t.lines.hobby[0], t.lines.greet[0], t.fallback[0]]
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((e) => `- "${e.replaceAll(`{p}`, `friend`)}"`).join(`
+`);
+        }
+        function Ct(e, t) {
+          let n = e / 60;
+          return n < 6 || n >= 22
+            ? `You are sleepy and a little grumpy because it is so late.`
+            : n >= 11.5 && n < 13
+              ? `It is almost lunchtime, so you are a bit hungry.`
+              : n >= 17 && n < 19
+                ? `The workday is ending and you feel relaxed.`
+                : /work|teach|cook|duty|running|seeing|paperwork|digging|blasting|setting charges|loading|hauling|unloading|sorting|building|checking|forging|selling|polishing|treating|inspecting|drawing|cleaning/.test(
+                      t,
+                    )
+                  ? `You are in the middle of your job and a bit busy, but friendly.`
+                  : `You are in a relaxed, talkative mood.`;
+        }
+        function wt(e, t) {
+          let n = nt[e.id]?.stranger?.note ?? ``;
+          return t.stranger === `new`
+            ? [
+                ``,
+                `## A stranger`,
+                `This is the first time you see this person, and they are not from your town: they came through the new gate from English Town. Their clothes are too clean, they carry no tools, and they do not talk like your people. ${n}`,
+                `Show it in your own voice in your very first words: ask who they are, where they come from and why they came. Do not be hostile. Once the player answers and is polite, relax a little. Stay in character.`,
+              ]
+            : t.stranger === `heard`
+              ? [
+                  ``,
+                  `## A newcomer`,
+                  `Word has gone around your town that a newcomer from English Town is visiting. You have not met them yet, and you are curious about them. ${n}`,
+                ]
+              : [];
+        }
+        function Tt(e, t, n) {
+          let r = nt[e.id],
+            i = n.memory,
+            a = n.prior
+              .slice(-12)
+              .map(
+                (e) =>
+                  `[${He({ day: e.day, minutes: e.minutes }, n.day)}] ${e.role === `user` ? `Player` : `You`}: ${e.role === `user` ? e.text : lqNpcSafeText(e.text, `(previous response unavailable)`)}`,
+              ),
+            o = i.events.map((e) => `day ${e.day}: the player ${e.text}`),
+            s = [];
+          return (
+            s.push(`Player's name: ${i.playerName ?? `unknown (you may ask for it)`}.`),
+            s.push(
+              `Your relationship with the player: ${Ve(i.affinity)} (${i.affinity}/100). You have had ${i.visits} earlier conversation(s).`,
+            ),
+            i.summary &&
+              s.push(
+                `Your long-term memory of the player (your own summary of past talks):\n${i.summary}`,
+              ),
+            i.facts.length &&
+              s.push(`Facts the player told you: ${i.facts.map((e) => `they ${e}`).join(`; `)}.`),
+            o.length &&
+              s.push(
+                `Things that happened between you:\n${o.join(`
+`)}`,
+              ),
+            a.length &&
+              s.push(
+                `Your most recent earlier messages:\n${a.join(`
+`)}`,
+              ),
+            !i.summary && !a.length && s.push(`You have never talked with the player before.`),
+            [
+              `You are ${e.name}, a person living in a small town. You are a real character, NOT an assistant. ${e.persona} ${adventure.npcContext(e.id)}\n\n## Learner Level: ${cefrService.getLevelInfo().name} (${cefrService.getLevelInfo().code})\n${cefrService.getLevelInfo().promptInstruction}`,
+              `Personality: ${r.traits}.`,
+              `Speaking style: ${r.style}`,
+              `Examples of how you sound (copy the voice, never reuse these exact sentences):\n${St(e.id)}`,
+              ``,
+              `## Situation`,
+              `It is ${oe(n.minutes)}, ${se(n.minutes)} on day ${n.day}. You are currently ${n.activity}. ${Ct(n.minutes, n.activity)}`,
+              `Town buildings and where they are (use this if asked for directions; say north/south/east/west and a nearby building, never coordinates): ${xt(Ee(e.id))}.`,
+              `The player's standing in town: reputation ${n.rep}, known as "${mt(n.rep).title}". ${n.rep >= 25 ? `The player is respected for helping people, so you may mention it with warmth.` : ``}`,
+              n.gossip.length
+                ? `Town gossip you have heard about the player (mention only if it fits naturally):\n${n
+                    .gossip.join(`
+`)}`
+                : ``,
+              ``,
+              `## Your memory`,
+              ...s,
+              ...wt(e, n),
+              ``,
+              `## How to talk`,
+              `- The player is learning English (beginner to intermediate). Use clear, natural, everyday English with common words. 1-3 short sentences (under 45 words). No lists, no emoji spam.`,
+              `- First answer or react to exactly what the player just said (answer direct questions directly, with one concrete detail from your own life, job or town). Only then add a question if it fits.`,
+              `- Talk like a real person: opinions, moods, small stories, your own catchphrases. Never sound like an assistant ("Certainly!", "How can I assist you?", "As a ...").`,
+              `- Match your mood to the time and what you are doing (tired late at night, hungry before lunch, busy at work).`,
+              `- Use your memory: refer back to earlier talks, the facts you know and the gossip, but only one thing at a time and only if it fits. Do not invent facts about the player that are not in your memory.`,
+              `- Never repeat a sentence you already said. End with a question or invitation about half of the time; otherwise let a short comment stand.`,
+              `- If the player writes something unclear, guess kindly or ask a simple clarifying question. If they write in another language, answer in simple English and gently ask them to try English.`,
+              `- Once in a while, naturally use a useful new word or phrase and explain it in a few simple words, like a friend would.`,
+              `- Never output source code, Markdown code fences, JSON examples, tool calls, or implementation details. The only visible dialogue must be your natural spoken reply in the JSON reply field.`,
+              `- Never mention being an AI, a game, "missions" or JSON. Stay in character.`,
+              `- Hidden goal for the player: "${e.goal.text}". Set goalDone=true ONLY when the player's latest message clearly achieves it${t ? ` (it is already achieved, so use false)` : ``}. If the player is struggling, nudge them toward it naturally.`,
+              `- In "correction" fix only clear English grammar, spelling or word-choice errors in the latest player message. Write Better: followed by the entire minimally corrected message, without added quotation marks. Preserve the speaker’s intention, question or request, politeness, uncertainty, negation, names, times and quantities. Leave valid, informal or ambiguous phrasing alone. If there are several possible meanings, you can ask for clarification in your reply. Reply in character.`,
+              `- For a correction, explain each actual edit briefly in Vietnamese in "vietnameseTip". With no clear error leave both fields empty, or occasionally put brief praise in "correction" and leave "vietnameseTip" empty. Leave "naturalAlternative" empty.`,
+              `- "remember": if the player just revealed something personal, a short phrase that follows "you", like "like cats" or "live in Hanoi"; otherwise "".`,
+              `- "affinityDelta": integer from -3 (rude) to 3 (very kind), usually 0 or 1.`,
+            ].filter((e, t, n) => e !== `` || n[t - 1] !== ``).join(`
+`)
+          );
+        }
+        function Et(e, t, n, r) {
+          let i = n.map((t) => `${t.role === `user` ? `Player` : e.name.split(` `)[0]}: ${t.text}`)
+            .join(`
+`);
+          return {
+            system: [
+              `You are ${e.name}. Update your private memory notes about the player after a conversation.`,
+              `Write in first person from your point of view, in plain English, at most 90 words.`,
+              `Keep: the player's name, personal details, what they like/dislike, promises, running jokes, how they treated you and how you feel about them.`,
+              `Merge with your previous notes, drop trivial small talk, and never invent anything.`,
+              `Output ONLY the notes text.`,
+            ].join(`
+`),
+            user: `Previous notes: ${t || `(none yet)`}\n\nConversation on day ${r}:\n${i}`,
+          };
+        }
+        var Dt = [
+          `You are a kind English teacher checking ONE sentence written by a beginner student in a chat.`,
+          `Make the fewest edits needed to fix clear English grammar, spelling or word-choice errors. Preserve intention, names, details, negation, modality, politeness, questions and requests.`,
+          `If the wording is valid or its intended meaning is unclear, set ok=true and leave fixed and tip empty. Preserve informal language. For other languages also leave the text alone.`,
+          `For a definite error set ok=false, put the entire minimally corrected message in fixed, and briefly explain each actual edit in Vietnamese in tip.`,
+        ].join(`
+`);
+        function Ot(e) {
+          let t = e
+              .trim()
+              .replace(/^```(?:json)?\s*/i, ``)
+              .replace(/\s*```$/, ``),
+            n = null;
+          try {
+            n = JSON.parse(t);
+          } catch {
+            let e = t.match(/\{[\s\S]*\}/);
+            if (e)
+              try {
+                n = JSON.parse(e[0]);
+              } catch {}
+          }
+          if (!n) throw Error(`Teacher answer was not JSON`);
+          let r = String(n.fixed ?? ``).trim();
+          return {
+            ok: n.ok === !0 || !r,
+            fixed: r,
+            tip: String(n.tip ?? ``).trim(),
+          };
+        }
+        var kt = [
+          `You are a friendly dictionary tutor for a Vietnamese learner of English (beginner to intermediate).`,
+          `The user sends an English word, phrase, idiom or sentence. They may also write Vietnamese to ask how to say something in English; then give the English word or phrase as "term".`,
+          `Return JSON with these fields:`,
+          `- term: the English word or phrase you explain, in its base form.`,
+          `- meaning: ONE sentence in very simple English, at most 20 words, no hard words.`,
+          `- vi: the Vietnamese meaning, at most 12 words.`,
+          `- example: one short natural example sentence, at most 12 words.`,
+          `- notes: one short tip (pronunciation, common mistake, or a related word), at most 15 words, or "" if there is nothing useful.`,
+          `If the input is a whole sentence, explain its hardest word or idiom and put a Vietnamese translation of the whole sentence in notes.`,
+          `Never refuse. If you cannot understand the input, set term to the input and meaning to "I do not understand. Try one word or phrase."`,
+        ].join(`
+`);
+        function At(e) {
+          let t = e
+              .trim()
+              .replace(/^```(?:json)?\s*/i, ``)
+              .replace(/\s*```$/, ``),
+            n = null;
+          try {
+            n = JSON.parse(t);
+          } catch {
+            let e = t.match(/\{[\s\S]*\}/);
+            if (e)
+              try {
+                n = JSON.parse(e[0]);
+              } catch {}
+          }
+          if (!n) throw Error(`The word helper did not answer clearly. Try again.`);
+          let r = (e, t) =>
+            String(e ?? ``)
+              .trim()
+              .slice(0, t);
+          return {
+            term: r(n.term, 60),
+            meaning: r(n.meaning, 220),
+            vi: r(n.vi, 140),
+            example: r(n.example, 160),
+            notes: r(n.notes, 200),
+          };
+        } /* LIFEQUEST NPC RESPONSE GUARD v11.1 — do not expose AI JSON or code as dialogue. */
+        function lqNpcExtractJson(value) {
+          if (value && typeof value === 'object') return value;
+          if (typeof value !== 'string') return null;
+          let text = value.trim();
+          for (let round = 0; round < 3; round++) {
+            text = text
+              .replace(/^```(?:json|javascript|js|text)?\s*\n?/i, '')
+              .replace(/\n?```\s*$/, '')
+              .trim();
+            try {
+              const parsed = JSON.parse(text);
+              if (typeof parsed === 'string') {
+                text = parsed.trim();
+                continue;
+              }
+              return parsed;
+            } catch {}
+            const begin = text.indexOf('{'),
+              end = text.lastIndexOf('}');
+            if (begin >= 0 && end > begin) {
+              try {
+                const parsed = JSON.parse(text.slice(begin, end + 1));
+                return parsed;
+              } catch {}
+            }
+            break;
+          }
+          return null;
+        }
+        function lqNpcSafeText(value, fallback = '', preserveText = false) {
+          let raw = typeof value === 'string' ? value : String(value ?? '');
+          const orig = raw.trim();
+          if (!orig || (preserveText && /```|~~~/.test(orig))) return fallback;
+          let parsed = lqNpcExtractJson(orig);
+          if (parsed && typeof parsed === 'object') {
+            if (preserveText) return fallback;
+            const content =
+              parsed.reply ?? parsed.greeting ?? parsed.message?.content ?? parsed.text;
+            if (typeof content === 'string' && content !== orig)
+              return lqNpcSafeText(content, fallback);
+            return fallback;
+          }
+          raw = orig
+            .replace(/^```(?:json|text|markdown)?\s*/i, '')
+            .replace(/\s*```$/, '')
+            .trim();
+          // Sometimes the provider emits malformed JSON with a valid reply property.
+          const embedded = raw.match(/["']reply["']\s*:\s*"((?:\\.|[^"\\])*)"/i);
+          if (embedded) {
+            if (preserveText) return fallback;
+            try {
+              return lqNpcSafeText(JSON.parse('"' + embedded[1] + '"'), fallback);
+            } catch {}
+          }
+          // Do not display code blocks, JSON fields, markup documents or stack traces.
+          if (
+            /```|~~~|<\s*\/?\s*(?:script|style|html|!doctype|body|div|pre|code)\b|\b(?:SyntaxError|ReferenceError|TypeError|Traceback|at\s+\w+\s*\([^)]*:\d+)\b/i.test(
+              raw,
+            )
+          )
+            return fallback;
+          if (
+            /(?:^|[\r\n])\s*(?:(?:const|let|var|function|class|import|export|return|def|print|if|for|while)\s+[\w$]+\s*(?:[=(;:]|\{)|(?:\{\s*["']?(?:reply|goalDone|correction|role|parts|content)["']?\s*:)|(?:["']?(?:goalDone|affinityDelta|correction)["']?\s*:)|<\/?[A-Za-z][^>]*>)/m.test(
+              raw,
+            )
+          )
+            return fallback;
+          if (/^\s*[\[{]/.test(raw) && /[\]}]\s*$/.test(raw)) return fallback;
+          if (
+            /\b(?:console\.log|JSON\.parse|document\.getElementById|=>|```|\{\s*"reply"|\\n\s*"goalDone")/.test(
+              raw,
+            )
+          )
+            return fallback;
+          raw = raw
+            .replace(/^\s*(?:reply|greeting|answer)\s*:\s*/i, '')
+            .replace(/^['“”"]+|['“”"]+$/g, '');
+          raw = raw
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/__([^_]+)__/g, '$1')
+            .replace(/`([^`]+)`/g, '$1')
+            .trim();
+          raw = raw
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+          if (
+            !raw ||
+            /^[\[{]/.test(raw) ||
+            /[{}][\s]*["']?(?:goalDone|reply|correction)["']?\s*[:=]/i.test(raw)
+          )
+            return fallback;
+          return preserveText ? orig : raw.slice(0, 380);
+        }
+        function jt(response, wasDone) {
+          const parsed = lqNpcExtractJson(response);
+          const failLine = 'Sorry, could you say that again?';
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            // Plain prose is allowed. Corrupted JSON and code never reach the player.
+            return {
+              reply: lqNpcSafeText(response, failLine),
+              correction: '',
+              goalDone: false,
+              remember: '',
+              affinityDelta: 0,
+            };
+          }
+          const reply = lqNpcSafeText(parsed.reply, failLine);
+          const ok = reply !== failLine;
+          const cleanExtra = (x) => lqNpcSafeText(x, '').slice(0, 180);
+          const delta = Number(parsed.affinityDelta);
+          return {
+            reply,
+            correction: lqNpcSafeText(parsed.correction, '', true),
+            vietnameseTip: lqNpcSafeText(parsed.vietnameseTip, '', true),
+            naturalAlternative: cleanExtra(parsed.naturalAlternative),
+            vocabulary: cleanExtra(parsed.vocabulary).slice(0, 90),
+            remember: ok ? cleanExtra(parsed.remember).slice(0, 130) : '',
+            goalDone: ok && !wasDone && parsed.goalDone === true,
+            affinityDelta:
+              ok && Number.isFinite(delta) ? Math.max(-3, Math.min(3, Math.round(delta))) : 0,
+          };
+        }
+
+        var Mt = 'gemini-2.5-flash';
+var Nt = `https://generativelanguage.googleapis.com/v1beta`;
+var Pt = '/api/gemini';
+var Ft = {
+            type: `OBJECT`,
+            properties: {
+              reply: { type: `STRING` },
+              correction: { type: `STRING` },
+              vietnameseTip: { type: `STRING` },
+              naturalAlternative: { type: `STRING` },
+              vocabulary: { type: `STRING` },
+              goalDone: { type: `BOOLEAN` },
+              remember: { type: `STRING` },
+              affinityDelta: { type: `INTEGER` },
+            },
+            required: [`reply`, `correction`, `vietnameseTip`, `goalDone`, `remember`, `affinityDelta`],
+          };
+var It = {
+            type: `OBJECT`,
+            properties: {
+              ok: { type: `BOOLEAN` },
+              fixed: { type: `STRING` },
+              tip: { type: `STRING` },
+            },
+            required: [`ok`, `fixed`, `tip`],
+          };
+var Lt = {
+            type: `OBJECT`,
+            properties: {
+              term: { type: `STRING` },
+              meaning: { type: `STRING` },
+              vi: { type: `STRING` },
+              example: { type: `STRING` },
+              notes: { type: `STRING` },
+            },
+            required: [`term`, `meaning`, `vi`, `example`, `notes`],
+          };
+var Rt = class {
+            apiKey;
+            viaProxy;
+            model;
+            useThinkingCfg = !0;
+            modelResolved = !1;
+            constructor(e, t = ``, n = !1) {
+              ((this.apiKey = e),
+                (this.viaProxy = n),
+                (this.model = t.trim() || `gemini-2.5-flash`));
+            }
+            async greet(e, t) {
+              return (
+                await this.generate({
+                  systemInstruction: {
+                    parts: [
+                      {
+                        text: `${Tt(e, t.memory.goalDone, t)}\n\n## Now\nThe player has just walked up to you. Greet them in character in ONE or TWO short sentences. If you know them, use your memory naturally. Output ONLY the greeting text.`,
+                      },
+                    ],
+                  },
+                  contents: [{ role: `user`, parts: [{ text: `*The player walks up to you.*` }] }],
+                  generationConfig: { temperature: 0.95 },
+                })
+              )
+                .trim()
+                .replace(/^["“]|["”]$/g, ``)
+                .slice(0, 300);
+            }
+            get label() {
+              return `Gemini (${this.model})`;
+            }
+            async respond(e, t, n, r, i) {
+              let a = [{ role: `user`, parts: [{ text: `*The player walks up to you.*` }] }];
+              for (let e of t.slice(-30))
+                a.push({ role: e.role === `user` ? `user` : `model`, parts: [{ text: e.text }] });
+              return (
+                a.push({ role: `user`, parts: [{ text: n }] }),
+                jt(
+                  await this.generate({
+                    systemInstruction: { parts: [{ text: Tt(e, r, i) }] },
+                    contents: a,
+                    generationConfig: {
+                      temperature: 0.9,
+                      responseMimeType: `application/json`,
+                      responseSchema: Ft,
+                    },
+                  }),
+                  r,
+                )
+              );
+            }
+            async summarize(e, t, n, r) {
+              let { system: i, user: a } = Et(e, t, n, r);
+              return (
+                await this.generate({
+                  systemInstruction: { parts: [{ text: i }] },
+                  contents: [{ role: `user`, parts: [{ text: a }] }],
+                  generationConfig: { temperature: 0.3 },
+                })
+              ).trim();
+            }
+            async check(e) {
+              return Ot(
+                await this.generate({
+                  systemInstruction: { parts: [{ text: Dt }] },
+                  contents: [{ role: `user`, parts: [{ text: e }] }],
+                  generationConfig: {
+                    temperature: 0,
+                    responseMimeType: `application/json`,
+                    responseSchema: It,
+                  },
+                }),
+              );
+            }
+            async explain(e) {
+              return At(
+                await this.generate({
+                  systemInstruction: { parts: [{ text: kt }] },
+                  contents: [{ role: `user`, parts: [{ text: e }] }],
+                  generationConfig: {
+                    temperature: 0.2,
+                    responseMimeType: `application/json`,
+                    responseSchema: Lt,
+                  },
+                }),
+              );
+            }
+            async test() {
+              return (
+                await this.generate({
+                  contents: [{ role: `user`, parts: [{ text: `Reply with the single word OK.` }] }],
+                  generationConfig: { temperature: 0 },
+                }),
+                this.model
+              );
+            }
+            async generate(e) {
+              let t = await this.post(e, this.useThinkingCfg);
+              if (
+                (t.status === 400 &&
+                  this.useThinkingCfg &&
+                  /think/i.test(await t.clone().text()) &&
+                  ((this.useThinkingCfg = !1), (t = await this.post(e, !1))),
+                t.status === 404 && !this.modelResolved)
+              ) {
+                this.modelResolved = !0;
+                let n = await this.pickModel();
+                n &&
+                  n !== this.model &&
+                  ((this.model = n), (t = await this.post(e, this.useThinkingCfg)));
+              }
+              if (!t.ok) {
+                // Keep the HTTP status (and Google's suggested wait for 429) on the error so the wrapper (dr in 07b)
+                // can tell a rate limit apart from a network hiccup.
+                let err = Error(await this.explainError(t));
+                err.status = t.status;
+                err.retryAfterSec = this.lastRetryAfterSec;
+                throw err;
+              }
+              let n = (await t.json()).candidates?.[0],
+                r = (n?.content?.parts ?? []).map((e) => e.text ?? ``).join(``);
+              if (!r)
+                throw Error(
+                  n?.finishReason ? `Empty answer (${n.finishReason})` : `Empty answer from Gemini`,
+                );
+              return r;
+            }
+            post(e, t) {
+              // 2.5 flash: thinkingBudget 0 (hidden thinking tokens could empty the reply); 3.x: thinkingLevel low.
+              // If a model rejects it (400 mentioning "think"), generate() retries once without it.
+              let think = t ? window.LQGemini.thinkingConfig(this.model) : null;
+              let n = {
+                ...e.generationConfig,
+                ...(think ? { thinkingConfig: think } : {}),
+              };
+              return this.viaProxy
+                ? fetch(Pt, {
+                    method: `POST`,
+                    headers: { 'Content-Type': `application/json` },
+                    body: JSON.stringify({
+                      model: this.model,
+                      body: { ...e, generationConfig: n },
+                    }),
+                    signal: AbortSignal.timeout(3e4),
+                  })
+                : fetch(`${Nt}/models/${this.model}:generateContent`, {
+                    method: `POST`,
+                    headers: { 'Content-Type': `application/json`, 'x-goog-api-key': this.apiKey },
+                    body: JSON.stringify({ ...e, generationConfig: n }),
+                    signal: AbortSignal.timeout(3e4),
+                  });
+            }
+            async pickModel() {
+              if (this.viaProxy) return null;
+              try {
+                let e = await fetch(`${Nt}/models?pageSize=200`, {
+                  headers: { 'x-goog-api-key': this.apiKey },
+                });
+                if (!e.ok) return null;
+                let t = ((await e.json()).models ?? [])
+                  .filter((e) => e.supportedGenerationMethods?.includes(`generateContent`))
+                  .map((e) => e.name.replace(/^models\//, ``))
+                  .filter(
+                    (e) =>
+                      /flash/.test(e) &&
+                      !/image|tts|live|audio|embed|exp|thinking|robotics|computer/.test(e),
+                  );
+                return (
+                  t.find((e) => /lite/.test(e) && !/preview/.test(e)) ??
+                  t.find((e) => !/preview/.test(e)) ??
+                  t[0] ??
+                  null
+                );
+              } catch {
+                return null;
+              }
+            }
+            async explainError(e) {
+              let t = ``;
+              this.lastRetryAfterSec = 0;
+              try {
+                let body = (await e.json()).error ?? {};
+                t = body.message ?? ``;
+                // A 429 usually carries RetryInfo with a delay like "23s".
+                let info = (body.details ?? []).find((d) => /RetryInfo/.test(d?.[`@type`] ?? ``));
+                let secs = parseFloat(info?.retryDelay ?? ``);
+                if (Number.isFinite(secs) && secs > 0) this.lastRetryAfterSec = Math.ceil(secs);
+              } catch {}
+              return e.status === 429
+                ? `Free-tier limit reached. Wait a minute and try again.`
+                : e.status === 400 && /api key/i.test(t)
+                  ? `The API key is not valid.`
+                  : e.status === 403
+                    ? `Access denied (check the API key or region). ${t}`.trim()
+                    : `Gemini error ${e.status}${t ? `: ${t.slice(0, 160)}` : ``}`;
+            }
+          };
+var zt = class {
+            store;
+            root = document.getElementById(`settings`);
+            keyInput = this.root.querySelector(`#ai-key`);
+            modelInput = this.root.querySelector(`#ai-model`);
+            status = this.root.querySelector(`.status`);
+            onSaved = () => {};
+            constructor(e) {
+              ((this.store = e), (this.modelInput.placeholder = Mt));
+              for (let e of [this.keyInput, this.modelInput])
+                (e.addEventListener(`keydown`, (e) => {
+                  (e.stopPropagation(), e.key === `Escape` && this.toggle());
+                }),
+                  e.addEventListener(`keyup`, (e) => e.stopPropagation()));
+              (this.root.querySelector(`#ai-save`).addEventListener(`click`, () => this.save()),
+                this.root
+                  .querySelector(`#ai-test`)
+                  .addEventListener(`click`, () => void this.test()),
+                this.root.querySelector(`#ai-clear`).addEventListener(`click`, () => this.clear()),
+                this.root
+                  .querySelector(`#ai-close`)
+                  .addEventListener(`click`, () => this.toggle()));
+              let t = this.root.querySelector(`#save-file`);
+              (this.root
+                .querySelector(`#save-export`)
+                .addEventListener(`click`, () => this.exportSave()),
+                this.root.querySelector(`#save-import`).addEventListener(`click`, () => t.click()),
+                t.addEventListener(`change`, () => void this.importSave(t)));
+            }
+            exportSave() {
+              this.store.save();
+              let e = URL.createObjectURL(
+                  new Blob([this.store.exportJson()], { type: `application/json` }),
+                ),
+                t = document.createElement(`a`);
+              ((t.href = e),
+                (t.download = `english-town-save-${new Date().toISOString().slice(0, 10)}.json`),
+                t.click(),
+                URL.revokeObjectURL(e),
+                this.setStatus(`Save exported. Keep the file somewhere safe.`, !0));
+            }
+            async importSave(e) {
+              let t = e.files?.[0];
+              if (((e.value = ``), t && confirm(`Replace your current progress with this file?`)))
+                try {
+                  (this.store.importJson(await t.text()),
+                    this.setStatus(`Imported! Reloading...`, !0),
+                    setTimeout(() => location.reload(), 600));
+                } catch (e) {
+                  this.setStatus(
+                    e instanceof SyntaxError ? `This file is not valid JSON.` : e.message,
+                    !1,
+                  );
+                }
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            toggle() {
+              if (this.isOpen) {
+                this.root.style.display = `none`;
+                return;
+              }
+              let e = vt();
+              ((this.keyInput.value = e.geminiKey),
+                (this.modelInput.value = e.geminiModel),
+                this.setStatus(
+                  e.geminiKey
+                    ? `A key is saved. NPCs use Gemini.`
+                    : `No key yet. NPCs use simple offline replies.`,
+                ),
+                (this.root.style.display = `block`),
+                setTimeout(() => this.keyInput.focus(), 0));
+            }
+            setStatus(e, t) {
+              ((this.status.textContent = e),
+                (this.status.style.color = t === void 0 ? `#aab` : t ? `#8fe08f` : `#ff8a8a`));
+            }
+            save() {
+              (yt({
+                geminiKey: this.keyInput.value.trim(),
+                geminiModel: this.modelInput.value.trim(),
+              }),
+                this.setStatus(`Saved.`, !0),
+                this.onSaved());
+            }
+            clear() {
+              ((this.keyInput.value = ``),
+                this.save(),
+                this.setStatus(`Key removed. NPCs use simple offline replies.`));
+            }
+            async test() {
+              let e = this.keyInput.value.trim();
+              if (!e) {
+                this.setStatus(`Paste your API key first.`, !1);
+                return;
+              }
+              this.setStatus(`Testing...`);
+              try {
+                let t = await new Rt(e, this.modelInput.value).test();
+                this.setStatus(`Connected! Model: ${t}. Press Save to use it.`, !0);
+              } catch (e) {
+                this.setStatus(e.message, !1);
+              }
+            }
+          };
+var Bt = class {
+            root = document.getElementById(`briefing`);
+            nameEl = this.root.querySelector(`.name`);
+            textEl = this.root.querySelector(`.text`);
+            stepEl = this.root.querySelector(`.step`);
+            nextBtn = this.root.querySelector(`.next`);
+            lines = [];
+            index = 0;
+            shown = 0;
+            timer = 0;
+            openedAt = 0;
+            done = () => {};
+            constructor() {
+              (window.addEventListener(`keyup`, (e) => {
+                !this.isOpen ||
+                  Date.now() - this.openedAt < 300 ||
+                  (e.key === `Escape`
+                    ? this.close(!1)
+                    : (e.key === `e` || e.key === `E` || e.key === ` ` || e.key === `Enter`) &&
+                      this.advance());
+              }),
+                this.nextBtn.addEventListener(`click`, () => {
+                  (this.nextBtn.blur(), this.advance());
+                }));
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            show(e, t, n) {
+              if (!t.length) {
+                n(!0);
+                return;
+              }
+              ((this.lines = t),
+                (this.index = 0),
+                (this.done = n),
+                (this.openedAt = Date.now()),
+                (this.nameEl.textContent = e),
+                (this.root.style.display = `block`),
+                this.type());
+            }
+            type() {
+              clearInterval(this.timer);
+              let e = this.lines[this.index],
+                t = this.index === this.lines.length - 1;
+              ((this.shown = 0),
+                (this.textEl.textContent = ``),
+                (this.stepEl.textContent = `${this.index + 1}/${this.lines.length}`),
+                (this.nextBtn.textContent = t ? `Go through the gate ▸` : `Next ▸`),
+                (this.timer = window.setInterval(() => {
+                  ((this.shown = Math.min(e.length, this.shown + 2)),
+                    (this.textEl.textContent = e.slice(0, this.shown)),
+                    this.shown >= e.length && clearInterval(this.timer));
+                }, 20)));
+            }
+            advance() {
+              let e = this.lines[this.index];
+              this.shown < e.length
+                ? (clearInterval(this.timer),
+                  (this.shown = e.length),
+                  (this.textEl.textContent = e))
+                : this.index < this.lines.length - 1
+                  ? (this.index++, this.type())
+                  : this.close(!0);
+            }
+            close(e) {
+              (clearInterval(this.timer), (this.root.style.display = `none`));
+              let t = this.done;
+              ((this.done = () => {}), t(e));
+            }
+          };
+        function Vt(e, t) {
+          return (ie[e] ?? [])
+            .filter((e) => e.place === t && e.kind === `work`)
+            .map((e) => `${se(Math.round(e.from * 60))}-${se(Math.round(e.to * 60))}`)
+            .join(` and `);
+        }
+        var Ht = (e) => {
+          let t = oe(e);
+          return t === `night` ? `It is late` : `Good ${t}`;
+        };
+        function Ut(e, t) {
+          let n = t.playerName ?? `my friend`;
+          return e === `mining-town`
+            ? t.first
+              ? [
+                  `${Ht(t.minutes)}, ${n}. You are standing in front of our new gate. It is the fastest way to Minerals Town, our mining town.`,
+                  `Minerals Town is far from here, and its people work very hard. They dig for copper, iron, and sometimes even gold.`,
+                  `Please listen carefully before you go. First: be polite. The miners are tired after a long day, so say "please" and "thank you".`,
+                  `Second: be safe. Stay on the road and listen to the foreman. A mine is not a playground.`,
+                  `Third: speak English. Use short, clear sentences. Keep your pocket dictionary close, and if a word is hard, look it up. There is no shame in asking.`,
+                  `One more thing. When you want to come home, walk onto the glowing pad in the south-west corner of Minerals Town. It brings you back to this town.`,
+                  `Good luck, and make our town proud.`,
+                ]
+              : [`Going to Minerals Town again, ${n}? Have a nice day!`]
+            : [`${Ht(t.minutes)}, ${n}. Please go safely.`];
+        }
+        function Wt(e, t) {
+          let n = Math.min(255, Math.round(((e >> 16) & 255) * t)),
+            r = Math.min(255, Math.round(((e >> 8) & 255) * t)),
+            i = Math.min(255, Math.round((e & 255) * t));
+          return (n << 16) | (r << 8) | i;
+        }
+        var Gt = 15985103,
+          Z = 2826800,
+          Kt = 8014378,
+          qt = 10475760,
+          Jt = 14469530;
+        function Yt(e, t, n, r, i) {
+          if (
+            (e.fillStyle(16777215, 1).fillRect(t - 2, n - 2, 20, 18),
+            e.fillStyle(qt, 1).fillRect(t, n, 16, 14),
+            e.fillStyle(16777215, 0.55).fillRect(t + 2, n + 2, 4, 4),
+            e.lineStyle(2, Z, 1).strokeRect(t - 2, n - 2, 20, 18),
+            e.lineBetween(t + 8, n, t + 8, n + 14).lineBetween(t, n + 7, t + 16, n + 7),
+            r)
+          ) {
+            e.fillStyle(Kt, 1).fillRect(t - 2, n + 15, 20, 5);
+            let r = [16734842, 16765498, 16777215, 16747066];
+            for (let a = 0; a < 4; a++)
+              e.fillStyle(r[(i + a) % 4], 1).fillCircle(t + 1 + a * 5, n + 14, 2.5);
+          }
+        }
+        function Xt(e, t, n, r) {
+          switch (
+            (e.fillStyle(16775136, 1).fillRect(n - 18, r - 11, 36, 22),
+            e.lineStyle(2, Z, 1).strokeRect(n - 18, r - 11, 36, 22),
+            t)
+          ) {
+            case `cross`:
+              e.fillStyle(14694970, 1)
+                .fillRect(n - 3, r - 8, 6, 16)
+                .fillRect(n - 8, r - 3, 16, 6);
+              break;
+            case `badge`:
+              (e.fillStyle(15909424, 1).fillTriangle(n - 9, r - 7, n + 9, r - 7, n, r + 9),
+                e.lineStyle(2, Z, 1).strokeTriangle(n - 9, r - 7, n + 9, r - 7, n, r + 9),
+                e.fillStyle(2771624, 1).fillCircle(n, r - 2, 2.5));
+              break;
+            case `mail`:
+              (e.fillStyle(16777215, 1).fillRect(n - 9, r - 5, 18, 11),
+                e
+                  .lineStyle(2, 12859962, 1)
+                  .strokeRect(n - 9, r - 5, 18, 11)
+                  .lineBetween(n - 9, r - 5, n, r + 2)
+                  .lineBetween(n + 9, r - 5, n, r + 2));
+              break;
+            case `coin`:
+              (e.fillStyle(15909424, 1).fillCircle(n, r, 8),
+                e.lineStyle(2, 11041296, 1).strokeCircle(n, r, 8).strokeCircle(n, r, 4));
+              break;
+            case `film`:
+              e.fillStyle(2236979, 1).fillRect(n - 10, r - 6, 20, 12);
+              for (let t = 0; t < 4; t++)
+                e.fillStyle(16777215, 1)
+                  .fillRect(n - 8 + t * 5, r - 5, 3, 2)
+                  .fillRect(n - 8 + t * 5, r + 3, 3, 2);
+              e.fillStyle(14694970, 1).fillRect(n - 4, r - 2, 8, 4);
+              break;
+            case `cart`:
+              (e
+                .lineStyle(2, 2779690, 1)
+                .lineBetween(n - 10, r - 7, n - 6, r - 7)
+                .lineBetween(n - 6, r - 7, n - 4, r + 3)
+                .lineBetween(n - 4, r + 3, n + 8, r + 3)
+                .lineBetween(n - 5, r - 3, n + 9, r - 3)
+                .lineBetween(n + 9, r - 3, n + 8, r + 3),
+                e
+                  .fillStyle(2779690, 1)
+                  .fillCircle(n - 2, r + 7, 2)
+                  .fillCircle(n + 6, r + 7, 2));
+              break;
+            case `fork`:
+              (e
+                .lineStyle(2, 5592405, 1)
+                .lineBetween(n - 5, r - 7, n - 5, r + 8)
+                .lineBetween(n - 8, r - 7, n - 8, r - 2)
+                .lineBetween(n - 2, r - 7, n - 2, r - 2)
+                .lineBetween(n + 5, r - 7, n + 5, r + 8),
+                e.fillStyle(5592405, 1).fillRect(n + 3, r - 7, 4, 7));
+              break;
+            case `dumbbell`:
+              e.fillStyle(5592422, 1)
+                .fillRect(n - 11, r - 6, 5, 12)
+                .fillRect(n + 6, r - 6, 5, 12)
+                .fillRect(n - 6, r - 2, 12, 4);
+              break;
+            case `bed`:
+              (e
+                .fillStyle(9067066, 1)
+                .fillRect(n - 10, r, 20, 4)
+                .fillRect(n - 10, r - 6, 3, 10),
+                e.fillStyle(16777215, 1).fillRect(n - 7, r - 3, 7, 4),
+                e.fillStyle(4885208, 1).fillRect(n, r - 3, 10, 4));
+              break;
+            case `book`:
+              (e.fillStyle(3107528, 1).fillRect(n - 10, r - 6, 20, 12),
+                e.fillStyle(16777215, 1).fillRect(n - 1, r - 6, 2, 12));
+              break;
+            case `pickaxe`:
+              (e.lineStyle(3, 8014378, 1).lineBetween(n - 8, r + 8, n + 5, r - 6),
+                e
+                  .lineStyle(3, 6975616, 1)
+                  .lineBetween(n - 5, r - 8, n + 3, r - 9)
+                  .lineBetween(n + 3, r - 9, n + 10, r - 2));
+              break;
+            case `anvil`:
+              e.fillStyle(3817288, 1)
+                .fillRect(n - 9, r - 5, 18, 5)
+                .fillRect(n - 4, r, 8, 5)
+                .fillRect(n - 8, r + 5, 16, 3)
+                .fillTriangle(n + 9, r - 5, n + 14, r - 5, n + 9, r - 1);
+              break;
+            case `gem`:
+              (e.fillStyle(3854560, 1).fillTriangle(n - 9, r - 2, n + 9, r - 2, n, r + 9),
+                e
+                  .fillStyle(9105656, 1)
+                  .fillTriangle(n - 9, r - 2, n - 4, r - 8, n + 1, r - 2)
+                  .fillTriangle(n + 9, r - 2, n + 4, r - 8, n - 1, r - 2)
+                  .fillRect(n - 4, r - 8, 8, 6),
+                e.lineStyle(2, Z, 1).strokeTriangle(n - 9, r - 2, n + 9, r - 2, n, r + 9));
+              break;
+            case `train`:
+              (e
+                .fillStyle(3817288, 1)
+                .fillRect(n - 11, r - 4, 20, 9)
+                .fillRect(n - 9, r - 9, 6, 5)
+                .fillRect(n + 1, r - 7, 8, 3),
+                e.fillStyle(13136943, 1).fillRect(n + 9, r - 1, 4, 6),
+                e
+                  .fillStyle(2236968, 1)
+                  .fillCircle(n - 7, r + 7, 2.5)
+                  .fillCircle(n, r + 7, 2.5)
+                  .fillCircle(n + 7, r + 7, 2.5));
+          }
+        }
+        function __lqStreetArtBuilding(g, b) {
+          if (window.LQArtV69?.facade?.(g,b)) return;
+          if (window.LQArtV68?.facade) { window.LQArtV68.facade(g, b); return; }
+          if (window.LQArtV67?.facade) { window.LQArtV67.facade(g, b); return; }
+          const x = b.x * 32, y = b.y * 32, w = b.w * 32, h = b.h * 32;
+          const roof = Math.round(h * 0.48), frontY = y + roof, wallH = h - roof;
+          const ink = 0x252b33, concrete = b.wall || 0x82878c;
+          const palette = [0xff4f87, 0x35c8d0, 0xffd447, 0x9470e8, 0x83c96b, 0xff893d];
+          const seed = ((b.x * 37 + b.y * 19 + b.w * 11) >>> 0);
+          const c1 = palette[seed % palette.length], c2 = palette[(seed + 2) % palette.length], c3 = palette[(seed + 4) % palette.length];
+          g.fillStyle(0x111820, 0.30).fillRect(x + 7, y + 10, w, h);
+          // Corrugated workshop roof and visible steel supports.
+          g.fillStyle(0x343b43, 1).fillRect(x, y, w, roof);
+          g.fillStyle(0x59616a, 1).fillRect(x + 5, y + 5, w - 10, roof - 10);
+          g.fillStyle(0x777e84, 0.82).fillRect(x + 8, y + 7, w - 16, 3);
+          for (let xx = x + 12; xx < x + w - 10; xx += 24) {
+            g.fillStyle(0x303740, 0.72).fillRect(xx, y + 13, 2, Math.max(7, roof - 21));
+            g.fillStyle(0x8a9298, 0.4).fillRect(xx + 3, y + 13, 1, Math.max(7, roof - 21));
+          }
+          // A concrete facade stays readable underneath the saturated street mural.
+          g.fillStyle(concrete, 1).fillRect(x, frontY, w, wallH);
+          g.fillStyle(0x626a72, 1).fillRect(x, frontY, w, 5);
+          g.fillStyle(0xb6b8b8, 0.7).fillRect(x + 4, frontY + 6, w - 8, 2);
+          for (let yy = frontY + 14; yy < y + h - 8; yy += 18)
+            g.lineStyle(1, 0x444b52, 0.42).lineBetween(x + 3, yy, x + w - 3, yy);
+          g.lineStyle(1, 0x454b52, 0.5).lineBetween(x + 20, frontY + 10, x + 24, frontY + 20).lineBetween(x + 24, frontY + 20, x + 19, frontY + 27);
+
+          // Broad 50–60% mural panel: layered block letters, paint swashes, drips and stencil marks.
+          const panelX = x + Math.max(18, w * 0.11), panelY = frontY + 9;
+          const panelW = Math.min(w - 36, w * 0.72), panelH = Math.max(28, wallH - 23);
+          g.fillStyle(0x30343a, 0.93).fillRect(panelX, panelY, panelW, panelH);
+          g.fillStyle(c1, 0.98).fillRect(panelX + 5, panelY + 5, panelW * 0.34, 5);
+          g.fillStyle(c2, 0.98).fillRect(panelX + panelW * 0.39, panelY + 5, panelW * 0.43, 5);
+          g.fillStyle(c3, 0.94).fillRect(panelX + 7, panelY + 16, panelW * 0.17, Math.max(9, panelH * 0.48));
+          g.fillStyle(c2, 0.94).fillTriangle(panelX + panelW * 0.23, panelY + 13, panelX + panelW * 0.58, panelY + panelH * 0.48, panelX + panelW * 0.24, panelY + panelH - 5);
+          g.fillStyle(c1, 0.95).fillTriangle(panelX + panelW * 0.50, panelY + 12, panelX + panelW - 7, panelY + 12, panelX + panelW * 0.75, panelY + panelH - 5);
+          g.lineStyle(3, c3, 1).lineBetween(panelX + panelW * 0.07, panelY + panelH * 0.76, panelX + panelW * 0.91, panelY + panelH * 0.25);
+          g.lineStyle(2, 0xf8f1dc, 0.9).lineBetween(panelX + 11, panelY + panelH * 0.56, panelX + panelW * 0.86, panelY + panelH * 0.56);
+          for (let k = 0; k < 5; k++) {
+            const dx = panelX + 10 + k * Math.max(14, panelW * 0.16);
+            g.fillStyle([c1, c2, c3][k % 3], 0.95).fillRect(dx, panelY + panelH - 4, 3, 4 + (k % 3) * 3);
+          }
+          // Paint splashes around the panel create a hand-made, layered-wall appearance.
+          for (let k = 0; k < 9; k++) {
+            const dx = x + 8 + ((seed + k * 29) % Math.max(20, w - 16));
+            const dy = frontY + 7 + ((seed + k * 17) % Math.max(12, wallH - 14));
+            g.fillStyle(palette[(seed + k * 3) % palette.length], 0.72).fillRect(dx, dy, 2 + (k % 3) * 2, 2);
+          }
+
+          // Bright windows, door and a small enamel sign remain consistent with the game's tile scale.
+          const doorX = b.door * 32 + 16;
+          for (let xx = x + 16; xx < x + w - 18; xx += 36) {
+            if (Math.abs(xx + 9 - doorX) < 22) continue;
+            g.fillStyle(0x18242e, 1).fillRect(xx, frontY + wallH * 0.56, 18, Math.max(10, wallH * 0.30));
+            g.fillStyle([0x35c8d0, 0xffd447, 0xff8b62][((xx / 36) | 0) % 3], 0.95).fillRect(xx + 3, frontY + wallH * 0.56 + 3, 12, Math.max(4, wallH * 0.18));
+            g.lineStyle(1, 0x252b33, 1).strokeRect(xx, frontY + wallH * 0.56, 18, Math.max(10, wallH * 0.30));
+          }
+          g.fillStyle(ink, 1).fillRect(doorX - 12, y + h - 35, 24, 35);
+          g.fillStyle(0x151a20, 1).fillRect(doorX - 9, y + h - 32, 18, 31);
+          g.fillStyle(0xffd447, 1).fillRect(doorX + 6, y + h - 19, 2, 2);
+          g.lineStyle(3, 0x272e35, 1).strokeRect(x, frontY, w, wallH);
+          g.fillStyle(0xb2b2ad, 1).fillRect(x + 3, y + h - 3, w - 6, 3);
+        }
+        function __lqFreightShed(g, b) {
+          const x = b.x * 32, y = b.y * 32, w = b.w * 32, h = b.h * 32, doorX = b.door * 32 + 16;
+          g.fillStyle(0x0e141a, 0.3).fillRect(x + 6, y + 9, w, h);
+          g.fillStyle(0x464d54, 1).fillRect(x, y, w, 56);
+          g.fillStyle(0x656d73, 1).fillRect(x + 5, y + 5, w - 10, 45);
+          g.fillStyle(0x777c80, 1).fillRect(x, y + 56, w, h - 56);
+          g.fillStyle(0x383f46, 1).fillRect(doorX - 25, y + 56, 50, h - 56);
+          g.fillStyle(0x161d24, 1).fillRect(doorX - 20, y + 60, 40, h - 60);
+          for (let yy = y + 62; yy < y + h - 2; yy += 5) g.lineStyle(1, 0x747d84, 0.65).lineBetween(doorX - 19, yy, doorX + 19, yy);
+          g.fillStyle(0xffd447, 1).fillRect(doorX - 27, y + h - 6, 54, 4);
+          // Nearly faded graffiti marks: the three guide artists help the player recognize them.
+          g.lineStyle(3, 0xff4f87, 0.58).lineBetween(x + 20, y + 18, x + 30, y + 7).lineBetween(x + 30, y + 7, x + 40, y + 18).lineBetween(x + 40, y + 18, x + 20, y + 18);
+          g.lineStyle(3, 0x35c8d0, 0.55).strokeCircle(x + w - 35, y + 25, 9);
+          g.lineStyle(3, 0x9470e8, 0.55).lineBetween(x + w - 62, y + 17, x + w - 48, y + 27).lineBetween(x + w - 48, y + 27, x + w - 62, y + 37);
+          g.lineStyle(2, 0xb3b6b8, 1).strokeRect(x, y, w, h);
+        }
+        function __lqPaintArtBase(g, t) {
+          const W = t.w, H = t.h, T = 32;
+          const rnd = pn(20261106);
+          const base = [0x565d65, 0x60676e, 0x686f76, 0x50575f, 0x73797e];
+          // Every tile is concrete or worn asphalt; no grass or pastoral terrain in this district.
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+            const p = rnd(), c = base[(rnd() * base.length) | 0];
+            g.fillStyle(c, 1).fillRect(x*T, y*T, T, T);
+            g.fillStyle(0x30363d, 0.18).fillRect(x*T + 2, y*T + 2, 28, 1);
+            if (p > 0.58) g.fillStyle(0xc0c3c3, 0.15).fillRect(x*T + 5 + rnd()*20, y*T + 7 + rnd()*20, 2, 1);
+            if (p < 0.13) g.fillStyle(0x343a41, 0.28).fillRect(x*T + 4, y*T + 25, 12, 1);
+          }
+          const roads = [
+            ...t.roadsH.map(r => [0, r.y*T, W*T, r.h*T]),
+            ...t.roadsV.map(r => [r.x*T, (r.y0 ?? 0)*T, r.w*T, ((r.y1 ?? H)-(r.y0 ?? 0))*T]),
+          ];
+          for (const [x,y,w,h] of roads) {
+            g.fillStyle(0x3e444c, 1).fillRect(x,y,w,h);
+            g.fillStyle(0x858b91, 0.85);
+            if (w > h) { g.fillRect(x,y,w,3); g.fillRect(x,y+h-3,w,3); }
+            else { g.fillRect(x,y,3,h); g.fillRect(x+w-3,y,3,h); }
+            g.fillStyle(0xb7b9b8, 0.14).fillRect(x+7,y+8,Math.max(1,w-14),1);
+          }
+          // Broken white lane markings and crosswalks make the streets feel lived-in.
+          for (const r of t.roadsH) for (let x=26; x<W*T-24; x+=58) g.fillStyle(0xd7d5c8,0.52).fillRect(x,r.y*T+r.h*T/2-1,24,2);
+          for (const r of t.roadsV) for (let y=(r.y0??0)*T+24; y<(r.y1??H)*T-20; y+=58) g.fillStyle(0xd7d5c8,0.48).fillRect(r.x*T+r.w*T/2-1,y,2,24);
+          // Small paint flecks are saturated accents, not a full-color floor.
+          const paint = [0xff4f87,0x35c8d0,0xffd447,0x9470e8,0x83c96b,0xff893d];
+          for (let i=0;i<Math.floor(W*H*0.34);i++) {
+            const x=3+rnd()*(W-6), y=3+rnd()*(H-6);
+            const color=paint[(rnd()*paint.length)|0];
+            g.fillStyle(color,0.42+rnd()*0.28).fillRect(x*T+rnd()*24,y*T+rnd()*24,2+rnd()*5,2);
+          }
+          // Open-air street-art installations: large painted crosswalk bands and a central color-burst mural medallion.
+          // These are floor decorations only; no collision or pathfinding tiles are changed.
+          const plazaX = 35*T, plazaY = 23*T;
+          g.fillStyle(0x313840, 0.96).fillRect(plazaX - 112, plazaY - 42, 224, 84);
+          for (let k=0;k<6;k++) {
+            const c = paint[k];
+            g.fillStyle(c, 0.94).fillRect(plazaX - 102 + k*35, plazaY - 31, 25, 62);
+            g.fillStyle(0x242b32, 0.5).fillRect(plazaX - 102 + k*35, plazaY + 27, 25, 4);
+          }
+          g.lineStyle(4, 0xf0eadc, 0.92).strokeCircle(plazaX, plazaY, 31);
+          g.lineStyle(3, 0xffd447, 0.94).strokeCircle(plazaX, plazaY, 21);
+          g.fillStyle(0xff4f87, 0.96).fillTriangle(plazaX, plazaY-18, plazaX+16, plazaY+12, plazaX-16, plazaY+12);
+          g.fillStyle(0x35c8d0, 0.98).fillCircle(plazaX, plazaY+1, 6);
+          // The entry is a real walk-through freight tunnel at the south edge of the map.
+          const tx=30*T, ty=44*T, tw=12*T, th=12*T;
+          g.fillStyle(0x1d252e,1).fillRect(tx,ty,tw,th);
+          g.fillStyle(0x303a44,1).fillRect(tx+5,ty,tw-10,th);
+          g.fillStyle(0x121920,1).fillRect(tx+3,ty+10,tw-6,th-10);
+          g.fillStyle(0x68717a,1).fillRect(tx,ty,5,th);
+          g.fillStyle(0x68717a,1).fillRect(tx+tw-5,ty,5,th);
+          for(let y=ty+8;y<ty+th;y+=24){
+            g.fillStyle(0x899096,0.48).fillRect(tx+6,y,tw-12,2);
+            g.fillStyle(0x0b1118,0.58).fillRect(tx+6,y+3,tw-12,2);
+          }
+          for(let x=tx+11;x<tx+tw-8;x+=36){g.fillStyle(0x252e38,1).fillRect(x,ty+8,3,th-15);g.fillStyle(0xe0b45c,0.8).fillRect(x-2,ty+18,7,3);}
+          g.fillStyle(0xffd447,0.9).fillRect(tx+7,ty+5,tw-14,3);
+          // Tunnel exit mural: a colorful arrow points toward the district above.
+          g.fillStyle(0xff4f87,1).fillTriangle(tx+tw/2-24,ty+33,tx+tw/2+24,ty+33,tx+tw/2,ty+7);
+          g.fillStyle(0x35c8d0,1).fillRect(tx+tw/2-5,ty+32,10,22);
+          g.fillStyle(0xffd447,1).fillRect(tx+tw/2-19,ty+56,38,3);
+        }
+        function Zt(e, t, area = null) {
+          if (t.name === `Old Freight Workshop`) { __lqFreightShed(e, t); return; }
+          if (area?.theme === `art`) { __lqStreetArtBuilding(e, t); return; }
+          if (t.name === `School`) {
+            $t(e, t);
+            return;
+          }
+          if (t.name === `Great Mine`) {
+            Qt(e, t);
+            return;
+          }
+          let n = t.x * 32,
+            r = t.y * 32,
+            i = t.w * 32,
+            a = t.h * 32,
+            o = t.floors ?? 1,
+            s = Math.round(a * (o === 2 ? 0.4 : 0.55)),
+            c = r + s,
+            l = a - s,
+            u = t.door * 32 + 16,
+            d = t.door - t.x,
+            f = t.wall ?? Gt,
+            p = Wt(f, 0.88),
+            m = t.w > 4;
+          (e.fillStyle(0, 0.22).fillRect(n + 6, r + 8, i, a),
+            e.fillStyle(Jt, 1).fillRect(u - 12, r + a - 4, 24, 36),
+            e
+              .fillStyle(Wt(Jt, 0.85), 1)
+              .fillRect(u - 12, r + a + 8, 24, 2)
+              .fillRect(u - 12, r + a + 20, 24, 2),
+            e.fillStyle(f, 1).fillRect(n, c, i, l),
+            e.fillStyle(p, 1).fillRect(n, c, i, 6),
+            e.lineStyle(1, p, 1));
+          for (let t = n + 8; t < n + i; t += 8) e.lineBetween(t, c + 6, t, r + a);
+          if ((e.lineStyle(3, Z, 1).strokeRect(n, c, i, l), !t.bays))
+            for (let r = 0; r < t.w; r++) {
+              let i = Math.abs(r - d),
+                a = n + r * 32 + 16 - 8;
+              o === 2
+                ? (Yt(e, a, c + 9, !1, r), i >= 2 && Yt(e, a, c + 9 + 38, !0, r))
+                : (i === 2 || (t.w <= 4 && r === d - 1)) &&
+                  Yt(e, a, c + (t.awning ? 22 : 9), !0, r);
+            }
+          for (let i of t.bays ?? []) {
+            let t = n + i.i * 32 + 4,
+              o = i.n * 32 - 8,
+              s = Math.min(l - 6, 46),
+              c = r + a - s;
+            (e.fillStyle(15132398, 1).fillRect(t, c, o, s), e.lineStyle(1, 11184828, 1));
+            for (let n = c + 6; n < r + a; n += 6) e.lineBetween(t, n, t + o, n);
+            (e.fillStyle(13119536, 1).fillRect(t, c, o, 5),
+              e.lineStyle(2, Z, 1).strokeRect(t, c, o, s));
+          }
+          let h = Math.min(l - 2, 36);
+          if (
+            (e.fillStyle(0, 0.25).fillRect(u - 13, r + a - h - 1, 26, h + 1),
+            e.fillStyle(Kt, 1).fillRect(u - 11, r + a - h, 22, h),
+            e
+              .fillStyle(Wt(Kt, 1.25), 1)
+              .fillRect(u - 9, r + a - h + 3, 8, h - 8)
+              .fillRect(u + 1, r + a - h + 3, 8, h - 8),
+            e.fillStyle(16765498, 1).fillCircle(u + 7, r + a - h / 2, 1.8),
+            e.lineStyle(2, Z, 1).strokeRect(u - 11, r + a - h, 22, h),
+            e.fillStyle(11552314, 1).fillRect(u - 10, r + a, 20, 4),
+            t.columns)
+          )
+            for (let t of [-56, -34, 34, 56])
+              (e.fillStyle(16777215, 1).fillRect(u + t - 4, c + 6, 8, l - 6),
+                e
+                  .fillStyle(13619414, 1)
+                  .fillRect(u + t + 1, c + 6, 3, l - 6)
+                  .fillRect(u + t - 6, c + 4, 12, 4),
+                e.lineStyle(1, Z, 1).strokeRect(u + t - 4, c + 6, 8, l - 6));
+          if (t.awning) {
+            for (let r = n, a = 0; r < n + i; r += 8, a++) {
+              let o = Math.min(8, n + i - r);
+              (e.fillStyle(a % 2 ? 16777215 : t.color, 1).fillRect(r, c + 4, o, 9),
+                e
+                  .fillStyle(a % 2 ? 16777215 : t.color, 1)
+                  .fillTriangle(r, c + 13, r + o, c + 13, r + 4, c + 18));
+            }
+            e.lineStyle(2, Z, 1).lineBetween(n, c + 13, n + i, c + 13);
+          }
+          let g = n - 5,
+            _ = i + 10;
+          e.fillStyle(Wt(t.color, 0.8), 1).fillRect(g, r, _, s);
+          let v = Math.floor(s / 9);
+          for (let n = 0; n < v; n++) {
+            let i = r + 6 + n * 9;
+            (e.fillStyle(n % 2 ? Wt(t.color, 0.95) : t.color, 1).fillRect(g, i, _, 9),
+              e.lineStyle(1, Wt(t.color, 0.6), 1).lineBetween(g, i + 9, g + _, i + 9));
+            for (let t = g + (n % 2 ? 6 : 0); t < g + _; t += 12) e.lineBetween(t, i, t, i + 9);
+          }
+          if (
+            (e.fillStyle(Wt(t.color, 1.3), 1).fillRect(g, r, _, 6),
+            e.fillStyle(0, 0.18).fillRect(g, r + s - 4, _, 4),
+            e.lineStyle(3, Z, 1).strokeRect(g, r, _, s),
+            t.chimney !== !1)
+          ) {
+            let t = n + Math.round(i * 0.2);
+            (e.fillStyle(11031866, 1).fillRect(t, r - 14, 14, 24),
+              e
+                .lineStyle(1, 7222308, 1)
+                .lineBetween(t, r - 4, t + 14, r - 4)
+                .lineBetween(t, r + 4, t + 14, r + 4),
+              e.fillStyle(4860450, 1).fillRect(t - 2, r - 18, 18, 6),
+              e
+                .lineStyle(2, Z, 1)
+                .strokeRect(t, r - 14, 14, 24)
+                .strokeRect(t - 2, r - 18, 18, 6));
+          }
+          t.sign && Xt(e, t.sign, n + i / 2, r + s / 2 + 2);
+          let y = n + i / 2;
+          if (t.tower === `hall`)
+            (e.lineStyle(3, 6710886, 1).lineBetween(y, r - 4, y, r - 38),
+              e.fillStyle(14694970, 1).fillTriangle(y, r - 38, y + 22, r - 30, y, r - 22),
+              e.fillStyle(15985103, 1).fillCircle(y, r + s - 16, 11),
+              e
+                .lineStyle(2, Z, 1)
+                .strokeCircle(y, r + s - 16, 11)
+                .lineBetween(y, r + s - 16, y, r + s - 23)
+                .lineBetween(y, r + s - 16, y + 5, r + s - 14));
+          else if (t.tower === `steeple`) {
+            (e.fillStyle(f, 1).fillRect(y - 14, r - 26, 28, 30),
+              e.fillStyle(3816010, 1).fillRect(y - 6, r - 20, 12, 16),
+              e
+                .fillStyle(Wt(t.color, 0.9), 1)
+                .fillTriangle(y - 18, r - 26, y + 18, r - 26, y, r - 54),
+              e
+                .lineStyle(2, Z, 1)
+                .strokeRect(y - 14, r - 26, 28, 30)
+                .lineBetween(y - 18, r - 26, y, r - 54)
+                .lineBetween(y + 18, r - 26, y, r - 54)
+                .lineBetween(y - 18, r - 26, y + 18, r - 26),
+              e
+                .lineStyle(3, 15909424, 1)
+                .lineBetween(y, r - 54, y, r - 66)
+                .lineBetween(y - 5, r - 60, y + 5, r - 60));
+            for (let t of [-52, 52])
+              (e
+                .fillStyle(5929688, 1)
+                .fillRect(u + t - 6, c + 12, 12, 20)
+                .fillCircle(u + t, c + 12, 6),
+                e.fillStyle(15253584, 1).fillRect(u + t - 1, c + 6, 2, 26),
+                e.lineStyle(2, Z, 1).strokeRect(u + t - 6, c + 12, 12, 20));
+          }
+          m &&
+            (e.fillStyle(12105920, 1).fillRect(u - 18, r + a - 4, 36, 6),
+            e.lineStyle(2, Z, 1).strokeRect(u - 18, r + a - 4, 36, 6));
+        }
+        function Qt(e, t) {
+          let n = t.x * 32,
+            r = t.y * 32,
+            i = t.w * 32,
+            a = t.h * 32,
+            o = n + i

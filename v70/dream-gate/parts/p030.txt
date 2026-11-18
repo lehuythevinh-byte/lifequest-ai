@@ -1,0 +1,616 @@
+getDelay=i,this.yoyo=s,this.hold=n,this.repeat=a,this.repeatDelay=o,this.repeatCounter=0,this.flipX=h,this.flipY=l,this.progress=0,this.elapsed=0,this.state=0,this.isCountdown=!1},getTarget:function(){return this.tween.targets[this.targetIndex]},setTargetValue:function(t){void 0===t&&(t=this.current),this.tween.targets[this.targetIndex][this.key]=t},setCreatedState:function(){this.state=n.CREATED,this.isCountdown=!1},setDelayState:function(){this.state=n.DELAY,this.isCountdown=!0},setPendingRenderState:function(){this.state=n.PENDING_RENDER,this.isCountdown=!1},setPlayingForwardState:function(){this.state=n.PLAYING_FORWARD,this.isCountdown=!1},setPlayingBackwardState:function(){this.state=n.PLAYING_BACKWARD,this.isCountdown=!1},setHoldState:function(){this.state=n.HOLD_DELAY,this.isCountdown=!0},setRepeatState:function(){this.state=n.REPEAT_DELAY,this.isCountdown=!0},setCompleteState:function(){this.state=n.COMPLETE,this.isCountdown=!1},isCreated:function(){return this.state===n.CREATED},isDelayed:function(){return this.state===n.DELAY},isPendingRender:function(){return this.state===n.PENDING_RENDER},isPlayingForward:function(){return this.state===n.PLAYING_FORWARD},isPlayingBackward:function(){return this.state===n.PLAYING_BACKWARD},isHolding:function(){return this.state===n.HOLD_DELAY},isRepeating:function(){return this.state===n.REPEAT_DELAY},isComplete:function(){return this.state===n.COMPLETE},setStateFromEnd:function(t){this.yoyo?this.onRepeat(t,!0,!0):this.repeatCounter>0?this.onRepeat(t,!0,!1):this.setCompleteState()},setStateFromStart:function(t){this.repeatCounter>0?this.onRepeat(t,!1):this.setCompleteState()},reset:function(){var t=this.tween,e=t.totalTargets,i=this.targetIndex,r=t.targets[i],s=this.key;this.progress=0,this.elapsed=0,this.delay=this.getDelay(r,s,0,i,e,t),this.repeatCounter=-1===this.repeat?n.MAX:this.repeat,this.setPendingRenderState();var a=this.duration+this.hold;this.yoyo&&(a+=this.duration);var o=a+this.repeatDelay;this.totalDuration=this.delay+a,-1===this.repeat?(this.totalDuration+=o*n.MAX,t.isInfinite=!0):this.repeat>0&&(this.totalDuration+=o*this.repeat),this.totalDuration>t.duration&&(t.duration=this.totalDuration),this.delay<t.startDelay&&(t.startDelay=this.delay),this.delay>0&&(this.elapsed=this.delay,this.setDelayState())},onRepeat:function(t,e,i){var r=this.tween,n=r.totalTargets,a=this.targetIndex,o=r.targets[a],h=this.key,l="texture"!==h;if(this.elapsed=t,this.progress=t/this.duration,this.flipX&&o.toggleFlipX(),this.flipY&&o.toggleFlipY(),l&&(e||i)&&(this.start=this.getStartValue(o,h,this.start,a,n,r)),i)return this.setPlayingBackwardState(),void this.dispatchEvent(s.TWEEN_YOYO,"onYoyo");this.repeatCounter--,l&&(this.end=this.getEndValue(o,h,this.start,a,n,r)),this.repeatDelay>0?(this.elapsed=this.repeatDelay-t,l&&(this.current=this.start,o[h]=this.current),this.setRepeatState()):(this.setPlayingForwardState(),this.dispatchEvent(s.TWEEN_REPEAT,"onRepeat"))},destroy:function(){this.tween=null,this.getDelay=null,this.setCompleteState()}});t.exports=a},69902(t){t.exports={targets:null,delay:0,duration:1e3,ease:"Power0",easeParams:null,hold:0,repeat:0,repeatDelay:0,yoyo:!1,flipX:!1,flipY:!1,persist:!1,interpolation:null}},81076(t){t.exports=["callbackScope","completeDelay","delay","duration","ease","easeParams","flipX","flipY","hold","interpolation","loop","loopDelay","onActive","onActiveParams","onComplete","onCompleteParams","onLoop","onLoopParams","onPause","onPauseParams","onRepeat","onRepeatParams","onResume","onResumeParams","onStart","onStartParams","onStop","onStopParams","onUpdate","onUpdateParams","onYoyo","onYoyoParams","paused","persist","props","repeat","repeatDelay","targets","yoyo"]},8462(t,e,i){var r=i(70402),s=i(83419),n=i(842),a=i(44603),o=i(39429),h=i(36383),l=i(86353),u=i(48177),d=i(42220),c=new s({Extends:r,initialize:function(t,e){r.call(this,t),this.targets=e,this.totalTargets=e.length,this.isSeeking=!1,this.isInfinite=!1,this.elapsed=0,this.totalElapsed=0,this.duration=0,this.progress=0,this.totalDuration=0,this.totalProgress=0,this.isNumberTween=!1},add:function(t,e,i,r,s,n,a,o,h,l,d,c,f,p,g,m){var v=new u(this,t,e,i,r,s,n,a,o,h,l,d,c,f,p,g,m);return this.totalData=this.data.push(v),v},addFrame:function(t,e,i,r,s,n,a,o,h,l){var u=new d(this,t,e,i,r,s,n,a,o,h,l);return this.totalData=this.data.push(u),u},getValue:function(t){void 0===t&&(t=0);var e=null;return this.data&&(e=this.data[t].current),e},hasTarget:function(t){return this.targets&&-1!==this.targets.indexOf(t)},updateTo:function(t,e,i){if(void 0===i&&(i=!1),"texture"!==t)for(var r=0;r<this.totalData;r++){var s=this.data[r];s.key===t&&(s.isPlayingForward()||s.isPlayingBackward())&&(s.end=e,i&&(s.start=s.current))}return this},restart:function(){switch(this.state){case l.REMOVED:case l.FINISHED:this.seek(),this.parent.makeActive(this);break;case l.PENDING:case l.PENDING_REMOVE:this.parent.reset(this);break;case l.DESTROYED:console.warn("Cannot restart destroyed Tween",this);break;default:this.seek()}return this.paused=!1,this.hasStarted=!1,this},nextState:function(){if(this.loopCounter>0)this.elapsed=0,this.progress=0,this.loopCounter--,this.initTweenData(!0),this.loopDelay>0?(this.countdown=this.loopDelay,this.setLoopDelayState()):(this.setActiveState(),this.dispatchEvent(n.TWEEN_LOOP,"onLoop"));else{if(!(this.completeDelay>0))return this.onCompleteHandler(),!0;this.countdown=this.completeDelay,this.setCompleteDelayState()}return!1},onCompleteHandler:function(){this.progress=1,this.totalProgress=1,r.prototype.onCompleteHandler.call(this)},play:function(){return this.isDestroyed()?(console.warn("Cannot play destroyed Tween",this),this):((this.isPendingRemove()||this.isFinished())&&this.seek(),this.paused=!1,this.setActiveState(),this)},seek:function(t,e,i){if(void 0===t&&(t=0),void 0===e&&(e=16.6),void 0===i&&(i=!1),this.isDestroyed())return console.warn("Cannot seek destroyed Tween",this),this;i||(this.isSeeking=!0),this.reset(!0),this.initTweenData(!0),this.setActiveState(),this.dispatchEvent(n.TWEEN_ACTIVE,"onActive");var r=this.paused;if(this.paused=!1,t>0){for(var s=Math.floor(t/e),a=t-s*e,o=0;o<s;o++)this.update(e);a>0&&this.update(a)}return this.paused=r,this.isSeeking=!1,this},initTweenData:function(t){void 0===t&&(t=!1),this.duration=0,this.startDelay=h.MAX_SAFE_INTEGER;for(var e=this.data,i=0;i<this.totalData;i++)e[i].reset(t);this.duration=Math.max(this.duration,.01);var r=this.duration,s=this.completeDelay,n=this.loopCounter,a=this.loopDelay;this.totalDuration=n>0?r+s+(r+a)*n:r+s},reset:function(t){return void 0===t&&(t=!1),this.elapsed=0,this.totalElapsed=0,this.progress=0,this.totalProgress=0,this.loopCounter=this.loop,-1===this.loop&&(this.isInfinite=!0,this.loopCounter=l.MAX),t||(this.initTweenData(),this.setActiveState(),this.dispatchEvent(n.TWEEN_ACTIVE,"onActive")),this},update:function(t){if(this.isPendingRemove()||this.isDestroyed())return!this.persist||(this.setFinishedState(),!1);if(this.paused||this.isFinished())return!1;if(t*=this.timeScale*this.parent.timeScale,this.isLoopDelayed())return this.updateLoopCountdown(t),!1;if(this.isCompleteDelayed())return this.updateCompleteDelay(t),!1;this.hasStarted||(t=this.updateStartCountdown(t));var e=!1;if(this.isActive())for(var i=this.data,r=0;r<this.totalData;r++)i[r].update(t)&&(e=!0);this.elapsed+=t,this.progress=Math.min(this.elapsed/this.duration,1),this.totalElapsed+=t,this.totalProgress=Math.min(this.totalElapsed/this.totalDuration,1),e||this.nextState();var s=this.isPendingRemove();return s&&this.persist&&(this.setFinishedState(),s=!1),s},forward:function(t){return this.update(t),this},rewind:function(t){return this.update(-t),this},dispatchEvent:function(t,e){if(!this.isSeeking){if(this.emit(t,this,this.targets),!this.callbacks)return;var i=this.callbacks[e];i&&i.func.apply(this.callbackScope,[this,this.targets].concat(i.params))}},destroy:function(){r.prototype.destroy.call(this),this.targets=null}});o.register("tween",function(t){return this.scene.sys.tweens.add(t)}),a.register("tween",function(t){return this.scene.sys.tweens.create(t)}),t.exports=c},43960(t,e,i){var r=i(72905),s=i(70402),n=i(83419),a=i(842),o=i(44603),h=i(39429),l=i(86353),u=new n({Extends:s,initialize:function(t){s.call(this,t),this.currentTween=null,this.currentIndex=0},init:function(){return this.loopCounter=-1===this.loop?l.MAX:this.loop,this.setCurrentTween(0),this.startDelay>0&&!this.isStartDelayed()?this.setStartDelayState():this.setActiveState(),this},add:function(t){var e=this.parent.create(t);Array.isArray(e)||(e=[e]);for(var i=this.data,r=0;r<e.length;r++){var s=e[r];s.parent=this,i.push(s.reset())}return this.totalData=i.length,this},remove:function(t){return r(this.data,t),t.setRemovedState(),t===this.currentTween&&this.nextTween(),this.totalData=this.data.length,this},hasTarget:function(t){for(var e=this.data,i=0;i<this.totalData;i++)if(e[i].hasTarget(t))return!0;return!1},restart:function(){return this.isDestroyed()?(console.warn("Cannot restart destroyed TweenChain",this),this):(this.isRemoved()&&this.parent.makeActive(this),this.resetTweens(),this.paused=!1,this.init())},reset:function(t){return t.seek(),t.setActiveState(),this},makeActive:function(t){return t.reset(),t.setActiveState(),this},nextState:function(){if(this.loopCounter>0)this.loopCounter--,this.resetTweens(),this.loopDelay>0?(this.countdown=this.loopDelay,this.setLoopDelayState()):(this.setActiveState(),this.dispatchEvent(a.TWEEN_LOOP,"onLoop"));else{if(!(this.completeDelay>0))return this.onCompleteHandler(),!0;this.countdown=this.completeDelay,this.setCompleteDelayState()}return!1},play:function(){return this.isDestroyed()?(console.warn("Cannot play destroyed TweenChain",this),this):((this.isPendingRemove()||this.isPending())&&this.resetTweens(),this.paused=!1,this.startDelay>0&&!this.isStartDelayed()?this.setStartDelayState():this.setActiveState(),this)},resetTweens:function(){for(var t=this.data,e=this.totalData,i=0;i<e;i++)t[i].reset(!1);this.setCurrentTween(0)},update:function(t){if(this.isPendingRemove()||this.isDestroyed())return!this.persist||(this.setFinishedState(),!1);if(this.isFinished()||this.paused)return!1;if(t*=this.parent.timeScale,this.isLoopDelayed())return this.updateLoopCountdown(t),!1;if(this.isCompleteDelayed())return this.updateCompleteDelay(t),!1;this.hasStarted||(t=this.updateStartCountdown(t));var e=!1;return this.isActive()&&this.currentTween&&(this.currentTween.update(t)&&this.nextTween()&&this.nextState(),(e=this.isPendingRemove())&&this.persist&&(this.setFinishedState(),e=!1)),e},nextTween:function(){return this.currentIndex++,this.currentIndex===this.totalData||(this.setCurrentTween(this.currentIndex),!1)},setCurrentTween:function(t){this.currentIndex=t,this.currentTween=this.data[t],this.currentTween.setActiveState()},dispatchEvent:function(t,e){this.emit(t,this);var i=this.callbacks[e];i&&i.func.apply(this.callbackScope,[this].concat(i.params))},destroy:function(){s.prototype.destroy.call(this),this.currentTween=null}});h.register("tweenchain",function(t){return this.scene.sys.tweens.chain(t)}),o.register("tweenchain",function(t){return this.scene.sys.tweens.create(t)}),t.exports=u},48177(t,e,i){var r=i(95042),s=i(45319),n=i(83419),a=i(842),o=new n({Extends:r,initialize:function(t,e,i,s,n,a,o,h,l,u,d,c,f,p,g,m,v){r.call(this,t,e,h,l,u,d,c,f,p,g),this.key=i,this.getActiveValue=a,this.getEndValue=s,this.getStartValue=n,this.ease=o,this.start=0,this.previous=0,this.current=0,this.end=0,this.interpolation=m,this.interpolationData=v},reset:function(t){r.prototype.reset.call(this);var e=this.tween.targets[this.targetIndex],i=this.key;t&&(e[i]=this.start),this.start=0,this.previous=0,this.current=0,this.end=0,this.getActiveValue&&(e[i]=this.getActiveValue(e,i,0))},update:function(t){var e=this.tween,i=e.totalTargets,r=this.targetIndex,n=e.targets[r],o=this.key;if(!n||n.isDestroyed)return this.setCompleteState(),!1;if(this.isCountdown&&(this.elapsed-=t,this.elapsed<=0&&(this.elapsed=0,t=0,this.isDelayed()?this.setPendingRenderState():this.isRepeating()?(this.setPlayingForwardState(),this.dispatchEvent(a.TWEEN_REPEAT,"onRepeat")):this.isHolding()&&this.setStateFromEnd(0))),this.isPendingRender())return this.start=this.getStartValue(n,o,n[o],r,i,e),this.end=this.getEndValue(n,o,this.start,r,i,e),this.current=this.start,n[o]=this.start,this.setPlayingForwardState(),!0;var h=this.isPlayingForward(),l=this.isPlayingBackward();if(h||l){var u=this.elapsed,d=this.duration,c=0,f=!1;(u+=t)>=d?(c=u-d,u=d,f=!0):u<0&&(u=0);var p=s(u/d,0,1);this.elapsed=u,this.progress=p,this.previous=this.current,h||(p=1-p);var g=this.ease(p);this.interpolation?this.current=this.interpolation(this.interpolationData,g):this.current=this.start+(this.end-this.start)*g,n[o]=this.current,f&&(h?(e.isNumberTween&&(this.current=this.end,n[o]=this.current),this.hold>0?(this.elapsed=this.hold,this.setHoldState()):this.setStateFromEnd(c)):(e.isNumberTween&&(this.current=this.start,n[o]=this.current),this.setStateFromStart(c))),this.dispatchEvent(a.TWEEN_UPDATE,"onUpdate")}return!this.isComplete()},dispatchEvent:function(t,e){var i=this.tween;if(!i.isSeeking){var r=i.targets[this.targetIndex],s=this.key,n=this.current,a=this.previous;i.emit(t,i,s,r,n,a);var o=i.callbacks[e];o&&o.func.apply(i.callbackScope,[i,r,s,n,a].concat(o.params))}},destroy:function(){r.prototype.destroy.call(this),this.getActiveValue=null,this.getEndValue=null,this.getStartValue=null,this.ease=null}});t.exports=o},42220(t,e,i){var r=i(95042),s=i(45319),n=i(83419),a=i(842),o=new n({Extends:r,initialize:function(t,e,i,s,n,a,o,h,l,u,d){r.call(this,t,e,n,a,!1,o,h,l,u,d),this.key="texture",this.startTexture=null,this.endTexture=i,this.startFrame=null,this.endFrame=s,this.yoyo=0!==h},reset:function(t){r.prototype.reset.call(this);var e=this.tween.targets[this.targetIndex];this.startTexture||(this.startTexture=e.texture.key,this.startFrame=e.frame.name),t&&e.setTexture(this.startTexture,this.startFrame)},update:function(t){var e=this.tween,i=this.targetIndex,r=e.targets[i];if(!r)return this.setCompleteState(),!1;if(this.isCountdown&&(this.elapsed-=t,this.elapsed<=0&&(this.elapsed=0,t=0,this.isDelayed()?this.setPendingRenderState():this.isRepeating()?(this.setPlayingForwardState(),this.dispatchEvent(a.TWEEN_REPEAT,"onRepeat")):this.isHolding()&&this.setStateFromEnd(0))),this.isPendingRender())return this.startTexture&&r.setTexture(this.startTexture,this.startFrame),this.setPlayingForwardState(),!0;var n=this.isPlayingForward(),o=this.isPlayingBackward();if(n||o){var h=this.elapsed,l=this.duration,u=0,d=!1;(h+=t)>=l?(u=h-l,h=l,d=!0):h<0&&(h=0);var c=s(h/l,0,1);this.elapsed=h,this.progress=c,d&&(n?(r.setTexture(this.endTexture,this.endFrame),this.hold>0?(this.elapsed=this.hold,this.setHoldState()):this.setStateFromEnd(u)):(r.setTexture(this.startTexture,this.startFrame),this.setStateFromStart(u))),this.dispatchEvent(a.TWEEN_UPDATE,"onUpdate")}return!this.isComplete()},dispatchEvent:function(t,e){var i=this.tween;if(!i.isSeeking){var r=i.targets[this.targetIndex],s=this.key;i.emit(t,i,s,r);var n=i.callbacks[e];n&&n.func.apply(i.callbackScope,[i,r,s].concat(n.params))}},destroy:function(){r.prototype.destroy.call(this),this.startTexture=null,this.endTexture=null,this.startFrame=null,this.endFrame=null}});t.exports=o},86353(t){t.exports={CREATED:0,DELAY:2,PENDING_RENDER:4,PLAYING_FORWARD:5,PLAYING_BACKWARD:6,HOLD_DELAY:7,REPEAT_DELAY:8,COMPLETE:9,PENDING:20,ACTIVE:21,LOOP_DELAY:22,COMPLETE_DELAY:23,START_DELAY:24,PENDING_REMOVE:25,REMOVED:26,FINISHED:27,DESTROYED:28,MAX:999999999999}},83419(t){function e(t,e,i){var r=i?t[e]:Object.getOwnPropertyDescriptor(t,e);return!i&&r.value&&"object"==typeof r.value&&(r=r.value),!(!r||!function(t){return!!t.get&&"function"==typeof t.get||!!t.set&&"function"==typeof t.set}(r))&&(void 0===r.enumerable&&(r.enumerable=!0),void 0===r.configurable&&(r.configurable=!0),r)}function i(t,e){var i=Object.getOwnPropertyDescriptor(t,e);return!!i&&(i.value&&"object"==typeof i.value&&(i=i.value),!1===i.configurable)}function r(t,r,s,a){for(var o in r)if(r.hasOwnProperty(o)){var h=e(r,o,s);if(!1!==h){if(i((a||t).prototype,o)){if(n.ignoreFinals)continue;throw new Error("cannot override final property '"+o+"', set Class.ignoreFinals = true to skip")}Object.defineProperty(t.prototype,o,h)}else t.prototype[o]=r[o]}}function s(t,e){if(e){Array.isArray(e)||(e=[e]);for(var i=0;i<e.length;i++)r(t,e[i].prototype||e[i])}}function n(t){var e,i;if(t||(t={}),t.initialize){if("function"!=typeof t.initialize)throw new Error("initialize must be a function");e=t.initialize,delete t.initialize}else if(t.Extends){var n=t.Extends;e=function(){n.apply(this,arguments)}}else e=function(){};t.Extends?(e.prototype=Object.create(t.Extends.prototype),e.prototype.constructor=e,i=t.Extends,delete t.Extends):e.prototype.constructor=e;var a=null;return t.Mixins&&(a=t.Mixins,delete t.Mixins),s(e,a),r(e,t,!0,i),e}n.extend=r,n.mixin=s,n.ignoreFinals=!1,t.exports=n},29747(t){t.exports=function(){}},20242(t){t.exports=function(){return null}},71146(t){t.exports=function(t,e,i,r,s){if(void 0===s&&(s=t),i>0){var n=i-t.length;if(n<=0)return null}if(!Array.isArray(e))return-1===t.indexOf(e)?(t.push(e),r&&r.call(s,e),e):null;for(var a=e.length-1;a>=0;)-1!==t.indexOf(e[a])&&e.splice(a,1),a--;if(0===(a=e.length))return null;i>0&&a>n&&(e.splice(n),a=n);for(var o=0;o<a;o++){var h=e[o];t.push(h),r&&r.call(s,h)}return e}},51067(t){t.exports=function(t,e,i,r,s,n){if(void 0===i&&(i=0),void 0===n&&(n=t),r>0){var a=r-t.length;if(a<=0)return null}if(!Array.isArray(e))return-1===t.indexOf(e)?(t.splice(i,0,e),s&&s.call(n,e),e):null;for(var o=e.length-1;o>=0;)-1!==t.indexOf(e[o])&&e.pop(),o--;if(0===(o=e.length))return null;r>0&&o>a&&(e.splice(a),o=a);for(var h=o-1;h>=0;h--){var l=e[h];t.splice(i,0,l),s&&s.call(n,l)}return e}},66905(t){t.exports=function(t,e){var i=t.indexOf(e);return-1!==i&&i<t.length&&(t.splice(i,1),t.push(e)),e}},21612(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){void 0===s&&(s=0),void 0===n&&(n=t.length);var a=0;if(r(t,s,n))for(var o=s;o<n;o++){t[o][e]===i&&a++}return a}},95428(t){t.exports=function(t,e,i){var r,s=[null];for(r=3;r<arguments.length;r++)s.push(arguments[r]);for(r=0;r<t.length;r++)s[0]=t[r],e.apply(i,s);return t}},36914(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){if(void 0===s&&(s=0),void 0===n&&(n=t.length),r(t,s,n)){var a,o=[null];for(a=5;a<arguments.length;a++)o.push(arguments[a]);for(a=s;a<n;a++)o[0]=t[a],e.apply(i,o)}return t}},81957(t){t.exports=function(t,e,i){if(!e.length)return NaN;if(1===e.length)return e[0];var r,s,n=1;if(i){if(t<e[0][i])return e[0];for(;e[n][i]<t;)n++}else for(;e[n]<t;)n++;return n>e.length&&(n=e.length),i?(r=e[n-1][i],(s=e[n][i])-t<=t-r?e[n]:e[n-1]):(r=e[n-1],(s=e[n])-t<=t-r?s:r)}},43491(t){var e=function(t,i){void 0===i&&(i=[]);for(var r=0;r<t.length;r++)Array.isArray(t[r])?e(t[r],i):i.push(t[r]);return i};t.exports=e},46710(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){void 0===s&&(s=0),void 0===n&&(n=t.length);var a=[];if(r(t,s,n))for(var o=s;o<n;o++){var h=t[o];(!e||e&&void 0===i&&h.hasOwnProperty(e)||e&&void 0!==i&&h[e]===i)&&a.push(h)}return a}},58731(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){var a,o;if(void 0===s&&(s=0),void 0===n&&(n=t.length),-1!==s){if(r(t,s,n))for(a=s;a<n;a++)if(o=t[a],!e||e&&void 0===i&&o.hasOwnProperty(e)||e&&void 0!==i&&o[e]===i)return o}else if(r(t,0,n))for(a=n;a>=0;a--)if(o=t[a],!e||e&&void 0===i&&o.hasOwnProperty(e)||e&&void 0!==i&&o[e]===i)return o;return null}},26546(t){t.exports=function(t,e,i){void 0===e&&(e=0),void 0===i&&(i=t.length);var r=e+Math.floor(Math.random()*(i-e));return void 0===t[r]?null:t[r]}},85835(t){t.exports=function(t,e,i){if(e===i)return t;var r=t.indexOf(e),s=t.indexOf(i);if(r<0||s<0)throw new Error("Supplied items must be elements of the same array");return r>s||(t.splice(r,1),s=t.indexOf(i),t.splice(s+1,0,e)),t}},83371(t){t.exports=function(t,e,i){if(e===i)return t;var r=t.indexOf(e),s=t.indexOf(i);if(r<0||s<0)throw new Error("Supplied items must be elements of the same array");return r<s||(t.splice(r,1),0===s?t.unshift(e):t.splice(s,0,e)),t}},70864(t){t.exports=function(t,e){var i=t.indexOf(e);if(i>0){var r=t[i-1],s=t.indexOf(r);t[i]=r,t[s]=e}return t}},69693(t){t.exports=function(t,e,i){var r=t.indexOf(e);if(-1===r||i<0||i>=t.length)throw new Error("Supplied index out of bounds");return r!==i&&(t.splice(r,1),t.splice(i,0,e)),e}},40853(t){t.exports=function(t,e){var i=t.indexOf(e);if(-1!==i&&i<t.length-1){var r=t[i+1],s=t.indexOf(r);t[i]=r,t[s]=e}return t}},20283(t){t.exports=function(t,e,i,r){var s,n=[],a=!1;if((i||r)&&(a=!0,i||(i=""),r||(r="")),e<t)for(s=t;s>=e;s--)a?n.push(i+s.toString()+r):n.push(s);else for(s=t;s<=e;s++)a?n.push(i+s.toString()+r):n.push(s);return n}},593(t,e,i){var r=i(2284);t.exports=function(t,e,i){void 0===t&&(t=0),void 0===e&&(e=null),void 0===i&&(i=1),null===e&&(e=t,t=0);for(var s=[],n=Math.max(r((e-t)/(i||1)),0),a=0;a<n;a++)s.push(t),t+=i;return s}},43886(t){function e(t,e,i){var r=t[e];t[e]=t[i],t[i]=r}function i(t,e){return t<e?-1:t>e?1:0}var r=function(t,s,n,a,o){for(void 0===n&&(n=0),void 0===a&&(a=t.length-1),void 0===o&&(o=i);a>n;){if(a-n>600){var h=a-n+1,l=s-n+1,u=Math.log(h),d=.5*Math.exp(2*u/3),c=.5*Math.sqrt(u*d*(h-d)/h)*(l-h/2<0?-1:1),f=Math.max(n,Math.floor(s-l*d/h+c)),p=Math.min(a,Math.floor(s+(h-l)*d/h+c));r(t,s,f,p,o)}var g=t[s],m=n,v=a;for(e(t,n,s),o(t[a],g)>0&&e(t,n,a);m<v;){for(e(t,m,v),m++,v--;o(t[m],g)<0;)m++;for(;o(t[v],g)>0;)v--}0===o(t[n],g)?e(t,n,v):e(t,++v,a),v<=s&&(n=v+1),s<=v&&(a=v-1)}};t.exports=r},88492(t,e,i){var r=i(35154),s=i(33680),n=function(t,e,i){for(var r=[],s=0;s<t.length;s++)for(var n=0;n<e.length;n++)for(var a=0;a<i;a++)r.push({a:t[s],b:e[n]});return r};t.exports=function(t,e,i){var a=r(i,"max",0),o=r(i,"qty",1),h=r(i,"random",!1),l=r(i,"randomB",!1),u=r(i,"repeat",0),d=r(i,"yoyo",!1),c=[];if(l&&s(e),-1===u)if(0===a)u=0;else{var f=t.length*e.length*o;d&&(f*=2),u=Math.ceil(a/f)}for(var p=0;p<=u;p++){var g=n(t,e,o);h&&s(g),c=c.concat(g),d&&(g.reverse(),c=c.concat(g))}return a&&c.splice(a),c}},72905(t,e,i){var r=i(19133);t.exports=function(t,e,i,s){var n;if(void 0===s&&(s=t),!Array.isArray(e))return-1!==(n=t.indexOf(e))?(r(t,n),i&&i.call(s,e),e):null;for(var a=e.length-1,o=[];a>=0;){var h=e[a];-1!==(n=t.indexOf(h))&&(r(t,n),o.push(h),i&&i.call(s,h)),a--}return o}},60248(t,e,i){var r=i(19133);t.exports=function(t,e,i,s){if(void 0===s&&(s=t),e<0||e>t.length-1)throw new Error("Index out of bounds");var n=r(t,e);return i&&i.call(s,n),n}},81409(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){if(void 0===e&&(e=0),void 0===i&&(i=t.length),void 0===n&&(n=t),r(t,e,i)){var a=i-e,o=t.splice(e,a);if(s)for(var h=0;h<o.length;h++){var l=o[h];s.call(n,l)}return o}return[]}},31856(t,e,i){var r=i(19133);t.exports=function(t,e,i){void 0===e&&(e=0),void 0===i&&(i=t.length);var s=e+Math.floor(Math.random()*i);return r(t,s)}},42169(t){t.exports=function(t,e,i){var r=t.indexOf(e),s=t.indexOf(i);return-1!==r&&-1===s&&(t[r]=i,!0)}},86003(t){t.exports=function(t,e){void 0===e&&(e=1);for(var i=null,r=0;r<e;r++)i=t.shift(),t.push(i);return i}},49498(t){t.exports=function(t,e){void 0===e&&(e=1);for(var i=null,r=0;r<e;r++)i=t.pop(),t.unshift(i);return i}},82011(t){t.exports=function(t,e,i,r){var s=t.length;if(e<0||e>=s||e>=i||i>s){if(r)throw new Error("Range Error: Values outside acceptable range");return!1}return!0}},89545(t){t.exports=function(t,e){var i=t.indexOf(e);return-1!==i&&i>0&&(t.splice(i,1),t.unshift(e)),e}},17810(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){if(void 0===s&&(s=0),void 0===n&&(n=t.length),r(t,s,n))for(var a=s;a<n;a++){var o=t[a];o.hasOwnProperty(e)&&(o[e]=i)}return t}},33680(t){t.exports=function(t){for(var e=t.length-1;e>0;e--){var i=Math.floor(Math.random()*(e+1)),r=t[e];t[e]=t[i],t[i]=r}return t}},90126(t){t.exports=function(t){var e=/\D/g;return t.sort(function(t,i){return parseInt(t.replace(e,""),10)-parseInt(i.replace(e,""),10)}),t}},19133(t){t.exports=function(t,e){if(!(e>=t.length)){for(var i=t.length-1,r=t[e],s=e;s<i;s++)t[s]=t[s+1];return t.length=i,r}}},19186(t,e,i){var r=i(82264);function s(t,e){return String(t).localeCompare(e)}function n(t,e,i,r){var s,n,a,o,h,l=t.length,u=0,d=2*i;for(s=0;s<l;s+=d)for(a=(n=s+i)+i,n>l&&(n=l),a>l&&(a=l),o=s,h=n;;)if(o<n&&h<a)e(t[o],t[h])<=0?r[u++]=t[o++]:r[u++]=t[h++];else if(o<n)r[u++]=t[o++];else{if(!(h<a))break;r[u++]=t[h++]}}t.exports=function(t,e){if(void 0===e&&(e=s),!t||t.length<2)return t;if(r.features.stableSort)return t.sort(e);var i=function(t,e){var i=t.length;if(i<=1)return t;for(var r=new Array(i),s=1;s<i;s*=2){n(t,e,s,r);var a=t;t=r,r=a}return t}(t,e);return i!==t&&n(i,null,t.length,t),t}},25630(t){t.exports=function(t,e,i){if(e===i)return t;var r=t.indexOf(e),s=t.indexOf(i);if(r<0||s<0)throw new Error("Supplied items must be elements of the same array");return t[r]=i,t[s]=e,t}},37105(t,e,i){t.exports={Matrix:i(54915),Add:i(71146),AddAt:i(51067),BringToTop:i(66905),CountAllMatching:i(21612),Each:i(95428),EachInRange:i(36914),FindClosestInSorted:i(81957),Flatten:i(43491),GetAll:i(46710),GetFirst:i(58731),GetRandom:i(26546),MoveDown:i(70864),MoveTo:i(69693),MoveUp:i(40853),MoveAbove:i(85835),MoveBelow:i(83371),NumberArray:i(20283),NumberArrayStep:i(593),QuickSelect:i(43886),Range:i(88492),Remove:i(72905),RemoveAt:i(60248),RemoveBetween:i(81409),RemoveRandomElement:i(31856),Replace:i(42169),RotateLeft:i(86003),RotateRight:i(49498),SafeRange:i(82011),SendToBack:i(89545),SetAll:i(17810),Shuffle:i(33680),SortByDigits:i(90126),SpliceOne:i(19133),StableSort:i(19186),Swap:i(25630)}},86922(t){t.exports=function(t){if(!Array.isArray(t)||!Array.isArray(t[0]))return!1;for(var e=t[0].length,i=1;i<t.length;i++)if(t[i].length!==e)return!1;return!0}},63362(t,e,i){var r=i(41836),s=i(86922);t.exports=function(t){var e="";if(!s(t))return e;for(var i=0;i<t.length;i++){for(var n=0;n<t[i].length;n++){var a=t[i][n].toString();e+="undefined"!==a?r(a,2):"?",n<t[i].length-1&&(e+=" |")}if(i<t.length-1){e+="\n";for(var o=0;o<t[i].length;o++)e+="---",o<t[i].length-1&&(e+="+");e+="\n"}}return e}},92598(t){t.exports=function(t){return t.reverse()}},21224(t){t.exports=function(t){for(var e=0;e<t.length;e++)t[e].reverse();return t}},98717(t,e,i){var r=i(37829);t.exports=function(t){return r(t,180)}},44657(t,e,i){var r=i(37829);t.exports=function(t,e){void 0===e&&(e=1);for(var i=0;i<e;i++)t=r(t,90);return t}},37829(t,e,i){var r=i(86922),s=i(2429);t.exports=function(t,e){if(void 0===e&&(e=90),!r(t))return null;if("string"!=typeof e&&(e=(e%360+360)%360),90===e||-270===e||"rotateLeft"===e)(t=s(t)).reverse();else if(-90===e||270===e||"rotateRight"===e)t.reverse(),t=s(t);else if(180===Math.abs(e)||"rotate180"===e){for(var i=0;i<t.length;i++)t[i].reverse();t.reverse()}return t}},92632(t,e,i){var r=i(37829);t.exports=function(t,e){void 0===e&&(e=1);for(var i=0;i<e;i++)t=r(t,-90);return t}},69512(t,e,i){var r=i(86003),s=i(49498);t.exports=function(t,e,i){if(void 0===e&&(e=0),void 0===i&&(i=0),0!==i&&(i<0?r(t,Math.abs(i)):s(t,i)),0!==e)for(var n=0;n<t.length;n++){var a=t[n];e<0?r(a,Math.abs(e)):s(a,e)}return t}},2429(t){t.exports=function(t){for(var e=t.length,i=t[0].length,r=new Array(i),s=0;s<i;s++){r[s]=new Array(e);for(var n=e-1;n>-1;n--)r[s][n]=t[n][s]}return r}},54915(t,e,i){t.exports={CheckMatrix:i(86922),MatrixToString:i(63362),ReverseColumns:i(92598),ReverseRows:i(21224),Rotate180:i(98717),RotateLeft:i(44657),RotateMatrix:i(37829),RotateRight:i(92632),Translate:i(69512),TransposeMatrix:i(2429)}},71334(t){var e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";t.exports=function(t,i){for(var r=new Uint8Array(t),s=r.length,n=i?"data:"+i+";base64,":"",a=0;a<s;a+=3)n+=e[r[a]>>2],n+=e[(3&r[a])<<4|r[a+1]>>4],n+=e[(15&r[a+1])<<2|r[a+2]>>6],n+=e[63&r[a+2]];return s%3==2?n=n.substring(0,n.length-1)+"=":s%3==1&&(n=n.substring(0,n.length-2)+"=="),n}},53134(t){for(var e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",i=new Uint8Array(256),r=0;r<64;r++)i[e.charCodeAt(r)]=r;t.exports=function(t){var e,r,s,n,a=(t=t.substr(t.indexOf(",")+1)).length,o=.75*a,h=0;"="===t[a-1]&&(o--,"="===t[a-2]&&o--);for(var l=new ArrayBuffer(o),u=new Uint8Array(l),d=0;d<a;d+=4)e=i[t.charCodeAt(d)],r=i[t.charCodeAt(d+1)],s=i[t.charCodeAt(d+2)],n=i[t.charCodeAt(d+3)],u[h++]=e<<2|r>>4,u[h++]=(15&r)<<4|s>>2,u[h++]=(3&s)<<6|63&n;return l}},65839(t,e,i){t.exports={ArrayBufferToBase64:i(71334),Base64ToArrayBuffer:i(53134)}},91799(t,e,i){t.exports={Array:i(37105),Base64:i(65839),Objects:i(1183),String:i(31749),NOOP:i(29747),NULL:i(20242)}},41786(t){t.exports=function(t){var e={};for(var i in t)Array.isArray(t[i])?e[i]=t[i].slice(0):e[i]=t[i];return e}},62644(t){var e=function(t){var i,r,s;if("object"!=typeof t||null===t)return t;for(s in i=Array.isArray(t)?[]:{},t)r=t[s],i[s]=e(r);return i};t.exports=e},79291(t,e,i){var r=i(41212),s=function(){var t,e,i,n,a,o,h=arguments[0]||{},l=1,u=arguments.length,d=!1;for("boolean"==typeof h&&(d=h,h=arguments[1]||{},l=2),u===l&&(h=this,--l);l<u;l++)if(null!=(t=arguments[l]))for(e in t)i=h[e],h!==(n=t[e])&&(d&&n&&(r(n)||(a=Array.isArray(n)))?(a?(a=!1,o=i&&Array.isArray(i)?i:[]):o=i&&r(i)?i:{},h[e]=s(d,o,n)):void 0!==n&&(h[e]=n));return h};t.exports=s},23568(t,e,i){var r=i(75508),s=i(35154);t.exports=function(t,e,i){var n=s(t,e,null);if(null===n)return i;if(Array.isArray(n))return r.RND.pick(n);if("object"==typeof n){if(n.hasOwnProperty("randInt"))return r.RND.integerInRange(n.randInt[0],n.randInt[1]);if(n.hasOwnProperty("randFloat"))return r.RND.realInRange(n.randFloat[0],n.randFloat[1])}else if("function"==typeof n)return n(e);return n}},95540(t){t.exports=function(t,e,i){var r=typeof t;return t&&"number"!==r&&"string"!==r&&t.hasOwnProperty(e)&&void 0!==t[e]?t[e]:i}},82840(t,e,i){var r=i(35154),s=i(45319);t.exports=function(t,e,i,n,a){void 0===a&&(a=i);var o=r(t,e,a);return s(o,i,n)}},35154(t){t.exports=function(t,e,i,r){if(!t&&!r||"number"==typeof t)return i;if(t&&t.hasOwnProperty(e))return t[e];if(r&&r.hasOwnProperty(e))return r[e];if(-1!==e.indexOf(".")){for(var s=e.split("."),n=t,a=r,o=i,h=i,l=!0,u=!0,d=0;d<s.length;d++)n&&n.hasOwnProperty(s[d])?(o=n[s[d]],n=n[s[d]]):l=!1,a&&a.hasOwnProperty(s[d])?(h=a[s[d]],a=a[s[d]]):u=!1;return l?o:u?h:i}return i}},69036(t){t.exports=function(t,e){for(var i=0;i<e.length;i++)if(!t.hasOwnProperty(e[i]))return!1;return!0}},1985(t){t.exports=function(t,e){for(var i=0;i<e.length;i++)if(t.hasOwnProperty(e[i]))return!0;return!1}},97022(t){t.exports=function(t,e){return t.hasOwnProperty(e)}},41212(t){t.exports=function(t){if(!t||"object"!=typeof t||t.nodeType||t===t.window)return!1;try{if(t.constructor&&!{}.hasOwnProperty.call(t.constructor.prototype,"isPrototypeOf"))return!1}catch(t){return!1}return!0}},46975(t,e,i){var r=i(41786);t.exports=function(t,e){var i=r(t);for(var s in e)i.hasOwnProperty(s)||(i[s]=e[s]);return i}},269(t,e,i){var r=i(41786);t.exports=function(t,e){var i=r(t);for(var s in e)i.hasOwnProperty(s)&&(i[s]=e[s]);return i}},18254(t,e,i){var r=i(97022);t.exports=function(t,e){for(var i={},s=0;s<e.length;s++){var n=e[s];r(t,n)&&(i[n]=t[n])}return i}},61622(t){t.exports=function(t,e,i){if(!t||"number"==typeof t)return!1;if(t.hasOwnProperty(e))return t[e]=i,!0;if(-1!==e.indexOf(".")){for(var r=e.split("."),s=t,n=t,a=0;a<r.length;a++){if(!s.hasOwnProperty(r[a]))return!1;n=s,s=s[r[a]]}return n[r[r.length-1]]=i,!0}return!1}},1183(t,e,i){t.exports={Clone:i(41786),DeepCopy:i(62644),Extend:i(79291),GetAdvancedValue:i(23568),GetFastValue:i(95540),GetMinMaxValue:i(82840),GetValue:i(35154),HasAll:i(69036),HasAny:i(1985),HasValue:i(97022),IsPlainObject:i(41212),Merge:i(46975),MergeRight:i(269),Pick:i(18254),SetValue:i(61622)}},27902(t){t.exports=function(t,e){return t.replace(/%([0-9]+)/g,function(t,i){return e[Number(i)-1]})}},41836(t){t.exports=function(t,e,i,r){void 0===e&&(e=0),void 0===i&&(i=" "),void 0===r&&(r=3);var s=0;if(e+1>=(t=t.toString()).length)switch(r){case 1:t=new Array(e+1-t.length).join(i)+t;break;case 3:var n=Math.ceil((s=e-t.length)/2);t=new Array(s-n+1).join(i)+t+new Array(n+1).join(i);break;default:t+=new Array(e+1-t.length).join(i)}return t}},33628(t){t.exports=function(t,e){return 0===e?t.slice(1):t.slice(0,e)+t.slice(e+1)}},27671(t){t.exports=function(t){return t.split("").reverse().join("")}},45650(t){t.exports=function(){return"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(t){var e=16*Math.random()|0;return("x"===t?e:3&e|8).toString(16)})}},35355(t){t.exports=function(t){return t&&t[0].toUpperCase()+t.slice(1)}},31749(t,e,i){t.exports={Format:i(27902),Pad:i(41836),RemoveAt:i(33628),Reverse:i(27671),UppercaseFirst:i(35355),UUID:i(45650)}}},e={};function i(r){var s=e[r];if(void 0!==s)return s.exports;var n=e[r]={exports:{}};return t[r](n,n.exports,i),n.exports}return i.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(t){if("object"==typeof window)return window}}(),i(85454)})());
+</script>
+<!-- V60 adds one compiled runtime module without replacing legacy story logic. -->
+<script type="text/plain" id="lq-game-src">
+      const sentenceTutor = (() => {
+        // Capture the original text before any accent folding or game-command parsing.
+        function request(message) {
+          const match = message.match(/^\s*(?:sửa câu|sửa ngữ pháp|sua cau|sua ngu phap|check grammar|correct|fix|grammar)(?:\s*[:：-]\s*|\s+)([\s\S]+)$/i);
+          return match?.[1].trim() || '';
+        }
+
+        const singular = { go: 'goes', do: 'does', have: 'has', work: 'works', live: 'lives', want: 'wants', need: 'needs', like: 'likes' };
+        const base = { sent: 'send', went: 'go', ate: 'eat', bought: 'buy', came: 'come', had: 'have', goes: 'go', cancels: 'cancel', likes: 'like', works: 'work', wants: 'want', needs: 'need' };
+        const past = { go: 'went', eat: 'ate', see: 'saw', buy: 'bought', have: 'had', come: 'came' };
+        // Subject agreement is anchored to the start of a statement. In "Does she go?"
+        // or "I suggest she go", the base verb is already correct.
+        const rules = [
+          [/^I goes\b/i, 'I go', 'Ở hiện tại đơn, chủ ngữ “I” đi với “go”.'],
+          [/^(he|she|it) (go|like|want|need|live|work|have|do)\b/i, (_, who, verb) => who + ' ' + singular[verb.toLowerCase()], 'Động từ hiện tại đơn phải hòa hợp với chủ ngữ ngôi thứ ba số ít.'],
+          [/^(he|she|it) don(['’])t\b/i, (_, who, mark) => who + ' doesn' + mark + 't', 'Dùng “doesn’t” để phủ định với chủ ngữ ngôi thứ ba số ít.'],
+          [/^I is\b/i, 'I am', 'Chủ ngữ “I” đi với “am”.'],
+          [/^(he|she|it) are\b/i, '$1 is', 'Chủ ngữ ngôi thứ ba số ít đi với “is”.'],
+          [/^(they|we|you) is\b/i, '$1 are', 'Các chủ ngữ “they”, “we”, “you” đi với “are”.'],
+          [/^(I|we|you|they) has\b/i, '$1 have', 'Các chủ ngữ “I”, “we”, “you”, “they” đi với “have”.'],
+          [/^I have (\d+) years? old(?=\s*(?:[.,!?;]|$)|\s+(?:and|but|now|today)\b)/i, (_, age) => 'I am ' + age + (age === '1' ? ' year old' : ' years old'), 'Khi nói tuổi, dùng động từ “be” trước số tuổi.'],
+          [/^I(?: am|['’]m) agree\b/i, 'I agree', '“Agree” là động từ chính nên bỏ “am”.'],
+          [/^I (want|need) (go|eat|buy|learn)\b(?![-‑–'’])/i, 'I $1 to $2', 'Sau “want” hoặc “need”, dùng “to” trước động từ nguyên mẫu.'],
+          [/^I like go (?=to |home\b)/i, 'I like to go ', 'Sau “like”, có thể dùng “to go” để nói về hoạt động mình thích.'],
+          [/^I no (like|want|know)\b/i, "I don't $1", 'Câu phủ định ở hiện tại đơn với “I” cần “don’t”.'],
+          [/^Me name is\b/i, 'My name is', 'Dùng tính từ sở hữu “my” trước “name”.'],
+          [/^(Yesterday,? I) (go|eat|see|buy|have|come)\b/i, (_, intro, verb) => intro + ' ' + past[verb.toLowerCase()], '“Yesterday” đặt sự việc trong quá khứ nên dùng quá khứ đơn.'],
+          [/\b(didn['’]t|did not) (went|ate|bought|came|had|sent)\b/gi, (_, aux, verb) => aux + ' ' + base[verb.toLowerCase()], 'Sau “did not” hoặc “didn’t”, dùng động từ nguyên mẫu.'],
+          [/\b(doesn['’]t|does not|don['’]t|do not) (goes|likes|works|wants|needs)\b/gi, (_, aux, verb) => aux + ' ' + base[verb.toLowerCase()], 'Sau trợ động từ phủ định, dùng động từ chính ở dạng nguyên mẫu.'],
+          [/^([Dd]id (?:[Ii]|[Yy]ou|[Hh]e|[Ss]he|[Ii]t|[Ww]e|[Tt]hey|\p{Lu}[\p{L}’'-]*)) (sent|went|ate|bought|came|had)\b/u, (_, intro, verb) => intro + ' ' + base[verb], 'Sau trợ động từ “did”, động từ chính ở dạng nguyên mẫu.'],
+          [/\b((?:I|you|we|they|he|she|it) (?:might|could|should|must|will|can)) (cancels|goes|likes|works|wants|needs)\b/gi, (_, intro, verb) => intro + ' ' + base[verb.toLowerCase()], 'Sau động từ khuyết thiếu, dùng động từ nguyên mẫu.'],
+          [/^((?:Can|Could|Would|Will) you) to (?=help\b|send\b|go\b|tell\b|show\b|lend\b|meet\b|come\b|give\b|open\b|close\b|repeat\b|speak\b|explain\b|check\b|call\b|bring\b)/i, '$1 ', 'Trong câu hỏi với động từ khuyết thiếu, bỏ “to” trước động từ chính.'],
+          [/^((?:Could|Can|Would|Will) you (?:please )?)borrow (me|us) (?=your\b)/i, '$1lend $2 ', 'Người nghe cho mượn đồ của họ nên dùng “lend”. “Borrow” diễn tả việc đi mượn.'],
+          [/\bdo (a|the|this|that) decision\b/gi, 'make $1 decision', 'Trong tiếng Anh, “decision” kết hợp với động từ “make”.'],
+          [/\bhow many money(?=\s*(?:[.!?]|$)|\s+(?:do|does|did|is|was|will|can|should|would|could)\b)/gi, 'how much money', '“Money” là danh từ không đếm được nên dùng “how much”.'],
+          [/\ban (?=(?:university|unicorn|uniform)\b)/gi, 'a ', 'Từ sau bắt đầu bằng âm /j/ nên dùng mạo từ “a”.'],
+          [/\ba (?=(?:hour|honor|honour)\b)/gi, 'an ', 'Từ sau có âm “h” câm và bắt đầu bằng nguyên âm nên dùng “an”.'],
+          [/\b(is|was|are|were|feel|feels) more better\b/gi, '$1 better', '“Better” đã là dạng so sánh hơn.'],
+          [/\bi(?=['’](?:m|ve|d|ll)\b| (?:am|was|have|had|do|did|don['’]t|didn['’]t|can|could|would|should|will|might|agree|want|need|like|love|know|think|go|went|saw|said|live|work)\b)/g, 'I', 'Đại từ “I” luôn viết hoa.'],
+        ];
+
+        function correct(original) {
+          const reasons = new Set();
+          // Quoted words may be a title, reported speech or a deliberate example.
+          const pieces = original.split(/("[^"\n]*"|“[^”\n]*”|‘[^‘\n]*?’(?=\W|$)|(?<!\w)'[^'\n]*?'(?=\W|$))/g);
+          const fixed = pieces.map((piece, index) => {
+            if (index % 2) return piece;
+            let text = piece;
+            for (const [pattern, replacement, reason] of rules) {
+              if (index && pattern.source.startsWith('^')) continue;
+              text = text.replace(pattern, (match, ...args) => {
+                let edit = typeof replacement === 'function'
+                  ? replacement(match, ...args)
+                  : replacement.replace(/\$(\d+)/g, (_, n) => args[Number(n) - 1]);
+                if (match[0] === match[0].toUpperCase()) edit = edit[0].toUpperCase() + edit.slice(1);
+                reasons.add(reason);
+                return edit;
+              });
+            }
+            return text;
+          }).join('');
+          return { fixed, explanation: [...reasons].join(' ') };
+        }
+
+        function format(original, result) {
+          return 'Câu gốc: ' + original + '\nCâu sửa: ' + result.fixed + '\nGiải thích: ' +
+            (result.explanation || 'Chưa thấy lỗi rõ ràng theo các quy tắc ngoại tuyến.');
+        }
+        return { request, correct, format };
+      })();
+      try {
+        const cfg = JSON.parse(localStorage.getItem('english-town-ai') || '{}');
+        if (false) {
+          cfg.geminiModel = 'gemini-2.5-flash';
+          localStorage.setItem('english-town-ai', JSON.stringify(cfg));
+        }
+      } catch (_) {}
+      // Shared Gemini helpers (NewGoal #4, #5).
+      // proxyAvailable(): the static builds (GitHub Pages, LIFEQUEST_deploy) ship no /api/gemini server, so
+      //   every keyless call used to end in a confusing 404. Probe the proxy once (GET must answer {ok:true})
+      //   and cache the answer; callers without a key go offline when it is false.
+      // genConfig(): gemini-2.5 flash models "think" by default and the hidden thinking tokens count against
+      //   maxOutputTokens, which can leave the visible answer empty. Turn thinking off for them.
+      window.LQGemini = (() => {
+        let probe = null;
+        function proxyAvailable() {
+          if (location.protocol === 'file:') return Promise.resolve(false);
+          if (!probe)
+            probe = fetch(window.LIFEQUEST_AI_CONFIG?.PROXY_URL || '/api/gemini', {
+              signal: AbortSignal.timeout(2500),
+            })
+              .then(async (r) => r.ok && (await r.json()).ok === true)
+              .catch(() => false);
+          return probe;
+        }
+        function thinkingConfig(model) {
+          const m = String(model || '');
+          if (/gemini-2\.5-(flash|flash-lite)/i.test(m)) return { thinkingBudget: 0 };
+          if (/gemini-3/i.test(m)) return { thinkingLevel: 'low' };
+          return null;
+        }
+        function genConfig(model, cfg = {}) {
+          const t = thinkingConfig(model);
+          return t ? { ...cfg, thinkingConfig: t } : { ...cfg };
+        }
+        return { proxyAvailable, thinkingConfig, genConfig };
+      })();
+      // The original town's scenes, procedural sprite generators, graphics and maps
+      // are reused without changing their visual drawing instructions.
+      const { cefrService, CEFR_LEVELS } = (() => {
+        /**
+         * CEFR English Proficiency Service
+         * Customizes NPC dialogue complexity, vocabulary, and grammar coaching for learners.
+         */
+        const CEFR_LEVELS = {
+          A1: {
+            code: 'A1',
+            name: 'Beginner',
+            vietnameseTitle: 'Beginner (A1)',
+            description: 'Very simple sentences, slow clear speech, common everyday words.',
+            promptInstruction:
+              'The player is a beginner English learner (CEFR A1). Speak in short, simple sentences (5-10 words). Use elementary vocabulary. Be patient and friendly. Avoid slang, idioms, or complex compound tenses.',
+          },
+          A2: {
+            code: 'A2',
+            name: 'Elementary',
+            vietnameseTitle: 'Elementary (A2)',
+            description: 'Simple everyday dialogues, basic past/present/future tenses.',
+            promptInstruction:
+              'The player is an elementary English learner (CEFR A2). Use straightforward conversational sentences. Introduce basic descriptive words. Keep questions direct and easy to answer.',
+          },
+          B1: {
+            code: 'B1',
+            name: 'Intermediate',
+            vietnameseTitle: 'Intermediate (B1)',
+            description: 'Natural conversations, common idioms, expressing opinions and plans.',
+            promptInstruction:
+              'The player is an intermediate English learner (CEFR B1). Converse naturally like a typical town resident. Use common idioms, phrasal verbs, and ask follow-up questions to encourage conversational depth.',
+          },
+          B2: {
+            code: 'B2',
+            name: 'Upper-Intermediate',
+            vietnameseTitle: 'Upper-Intermediate (B2)',
+            description: 'Rich vocabulary, nuanced discussions, natural native expressions.',
+            promptInstruction:
+              'The player is an upper-intermediate English learner (CEFR B2). Use varied vocabulary, nuanced expressions, and natural colloquial phrases. Challenge the player with detailed responses.',
+          },
+          C1: {
+            code: 'C1',
+            name: 'Advanced',
+            vietnameseTitle: 'Advanced (C1)',
+            description: 'Fluent, idiomatic native-level discussions, humor and subtlety.',
+            promptInstruction:
+              'The player is an advanced English speaker (CEFR C1). Speak completely naturally at full native fluency, with humor, cultural references, figurative language, and sophisticated vocabulary.',
+          },
+        };
+        const STORAGE_KEY = 'lifequest_cefr_level_v2';
+        class CEFRService {
+          currentLevel = 'B1';
+          listeners = [];
+          constructor() {
+            if (typeof window !== 'undefined') {
+              try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && CEFR_LEVELS[saved]) {
+                  this.currentLevel = saved;
+                }
+              } catch (e) {}
+            }
+          }
+          getLevel() {
+            return this.currentLevel;
+          }
+          getLevelInfo() {
+            return CEFR_LEVELS[this.currentLevel];
+          }
+          setLevel(level) {
+            if (CEFR_LEVELS[level]) {
+              this.currentLevel = level;
+              try {
+                localStorage.setItem(STORAGE_KEY, level);
+              } catch (e) {}
+              this.listeners.forEach((l) => l());
+            }
+          }
+          subscribe(listener) {
+            this.listeners.push(listener);
+            return () => {
+              this.listeners = this.listeners.filter((l) => l !== listener);
+            };
+          }
+        }
+        const cefrService = new CEFRService();
+
+        return { cefrService, CEFR_LEVELS };
+      })();
+
+      const { speechService } = (() => {
+        /**
+         * Speech Service: Bidirectional Speech (Speech-to-Text & Text-to-Speech)
+         * Designed for English Language Learners in LifeQuest AI: English Town.
+         */
+        const STORAGE_KEY = 'lifequest_speech_settings_v2';
+        class SpeechService {
+          synth = null;
+          voices = [];
+          selectedVoice = null;
+          currentUtterance = null;
+          isSpeakingState = false;
+          settings = {
+            voiceEnabled: true,
+            rate: 0.9,
+            pitch: 1.0,
+            preferredVoice: null,
+            autoSpeak: true,
+          };
+          listeners = [];
+          constructor() {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+              this.synth = window.speechSynthesis;
+              this.loadSettings();
+              this.initVoices();
+            }
+          }
+          loadSettings() {
+            try {
+              const raw = localStorage.getItem(STORAGE_KEY);
+              if (raw) {
+                this.settings = { ...this.settings, ...JSON.parse(raw) };
+              }
+            } catch (e) {
+              console.warn('Failed to load speech settings from storage', e);
+            }
+          }
+          saveSettings() {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
+              this.notify();
+            } catch (e) {
+              console.warn('Failed to save speech settings', e);
+            }
+          }
+          initVoices() {
+            if (!this.synth) return;
+            const populate = () => {
+              this.voices = this.synth.getVoices();
+              this.pickBestVoice();
+              this.notify();
+            };
+            populate();
+            if (this.synth.onvoiceschanged !== undefined) {
+              this.synth.onvoiceschanged = populate;
+            }
+          }
+          pickBestVoice() {
+            if (!this.voices.length) return;
+            if (this.settings.preferredVoice) {
+              const found = this.voices.find((v) => v.name === this.settings.preferredVoice);
+              if (found) {
+                this.selectedVoice = found;
+                return;
+              }
+            }
+            // Prioritize natural English voices (Google US English, Samantha, Daniel, Karen, etc.)
+            const englishVoices = this.voices.filter((v) => v.lang.startsWith('en'));
+            const preferred =
+              englishVoices.find((v) =>
+                /Google|Natural|Samantha|Daniel|Victoria|Arthur|Moira/i.test(v.name),
+              ) ||
+              englishVoices.find((v) => v.lang === 'en-US') ||
+              englishVoices[0] ||
+              this.voices[0];
+            this.selectedVoice = preferred || null;
+          }
+          getVoices() {
+            return this.voices.filter((v) => v.lang.startsWith('en'));
+          }
+          setPreferredVoice(voiceName) {
+            this.settings.preferredVoice = voiceName;
+            this.pickBestVoice();
+            this.saveSettings();
+          }
+          setVoiceEnabled(enabled) {
+            this.settings.voiceEnabled = enabled;
+            if (!enabled) {
+              this.stop();
+            }
+            this.saveSettings();
+          }
+          setAutoSpeak(auto) {
+            this.settings.autoSpeak = auto;
+            this.saveSettings();
+          }
+          setRate(rate) {
+            this.settings.rate = Math.max(0.6, Math.min(1.4, rate));
+            this.saveSettings();
+          }
+          isAvailable() {
+            return typeof window !== 'undefined' && 'speechSynthesis' in window;
+          }
+          isSpeaking() {
+            return this.isSpeakingState;
+          }
+          /**
+           * Speak an English sentence.
+           * Strips out markdown, emoji, and formatting so the speech output sounds completely natural.
+           */
+          speak(text, callbacks) {
+            if (!this.synth || !this.settings.voiceEnabled) return;
+            // Stop current speech
+            this.stop();
+            // Clean text for speech synthesis
+            const cleanText = text
+              .replace(/https?:\/\/\S+/g, '') // remove URLs
+              .replace(/[*_#`~[\]]/g, '') // remove markdown
+              .replace(
+                /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/gu,
+                '',
+              ) // remove emojis
+              .trim();
+            if (!cleanText) return;
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = this.selectedVoice?.lang || 'en-US';
+            if (this.selectedVoice) {
+              utterance.voice = this.selectedVoice;
+            }
+            utterance.rate = this.settings.rate;
+            utterance.pitch = this.settings.pitch;
+            utterance.onstart = () => {
+              this.isSpeakingState = true;
+              callbacks?.onStart?.();
+              this.notify();
+            };
+            utterance.onend = () => {
+              this.isSpeakingState = false;
+              this.currentUtterance = null;
+              callbacks?.onEnd?.();
+              this.notify();
+            };
+            utterance.onerror = (e) => {
+              this.isSpeakingState = false;
+              this.currentUtterance = null;
+              if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                console.warn('Speech synthesis error:', e);
+                callbacks?.onError?.(e);
+              }
+              this.notify();
+            };
+            this.currentUtterance = utterance;
+            try {
+              this.synth.speak(utterance);
+            } catch (err) {
+              console.warn('Failed to speak utterance:', err);
+            }
+          }
+          stop() {
+            if (this.synth) {
+              try {
+                this.synth.cancel();
+              } catch (e) {}
+              this.isSpeakingState = false;
+              this.currentUtterance = null;
+              this.notify();
+            }
+          }
+          subscribe(listener) {
+            this.listeners.push(listener);
+            return () => {
+              this.listeners = this.listeners.filter((l) => l !== listener);
+            };
+          }
+          notify() {
+            this.listeners.forEach((l) => l());
+          }
+        }
+        const speechService = new SpeechService();
+
+        return { speechService };
+      })();
+
+      const {
+        attachTownScene,
+        detachTownScene,
+        updateTownAutopilot,
+        cancelTownAutopilot,
+        executeTownCommand,
+        getTownContext,
+      } = (() => {
+        /**
+         * Non-visual bridge between LIFEQUEST AI and the existing Phaser scene.
+         * Do not change any terrain, sprites, drawings, or world-generation rules here.
+         */
+        let scene = null;
+        let route = null;
+
+        function notify(text) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('lifequest:status', { detail: { text } }));
+          }
+        }
+
+        function attachTownScene(current) {
+          scene = current;
+          window.__lifequestGetScene = () => scene;
+          route = null;
+        }
+
+        function detachTownScene(current) {
+          if (scene !== current) return;
+          scene = null;
+          route = null;
+        }
+
+        function getTownContext() {
+          if (!scene || !scene.player || !scene.area) return null;
+          const { area, player, npcs, inside, store } = scene;
+          return {
+            area: area.name,
+            areaId: area.id,
+            inside: inside?.b?.name || null,
+            day: store.game.day,
+            time:
+              Math.floor(store.game.minutes / 60)
+                .toString()
+                .padStart(2, '0') +
+              ':' +
+              (store.game.minutes % 60).toString().padStart(2, '0'),
+            position: { x: Math.floor(player.x / 32), y: Math.floor(player.y / 32) },
+            nearby: npcs
+              .filter((n) => n.sprite.visible && !!n.inside === !!inside)
+              .filter(
+                (n) =>
+                  Math.hypot(n.sprite.x - player.x, n.sprite.y - player.y) < (inside ? 95 : 80),
+              )
+              .map((n) => ({ id: n.def.id, name: n.def.name })),
+            npcs: npcs.map((n) => ({
+              id: n.def.id,
+              name: n.def.name,
+              available: !!n.sprite.visible && !!n.inside === !!inside,
+              indoors: !!n.inside,
+              activity: n.slot.label,
+              tile: { x: Math.floor(n.sprite.x / 32), y: Math.floor(n.sprite.y / 32) },
+            })),
+            places: [
+              ...area.buildings.map((b) => ({
+                id: b.name,
+                name: b.name,
+                type: 'building',
+                tile: { x: b.door, y: b.y + b.h },
+              })),
+              ...Object.keys(area.places)
+                .filter((k) => !k.startsWith('home_'))
+                .map((k) => ({
+                  id: k,
+                  name: k,
+                  type: 'landmark',
+                  tile: { x: area.places[k].x, y: area.places[k].y },
+                })),
+            ],
+            isMoving: !!route,
+          };
+        }
+
+        function cancelTownAutopilot(reason = '', announce = false) {
+          if (!route) return;
+          route = null;
+          if (reason && announce) notify(reason);
+        }
+
+        const tile = (x, y) => ({ x: Math.floor(x / 32), y: Math.floor(y / 32) });
+        const center = (x, y) => ({ x: x * 32 + 16, y: y * 32 + 16 });
+
+        function routeToPoint(targetX, targetY, maxDistanceTiles = 0, preferExact = false) {
+          const { player, area } = scene;
+          const target = tile(targetX, targetY);
+          const candidates = [];
+          for (let rad = 0; rad <= maxDistanceTiles; rad++) {
+            for (let dy = -rad; dy <= rad; dy++) {
+              for (let dx = -rad; dx <= rad; dx++) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
+                const x = target.x + dx,
+                  y = target.y + dy;
+                if (area.isTileBlocked(x, y)) continue;
+                const point = center(x, y);
+                if (scene.blocked(point.x, point.y)) continue;
+                // The original findPath returns a one-node fallback for an unreachable goal;
+                // validate every step before using the route.
+                const steps = area.findPath({ x: player.x, y: player.y }, { x, y });
+                if (!Array.isArray(steps) || !steps.length || steps.length > 1600) continue;
+                const end = steps[steps.length - 1];
+                if (Math.hypot(end.x - point.x, end.y - point.y) > 2) continue;
+                let last = center(Math.floor(player.x / 32), Math.floor(player.y / 32));
+                if (
+                  !steps.every((p) => {
+                    const valid =
+                      !area.isTileBlocked(Math.floor(p.x / 32), Math.floor(p.y / 32)) &&
+                      !scene.blocked(p.x, p.y) &&
+                      Math.hypot(p.x - last.x, p.y - last.y) <= 46;
+                    last = p;
+                    return valid;
+                  })
+                )
+                  continue;
+                const proximity = Math.hypot(point.x - targetX, point.y - targetY);
+                if (preferExact && proximity > 23) continue;
+                candidates.push({ steps, cost: steps.length + proximity / 72 });
+              }
+            }
+          }
+          candidates.sort((a, b) => a.cost - b.cost);
+          return candidates[0]?.steps || null;
+        }
+
+        function beginRoute(points, label, npcId = null, autoTalk = false) {
+          if (!points)
+            return `Couldn't find a valid path to ${label}. Try getting closer with WASD.`;
+          route = { kind: 'path', points: [...points], label, npcId, autoTalk, retries: 0 };
+          return `🚶 Your character is finding a path to ${label}. Press WASD/arrow keys to take back control, or say “stop”.`;
+        }
+
+        function canAct() {
+          return (
+            !!scene &&
+            !scene.switching &&
+            !scene.sleeping &&
+            !scene.chat.isOpen &&
+            !scene.briefing.isOpen &&
+            !scene.settings.isOpen &&
+            !scene.helper.isOpen &&
+            !scene.journal.isOpen &&
+            !scene.quests.isOpen
+          );
+        }
+
+        function executeTownCommand(command) {
+          if (!scene || !scene.player) return 'The game hasn\'t finished loading. Please try again.';
+          const action = command?.kind;
+          if (action === 'stop') {
+            cancelTownAutopilot();
+            return '🛑 Autopilot stopped. You can use WASD or the arrow keys.';
+          }
+          if (action === 'status') {
+            const data = getTownContext();
+            return `📍 You are at ${data.inside || data.area}, position (${data.position.x}, ${data.position.y}), ${data.time}.`;
+          }
+          if (action === 'help') {
+            return 'You can say: “go to the library”, “find Lily and talk to her”, “walk right for 2 seconds”, “talk to the nearest person”, “stop”, or ask how to learn English. Manual controls: WASD/arrow keys, E to chat.';
+          }
+          if (!canAct())
+            return 'Close the NPC window, journal or in-game menu before controlling your character.';
+          if (action === 'talk') {
+            const npc = scene.nearestNpc(scene.inside ? 56 * scene.inside.k : 48);
+            if (!npc) return 'No NPC is close enough. Walk up to an NPC and try again.';
+            cancelTownAutopilot();
+            scene.tryTalk();
+            return `💬 Opened a conversation with ${npc.def.name}. You can type or use the microphone to speak English.`;
+          }
+          if (action === 'move') {
+            const dirs = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+            if (!Object.hasOwn(dirs, command.direction)) return 'Invalid direction.';
+            const seconds = Math.min(3, Math.max(0.25, Number(command.seconds) || 1));
+            cancelTownAutopilot();
+            route = {
+              kind: 'direction',
+              vector: dirs[command.direction],
+              remaining: seconds * 1000,
+            };
+            return `🎮 Moving ${command.direction} for ${seconds} second(s).`;
+          }
+          if (scene.inside)
+            return 'You are indoors. Go outside before using auto-navigation.';
+          if (action === 'navigate_npc') {
+            const npc = scene.npcs.find((n) => n.def.id === command.target);
+            if (!npc) return 'This character wasn\'t found in the current area.';
+            if (npc.inside)
+              return `${npc.def.name} is inside a building. Enter that building first and talk in person.`;
+            if (!npc.sprite.visible)
+              return `${npc.def.name} is resting or not around right now. Try again at another time.`;
+            const near = Math.hypot(scene.player.x - npc.sprite.x, scene.player.y - npc.sprite.y);
+            if (near <= 45) {
+              if (command.autoTalk) {
+                scene.chat.open(npc.def);
+                return `💬 Started chatting with ${npc.def.name}.`;
+              }
+              return `You are already next to ${npc.def.name}. Press E to chat.`;
+            }
+            const points = routeToPoint(npc.sprite.x, npc.sprite.y, 2);
+            return beginRoute(points, npc.def.name, npc.def.id, !!command.autoTalk);
+          }
+          if (action === 'navigate_place') {
+            const building = scene.area.buildings.find((b) => b.name === command.target);
+            let x, y;
+            if (building) {
+              x = building.door * 32 + 16;
+              y = (building.y + building.h) * 32 + 16;
+            } else {
+              const p = scene.area.places[command.target];
+              if (!p) return 'This place wasn\'t found in the current town.';
+              x = p.x * 32 + 16;
+              y = p.y * 32 + 16;
+            }
+            if (Math.hypot(scene.player.x - x, scene.player.y - y) < 20)
+              return `You are right at ${command.target}.`;
+            const points = routeToPoint(x, y, building ? 1 : 2, !!building);
+            return beginRoute(points, command.target);
+          }
+          return 'I didn\'t understand that command. Try “go to the library”, “go to Lily”, “stop”, or “help”.';
+        }
+
+        /** Called once per game update; returns movement vector, or null for manual input. */
+        function updateTownAutopilot(current, delta) {
+          if (!route || current !== scene) return null;

@@ -1,0 +1,428 @@
+I ___ at home.',
+              'will stay',
+              'stayed',
+              'staying',
+              'a',
+              'First conditional: if + present, will + verb.',
+            ],
+            [
+              'I have lived here ___ 2020.',
+              'since',
+              'for',
+              'during',
+              'a',
+              'Since + a point in time.',
+            ],
+            [
+              'The book ___ by many students.',
+              'is read',
+              'reads',
+              'reading',
+              'a',
+              'Passive voice: be + past participle.',
+            ],
+            [
+              'She asked me where I ___.',
+              'lived',
+              'do live',
+              'am live',
+              'a',
+              'Indirect question: she asked where I lived.',
+            ],
+          ],
+          B2: [
+            [
+              'Hardly ___ arrived when it started raining.',
+              'had I',
+              'I had',
+              'have I',
+              'a',
+              'Inversion with hardly + had.',
+            ],
+            [
+              'The report needs ___ before Friday.',
+              'to be finished',
+              'finish',
+              'finished it',
+              'a',
+              'Need + to be + V3.',
+            ],
+          ],
+          C1: [
+            [
+              'Only after the meeting ___ the issue.',
+              'did we understand',
+              'we understood',
+              'understood we',
+              'a',
+              'Inversion after Only after.',
+            ],
+            [
+              'Were I ___ your position, I would reconsider.',
+              'in',
+              'at',
+              'on',
+              'a',
+              'Conditional inversion: Were I in your position.',
+            ],
+          ],
+        };
+        let quiz = null,
+          lastTarget = null,
+          practiceCounter = 0,
+          practiceState = null;
+        const modes = ['auto', 'chat', 'learn', 'control'];
+        function findMention(s, entries, aliases) {
+          const hits = [];
+          for (const x of entries || []) {
+            let names = [
+              x.id,
+              x.name,
+              String(x.name)
+                .replace(/\([^)]*\)/g, '')
+                .replace(/^(mr|ms|dr|officer|father)\.? /i, ''),
+              ...(aliases[x.id] || []),
+              ...(aliases[x.name] || []),
+            ];
+            for (const name of names) {
+              const n = fold(name);
+              if (n.length > 2 && has(s, n)) hits.push({ x, len: n.length });
+            }
+          }
+          hits.sort((a, b) => b.len - a.len);
+          return hits[0]?.x || null;
+        }
+        function detectAction(input, ctx, mode) {
+          const s = fold(input),
+            plain = s.replace(/[.!?]+$/, '');
+          const isStop =
+            /^(dung|dung lai|stop|stop moving|cancel|huy lenh|huy di chuyen|thoi dung|pause)( ngay| lai| di| nhe)?$/.test(
+              plain,
+            );
+          if (isStop) return { kind: 'stop' };
+          if (mode === 'chat' || mode === 'learn') return null;
+          const isGuide =
+            /^(help|giup do|huong dan|cach choi|lenh nao|commands|ban lam duoc gi|nhung lenh nao)/.test(
+              s,
+            );
+          if (isGuide) return { kind: 'help' };
+          if (
+            /^(toi|minh|nhan vat|player|i) (dang )?o dau|^(vi tri|toa do|where am i|what time is it|may gio roi|gio trong game)/.test(
+              s,
+            )
+          )
+            return { kind: 'status' };
+          const near =
+            /nguoi gan nhat|npc gan nhat|nguoi gan day|nearest (npc|person)|talk to someone|noi chuyen voi ai do/.test(
+              s,
+            );
+          const talking =
+            /noi chuyen|tro chuyen|bat chuyen|chat with|talk to|speak to|giao tiep voi|noi voi|say hello to/.test(
+              s,
+            );
+          const npc = findMention(s, ctx.npcs, npcAliases),
+            place = findMention(s, ctx.places, placeAliases);
+          const asking =
+            /\?$/.test(input.trim()) ||
+            /^(ai la|la ai|who is|what is|what does|where is|where can|can you tell|co phai|co nhung|gioi thieu|liet ke|ke ten|cho biet|toi muon biet|neu|y nghia|huong dan cach|tai sao|why|how do|how to|tu vung|dich|sua cau|goi y|explain)/.test(
+              s,
+            );
+          const motion =
+            /^(hay |lam on |giup toi |please |cho toi |ban hay |co the |could you )?(di |chay |dua |den |den cho |dan |tim |find |go |walk |move |navigate |head |dua toi |hay den |dich chuyen |qua |sang |tien |lui |len |xuong )/.test(
+              s,
+            ) || /^toi muon (den|di den|tim|gap)/.test(s);
+          if (near && (talking || /^talk|^noi chuyen/.test(s))) return { kind: 'talk' };
+          // Never navigate because a name is merely mentioned in a question or a grammar task.
+          if (npc && (talking || motion) && !asking) {
+            lastTarget = { kind: 'navigate_npc', target: npc.id };
+            return { kind: 'navigate_npc', target: npc.id, autoTalk: talking };
+          }
+          if (place && motion && !asking) {
+            lastTarget = { kind: 'navigate_place', target: place.id };
+            return { kind: 'navigate_place', target: place.id };
+          }
+          if (talking && (near || /^(noi chuyen|talk|bat chuyen|say hello)$/.test(plain)))
+            return { kind: 'talk' };
+          if (
+            /^(den do|di den do|quay lai do|go there|go back there|noi chuyen voi nguoi do|talk to them)/.test(
+              s,
+            ) &&
+            lastTarget
+          ) {
+            return { ...lastTarget, autoTalk: talking };
+          }
+          const dirCmd =
+            /^(di|hay di|cho|cho toi di|move|go|walk|chay|sang|qua|re|tien|lui|len|xuong|walk to the|turn)/.test(
+              s,
+            );
+          if (dirCmd && !asking && !npc && !place) {
+            const dir = /\b(trai|left|west)\b/.test(s)
+              ? 'left'
+              : /\b(phai|right|east)\b/.test(s)
+                ? 'right'
+                : /\b(len|tren|up|north)\b/.test(s)
+                  ? 'up'
+                  : /\b(xuong|duoi|down|south)\b/.test(s)
+                    ? 'down'
+                    : null;
+            if (dir) {
+              const num = s.match(/\b(\d+(?:[.,]\d+)?)\s*(giay|s|second|seconds|buoc|steps?)\b/);
+              const seconds = num
+                ? parseFloat(num[1].replace(',', '.')) * (/buoc|step/.test(num[2]) ? 0.25 : 1)
+                : 1;
+              return {
+                kind: 'move',
+                direction: dir,
+                seconds: Math.max(0.25, Math.min(3, seconds)),
+              };
+            }
+          }
+          return null;
+        }
+        const prettyNpc = (n) => n.name.replace(/\([^)]*\)/, '').trim();
+        function localKnowledge(message, ctx) {
+          const s = fold(message),
+            npc = findMention(s, ctx.npcs, npcAliases),
+            place = findMention(s, ctx.places, placeAliases);
+          if (
+            npc &&
+            /la ai|who is|nghe gi|lam gi|what does|gioi thieu|co biet|dang o dau/.test(s)
+          ) {
+            const activity = npc.activity ? ` Right now they are ${npc.activity}.` : '';
+            const canSpeak = /tieng anh|english|can speak|biet noi/.test(s)
+              ? ` Yes, you can chat in English with ${prettyNpc(npc)} in the game.`
+              : '';
+            return `👤 ${prettyNpc(npc)} is ${npcRoles[npc.id] || 'a resident'} of English Town.${activity}${canSpeak} ${npc.available ? 'This character can currently be found in this area.' : 'This character is not near you right now.'}\nTo go meet them, say: “đến ${prettyNpc(npc)} và nói chuyện”.`;
+          }
+          if (
+            place &&
+            /o dau|where is|what is|gioi thieu|la gi|co gi|tell me|chi duong|duong den|way to|how do i get/.test(
+              s,
+            )
+          ) {
+            let direction = '';
+            if (place.tile && !ctx.inside) {
+              const dx = place.tile.x - ctx.position.x,
+                dy = place.tile.y - ctx.position.y;
+              const hor = dx > 2 ? 'East' : dx < -2 ? 'West' : '';
+              const ver = dy > 2 ? 'South' : dy < -2 ? 'North' : '';
+              const compass = [hor, ver].filter(Boolean).join(' ') || 'right nearby';
+              direction = ` From your current position, the rough direction is ${compass}, about ${Math.round(Math.hypot(dx, dy))} map tiles away (not counting detours).`;
+            }
+            return `🏠 ${place.name} is a location on the ${ctx.area} map.${direction} If you say “đến ${place.name}”, your character will find a valid path there.`;
+          }
+          if (
+            /\b(npc|nhan vat|nguoi dan|dan cu|citizens)\b/.test(s) &&
+            /co ai|danh sach|ke ten|lieu ke|nhung ai|who/.test(s)
+          )
+            return (
+              '👥 Characters in this area: ' +
+              ctx.npcs
+                .map((n) => prettyNpc(n))
+                .slice(0, 20)
+                .join(', ') +
+              '.'
+            );
+          if (
+            /(dia diem|toa nha|buildings|places)/.test(s) &&
+            /(nao|danh sach|ke ten|co nhung|where)/.test(s)
+          )
+            return (
+              '📍 Available destinations: ' +
+              ctx.places
+                .filter((x) => x.type === 'building')
+                .slice(0, 15)
+                .map((x) => x.name)
+                .join(', ') +
+              '.'
+            );
+          if (/(nhiem vu|quest|mission)/.test(s))
+            return '📜 Press Q to see your real quests in the game. Chat with the residents in English to complete their requests. I can suggest suitable questions for each NPC.';
+          if (
+            /(gio|time|ngay)/.test(s) &&
+            /(bao nhieu|may gio|what time|hien tai|trong game)/.test(s)
+          )
+            return `🕒 It is ${ctx.time} in the game, day ${ctx.day}.`;
+          if (/(vi tri|toa do|dang o dau|where am i)/.test(s))
+            return `📍 You are at ${ctx.inside || ctx.area}, tile (${ctx.position.x}, ${ctx.position.y}) at ${ctx.time}.`;
+          if (/(goi y|cau nao|noi gi|say what|what should i say)/.test(s) && npc) {
+            const help = {
+              barista: 'Could I have a cup of tea, please?',
+              librarian: 'Could you recommend a book?',
+              doctor: 'I have a headache. What should I do?',
+              teacher: 'How can I improve my English?',
+              shopkeeper: 'How much does this cost?',
+              kid: 'Hi! My name is Alex. What is your name?',
+              police: 'Excuse me, where is the library?',
+              mayor: 'We could build a new park.',
+            };
+            return `💬 Suggestion for talking to ${prettyNpc(npc)}:\n“${help[npc.id] || 'Hello! Can I ask you a question, please?'}”`;
+          }
+          return null;
+        }
+        function offlineTutor(message, ctx) {
+          const s = fold(message);
+          if (/^(xin chao|hello|hi|chao ban|hey|good morning|good evening)\b/.test(s))
+            return 'Hi there! 👋 I can help you control the game and practice English. Try “đến Lily”, “sửa câu: I goes to school”, “từ vựng: library” or “quiz”.';
+          if (/^(ket thuc luyen noi|thoat luyen noi|stop roleplay|end roleplay)$/.test(s))
+            return 'You are not in a conversation practice round. Type “luyện hội thoại” to start.';
+          if (/^(cam on|thank you|thanks)\b/.test(s))
+            return 'No problem! 😊 You’re welcome. Try a quiz or ask a new English question.';
+          const known = localKnowledge(message, ctx);
+          if (known) return known;
+          const termRequest = s.match(
+            /^(?:tu vung|tra tu|nghia cua|what does|meaning of|vocabulary|explain word)\s*[: ]\s*([a-z- ]{2,35})/,
+          );
+          if (termRequest) {
+            const word = termRequest[1].trim().replace(/ mean(s)?$/, '');
+            const item = terms[word];
+            if (item) return `📖 ${word} — ${item[0]}\nExample: “${item[1]}”`;
+            return `I don’t have “${word}” in the offline dictionary yet. Connect Gemini for extended lookups, or try “từ vựng: library”.`;
+          }
+          const requested = message.match(
+            /^\s*(?:sửa câu|sửa ngữ pháp|check grammar|correct|fix|sua cau|grammar)\s*[:：-]?\s*(.+)$/i,
+          );
+          if (requested) {
+            const raw = requested[1].trim();
+            let fixed = raw,
+              reasons = [];
+            const rules = [
+              [/\bi goes\b/gi, 'I go', 'Use “go” with “I”, not “goes”.'],
+              [/\bhe go\b/gi, 'he goes', '“He” needs “goes” in the present simple.'],
+              [/\bshe go\b/gi, 'she goes', '“She” needs “goes” in the present simple.'],
+              [/\bi is\b/gi, 'I am', '“I” goes with “am”.'],
+              [/\bshe are\b/gi, 'she is', '“She” goes with “is”.'],
+              [/\bthey is\b/gi, 'they are', '“They” goes with “are”.'],
+              [
+                /\bi have (\d+) years old\b/gi,
+                'I am $1 years old',
+                'Use “be + years old” to say your age.',
+              ],
+              [/\bi am agree\b/gi, 'I agree', '“Agree” is a verb; you don’t need “am”.'],
+              [/\bcan you to\b/gi, 'can you', 'Use the base verb after “can”.'],
+              [/\bdidn't went\b/gi, "didn't go", 'Use the base verb after “didn’t”.'],
+            ];
+            for (const [re, rep, reason] of rules) {
+              if (re.test(fixed)) {
+                re.lastIndex = 0;
+                fixed = fixed.replace(re, rep);
+                reasons.push(reason);
+              }
+            }
+            fixed = fixed.replace(/^i\b/, 'I').replace(/\bi'm\b/gi, "I'm");
+            fixed = fixed.charAt(0).toUpperCase() + fixed.slice(1);
+            if (!/[.!?]$/.test(fixed)) fixed += '.';
+            return `✍️ Basic correction suggestion (offline):\n“${fixed}”\n${reasons.length ? reasons.join(' ') : 'No errors found by the simple rule set; this does not mean the sentence is completely correct. Turn on Gemini for a full check.'}`;
+          }
+          if (/^(dich|translate|how to say)\s*[:：-]?/.test(s)) {
+            const phrase = s.replace(/^(dich|translate|how to say)\s*[:：-]?\s*/, '');
+            if (terms[phrase])
+              return `🌐 “${phrase}” = “${terms[phrase][0]}”. Example: ${terms[phrase][1]}`;
+            return '🌐 Free-form translation needs Gemini. Without a key, you can look up words with “từ vựng: library”, “từ vựng: healthy”…';
+          }
+          if (/^(luyen hoi thoai|roleplay|practice conversation|luyen noi|speaking)/.test(s)) {
+            const examples = [
+              'Welcome to Sunny Cafe! What would you like to drink?',
+              'Hello! What do you like doing after school?',
+              'Hi! What is your favorite subject at school?',
+            ];
+            practiceState = { topic: practiceCounter++ % 3, step: 0 };
+            return `🎭 Conversation practice (offline):\n${examples[practiceState.topic]}\nYou can reply in English and I will continue the conversation for 2–3 turns. Type “kết thúc luyện nói” to exit.`;
+          }
+          if (/^(help|giup do|ban co the|lam duoc gi|what can you do)/.test(s))
+            return `💡 I can help with: character control, sentence correction, vocabulary, quizzes, speaking practice, flashcards, saving words, statistics, daily challenges and a learning path. With Gemini you also get free chat, explanations, translation and detailed corrections.`;
+          return null;
+        }
+        function practiceReply(message) {
+          if (!practiceState) return null;
+          const s = fold(message);
+          if (/^(ket thuc luyen noi|thoat luyen noi|stop roleplay|end roleplay)$/.test(s)) {
+            practiceState = null;
+            return '✅ Conversation practice finished. Say “luyện hội thoại” to start another round.';
+          }
+          // Never swallow explicit navigation, quiz or other instructional requests.
+          if (
+            /^(quiz|den|di|dung|sua cau|tu vung|dich|go to|help|toi dang o|luyen hoi thoai)/.test(s)
+          )
+            return null;
+          if (message.trim().split(/\s+/).length < 2)
+            return '💬 Try replying with an English sentence, for example “I would like some tea, please.”';
+          const phase = practiceState.step++,
+            t = practiceState.topic;
+          if (phase === 0) {
+            if (t === 0) return '☕ Sure! Would you like it hot or iced? (Bạn muốn nóng hay lạnh?)';
+            if (t === 1)
+              return '😊 That sounds interesting! Who do you usually do it with? (Bạn thường làm cùng ai?)';
+            return '📚 Why do you like that subject? (Vì sao bạn thích môn học đó?)';
+          }
+          if (phase === 1) {
+            if (t === 0)
+              return '☕ Great choice! Anything else for you today? (Bạn muốn gọi thêm gì không?)';
+            if (t === 1)
+              return '😊 Nice! How often do you do that? (Bạn làm việc đó thường xuyên không?)';
+            return '📚 What do you want to learn next? (Bạn muốn học gì tiếp theo?)';
+          }
+          practiceState = null;
+          return '✅ Good job! You finished 3 offline conversation turns. Try changing your answers, or turn on Gemini so the AI can correct mistakes and improvise based on what you say. Say “luyện hội thoại” to keep playing.';
+        }
+        function getQuiz(level) {
+          const q = samples[level] || samples.B1,
+            raw = q[Math.floor(Math.random() * q.length)];
+          const choices = [raw[1], raw[2], raw[3]];
+          const answer = choices[{ a: 0, b: 1, c: 2 }[raw[4]]];
+          for (let i = choices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [choices[i], choices[j]] = [choices[j], choices[i]];
+          }
+          const item = [raw[0], ...choices, ['a', 'b', 'c'][choices.indexOf(answer)], raw[5]];
+          return { item, tries: 0 };
+        }
+        function quizAnswer(message, level) {
+          const s = fold(message).replace(/[.!?]+$/, '');
+          if (
+            /^(quiz|trac nghiem|lam bai tap|bai kiem tra|cau hoi tieng anh|luyen tap quiz)$/.test(s)
+          ) {
+            quiz = getQuiz(level);
+            const x = quiz.item;
+            return {
+              reply: `🧠 Mini Quiz ${level}\n${x[0]}\nA. ${x[1]}    B. ${x[2]}    C. ${x[3]}\nAnswer A, B or C. You can say “thoát quiz” to quit.`,
+              local: true,
+            };
+          }
+          if (!quiz) {
+            if (/^(thoat quiz|bo quiz|end quiz|quit quiz|stop quiz)$/.test(s))
+              return { reply: 'You haven’t started a quiz. Type “quiz” to practice.', local: true };
+            return null;
+          }
+          if (/^(thoat quiz|bo quiz|end quiz|quit quiz|stop quiz)$/.test(s)) {
+            quiz = null;
+            return {
+              reply: '✅ Quiz exited. You can keep chatting or controlling your character.',
+              local: true,
+            };
+          }
+          if (!/^[abc123]$/.test(s)) {
+            // Don't hijack a full question or a navigation request.
+            return null;
+          }
+          const letter = { 1: 'a', 2: 'b', 3: 'c' }[s] || s;
+          const x = quiz.item,
+            ok = letter === x[4];
+          quiz = null;
+          studyLab.registerQuiz(ok);
+          return {
+            reply: ok
+              ? `✅ Correct! ${x[5]}\nType “quiz” for the next question.`
+              : `❌ Not quite. Answer: ${x[4].toUpperCase()} — ${x[{ a: 1, b: 2, c: 3 }[x[4]]]}.\n${x[5]}\nType “quiz” to practice more.`,
+            local: true,
+          };
+        }
+        const readAI = () => {
+          try {
+            return JSON.parse(localStorage.getItem('english-town-ai') || '{}');
+          } catch {
+            return {};
+          }
+        };
+        async function gemini(message, ctx, history, level, signal, mode) {
+          const saved = readAI();

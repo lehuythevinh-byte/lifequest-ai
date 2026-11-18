@@ -1,0 +1,2098 @@
+                 re: /\b(english|grammar|learn|practice)\b/,
+                  replies: [
+                    `Learning English? Wonderful. Read a little every day, even one page. Shall I pick an easy book?`,
+                  ],
+                },
+                {
+                  re: /\b(poem|poetry)\b/,
+                  replies: [`Poetry is music made of words. Do you want a short one?`],
+                },
+              ],
+              fallback: [
+                `Mmm... I see. Say a little more, dear.`,
+                `How interesting. Have you read anything about it?`,
+                `Shh... let me think. That is a good point, {p}.`,
+                `Hmm, that reminds me of a story. But first, tell me more.`,
+              ],
+              hints: [
+                `Looking for something to read, dear? I would be happy to recommend a book.`,
+                `Mmm, {p}, would you like a story for tonight?`,
+              ],
+              goalDone: [
+                `Let me see... Yes, I know the perfect book for you, dear. Your English is lovely, {p}.`,
+                `Ah, a good question. I will find it on the shelf. Well asked, dear!`,
+              ],
+            },
+            shopkeeper: {
+              short: `Tom`,
+              traits: `talkative, jolly, loves to joke and bargain, a bit of a salesman, uses slang and exaggeration`,
+              style: `Casual and loud. Says "buddy", "pal", "my friend", "deal!", "no way!". Tells jokes about prices.`,
+              lines: {
+                greet: [
+                  `Hey hey, {p}! My favorite customer!`,
+                  `Well, look who's here! Come in, pal, come in!`,
+                ],
+                howAreYou: [
+                  `Can't complain, pal! Business is booming. And you?`,
+                  `Great, great! I sold three umbrellas this morning. How are you, {p}?`,
+                ],
+                askName: [`Name's Tom, the best shopkeeper in town! Humble too, ha! And you?`],
+                thanks: [
+                  `No problem, buddy! Tell your friends!`,
+                  `Anytime, {p}! That is what Tom is for!`,
+                ],
+                bye: [
+                  `See ya, {p}! Come back and spend more money! Ha ha, just kidding... kind of.`,
+                  `Take care, pal! Tell your friends about Tom!`,
+                ],
+                yes: [
+                  `Now we are talking! What else?`,
+                  `That is the spirit! So, what are you buying?`,
+                ],
+                no: [`No? Ha, you drive a hard bargain, buddy! What would make you say yes?`],
+                whereFrom: [`Born and raised right here, pal! Never left. Where are you from?`],
+                hobby: [
+                  `Collecting old coins and telling jokes. Want to hear one? Why did the shirt go to school? To get a little more... pressed! Ha!`,
+                ],
+                weather: [
+                  `Hot days? I sell fans. Rainy days? I sell umbrellas. I love every weather, ha!`,
+                ],
+                help: [`Sure thing, pal! Food, clothes, tools, you name it. What do you need?`],
+                compliment: [`Hey, thanks, buddy! Flattery gets you a 5% discount!`],
+                insult: [`Whoa whoa, easy there, pal! Bad words don't help the price!`],
+                work: [
+                  `I run this shop alone, seven days a week! Apples, bread, shirts, hammers... anything!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(apple|fruit|banana|orange)\b/,
+                  replies: [
+                    `Fresh apples, one dollar each! Buy three, I give you the fourth. Deal?`,
+                  ],
+                },
+                {
+                  re: /\b(bread|food|milk|cheese)\b/,
+                  replies: [`Warm bread, two dollars! Baked this morning. Smell that? Want some?`],
+                },
+                {
+                  re: /\b(shirt|clothes|jacket|shoes)\b/,
+                  replies: [
+                    `A nice shirt is fifteen dollars, my friend. Colors: red, blue, green. Which one?`,
+                  ],
+                },
+                {
+                  re: /\b(discount|cheaper|bargain|sale)\b/,
+                  replies: [`Cheaper?! Ha! For you, ten percent off. But do not tell the others!`],
+                },
+                {
+                  re: /\b(price|cost|how much|expensive|cheap)\b/,
+                  replies: [
+                    `Prices? Very fair, pal. Tell me what you want and I will give you a number!`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Ha! You're funny, {p}. Tell me more, pal!`,
+                `No way! Really? Then what happened?`,
+                `Hmm, that is interesting. Speaking of which, are you buying anything?`,
+                `Ha ha, I like your style, buddy!`,
+              ],
+              hints: [
+                `So, what can I sell you today? Ask me for a price, pal!`,
+                `Come on, {p}, do not be shy! Ask me how much something costs!`,
+              ],
+              goalDone: [
+                `Deal! That is a fair price, my friend, and your English is getting better. Here you go!`,
+                `Sold! You speak well, {p}! Come again!`,
+              ],
+            },
+            kid: {
+              short: `Mia`,
+              traits: `curious, energetic, silly, easily excited, asks "why" a lot, uses very simple words`,
+              style: `Childlike and playful. Very short sentences. Says "wow", "cool", "really?", "hehe". Asks many questions.`,
+              lines: {
+                greet: [
+                  `Hi hi hi! Are you new here?`,
+                  `Hello! Do you want to play? Or talk? Hehe!`,
+                ],
+                howAreYou: [
+                  `I'm super happy! I got a gold star in class today! How are you?`,
+                  `Good! I ate ice cream. Do you like ice cream?`,
+                ],
+                askName: [
+                  `I'm Mia! I'm ten years old. What's your name?`,
+                  `Mia! Hehe. What is your name?`,
+                ],
+                thanks: [`You're welcome! Hehe!`, `No problem! We are friends now, right?`],
+                bye: [
+                  `Bye bye, {p}! Come play again tomorrow!`,
+                  `Okay, bye! I have to go do homework... boo.`,
+                ],
+                yes: [`Yay! Really? Cool!`, `Wow, okay! Then what?`],
+                no: [`Why not? Why? Why?`, `Aww, okay. Then what do you want to do?`],
+                whereFrom: [`I live near the park! Where do you live? Is it far?`],
+                hobby: [
+                  `I like drawing cats and riding my bike! What do you like?`,
+                  `I like football! Do you play football?`,
+                ],
+                weather: [`I like sun! But I also like jumping in puddles when it rains. Splash!`],
+                help: [
+                  `I can show you around the town! I know all the best places. Where do you want to go?`,
+                ],
+                compliment: [`Wow, thank you! You are nice, {p}!`],
+                insult: [`That is not nice! I will tell my teacher!`],
+                work: [`I'm a student! My favorite class is art. What is your job?`],
+              },
+              topics: [
+                {
+                  re: /\b(school|class|teacher|homework)\b/,
+                  replies: [`School is fun but homework is boring. Do you do homework too?`],
+                },
+                {
+                  re: /\b(cat|dog|pet|animal)\b/,
+                  replies: [`I love animals! I want a puppy so much. Do you have a pet?`],
+                },
+                {
+                  re: /\b(game|play|toy)\b/,
+                  replies: [`Games are the best! My favorite is hide and seek. Want to play?`],
+                },
+                {
+                  re: /\b(food|eat|pizza|ice cream|cake)\b/,
+                  replies: [`Yummy! I love pizza! What is your favorite food?`],
+                },
+              ],
+              fallback: [
+                `Wow, really? Why?`,
+                `Hehe, cool! Tell me more!`,
+                `Hmm, I do not understand. Can you say it again, slowly?`,
+                `Oh! And then what? And then?`,
+              ],
+              hints: [
+                `Hey, I do not know your name yet! Who are you?`,
+                `Tell me about you, {p}! Where do you live? What do you like?`,
+              ],
+              goalDone: [
+                `Nice to meet you, {p}! Now we are friends! Your English is good, hehe!`,
+                `Yay! A new friend! You talk so well!`,
+              ],
+            },
+            ...Xe,
+            ...Ze,
+            ...tt,
+          };
+// Offline (no Gemini) upgrade, 02/11/2026: two more in-character fallback lines per NPC. Fallback is what an NPC
+// says when the offline rules do not understand the player, so it repeats the most. Each new line also hands the
+// learner a sentence pattern to try next. New arrays are built so NPCs never share (and double-append to) one list.
+var ot0 = {
+            barista: [
+              `Ooh, I want the full story, {p}! Try: "Yesterday I..." and tell me one thing you did. Yum, a story with coffee!`,
+              `Sweet! Here is a fun one: tell me your favorite drink. Say: "I like ... because ..."!`,
+            ],
+            mayor: [
+              `I appreciate your words, citizen. Perhaps tell me one thing you like about our town. Begin with "I like...".`,
+              `Indeed. A good citizen gives reasons. Try: "I think ... because ...". I am listening.`,
+            ],
+            librarian: [
+              `Mmm... every good story has a beginning, {p}. Start yours with "Once, I..." and I will listen.`,
+              `Shh... a quiet tip, dear: tell me about a book or a film you like. "My favorite book is..."`,
+            ],
+            shopkeeper: [
+              `Ha! You lost me there, pal! Try it Tom's way: "I want to buy..." Best deal in town, I promise!`,
+              `No way, that's a new one for me! Tell me what you like, buddy. "I really like..." Go on!`,
+            ],
+            kid: [
+              `Hehe, I do not get it! Tell me your favorite animal! Mine is a cat. Say: "My favorite animal is..."`,
+              `Wow! Let's play a game! You say one color, I say one color. Ready? Blue!`,
+            ],
+            doctor: [
+              `Let's keep it simple, {p}. Tell me how you feel with one word: tired, happy, sick? Then say "I feel...".`,
+              `Mm-hm. A small health question: what time do you go to bed? Say: "I go to bed at..." Sleep matters.`,
+            ],
+            police: [
+              `Copy that, {p}. If you are lost, just say "Where is the ...?" I know every street. Stay safe.`,
+              `I see. Tell me where you are going today. Try: "I am going to the..." I can give you directions.`,
+            ],
+            teacher: [
+              `Nice try, {p}! Let's build it together: who + what + where. For example: "I read books in the library." Your turn!`,
+              `Great energy! Here is a challenge: tell me one thing you did today. Use the past: "Today I played..."`,
+            ],
+            firefighter: [
+              `Ha, you lost me, my friend! Tell me something you are good at. "I am good at..." No sweat!`,
+              `Quick question, my friend: what do you do to stay fit? Say: "I like to run" or "I swim". Stay safe!`,
+            ],
+            chef: [
+              `Mamma mia, I do not understand, but I love the passion! Tell me your favorite food: "I love eating..."`,
+              `My friend, talk to me like a recipe: first this, then that! Try: "First I..., then I..." Bellissimo!`,
+            ],
+            banker: [
+              `Let me check... no, I did not catch that, {p}. Perhaps tell me what you want to save money for. "I want to save for..."`,
+              `Certainly. A tidy question for you: do you like to spend or to save? Say: "I like to..."`,
+            ],
+            postman: [
+              `Oops, that one got lost in the mail! Say it short, like a letter: "Dear Sam, I..." You got it!`,
+              `No problem! While I catch my breath: which street do you live on? Try: "I live on ... Street."`,
+            ],
+            hotelclerk: [
+              `My pleasure to listen, {p}. Tell me about a place you want to visit. "I would like to visit..."`,
+              `Of course. A travel question: do you like the beach or the mountains? Say: "I prefer..."`,
+            ],
+            priest: [
+              `Peace be with you, my friend. Speak slowly, I have time. Tell me one thing that made you smile today.`,
+              `Indeed. Every family here has a story. Tell me about yours: "In my family, there are..."`,
+            ],
+            cinema: [
+              `Cut! Let's take that scene again, {p}! Try: "My favorite movie is..." No spoilers, trust me!`,
+              `Plot twist: I did not get that! Tell me, do you like action or comedy? Say: "I like ... movies."`,
+            ],
+            foreman: [
+              `Hm. Short words, {p}. Tell me your job. "I am a..." Work is work.`,
+              `Fair enough. In MT we say it plain. Say what you need: "I need..."`,
+            ],
+            miner: [
+              `Hm. I do not understand, {p}. Say: "I like..." I like rocks. Strong rocks.`,
+              `Okay. Small question. Are you strong? Say: "I can carry..." Ha. Good.`,
+            ],
+            smith: [
+              `Hm. Plain words, {p}. Tell me what tool you need: "I need a..." Good steel does not lie.`,
+              `Fair enough. Tell me what you make with your hands. "I can make..."`,
+            ],
+            gemdealer: [
+              `Ah, my dear friend, your words sparkle but I missed them. Tell me your favorite color: "My favorite color is..." So I can match a gem.`,
+              `Exquisite effort! Try this: "How much is the ...?" Every bargain starts with that sentence.`,
+            ],
+            medic: [
+              `Listen, {p}. If something hurts, say: "My ... hurts." Simple words help me help you.`,
+              `Hm. Tell me what you do to stay safe in the mine. "I always wear..." Do not be careless.`,
+            ],
+            innkeeper: [
+              `Sit, dear. Tell me what you ate today. "I ate..." You look thin.`,
+              `Hm. Say what you want, dear: "I would like some soup, please." Polite words get extra bread.`,
+            ],
+            blaster: [
+              `What? Ha. My ears. Three short words, {p}. Three, two, one. Go.`,
+              `Say: "Is it safe?" Good question in MT. Always ask it. Again, slowly?`,
+            ],
+            carter: [
+              `Click-clack. Say it slow, {p}, like the wagons. Tell me where you want to go: "I want to go to..."`,
+              `Hm. Tell me what time you get up. "I get up at..." Never late, that is my rule.`,
+            ],
+            sorter: [
+              `Hm. Too many words. Tell me one color you like. Copper is orange-green. Your turn.`,
+              `Fair enough. Quick test: heavy or light? Say: "This is heavy." Good. Next.`,
+            ],
+            timberman: [
+              `Slow is safe, {p}. Say one short sentence. "I like..." Then another.`,
+              `Hm. Tell me what you build. "I can build..." Wood or steel, both are good.`,
+            ],
+            stationmaster: [
+              `Pardon me, {p}. A clear question helps: "What time is the next train?" Mind the yellow line.`,
+              `Hm. Tell me your destination, please. Say: "I want to go to English Town." All aboard.`,
+            ],
+            ticketclerk: [
+              `Sorry, I missed that! Try: "One ticket to English Town, please." Single or return?`,
+              `Hmm! Let's practice numbers: ask me "How much is a ticket?" I love that question!`,
+            ],
+            porter: [
+              `Ha, too heavy for me! Say it light: "Can you help me with my bag?" No worries!`,
+              `Hmm. Tell me what is in your bag, {p}. "In my bag, I have..." Heavy!`,
+            ],
+            etmaster: [
+              `Pardon me, {p}. A clear question helps: "What time is the next train?" Mind the yellow line.`,
+              `Hm. Tell me your destination, please. Say: "I want to go to Minerals Town." All aboard.`,
+            ],
+            etclerk: [
+              `Sorry, I missed that! Try: "One ticket to Minerals Town, please." Single or return?`,
+              `Hmm! Let's practice numbers: ask me "How much is a ticket?" I love that question!`,
+            ],
+            etporter: [
+              `Ha, too heavy for me! Say it light: "Can you help me with my bag?" No worries!`,
+              `Hmm. Tell me what is in your bag, {p}. "In my bag, I have..." Heavy!`,
+            ],
+          };
+for (let [id, extra] of Object.entries(ot0))
+  nt[id] && (nt[id].fallback = [...(nt[id].fallback ?? []), ...extra]);
+var rt = {
+            barista: [
+              `Hi hi, {p}! You are back! We talked {when}, remember?`,
+              `Hey {p}! Missed you! Last time was {when}. Coffee again?`,
+            ],
+            mayor: [
+              `Ah, {p}. Welcome back. We last spoke {when}. Any new ideas for the town?`,
+              `Good to see you again, citizen {p}. It has been some time since {when}.`,
+            ],
+            librarian: [
+              `Shh... {p}, dear, you are back. We spoke {when}. Did you read anything good?`,
+              `Welcome back, dear {p}. I remember our chat from {when}.`,
+            ],
+            shopkeeper: [
+              `Well, well, {p}! Back for more of Tom's deals? Last time was {when}!`,
+              `Hey buddy {p}! I remember you from {when}. Good to see you!`,
+            ],
+            doctor: [
+              `Hello again, {p}. We spoke {when}. How are you feeling these days?`,
+              `Good to see you, {p}. I remember our talk from {when}. Staying healthy?`,
+            ],
+            police: [
+              `Good day, {p}. We talked {when}. Staying out of trouble?`,
+              `Ah, {p}! I remember you from {when}. Everything alright in town?`,
+            ],
+            teacher: [
+              `{p}! You are back! We practiced {when}. Ready for more English?`,
+              `Welcome back, {p}! I remember our lesson from {when}. Great to see you!`,
+            ],
+            firefighter: [
+              `Hey, {p}! Back again, my friend! We talked {when}. Alarm still working?`,
+              `{p}! Good to see you! Last time was {when}, right?`,
+            ],
+            banker: [
+              `Good day again, {p}. We spoke {when}. Are you saving a little money?`,
+              `Welcome back, {p}. I remember our talk from {when}. How can I help today?`,
+            ],
+            postman: [
+              `Hey, {p}! You are back! We talked {when}. Any letters today?`,
+              `Hello again, {p}! Last time was {when}, right? Good to see you!`,
+            ],
+            hotelclerk: [
+              `Welcome back, {p}! We spoke {when}. How is your stay in town?`,
+              `Lovely to see you again, {p}! It was {when}, I remember!`,
+            ],
+            priest: [
+              `Peace be with you again, {p}. We spoke {when}. How have you been, my friend?`,
+              `Welcome back, {p}. I remember our quiet talk from {when}.`,
+            ],
+            cinema: [
+              `Hey, {p}! You are back! We talked {when}. Seen any good movies?`,
+              `{p}! My favorite customer! Last time was {when}, right? Popcorn?`,
+            ],
+            chef: [
+              `Ciao, {p}! You came back! It was {when}, I remember! Hungry?`,
+              `Ah, {p}! My favorite customer! {when} you were here, yes? Sit, sit!`,
+            ],
+            kid: [
+              `Hi {p}! You came back! We talked {when}! Do you want to talk more?`,
+              `{p}! Yay! It's you again! Let's talk!`,
+            ],
+            foreman: [
+              `Hm. {p}. Back again. We spoke {when}. Ready to work?`,
+              `Hello, {p}. I remember you from {when}. What do you need?`,
+            ],
+            miner: [
+              `Hey, {p}. You came back. Good. We talked {when}.`,
+              `Hello, {p}. Good to see you. It was {when}, yes?`,
+            ],
+            blaster: [
+              `What? Oh, it is {p}. Good. We talked {when}. Stay behind the line, yes?`,
+              `Hello, {p}. I remember you from {when}. Speak up a little, my ears are old.`,
+            ],
+            stationmaster: [
+              `Good day again, {p}. We spoke {when}. Mind the yellow line.`,
+              `Hello, {p}. It was {when}, yes? The trains are on time.`,
+            ],
+            ticketclerk: [
+              `Hi, {p}! We talked {when}. Need a ticket today?`,
+              `Welcome back, {p}! It was {when}, right? Where to this time?`,
+            ],
+            porter: [
+              `Hey, {p}! Back again. We talked {when}. Got a heavy bag?`,
+              `Hello, {p}! No worries, I remember you from {when}.`,
+            ],
+            etmaster: [
+              `Good day again, {p}. We spoke {when}. Mind the yellow line.`,
+              `Hello, {p}. It was {when}, yes? The trains are on time.`,
+            ],
+            etclerk: [
+              `Hi, {p}! We talked {when}. Need a ticket today?`,
+              `Welcome back, {p}! It was {when}, right? Where to this time?`,
+            ],
+            etporter: [
+              `Hey, {p}! Back again. We talked {when}. Got a heavy bag?`,
+              `Hello, {p}! No worries, I remember you from {when}.`,
+            ],
+            carter: [
+              `Hello, {p}. Click-clack. We talked {when}. Need a ride to the station?`,
+              `Hey, {p}. Back again. It was {when}, yes? The wagons are on time.`,
+            ],
+            sorter: [
+              `Hello, {p}. We spoke {when}. Still no touching the piles.`,
+              `Oh. {p}. You came back. {when}, I remember. Do you want to learn to sort?`,
+            ],
+            timberman: [
+              `Hello, {p}. We talked {when}. Slow and safe.`,
+              `{p}. Good. I remember {when}. Mind your head under the beams.`,
+            ],
+            smith: [
+              `Hello, {p}. Back already? We spoke {when}. Need a tool?`,
+              `Mind the sparks, {p}. I remember you from {when}.`,
+            ],
+            gemdealer: [
+              `Ah, {p}! My dear friend, you have returned! We spoke {when}, how could I forget? Shall I show you something rare?`,
+              `Welcome back, {p}! It was {when}, if I remember correctly. And I always do.`,
+            ],
+            medic: [
+              `Hello, {p}. We spoke {when}. Staying safe? Helmet on?`,
+              `Good to see you, {p}. I remember {when}. Anything hurt?`,
+            ],
+            innkeeper: [
+              `Come in, {p}. You came back. We talked {when}. Sit, eat.`,
+              `Ah, {p}. {when}, you were here. Did you eat today? Sit.`,
+            ],
+          };
+var it = [
+            `Oh. It is you again, {p}. Please be polite this time.`,
+            `Hmm, {p}. I remember how you spoke to me {when}. Let us be kind today.`,
+          ];
+var at = (e) => e[Math.floor(Math.random() * e.length)];
+
+
+// ART DISTRICT dialogue identities. They share the existing chat engine and grammar coach.
+Object.assign(nt, {
+  rook: {
+    short: `Rook`, traits: `quiet, observant, artistic, thoughtful, mysterious but kind`,
+    style: `Speaks softly and uses visual words such as line, shape, sketch and symbol. Gives short clues without revealing everything at once.`,
+    lines: {
+      greet: [`You noticed my sketchbook. Most people walk past the details.`, `That little star? I found it on an old freight map.`],
+      howAreYou: [`Good, thanks. The streets are full of shapes today. How are you?`],
+      askName: [`Rook. I draw the corners people forget. What is your name?`],
+      thanks: [`Keep looking closely. You will see more than you expect.`], bye: [`Follow the marks, not the crowds. See you around.`],
+      yes: [`Exactly. What do you think the symbol means?`], no: [`No rush. Look at the lines again.`],
+      whereFrom: [`I travel from town to town, looking for walls with stories.`], hobby: [`I sketch doors, rooftops and forgotten signs. What do you like drawing?`],
+      weather: [`After rain, the pavement becomes a mirror. Perfect for sketching.`], help: [`I can show you a mark, but you must discover where it leads.`],
+      compliment: [`Thank you. A sketch is only the beginning.`], insult: [`Art is better when we leave room for other people.`], work: [`I sketch places that people have stopped noticing.`],
+    },
+    fallback: [`Look at the wall, then look at the little star in my book.`, `A good mural needs a story. What story would you paint?`],
+    hints: [`Ask me about the star mark or describe a mural you would like to see.`],
+    goalDone: [`You have the first mark. Remember the star — it belongs with two others.`], reactions: Qe,
+    stranger: { greeting: `Hello, traveler. I am Rook. I draw forgotten places.`, heard: `I heard a traveler was asking about old signs.`, remark: `You look curious. That is a good quality for an artist.`, note: `He studies the player's curiosity before sharing clues.` },
+  },
+  vex: {
+    short: `Vex`, traits: `confident, quick-witted, practical, curious about color chemistry`,
+    style: `Energetic, direct and playful. Uses color names and short challenges.`,
+    lines: {
+      greet: [`Watch your step — wet paint! What brings you here?`], howAreYou: [`Bright as a fresh can of cyan. And you?`], askName: [`People call me Vex. What should I call you?`],
+      thanks: [`No problem. Keep that eye mark in mind.`], bye: [`Don't lose the color. See you.`], yes: [`Good eye! Tell me more.`], no: [`Try another clue.`],
+      whereFrom: [`I travel with my paint kit. Concrete walls are my favorite canvas.`], hobby: [`I mix pigments and test them on scrap boards. What colors do you like?`],
+      weather: [`Wind carries spray paint farther than you think. I check the weather before painting.`], help: [`The old freight entrance is near a wall with an eye symbol.`],
+      compliment: [`Thanks! Color should be bold, not careless.`], insult: [`Save your energy for the wall.`], work: [`I test pigments and help artists find the right colors.`],
+    },
+    fallback: [`Have you seen the eye symbol near the old railway?`, `The tunnel is real. The entrance is just easy to miss.`],
+    hints: [`Ask about the eye mark, the old railway or the underground freight route.`],
+    goalDone: [`That is the second mark. The eye points toward the forgotten freight entrance.`], reactions: Qe,
+    stranger: { greeting: `Hey! I'm Vex. Mind the paint.`, heard: `So you're the traveler Rook mentioned?`, remark: `New face. Looking for something colorful?`, note: `She is alert and practical, but willing to help.` },
+  },
+  morrow: {
+    short: `Morrow`, traits: `patient, warm, nostalgic, wise, quietly humorous`,
+    style: `Gentle and measured. Speaks like someone remembering old streets and old friends.`,
+    lines: {
+      greet: [`Ah, the old station bench. It has heard a thousand stories.`], howAreYou: [`Well enough, thank you. Memory keeps an old man busy.`], askName: [`Morrow. I used to paint signs for the freight trains.`],
+      thanks: [`The wave is the final mark. Keep all three together.`], bye: [`Every hidden road leads somewhere. Take care.`], yes: [`You have been listening. That is good.`], no: [`Think of a star, an eye and a wave.`],
+      whereFrom: [`I worked along these railway lines for many years.`], hobby: [`I restore old signs and tell stories about their colors.`], weather: [`Rain makes the old tunnel smell like iron and stone.`],
+      help: [`The three marks reveal a door in the old freight workshop. Beyond it is a place artists made their own.`], compliment: [`Kind of you to say so. The paint is older than I am.`], insult: [`No need for sharp words. The world has enough rough edges.`], work: [`I painted signs on freight crates and railway walls.`],
+    },
+    fallback: [`The old freight tunnel was built for goods, not people. Artists found another use for it.`, `The wave completes the three marks. Remember them.`],
+    hints: [`Ask me about the wave, the three signs or the old freight tunnel.`],
+    goalDone: [`You have all three marks now. The old freight workshop hides a door. Follow the painted signs.`], reactions: Qe,
+    stranger: { greeting: `Come sit a moment. I am Morrow.`, heard: `Rook and Vex sent you, did they?`, remark: `You have the look of someone who follows a story.`, note: `He shares the final clue only with a polite and curious traveler.` },
+  },
+  noor: {
+    short: `Noor`, traits: `expressive, observant, thoughtful, encouraging, sensitive to color and mood`,
+    style: `Warm and visual. Uses words about hue, light, mood and composition. Gently asks the learner to be more precise than just saying nice.`,
+    lines: {
+      greet: [`Welcome to the Color Wall. Let your eyes take a moment.`], howAreYou: [`Inspired today! Colors can change a mood. How are you?`], askName: [`I'm Noor, the color curator. What is your name?`], thanks: [`Beautifully observed. Tell me what made you feel that way.`], bye: [`Keep noticing the colors around you.`], yes: [`I see what you mean. Which color stands out most?`], no: [`Try describing the light, the shade or the feeling.`], whereFrom: [`I grew up among painted walls and bright shop signs.`], hobby: [`I collect color palettes and make small mood boards.`], weather: [`Soft cloudy light can make colors look gentle.`], help: [`Use words such as vivid, pale, warm, cool, peaceful and dramatic.`], compliment: [`Thank you. You have a good eye too.`], insult: [`Art invites opinions, but let's keep them thoughtful.`], work: [`I curate colors for murals and public exhibitions.`],
+    },
+    topics: [{ re: /\b(color|colour|blue|red|yellow|bright|dark)\b/i, replies: [`Try to say how the color looks and how it makes you feel.`] }],
+    fallback: [`Does it look vivid, soft, bold or peaceful?`, `Try a full sentence with looks or feels, then add because.`],
+    hints: [`Describe two colors, use an adjective and explain your feeling with because.`],
+    goalDone: [`That's a vivid description! You connected the artwork's appearance with your feeling.`], reactions: Qe,
+  },
+  ivo: {
+    short: `Ivo`, traits: `energetic, playful, competitive, musical, supportive`,
+    style: `Fast, upbeat and rhythmical. Uses musical comparisons and friendly challenges.`,
+    lines: {
+      greet: [`Yo! Welcome to the warehouse stage. Ready for a sound battle?`], howAreYou: [`Full of rhythm! What about you?`], askName: [`I'm Ivo. What's your name, superstar?`], thanks: [`That's a strong choice. Give me your reason!`], bye: [`Keep the beat alive!`], yes: [`Nice! Compare it with the other sound.`], no: [`Listen again. Which one is louder or softer?`], whereFrom: [`I grew up around buskers and little music shops.`], hobby: [`I mix street beats and collect old instruments.`], weather: [`Rain makes the warehouse roof sound like a drum.`], help: [`Use louder than, softer than, as fast as or the most exciting.`], compliment: [`You have rhythm in your words!`], insult: [`No bad vibes on my stage.`], work: [`I perform music and organize friendly street battles.`],
+    },
+    fallback: [`Which performance is better, and why?`, `Can you use a comparative and then choose the best one?`], hints: [`Compare two sounds and use a superlative to choose the winner.`],
+    goalDone: [`You made a clear comparison and chose a winner. That's how a music critic speaks!`], reactions: Qe,
+  },
+  ada: {
+    short: `Ada`, traits: `decisive, fair, organized, persuasive, respectful of different opinions`,
+    style: `Confident and polished. Asks learners to justify choices and disagree politely.`,
+    lines: {
+      greet: [`Welcome to the Open Canvas Exhibition. One wall, one final choice.`], howAreYou: [`Busy but delighted. Art week is almost ready. And you?`], askName: [`I'm Ada, the exhibition director. Your name, please?`], thanks: [`Thank you. A reason makes a choice stronger.`], bye: [`Make your choice with confidence.`], yes: [`Good. Can you explain why you prefer it?`], no: [`You may disagree. Just support your opinion.`], whereFrom: [`I organize exhibitions across the district.`], hobby: [`I collect exhibition posters and debate design choices.`], weather: [`A clear day brings more visitors to the open-air gallery.`], help: [`Try prefer, would rather, should, I agree or I agree, but.`], compliment: [`A thoughtful opinion is always welcome.`], insult: [`We can disagree without dismissing an artist.`], work: [`I choose works for exhibitions and manage the gallery.`],
+    },
+    fallback: [`Which artwork do you prefer, and why?`, `Can you agree with one point but politely challenge another?`], hints: [`Choose a work, give a reason and use a polite agreement phrase.`],
+    goalDone: [`You defended your choice clearly and respectfully. The exhibition is ready.`], reactions: Qe,
+  },
+  kai: {
+    short: `Kai`, traits: `bold, inventive, humorous, hands-on, generous with ideas`,
+    style: `Casual street-artist language. Uses short challenges and talks about space, scale and color.`,
+    lines: {
+      greet: [`Hey! This wall needs a new story. Want to help?`], howAreYou: [`Covered in paint, so I'm doing great!`], askName: [`Kai. Mural painter. What's your name?`], thanks: [`Good plan. Now make sure it fits the wall.`], bye: [`Leave the wall better than you found it.`], yes: [`Exactly. Explain what is too big or bright enough.`], no: [`Think about the space. What can fit?`], whereFrom: [`I paint walls, shutters and old concrete corners.`], hobby: [`I sketch lettering and collect spray-can caps.`], weather: [`Windy weather makes spray paint tricky.`], help: [`Use too...to, enough...to or so...that to explain your design.`], compliment: [`Nice eye. That color pops.`], insult: [`Let's paint something better instead of arguing.`], work: [`I design and paint large murals.`],
+    },
+    fallback: [`The wall is too dark to attract people. What could change?`, `Can you say it is bright enough to...?`], hints: [`Explain a limitation and a possibility using the target structures.`],
+    goalDone: [`That mural plan fits the wall. You used the structures like a designer.`], reactions: Qe,
+  },
+  mira: {
+    short: `Mira`, traits: `patient, resourceful, inventive, practical, quietly optimistic`,
+    style: `Calm and encouraging. Talks about making, building, reusing and planning.`,
+    lines: {
+      greet: [`Welcome to the sculpture yard. Nothing here is useless.`], howAreYou: [`Happy. I found a new shape in an old piece of metal.`], askName: [`I'm Mira. I make sculptures from reclaimed materials.`], thanks: [`Good idea. What do you want to make?`], bye: [`Keep creating. Even small things can become art.`], yes: [`Tell me what you enjoy making and what you plan to build.`], no: [`Take your time. Start with the material.`], whereFrom: [`I learned sculpture in a small workshop.`], hobby: [`I enjoy making art from recycled objects.`], weather: [`Dry weather helps the paint and glue set.`], help: [`Enjoy is followed by a gerund; decide and want are followed by an infinitive.`], compliment: [`Thank you. The best material is a curious mind.`], insult: [`Every material deserves a second chance.`], work: [`I design public sculptures and teach people to reuse materials.`],
+    },
+    fallback: [`Try: I enjoy creating... and I decided to build...`, `What do you want to make from this reclaimed material?`], hints: [`Use a gerund after enjoy and an infinitive after decide or want.`],
+    goalDone: [`Your sculpture plan is clear. You used both verb patterns well.`], reactions: Qe,
+  },
+  ren: {
+    short: `Ren`, traits: `curious, observant, calm, documentary-minded, attentive to people`,
+    style: `Thoughtful and precise. Asks who made something and which detail tells the story.`,
+    lines: {
+      greet: [`Hold still for a second — the light is perfect.`], howAreYou: [`Focused. I am sorting today's photographs.`], askName: [`I'm Ren, the street photographer. And you are?`], thanks: [`Good description. Now connect the person with the artwork.`], bye: [`Every photograph keeps a small story.`], yes: [`Can you use who, which or that?`], no: [`Look at the person and the object in the picture.`], whereFrom: [`I travel with my camera and document public art.`], hobby: [`I collect portraits of people at work.`], weather: [`After rain, reflections make great photographs.`], help: [`Use who for people and which or that for things.`], compliment: [`You noticed the detail I wanted you to see.`], insult: [`A photograph deserves a fair reading.`], work: [`I photograph artists and the places they transform.`],
+    },
+    fallback: [`Describe the artist who made this mural.`, `Tell me about the camera or photograph that caught your attention.`], hints: [`Use who, which or that to connect two ideas.`],
+    goalDone: [`You connected the photos and their stories. Excellent use of relative clauses.`], reactions: Qe,
+  },
+  sol: {
+    short: `Sol`, traits: `sharp, articulate, fair, independent, confident but open-minded`,
+    style: `Clear and editorial. Expects a reason, a contrast and a logical conclusion.`,
+    lines: {
+      greet: [`Welcome to the independent review desk. What do you really think?`], howAreYou: [`Curious. I have three reviews to edit today.`], askName: [`Sol. I write about art, not popularity.`], thanks: [`A strong review gives reasons, not just scores.`], bye: [`Look again before you decide.`], yes: [`Good. Add a contrast or a result.`], no: [`You can criticize the work without insulting the artist.`], whereFrom: [`I write for a small underground art magazine.`], hobby: [`I collect reviews that changed people's minds.`], weather: [`A stormy sky can make a bright mural look even stronger.`], help: [`Use although or however for contrast, because for reason, and therefore or so for result.`], compliment: [`That is a well-supported opinion.`], insult: [`Let's keep the review about the artwork.`], work: [`I edit independent art reviews and interview creators.`],
+    },
+    fallback: [`Start with although or however, then give a reason or result.`, `What is strong about this artwork, and what could be better?`], hints: [`Write a short review with one contrast connector and one reason or result connector.`],
+    goalDone: [`Your review has balance and logic. That is the mark of an art critic.`], reactions: Qe,
+  },
+});
+
+
+// CHAPTER 2 (ET70) dialogue identities: Lord Gusest and the young soldier Tom Brown. Past tense, 70 years ago.
+Object.assign(nt, {
+  gusest: {
+    short: `Lord Gusest`, traits: `young, kind, brave, calm, dignified, a little tired, caring about every family`,
+    style: `Speaks like a young lord: polite, warm and clear. Calls the player "my messenger". Talks about yesterday and last week in the past tense and asks the player what they did and saw.`,
+    lines: {
+      greet: [`Ah, my messenger! What did you see on the road today?`, `Welcome back. Did the soldiers read their letters?`],
+      howAreYou: [`I am tired, but I am well. Last night I walked along the wall until midnight. And you?`],
+      askName: [`I am Gusest, of the Oriaris family. And you are our messenger. What is your name?`],
+      thanks: [`No, thank you. You carried hope to the camp today.`], bye: [`Go safely, messenger. The families are waiting for you.`],
+      yes: [`Good. Tell me more: what happened next?`], no: [`Then tell me: what did you do instead?`],
+      whereFrom: [`I was born here, in Oriaris Hall. My father taught me to ride on that road.`], hobby: [`When I was a boy, I read old maps in the hall library. I still love them.`],
+      weather: [`It was cold last night. The soldiers kept the fire alive until morning.`], help: [`Explore the new route to Tech-Co and practise polite workplace English there.`],
+      compliment: [`You are kind. But the real heroes are the families who waited.`], insult: [`Hard days make hard words. Let us speak kindly.`], work: [`I lead the knights and I take care of the village. Yesterday I sent bread to every family.`],
+    },
+    fallback: [
+      `Tell me about your day. Where did you go this morning?`,
+      `Which letters did you deliver today? Use the past tense: "I delivered..."`,
+      `Yesterday the bakers sent bread to the camp. What did the soldiers say?`,
+      `Did you meet Tom Brown at the camp? His mother waited at the door again.`,
+      `Say it like a story: "This morning I took a letter, then I walked to the camp..."`,
+    ],
+    hints: [`Tell Lord Gusest what you did today, in the past tense: "I delivered...", "I met...", "I walked..."`],
+    topics: [
+      { re: /\b(letters?|mail|bag|deliver(ed)?|messenger)\b/, replies: [`Good. Every letter you carried was a little piece of home. Who did you give them to?`, `The families waited all morning for you. Did the soldiers smile when they read the letters?`] },
+      { re: /\b(camp|soldiers?|tom|fire|tents?|north)\b/, replies: [`Last week I visited the camp and shared bread with the soldiers. They were cold, but they were brave.`, `Tom Brown is the youngest. His mother came to the hall yesterday and asked about him.`] },
+      { re: /\b(war|north ire|enemy|fight|battle)\b/, replies: [`The war was long, but the wall stood. Every family helped to build it, one stone at a time.`] },
+      { re: /\b(bread|rice|food|hungry)\b/, replies: [`Yesterday the bakers sent bread to every house. Nobody in Oriaris went to bed hungry.`] },
+      { re: /\b(wall|gate|tower|guard)\b/, replies: [`We built this wall last spring. I carried stones with the farmers myself.`] },
+    ],
+    goalDone: [`Thank you, messenger. Your words gave me hope. I will remember this day.`], reactions: Qe,
+    stranger: { greeting: `Welcome to Oriaris. I am Lord Gusest.`, heard: `The families told me about a new messenger.`, remark: `You walked far today. I can see the dust on your boots.`, note: `He is warm and serious, and he respects people who work for the village.` },
+  },
+  tombrown: {
+    short: `Tom Brown`, traits: `17 years old, brave, honest, friendly, homesick, hopeful`,
+    style: `Speaks simply and warmly, like a teenager far from home. Asks for news about his mother and the village. Talks about the camp in the past tense.`,
+    lines: {
+      greet: [`Hello, messenger! Did you come from Oriaris? How was my mother yesterday?`, `You came back! Did anybody write to me?`],
+      howAreYou: [`I am cold, but fine. Last night I watched the North Road until sunrise. How are you?`],
+      askName: [`I'm Tom. Tom Brown, from the Brown Family Home. What's your name?`],
+      thanks: [`Thank you! You walked all the way here for us.`], bye: [`Tell my mother I'm fine. And tell her not to wait at the door all night!`],
+      yes: [`Really? Tell me more!`], no: [`Oh. Then what happened?`],
+      whereFrom: [`From Oriaris, the house with the wooden roof near the south gate.`], hobby: [`At home I carved little horses from wood. Here I count the stars at night.`],
+      weather: [`It rained last night. The tent leaked, and my socks were wet!`], help: [`If you have a letter for me, give it to me. I'm Tom Brown.`],
+      compliment: [`Thanks! My mother says the same thing.`], insult: [`Hey, we're all tired here. Let's be friends.`], work: [`I keep the night watch here, where the road goes north.`],
+    },
+    fallback: [
+      `What did my mother do yesterday? Did she wait at the door again?`,
+      `Last night we sat by the fire and sang a song from home.`,
+      `Tell me about the village. Did the children plant the rice?`,
+      `Use the past tense, like a letter: "Your mother cooked soup..."`,
+      `I promised to come home. I wrote it in my last letter.`,
+    ],
+    hints: [`Tell Tom what his mother or the village did, in the past tense: "Your mother waited...", "She sewed..."`],
+    topics: [
+      { re: /\b(mother|mom|mum|mary|home|house)\b/, replies: [`My mother! Did she wait at the door again? Please tell me what she did yesterday.`, `When I left, she gave me bread and cried a little. I miss her cooking.`] },
+      { re: /\b(letters?|mail|deliver(ed)?|messenger)\b/, replies: [`A letter? I read every letter three times. It makes the cold night shorter.`] },
+      { re: /\b(night|watch|stars?|road|cold)\b/, replies: [`Last night I watched the North Road until sunrise. I counted two hundred stars!`] },
+      { re: /\b(rice|field|village|children|kids)\b/, replies: [`Did the children plant the rice? When I was small, I carried the seedlings for my mother.`] },
+      { re: /\b(war|fight|battle|enemy)\b/, replies: [`I don't like to talk about the war. I like to talk about home. Tell me about Oriaris!`] },
+    ],
+    goalDone: [`Thank you! Now I know she is well. I feel warm, even on this cold night.`], reactions: Qe,
+    stranger: { greeting: `Hi! I'm Tom Brown. Are you the new messenger?`, heard: `Lord Gusest told us about a brave new messenger.`, remark: `You look tired. The trail is long, isn't it?`, note: `He is friendly and eager for news from home.` },
+  },
+});
+
+        function ot(e, t, n, r, i = `none`) {
+          let a = t.playerName ?? `friend`,
+            o = (e, t = ``) => e.replaceAll(`{p}`, a).replaceAll(`{when}`, t);
+          if (!t.lastVisit && i !== `none`) {
+            let t = nt[e.id]?.stranger,
+              n = t && (i === `heard` ? t.heard : t.greeting);
+            if (n) return n;
+          }
+          if (!t.lastVisit) {
+            let t = oe(r);
+            return (
+              (e.plain
+                ? t === `morning`
+                  ? `Morning. `
+                  : t === `afternoon`
+                    ? `Afternoon. `
+                    : t === `evening`
+                      ? `Evening. `
+                      : ``
+                : t === `morning`
+                  ? `Good morning! `
+                  : t === `afternoon`
+                    ? `Good afternoon! `
+                    : t === `evening`
+                      ? `Good evening! `
+                      : ``) + e.greeting
+            );
+          }
+          let s = He(t.lastVisit, n),
+            c = o(at(t.affinity < 0 ? it : rt[e.id]), s);
+          return (
+            t.affinity >= 0 &&
+              t.facts.length &&
+              Math.random() < 0.5 &&
+              (c += ` I still remember that you ${at(t.facts)}.`),
+            c
+          );
+        }
+        function st(e, t, n) {
+          return t.visits > 0 || t.lastVisit || Ee(e.id).id === Ce
+            ? `none`
+            : n > 0
+              ? `heard`
+              : `new`;
+        }
+        async function ct(e, t) {
+          if (!e.explain) throw Error(`The word helper requires an AI connection.`);
+          return e.explain(t);
+        }
+        function lt(e) {
+          let t = document.createElement(`div`);
+          t.className = `wcard`;
+          let n = (cls, txt, isTerm = false) => {
+            if (!txt) return;
+            let r = document.createElement(`div`);
+            r.className = cls;
+            r.textContent = txt;
+            if (isTerm && e.term) {
+              let spk = document.createElement(`button`);
+              spk.type = `button`;
+              spk.className = `speaker-btn`;
+              spk.textContent = `🔊`;
+              spk.title = `Listen to this word’s pronunciation`;
+              spk.onclick = (ev) => {
+                ev.stopPropagation();
+                speechService.speak(e.term);
+              };
+              r.appendChild(spk);
+            }
+            t.appendChild(r);
+          };
+          n(`wterm`, e.term, true);
+          n(`wmean`, e.meaning);
+          n(`wvi`, `🇻🇳 ${e.vi}`);
+          n(`wex`, e.example ? `e.g. ${e.example}` : ``);
+          n(`wnote`, e.notes ? `💡 ${e.notes}` : ``);
+          return t;
+        }
+        var ut = class {
+            store;
+            provider;
+            root = document.getElementById(`helper`);
+            input = this.root.querySelector(`input`);
+            out = this.root.querySelector(`.hout`);
+            busy = !1;
+            constructor(e, t) {
+              ((this.store = e),
+                (this.provider = t),
+                this.input.addEventListener(`keydown`, (e) => {
+                  (e.stopPropagation(),
+                    e.key === `Escape` ? this.toggle() : e.key === `Enter` && this.ask());
+                }),
+                this.input.addEventListener(`keyup`, (e) => e.stopPropagation()),
+                this.root
+                  .querySelector(`#helper-ask`)
+                  .addEventListener(`click`, () => void this.ask()),
+                this.root
+                  .querySelector(`#helper-close`)
+                  .addEventListener(`click`, () => this.toggle()));
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            toggle() {
+              if (this.isOpen) {
+                ((this.root.style.display = `none`), this.input.blur());
+                return;
+              }
+              ((this.root.style.display = `block`),
+                this.renderBook(),
+                setTimeout(() => this.input.focus(), 0));
+            }
+            note(e, t = `wnote`) {
+              this.out.innerHTML = ``;
+              let n = document.createElement(`div`);
+              ((n.className = t), (n.textContent = e), this.out.appendChild(n));
+            }
+            async ask() {
+              let e = this.input.value.trim();
+              if (e && !this.busy) {
+                ((this.busy = !0), this.note(`Thinking...`));
+                try {
+                  let t = await ct(this.provider(), e);
+                  (Ae(this.store.game.stats, { term: t.term || e, vi: t.vi, meaning: t.meaning }),
+                    this.store.save(),
+                    (this.out.innerHTML = ``),
+                    this.out.appendChild(lt(t)),
+                    (this.input.value = ``),
+                    this.renderBook());
+                } catch (e) {
+                  this.note(e.message, `werr`);
+                }
+                ((this.busy = !1), this.input.focus());
+              }
+            }
+            renderBook() {
+              let e = this.root.querySelector(`.hbook`),
+                t = this.store.game.stats.book;
+              e.innerHTML = ``;
+              let n = document.createElement(`div`);
+              if (
+                ((n.className = `wterm`),
+                (n.textContent = `Your word book (${t.length})`),
+                e.appendChild(n),
+                !t.length)
+              ) {
+                let t = document.createElement(`div`);
+                ((t.className = `wnote`),
+                  (t.textContent = `Words you ask about are saved here.`),
+                  e.appendChild(t));
+              }
+              for (let n of t.slice(-12).reverse()) {
+                let row = document.createElement(`div`);
+                row.className = `wrow`;
+                let span = document.createElement(`span`);
+                span.textContent = `${n.term} - ${n.vi || n.meaning}`;
+                let spk = document.createElement(`button`);
+                spk.type = `button`;
+                spk.className = `speaker-btn`;
+                spk.textContent = `🔊`;
+                spk.title = `Listen to pronunciation`;
+                spk.onclick = () => {
+                  speechService.speak(n.term);
+                };
+                row.append(span, spk);
+                e.appendChild(row);
+              }
+            }
+          };
+var dt = `english-town-teacher`;
+var ft = class {
+            provider;
+            store;
+            situation;
+            root = document.getElementById(`chat`);
+            nameEl = this.root.querySelector(`.name`);
+            goalEl = this.root.querySelector(`.goal`);
+            logEl = this.root.querySelector(`.log`);
+            input = this.root.querySelector(`input`);
+            npc = null;
+            history = [];
+            prior = [];
+            counted = !1;
+            stranger = `none`;
+            busy = !1;
+            onGoalDone = () => {};
+            onClose = () => {};
+            onSaid = () => [];
+            teacherBtn = this.root.querySelector(`#teacher`);
+            teacherOn = !0;
+            micBtn = this.root.querySelector(`#mic`);
+            rec = null;
+            listening = !1;
+            constructor(e, t, n) {
+              ((this.provider = e),
+                (this.store = t),
+                (this.situation = n),
+                this.input.addEventListener(`keydown`, (e) => {
+                  (e.stopPropagation(),
+                    e.key === `Escape`
+                      ? this.close()
+                      : e.key === `Enter`
+                        ? this.send()
+                        : e.key === `Tab` && (e.preventDefault(), this.toggleMic()));
+                }),
+                this.input.addEventListener(`keyup`, (e) => e.stopPropagation()));
+              // Nút ✕: cách rời cuộc trò chuyện trên điện thoại/máy tính bảng (không có phím Esc).
+              this.root
+                .querySelector(`#chat-close`)
+                ?.addEventListener(`click`, (e) => {
+                  e.stopPropagation();
+                  this.close();
+                });
+              let r = `1`;
+              try {
+                r = localStorage.getItem(dt) ?? `1`;
+              } catch {}
+              (this.setTeacher(r !== `0`),
+                this.teacherBtn.addEventListener(`click`, () => {
+                  (this.setTeacher(!this.teacherOn), this.input.focus());
+                }));
+              let vb = this.root.querySelector(`#voice-toggle`);
+              if (vb) {
+                vb.textContent = `🔊 Voice: ${speechService.settings.voiceEnabled ? `ON` : `OFF`}`;
+                vb.addEventListener(`click`, () => {
+                  speechService.setVoiceEnabled(!speechService.settings.voiceEnabled);
+                  vb.textContent = `🔊 Voice: ${speechService.settings.voiceEnabled ? `ON` : `OFF`}`;
+                  vb.classList.toggle(`off`, !speechService.settings.voiceEnabled);
+                  this.input.focus();
+                });
+              }
+              this.setupMic();
+              this.suggestionButton = this.root.querySelector(`#npc-suggest`);
+              this.suggestionList = this.root.querySelector(`#npc-suggestions`);
+              this.suggestionButton?.addEventListener(`click`, () => this.showNpcSuggestions());
+            }
+            async showNpcSuggestions() {
+              const npc = this.npc;
+              if (!npc || this.busy || !this.suggestionButton || !this.suggestionList) return;
+              const last =
+                [...this.history].reverse().find((h) => h.role === `npc`)?.text || npc.greeting;
+              this.suggestionButton.disabled = true;
+              this.suggestionButton.textContent = `⏳ Suggesting...`;
+              try {
+                const choices = await getNpcSuggestions(npc, last, cefrService.getLevel());
+                if (this.npc !== npc) return;
+                this.suggestionList.replaceChildren();
+                for (const choice of choices) {
+                  const button = document.createElement(`button`);
+                  button.type = `button`;
+                  button.textContent = choice;
+                  button.title = `Put this sentence in the chat box`;
+                  button.addEventListener(`click`, () => {
+                    this.input.value = choice;
+                    this.input.focus();
+                  });
+                  this.suggestionList.appendChild(button);
+                }
+              } finally {
+                this.suggestionButton.disabled = false;
+                this.suggestionButton.textContent = `✨ AI suggests a sentence`;
+              }
+            }
+            setupMic() {
+              let e = window,
+                t = e.SpeechRecognition ?? e.webkitSpeechRecognition;
+              if (!t) {
+                this.micBtn.style.display = `none`;
+                return;
+              }
+              let n = new t();
+              ((n.lang = `en-US`),
+                (n.interimResults = !0),
+                (n.continuous = !1),
+                (n.maxAlternatives = 1),
+                (n.onresult = (e) => {
+                  let t = ``;
+                  for (let n = 0; n < e.results.length; n++) t += e.results[n][0].transcript;
+                  ((this.input.value = t.trim()),
+                    e.results[e.results.length - 1].isFinal && this.input.value && this.send());
+                }),
+                (n.onend = () => this.setListening(!1)),
+                (n.onerror = (e) => {
+                  (this.setListening(!1),
+                    e.error === `not-allowed` || e.error === `service-not-allowed`
+                      ? this.append(
+                          `fix`,
+                          `🎤 The microphone is blocked. Allow it in the browser address bar, then try again.`,
+                        )
+                      : e.error === `no-speech`
+                        ? this.append(
+                            `fix`,
+                            `🎤 I did not hear anything. Press the mic and speak again.`,
+                          )
+                        : e.error !== `aborted` &&
+                          this.append(`fix`, `🎤 Speech recognition failed (${e.error}).`));
+                }),
+                (this.rec = n),
+                this.micBtn.addEventListener(`click`, () => {
+                  (this.toggleMic(), this.input.focus());
+                }));
+            }
+            setListening(e) {
+              ((this.listening = e),
+                this.micBtn.classList.toggle(`on`, e),
+                (this.input.placeholder = e
+                  ? `Listening... speak English now`
+                  : `Type in English and press Enter, or press the mic and speak...`));
+            }
+            toggleMic() {
+              if (this.rec && !this.busy) {
+                if (this.listening) {
+                  this.rec.stop();
+                  return;
+                }
+                this.input.value = ``;
+                try {
+                  (this.rec.start(), this.setListening(!0));
+                } catch {}
+              }
+            }
+            setProvider(e) {
+              this.provider = e;
+            }
+            gossipFor(e) {
+              let t = [];
+              for (let n of re)
+                if (n.id !== e.id)
+                  for (let e of this.store.get(n.id).events.slice(-2))
+                    t.push(`${nt[n.id].short} says the player ${e.text} (day ${e.day})`);
+              return t.slice(-6);
+            }
+            summarizing = new Set();
+            async summarize(e) {
+              let t = this.store.get(e.id),
+                n = Math.min(t.turnCounter - t.summarizedCounter, t.transcript.length);
+              if (n < 2 || !this.provider.summarize || this.summarizing.has(e.id)) return;
+              this.summarizing.add(e.id);
+              let r = t.turnCounter;
+              try {
+                let i = await this.provider.summarize(
+                  e,
+                  t.summary,
+                  t.transcript.slice(-n),
+                  this.situation(e).day,
+                );
+                i && ((t.summary = i.slice(0, 900)), (t.summarizedCounter = r), this.store.save());
+              } catch {}
+              this.summarizing.delete(e.id);
+            }
+            get currentProvider() {
+              return this.provider;
+            }
+            get isOpen() {
+              return this.npc !== null;
+            }
+            get currentId() {
+              return this.npc?.id ?? null;
+            }
+            get providerLabel() {
+              return this.provider.label;
+            }
+            open(e) {
+              let t = this.store.get(e.id),
+                n = this.situation(e);
+              ((this.npc = e), (this.prior = [...t.transcript]), (this.counted = !1));
+              if (e.uiTheme) this.root.dataset.npcTheme = e.uiTheme;
+              else delete this.root.dataset.npcTheme;
+              let r = Ee(e.id).npcs.filter(
+                (t) => t !== e.id && this.store.get(t).visits > 0,
+              ).length;
+              ((this.stranger = st(e, t, r)), this.summarize(e));
+              let i = ot(e, t, n.day, n.minutes, this.stranger);
+              ((this.history = [{ role: `npc`, text: i }]),
+                this.suggestionList?.replaceChildren(),
+                (this.logEl.innerHTML = ``),
+                (this.nameEl.textContent = `${e.name} · ${n.activity} · ${Ve(t.affinity)}`),
+                this.updateGoal());
+              let a = nt[e.id].short,
+                o = this.provider.greet
+                  ? this.append(`npc`, `${a} looks at you...`)
+                  : this.append(`npc`, `${a}: ${i}`);
+              (this.provider.greet && this.aiGreeting(e, o, i),
+                (this.root.style.display = `block`),
+                (this.input.value = ``),
+                setTimeout(() => this.input.focus(), 0));
+            }
+            async aiGreeting(e, t, n) {
+              let r = nt[e.id].short,
+                i = this.store.get(e.id),
+                a = {
+                  ...this.situation(e),
+                  memory: i,
+                  prior: this.prior,
+                  gossip: this.gossipFor(e),
+                  stranger: this.stranger,
+                },
+                o = ``;
+              try {
+                o = await Promise.race([
+                  this.provider.greet(e, a),
+                  new Promise((e) => setTimeout(() => e(``), 5e3)),
+                ]);
+              } catch {}
+              if (this.npc !== e) return;
+              let s = lqNpcSafeText(o || n, lqNpcSafeText(n, `Hello! Nice to see you.`));
+              t.textContent = `${r}: ${s}`;
+              if (t.querySelector && !t.querySelector(`.speaker-btn`)) {
+                let spk = document.createElement(`button`);
+                spk.type = `button`;
+                spk.className = `speaker-btn`;
+                spk.textContent = `🔊`;
+                spk.title = `Listen again`;
+                spk.onclick = () => {
+                  speechService.speak(s);
+                };
+                t.appendChild(spk);
+              }
+              speechService.speak(s);
+              this.history.length === 1 && (this.history[0] = { role: `npc`, text: s });
+            }
+            close() {
+              speechService.stop();
+              this.npc &&
+                (this.listening && this.rec?.abort(),
+                this.summarize(this.npc),
+                (this.npc = null),
+                delete this.root.dataset.npcTheme,
+                (this.root.style.display = `none`),
+                this.input.blur(),
+                this.store.save(),
+                this.onClose());
+            }
+            updateGoal() {
+              if (!this.npc) return;
+              let e = this.npc.goal;
+              this.goalEl.textContent = this.store.get(this.npc.id).goalDone
+                ? `Mission complete: ${e.text}`
+                : `Mission: ${e.text}`;
+            }
+            append(e, t) {
+              let n = document.createElement(`div`);
+              n.className = e;
+              if (e === `npc`) {
+                let textSpan = document.createElement(`span`);
+                textSpan.textContent = t;
+                n.appendChild(textSpan);
+
+                // Add replay speaker button
+                let spk = document.createElement(`button`);
+                spk.type = `button`;
+                spk.className = `speaker-btn`;
+                spk.textContent = `🔊`;
+                spk.title = `Listen to pronunciation again`;
+                spk.onclick = (ev) => {
+                  ev.stopPropagation();
+                  let clean = t.replace(/^[^:]+:\s*/, ``);
+                  speechService.speak(clean);
+                };
+                n.appendChild(spk);
+              } else {
+                n.textContent = t;
+              }
+              this.logEl.appendChild(n);
+              this.logEl.scrollTop = this.logEl.scrollHeight;
+              return n;
+            }
+            setTeacher(e) {
+              ((this.teacherOn = e),
+                (this.teacherBtn.textContent = `✎ Teacher: ${e ? `ON` : `OFF`}`),
+                this.teacherBtn.classList.toggle(`off`, !e));
+              try {
+                localStorage.setItem(dt, e ? `1` : `0`);
+              } catch {}
+            }
+            async checkGrammar(e) {
+              if (!this.teacherOn || !this.provider.check || e.split(/\s+/).length < 2) return null;
+              try {
+                return await Promise.race([
+                  this.provider.check(e),
+                  new Promise((e) => setTimeout(() => e(null), 6e3)),
+                ]);
+              } catch {
+                return null;
+              }
+            }
+            async askWordHelper(e) {
+              let t = [...this.history].reverse().find((e) => e.role === `npc`)?.text ?? ``,
+                n = e.slice(1).trim() || t;
+              if (((this.input.value = ``), !n)) return;
+              ((this.busy = !0),
+                this.append(
+                  `me`,
+                  `📖 ${e.slice(1).trim() ? `What does "${n}" mean?` : `Explain the last sentence`}`,
+                ));
+              let r = this.append(`npc`, `Word helper is thinking...`);
+              try {
+                let e = await ct(this.provider, n);
+                (Ae(this.store.game.stats, { term: e.term || n, vi: e.vi, meaning: e.meaning }),
+                  this.store.save(),
+                  r.replaceWith(lt(e)));
+              } catch (e) {
+                (r.remove(), this.append(`fix`, `📖 ${e.message}`));
+              }
+              ((this.logEl.scrollTop = this.logEl.scrollHeight),
+                (this.busy = !1),
+                this.input.focus());
+            }
+            async send() {
+              let e = this.npc,
+                t = this.input.value.trim();
+              if (!e || !t || this.busy) return;
+              if (t.startsWith(`?`)) {
+                await this.askWordHelper(t);
+                return;
+              }
+              let n = this.store.get(e.id),
+                r = nt[e.id].short;
+              ((this.input.value = ``), (this.busy = !0));
+              let i = this.append(`me`, `You: ${t}`),
+                a = document.createElement(`div`);
+              ((a.className = `npc`),
+                (a.textContent = `${r} is thinking...`),
+                this.logEl.appendChild(a));
+              let o = We(t);
+              o && (n.playerName = o);
+              let s = this.situation(e),
+                c = {
+                  ...s,
+                  memory: n,
+                  prior: this.prior,
+                  gossip: this.gossipFor(e),
+                  stranger: this.stranger,
+                },
+                l,
+                u = null;
+              try {
+                // One Gemini call per message: the NPC reply already carries "correction" and "vietnameseTip",
+                // so the separate checkGrammar() call (a second request every turn) is no longer made here.
+                l = await this.provider.respond(e, this.history, t, n.goalDone, c);
+              } catch (e) {
+                (a.remove(),
+                  i.remove(),
+                  this.append(
+                    `fix`,
+                    `⚠ ${r} could not answer (${e.message}). Your message is back in the box: press Enter to try again.`,
+                  ),
+                  (this.input.value = t),
+                  (this.busy = !1),
+                  this.input.focus());
+                return;
+              }
+              ((l = jt(l, n.goalDone)),
+                a.remove(),
+                (this.counted ||= (n.visits++, !0)),
+                (n.lastVisit = { day: s.day, minutes: s.minutes }),
+                Ye(
+                  n,
+                  { day: s.day, minutes: s.minutes, role: `user`, text: t },
+                  { day: s.day, minutes: s.minutes, role: `npc`, text: l.reply },
+                ));
+              for (let e of Ke(t)) qe(n, e);
+              (l.remember && qe(n, l.remember),
+                (n.affinity = Math.max(
+                  -20,
+                  Math.min(100, n.affinity + 1 + (l.affinityDelta ?? 0) + (l.goalDone ? 8 : 0)),
+                )),
+                l.goalDone && ((n.goalDone = !0), Je(n, s.day, e.goal.deed)),
+                (l.affinityDelta ?? 0) <= -3 && Je(n, s.day, `was rude to them`));
+              let d = ``,
+                f = ``;
+              if (this.teacherOn) {
+                if (u) {
+                  if (!u.ok) {
+                    d = u.fixed ? `"${u.fixed}"${u.tip ? ` · ${u.tip}` : ``}` : u.tip;
+                    f = u.fixed ? `Better: "${u.fixed}"${u.tip ? ` (${u.tip})` : ``}` : u.tip;
+                  }
+                } else if (l.correction) {
+                  d = l.correction;
+                  f = l.correction;
+                }
+              }
+              if (d && l.vietnameseTip && l.vietnameseTip.trim()) {
+                d += ` · 🇻🇳 ${l.vietnameseTip.trim()}`;
+              }
+              Ne(this.store.game.stats, t, f);
+              this.store.save();
+              this.history.push({ role: `user`, text: t }, { role: `npc`, text: l.reply });
+              if (d) {
+                let e = document.createElement(`div`);
+                e.className = `fix`;
+                e.textContent = `✎ ${d}`;
+                i.insertAdjacentElement(`afterend`, e);
+              }
+              if (l.vocabulary && l.vocabulary.trim()) {
+                let vocDiv = document.createElement(`div`);
+                vocDiv.className = `voc-badge`;
+                vocDiv.textContent = `📖 Suggested vocabulary: "${l.vocabulary}" (Click or type ?${l.vocabulary.split(/[\s,;:]+/)[0]} to look it up)`;
+                vocDiv.onclick = () => {
+                  this.askWordHelper(`?${l.vocabulary.split(/[\s,;:]+/)[0]}`);
+                };
+                i.insertAdjacentElement(`afterend`, vocDiv);
+              }
+              speechService.speak(l.reply);
+              if (
+                l.naturalAlternative &&
+                l.naturalAlternative.trim() &&
+                l.naturalAlternative.toLowerCase() !== t.toLowerCase()
+              ) {
+                let altDiv = document.createElement(`div`);
+                altDiv.className = `natural-alt`;
+                altDiv.textContent = `💡 Native way: "${l.naturalAlternative}"`;
+                i.insertAdjacentElement(`afterend`, altDiv);
+              }
+              (this.append(`npc`, `${r}: ${l.reply}`),
+                l.notice && this.append(`fix`, `⚠ ${l.notice}`));
+              // n.goalDone was already set above (line ~566); jt() only lets goalDone through when the goal was not
+              // done before, so l.goalDone alone means "completed just now".
+              if (l.goalDone) {
+                this.updateGoal();
+                this.append(
+                  `fix`,
+                  `★ Mission complete! +$${e.goal.reward}, +${e.goal.rep} reputation`,
+                );
+                this.onGoalDone(e);
+              }
+              for (let n of this.onSaid(e, t)) this.append(`quest`, n);
+              ((this.nameEl.textContent = `${e.name} · ${s.activity} · ${Ve(n.affinity)}`),
+                (this.busy = !1),
+                this.input.focus());
+            }
+          };
+var pt = [
+            {
+              idx: 0,
+              title: `Newcomer`,
+              icon: ``,
+              color: 3842303,
+              min: 0,
+              perk: `Start helping your neighbors!`,
+            },
+            {
+              idx: 1,
+              title: `Friendly Neighbor`,
+              icon: `🏠`,
+              color: 4903072,
+              min: 10,
+              perk: `Neighbors know your face now.`,
+            },
+            {
+              idx: 2,
+              title: `Town Helper`,
+              icon: `🤝`,
+              color: 16756794,
+              min: 25,
+              perk: `Daily income grows with every point of reputation.`,
+            },
+            {
+              idx: 3,
+              title: `Local Hero`,
+              icon: `⭐`,
+              color: 16734858,
+              min: 50,
+              perk: `Everyone greets you as a hero.`,
+            },
+            {
+              idx: 4,
+              title: `Town Guardian`,
+              icon: `🛡️`,
+              color: 10514687,
+              min: 90,
+              perk: `The whole town trusts you.`,
+            },
+            {
+              idx: 5,
+              title: `Honorary Mayor`,
+              icon: `👑`,
+              color: 16765498,
+              min: 140,
+              perk: `You are the heart of English Town!`,
+            },
+          ];
+        function mt(e) {
+          let t = pt[0];
+          for (let n of pt) e >= n.min && (t = n);
+          return t;
+        }
+        function ht(e) {
+          return pt.find((t) => t.min > e) ?? null;
+        }
+        var gt = class {
+            store;
+            root = document.getElementById(`journal`);
+            constructor(e) {
+              this.store = e;
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            toggle() {
+              if (this.isOpen) {
+                this.root.style.display = `none`;
+                return;
+              }
+              (this.render(), (this.root.style.display = `block`));
+            }
+            render() {
+              let e = this.store.game.day;
+              this.root.innerHTML = `<h3>Journal - what the townspeople remember</h3>`;
+              let t = this.store.game.stats,
+                n = document.createElement(`div`);
+              n.className = `entry`;
+              let r = document.createElement(`b`);
+              r.textContent = `Your English progress`;
+              let i = document.createElement(`div`);
+              i.className = `meta`;
+              let a = mt(this.store.game.rep);
+              if (
+                ((r.textContent = `Your title: ${a.icon} ${a.title}  |  Your English progress`),
+                (i.textContent = `${t.messages} messages, ${t.words.length} different words, ${t.corrections} corrections, ${t.praised} compliments, ${t.book.length} words in your word book (H)`),
+                n.append(r, i),
+                t.tips.length)
+              ) {
+                let e = document.createElement(`div`);
+                ((e.textContent = `Recent tips: ` + t.tips.join(` | `)), n.appendChild(e));
+              }
+              this.root.appendChild(n);
+              for (let t of re) {
+                let n = this.store.get(t.id),
+                  r = document.createElement(`div`);
+                r.className = `entry`;
+                let i = n.lastVisit ? `last talked ${He(n.lastVisit, e)}` : `not met yet`,
+                  a = document.createElement(`b`);
+                a.textContent = `${nt[t.id].short} - ${Ve(n.affinity)} (${n.affinity})`;
+                let o = document.createElement(`div`);
+                ((o.className = `meta`),
+                  (o.textContent = `${n.visits} conversation(s), ${i}${n.playerName ? `, knows you as ${n.playerName}` : ``}${n.goalDone ? `, mission done` : ``}`));
+                let s = document.createElement(`div`);
+                if (
+                  ((s.textContent = n.facts.length
+                    ? `Remembers: you ` + n.facts.join(`; you `)
+                    : `Remembers nothing about you yet.`),
+                  r.append(a, o, s),
+                  n.events.length)
+                ) {
+                  let e = document.createElement(`div`);
+                  ((e.textContent =
+                    `Events: ` + n.events.map((e) => `day ${e.day}: you ${e.text}`).join(`; `)),
+                    r.appendChild(e));
+                }
+                if (n.summary) {
+                  let e = document.createElement(`div`);
+                  ((e.className = `meta`),
+                    (e.textContent = `Their memory of you: ${n.summary}`),
+                    r.appendChild(e));
+                }
+                this.root.appendChild(r);
+              }
+              let o = document.createElement(`div`);
+              ((o.className = `meta`),
+                (o.textContent = `J: close   |   F8: erase all progress and memories`),
+                this.root.appendChild(o));
+              window.LQOrigins?.renderJournal?.(this.root,this.store);
+            }
+          },
+          _t = `english-town-ai`;
+        function vt() {
+          let e = {};
+          try {
+            e = JSON.parse(localStorage.getItem(_t) || '{}') || {};
+          } catch {}
+          return {
+            geminiKey: String(e.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || ''),
+            geminiModel: String(
+              e.geminiModel || window.LIFEQUEST_AI_CONFIG?.MODEL || 'gemini-2.5-flash',
+            ),
+          };
+        }
+        function yt(e) {
+          try {
+            localStorage.setItem(_t, JSON.stringify(e));
+          } catch {}
+        }
+        var bt = new Map();
+        function xt(e) {
+          let t = bt.get(e.id);
+          return (
+            t === void 0 &&
+              ((t = e.buildings
+                .filter((e) => !e.name.includes(`'`))
+                .map((t) => {
+                  let n = t.x + t.w / 2 - e.w / 2,
+                    r = t.y + t.h / 2 - e.h / 2,
+                    i = Math.abs(r) > 6 ? (r < 0 ? `north` : `south`) : ``,
+                    a = Math.abs(n) > 8 ? (n < 0 ? `west` : `east`) : ``;
+                  return `${t.name} (${[i, a].filter(Boolean).join(`-`) || `centre`})`;
+                })
+                .join(`, `)),
+              bt.set(e.id, t)),
+            t
+          );
+        }
+        function St(e) {
+          let t = nt[e];
+          return [t.lines.howAreYou[0], t.lines.hobby[0], t.lines.greet[0], t.fallback[0]]
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((e) => `- "${e.replaceAll(`{p}`, `friend`)}"`).join(`
+`);
+        }
+        function Ct(e, t) {
+          let n = e / 60;
+          return n < 6 || n >= 22
+            ? `You are sleepy and a little grumpy because it is so late.`
+            : n >= 11.5 && n < 13
+              ? `It is almost lunchtime, so you are a bit hungry.`
+              : n >= 17 && n < 19
+                ? `The workday is ending and you feel relaxed.`
+                : /work|teach|cook|duty|running|seeing|paperwork|digging|blasting|setting charges|loading|hauling|unloading|sorting|building|checking|forging|selling|polishing|treating|inspecting|drawing|cleaning/.test(
+                      t,
+                    )
+                  ? `You are in the middle of your job and a bit busy, but friendly.`
+                  : `You are in a relaxed, talkative mood.`;
+        }
+        function wt(e, t) {
+          let n = nt[e.id]?.stranger?.note ?? ``;
+          return t.stranger === `new`
+            ? [
+                ``,
+                `## A stranger`,
+                `This is the first time you see this person, and they are not from your town: they came through the new gate from English Town. Their clothes are too clean, they carry no tools, and they do not talk like your people. ${n}`,
+                `Show it in your own voice in your very first words: ask who they are, where they come from and why they came. Do not be hostile. Once the player answers and is polite, relax a little. Stay in character.`,
+              ]
+            : t.stranger === `heard`
+              ? [
+                  ``,
+                  `## A newcomer`,
+                  `Word has gone around your town that a newcomer from English Town is visiting. You have not met them yet, and you are curious about them. ${n}`,
+                ]
+              : [];
+        }
+        function Tt(e, t, n) {
+          let r = nt[e.id],
+            i = n.memory,
+            a = n.prior
+              .slice(-12)
+              .map(
+                (e) =>
+                  `[${He({ day: e.day, minutes: e.minutes }, n.day)}] ${e.role === `user` ? `Player` : `You`}: ${e.role === `user` ? e.text : lqNpcSafeText(e.text, `(previous response unavailable)`)}`,
+              ),
+            o = i.events.map((e) => `day ${e.day}: the player ${e.text}`),
+            s = [];
+          return (
+            s.push(`Player's name: ${i.playerName ?? `unknown (you may ask for it)`}.`),
+            s.push(
+              `Your relationship with the player: ${Ve(i.affinity)} (${i.affinity}/100). You have had ${i.visits} earlier conversation(s).`,
+            ),
+            i.summary &&
+              s.push(
+                `Your long-term memory of the player (your own summary of past talks):\n${i.summary}`,
+              ),
+            i.facts.length &&
+              s.push(`Facts the player told you: ${i.facts.map((e) => `they ${e}`).join(`; `)}.`),
+            o.length &&
+              s.push(
+                `Things that happened between you:\n${o.join(`
+`)}`,
+              ),
+            a.length &&
+              s.push(
+                `Your most recent earlier messages:\n${a.join(`
+`)}`,
+              ),
+            !i.summary && !a.length && s.push(`You have never talked with the player before.`),
+            [
+              `You are ${e.name}, a person living in a small town. You are a real character, NOT an assistant. ${e.persona} ${adventure.npcContext(e.id)}\n\n## Learner Level: ${cefrService.getLevelInfo().name} (${cefrService.getLevelInfo().code})\n${cefrService.getLevelInfo().promptInstruction}`,
+              `Personality: ${r.traits}.`,
+              `Speaking style: ${r.style}`,
+              `Examples of how you sound (copy the voice, never reuse these exact sentences):\n${St(e.id)}`,
+              ``,
+              `## Situation`,
+              `It is ${oe(n.minutes)}, ${se(n.minutes)} on day ${n.day}. You are currently ${n.activity}. ${Ct(n.minutes, n.activity)}`,
+              `Town buildings and where they are (use this if asked for directions; say north/south/east/west and a nearby building, never coordinates): ${xt(Ee(e.id))}.`,
+              `The player's standing in town: reputation ${n.rep}, known as "${mt(n.rep).title}". ${n.rep >= 25 ? `The player is respected for helping people, so you may mention it with warmth.` : ``}`,
+              n.gossip.length
+                ? `Town gossip you have heard about the player (mention only if it fits naturally):\n${n
+                    .gossip.join(`
+`)}`
+                : ``,
+              ``,
+              `## Your memory`,
+              ...s,
+              ...wt(e, n),
+              ``,
+              `## How to talk`,
+              `- The player is learning English (beginner to intermediate). Use clear, natural, everyday English with common words. 1-3 short sentences (under 45 words). No lists, no emoji spam.`,
+              `- First answer or react to exactly what the player just said (answer direct questions directly, with one concrete detail from your own life, job or town). Only then add a question if it fits.`,
+              `- Talk like a real person: opinions, moods, small stories, your own catchphrases. Never sound like an assistant ("Certainly!", "How can I assist you?", "As a ...").`,
+              `- Match your mood to the time and what you are doing (tired late at night, hungry before lunch, busy at work).`,
+              `- Use your memory: refer back to earlier talks, the facts you know and the gossip, but only one thing at a time and only if it fits. Do not invent facts about the player that are not in your memory.`,
+              `- Never repeat a sentence you already said. End with a question or invitation about half of the time; otherwise let a short comment stand.`,
+              `- If the player writes something unclear, guess kindly or ask a simple clarifying question. If they write in another language, answer in simple English and gently ask them to try English.`,
+              `- Once in a while, naturally use a useful new word or phrase and explain it in a few simple words, like a friend would.`,
+              `- Never output source code, Markdown code fences, JSON examples, tool calls, or implementation details. The only visible dialogue must be your natural spoken reply in the JSON reply field.`,
+              `- Never mention being an AI, a game, "missions" or JSON. Stay in character.`,
+              `- Hidden goal for the player: "${e.goal.text}". Set goalDone=true ONLY when the player's latest message clearly achieves it${t ? ` (it is already achieved, so use false)` : ``}. If the player is struggling, nudge them toward it naturally.`,
+              `- If the player made a grammar or spelling mistake, put a short friendly fix in "correction", like: Better: "I would like a coffee." (one mistake at a time, the most important one, with a 3-6 word reason if helpful). In your "reply" simply use the correct form naturally, without lecturing. If the sentence was correct and a bit long, "correction" may be a short praise like "Nice sentence!" (not every time). Otherwise "".`,
+              `- "vietnameseTip": when "correction" fixes a mistake (not praise), explain that mistake very briefly in Vietnamese (max 15 words) for a Vietnamese student; otherwise "".`,
+              `- "remember": if the player just revealed something personal, a short phrase that follows "you", like "like cats" or "live in Hanoi"; otherwise "".`,
+              `- "affinityDelta": integer from -3 (rude) to 3 (very kind), usually 0 or 1.`,
+            ].filter((e, t, n) => e !== `` || n[t - 1] !== ``).join(`
+`)
+          );
+        }
+        function Et(e, t, n, r) {
+          let i = n.map((t) => `${t.role === `user` ? `Player` : e.name.split(` `)[0]}: ${t.text}`)
+            .join(`
+`);
+          return {
+            system: [
+              `You are ${e.name}. Update your private memory notes about the player after a conversation.`,
+              `Write in first person from your point of view, in plain English, at most 90 words.`,
+              `Keep: the player's name, personal details, what they like/dislike, promises, running jokes, how they treated you and how you feel about them.`,
+              `Merge with your previous notes, drop trivial small talk, and never invent anything.`,
+              `Output ONLY the notes text.`,
+            ].join(`
+`),
+            user: `Previous notes: ${t || `(none yet)`}\n\nConversation on day ${r}:\n${i}`,
+          };
+        }
+        var Dt = [
+          `You are a kind English teacher checking ONE sentence written by a beginner student in a chat.`,
+          `Check grammar, spelling and word choice only. Ignore missing capital letters and final punctuation unless that is the only problem.`,
+          `If the sentence is understandable and correct, set ok=true and leave fixed and tip empty.`,
+          `Otherwise set ok=false, put the full corrected sentence in "fixed" (change as little as possible), and in "tip" give the reason in at most 6 simple words.`,
+          `Never lecture, never add anything else. If the text is not English, set ok=false, fixed = a simple English version, tip = "Try in English".`,
+        ].join(`
+`);
+        function Ot(e) {
+          let t = e
+              .trim()
+              .replace(/^```(?:json)?\s*/i, ``)
+              .replace(/\s*```$/, ``),
+            n = null;
+          try {
+            n = JSON.parse(t);
+          } catch {
+            let e = t.match(/\{[\s\S]*\}/);
+            if (e)
+              try {
+                n = JSON.parse(e[0]);
+              } catch {}
+          }
+          if (!n) throw Error(`Teacher answer was not JSON`);
+          let r = String(n.fixed ?? ``).trim();
+          return {
+            ok: n.ok === !0 || !r,
+            fixed: r,
+            tip: String(n.tip ?? ``)
+              .trim()
+              .slice(0, 80),
+          };
+        }
+        var kt = [
+          `You are a friendly dictionary tutor for a Vietnamese learner of English (beginner to intermediate).`,
+          `The user sends an English word, phrase, idiom or sentence. They may also write Vietnamese to ask how to say something in English; then give the English word or phrase as "term".`,
+          `Return JSON with these fields:`,
+          `- term: the English word or phrase you explain, in its base form.`,
+          `- meaning: ONE sentence in very simple English, at most 20 words, no hard words.`,
+          `- vi: the Vietnamese meaning, at most 12 words.`,
+          `- example: one short natural example sentence, at most 12 words.`,
+          `- notes: one short tip (pronunciation, common mistake, or a related word), at most 15 words, or "" if there is nothing useful.`,
+          `If the input is a whole sentence, explain its hardest word or idiom and put a Vietnamese translation of the whole sentence in notes.`,
+          `Never refuse. If you cannot understand the input, set term to the input and meaning to "I do not understand. Try one word or phrase."`,
+        ].join(`
+`);
+        function At(e) {
+          let t = e
+              .trim()
+              .replace(/^```(?:json)?\s*/i, ``)
+              .replace(/\s*```$/, ``),
+            n = null;
+          try {
+            n = JSON.parse(t);
+          } catch {
+            let e = t.match(/\{[\s\S]*\}/);
+            if (e)
+              try {
+                n = JSON.parse(e[0]);
+              } catch {}
+          }
+          if (!n) throw Error(`The word helper did not answer clearly. Try again.`);
+          let r = (e, t) =>
+            String(e ?? ``)
+              .trim()
+              .slice(0, t);
+          return {
+            term: r(n.term, 60),
+            meaning: r(n.meaning, 220),
+            vi: r(n.vi, 140),
+            example: r(n.example, 160),
+            notes: r(n.notes, 200),
+          };
+        } /* LIFEQUEST NPC RESPONSE GUARD v11.1 — do not expose AI JSON or code as dialogue. */
+        function lqNpcExtractJson(value) {
+          if (value && typeof value === 'object') return value;
+          if (typeof value !== 'string') return null;
+          let text = value.trim();
+          for (let round = 0; round < 3; round++) {
+            text = text
+              .replace(/^```(?:json|javascript|js|text)?\s*\n?/i, '')
+              .replace(/\n?```\s*$/, '')
+              .trim();
+            try {
+              const parsed = JSON.parse(text);
+              if (typeof parsed === 'string') {
+                text = parsed.trim();
+                continue;
+              }
+              return parsed;
+            } catch {}
+            const begin = text.indexOf('{'),
+              end = text.lastIndexOf('}');
+            if (begin >= 0 && end > begin) {
+              try {
+                const parsed = JSON.parse(text.slice(begin, end + 1));
+                return parsed;
+              } catch {}
+            }
+            break;
+          }
+          return null;
+        }
+        function lqNpcSafeText(value, fallback = '') {
+          let raw = typeof value === 'string' ? value : String(value ?? '');
+          const orig = raw.trim();
+          if (!orig) return fallback;
+          let parsed = lqNpcExtractJson(orig);
+          if (parsed && typeof parsed === 'object') {
+            const content =
+              parsed.reply ?? parsed.greeting ?? parsed.message?.content ?? parsed.text;
+            if (typeof content === 'string' && content !== orig)
+              return lqNpcSafeText(content, fallback);
+            return fallback;
+          }
+          raw = orig
+            .replace(/^```(?:json|text|markdown)?\s*/i, '')
+            .replace(/\s*```$/, '')
+            .trim();
+          // Sometimes the provider emits malformed JSON with a valid reply property.
+          const embedded = raw.match(/["']reply["']\s*:\s*"((?:\\.|[^"\\])*)"/i);
+          if (embedded) {
+            try {
+              return lqNpcSafeText(JSON.parse('"' + embedded[1] + '"'), fallback);
+            } catch {}
+          }
+          // Do not display code blocks, JSON fields, markup documents or stack traces.
+          if (
+            /```|~~~|<\s*\/?\s*(?:script|style|html|!doctype|body|div|pre|code)\b|\b(?:SyntaxError|ReferenceError|TypeError|Traceback|at\s+\w+\s*\([^)]*:\d+)\b/i.test(
+              raw,
+            )
+          )
+            return fallback;
+          if (
+            /(?:^|[\r\n])\s*(?:(?:const|let|var|function|class|import|export|return|def|print|if|for|while)\s+[\w$]+\s*(?:[=(;:]|\{)|(?:\{\s*["']?(?:reply|goalDone|correction|role|parts|content)["']?\s*:)|(?:["']?(?:goalDone|affinityDelta|correction)["']?\s*:)|<\/?[A-Za-z][^>]*>)/m.test(
+              raw,
+            )
+          )
+            return fallback;
+          if (/^\s*[\[{]/.test(raw) && /[\]}]\s*$/.test(raw)) return fallback;
+          if (
+            /\b(?:console\.log|JSON\.parse|document\.getElementById|=>|```|\{\s*"reply"|\\n\s*"goalDone")/.test(
+              raw,
+            )
+          )
+            return fallback;
+          raw = raw
+            .replace(/^\s*(?:reply|greeting|answer)\s*:\s*/i, '')
+            .replace(/^['“”"]+|['“”"]+$/g, '');
+          raw = raw
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/__([^_]+)__/g, '$1')
+            .replace(/`([^`]+)`/g, '$1')
+            .trim();
+          raw = raw
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+          if (
+            !raw ||
+            /^[\[{]/.test(raw) ||
+            /[{}][\s]*["']?(?:goalDone|reply|correction)["']?\s*[:=]/i.test(raw)
+          )
+            return fallback;
+          return raw.slice(0, 380);
+        }
+        function jt(response, wasDone) {
+          const parsed = lqNpcExtractJson(response);
+          const failLine = 'Sorry, could you say that again?';
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            // Plain prose is allowed. Corrupted JSON and code never reach the player.
+            return {
+              reply: lqNpcSafeText(response, failLine),
+              correction: '',
+              goalDone: false,
+              remember: '',
+              affinityDelta: 0,
+            };
+          }
+          const reply = lqNpcSafeText(parsed.reply, failLine);
+          const ok = reply !== failLine;
+          const cleanExtra = (x) => lqNpcSafeText(x, '').slice(0, 180);
+          const delta = Number(parsed.affinityDelta);
+          return {
+            reply,
+            correction: cleanExtra(parsed.correction),
+            vietnameseTip: cleanExtra(parsed.vietnameseTip),
+            naturalAlternative: cleanExtra(parsed.naturalAlternative),
+            vocabulary: cleanExtra(parsed.vocabulary).slice(0, 90),
+            remember: ok ? cleanExtra(parsed.remember).slice(0, 130) : '',
+            goalDone: ok && !wasDone && parsed.goalDone === true,
+            affinityDelta:
+              ok && Number.isFinite(delta) ? Math.max(-3, Math.min(3, Math.round(delta))) : 0,
+          };
+        }
+
+        var Mt = 'gemini-2.5-flash';
+var Nt = `https://generativelanguage.googleapis.com/v1beta`;
+var Pt = '/api/gemini';
+var Ft = {
+            type: `OBJECT`,
+            properties: {
+              reply: { type: `STRING` },
+              correction: { type: `STRING` },
+              vietnameseTip: { type: `STRING` },
+              naturalAlternative: { type: `STRING` },
+              vocabulary: { type: `STRING` },
+              goalDone: { type: `BOOLEAN` },
+              remember: { type: `STRING` },
+              affinityDelta: { type: `INTEGER` },
+            },
+            required: [`reply`, `correction`, `goalDone`, `remember`, `affinityDelta`],
+          };
+var It = {
+            type: `OBJECT`,
+            properties: {
+              ok: { type: `BOOLEAN` },
+              fixed: { type: `STRING` },
+              tip: { type: `STRING` },
+            },
+            required: [`ok`, `fixed`, `tip`],
+          };
+var Lt = {
+            type: `OBJECT`,
+            properties: {
+              term: { type: `STRING` },
+              meaning: { type: `STRING` },
+              vi: { type: `STRING` },
+              example: { type: `STRING` },
+              notes: { type: `STRING` },
+            },
+            required: [`term`, `meaning`, `vi`, `example`, `notes`],
+          };
+var Rt = class {
+            apiKey;
+            viaProxy;
+            model;
+            useThinkingCfg = !0;
+            modelResolved = !1;
+            constructor(e, t = ``, n = !1) {
+              ((this.apiKey = e),
+                (this.viaProxy = n),
+                (this.model = t.trim() || `gemini-2.5-flash`));
+            }
+            async greet(e, t) {
+              return (
+                await this.generate({
+                  systemInstruction: {
+                    parts: [
+                      {
+                        text: `${Tt(e, t.memory.goalDone, t)}\n\n## Now\nThe player has just walked up to you. Greet them in character in ONE or TWO short sentences. If you know them, use your memory naturally. Output ONLY the greeting text.`,
+                      },
+                    ],
+                  },
+                  contents: [{ role: `user`, parts: [{ text: `*The player walks up to you.*` }] }],
+                  generationConfig: { temperature: 0.95 },
+                })
+              )
+                .trim()
+                .replace(/^["“]|["”]$/g, ``)
+                .slice(0, 300);
+            }
+            get label() {
+              return `Gemini (${this.model})`;
+            }
+            async respond(e, t, n, r, i) {
+              let a = [{ role: `user`, parts: [{ text: `*The player walks up to you.*` }] }];
+              for (let e of t.slice(-30))
+                a.push({ role: e.role === `user` ? `user` : `model`, parts: [{ text: e.text }] });
+              return (
+                a.push({ role: `user`, parts: [{ text: n }] }),
+                jt(
+                  await this.generate({
+                    systemInstruction: { parts: [{ text: Tt(e, r, i) }] },
+                    contents: a,
+                    generationConfig: {
+                      temperature: 0.9,
+                      responseMimeType: `application/json`,
+                      responseSchema: Ft,
+                    },
+                  }),
+                  r,
+                )
+              );
+            }
+            async summarize(e, t, n, r) {
+              let { system: i, user: a } = Et(e, t, n, r);
+              return (
+                await this.generate({
+                  systemInstruction: { parts: [{ text: i }] },
+                  contents: [{ role: `user`, parts: [{ text: a }] }],
+                  generationConfig: { temperature: 0.3 },
+                })
+              ).trim();
+            }
+            async check(e) {
+              return Ot(
+                await this.generate({
+                  systemInstruction: { parts: [{ text: Dt }] },
+                  contents: [{ role: `user`, parts: [{ text: e }] }],
+                  generationConfig: {
+                    temperature: 0,
+                    responseMimeType: `application/json`,
+                    responseSchema: It,
+                  },
+                }),
+              );
+            }
+            async explain(e) {
+              return At(
+                await this.generate({
+                  systemInstruction: { parts: [{ text: kt }] },
+                  contents: [{ role: `user`, parts: [{ text: e }] }],
+                  generationConfig: {
+                    temperature: 0.2,
+                    responseMimeType: `application/json`,
+                    responseSchema: Lt,
+                  },
+                }),
+              );
+            }
+            async test() {
+              return (
+                await this.generate({
+                  contents: [{ role: `user`, parts: [{ text: `Reply with the single word OK.` }] }],
+                  generationConfig: { temperature: 0 },
+                }),
+                this.model
+              );
+            }
+            async generate(e) {
+              let t = await this.post(e, this.useThinkingCfg);
+              if (
+                (t.status === 400 &&
+                  this.useThinkingCfg &&
+                  /think/i.test(await t.clone().text()) &&
+                  ((this.useThinkingCfg = !1), (t = await this.post(e, !1))),
+                t.status === 404 && !this.modelResolved)
+              ) {
+                this.modelResolved = !0;
+                let n = await this.pickModel();
+                n &&
+                  n !== this.model &&
+                  ((this.model = n), (t = await this.post(e, this.useThinkingCfg)));
+              }
+              if (!t.ok) {
+                // Keep the HTTP status (and Google's suggested wait for 429) on the error so the wrapper (dr in 07b)
+                // can tell a rate limit apart from a network hiccup.
+                let err = Error(await this.explainError(t));
+                err.status = t.status;
+                err.retryAfterSec = this.lastRetryAfterSec;
+                throw err;
+              }
+              let n = (await t.json()).candidates?.[0],
+                r = (n?.content?.parts ?? []).map((e) => e.text ?? ``).join(``);
+              if (!r)
+                throw Error(
+                  n?.finishReason ? `Empty answer (${n.finishReason})` : `Empty answer from Gemini`,
+                );
+              return r;
+            }
+            post(e, t) {
+              // 2.5 flash: thinkingBudget 0 (hidden thinking tokens could empty the reply); 3.x: thinkingLevel low.
+              // If a model rejects it (400 mentioning "think"), generate() retries once without it.
+              let think = t ? window.LQGemini.thinkingConfig(this.model) : null;
+              let n = {
+                ...e.generationConfig,
+                ...(think ? { thinkingConfig: think } : {}),
+              };
+              return this.viaProxy
+                ? fetch(Pt, {
+                    method: `POST`,
+                    headers: { 'Content-Type': `application/json` },
+                    body: JSON.stringify({
+                      model: this.model,
+                      body: { ...e, generationConfig: n },
+                    }),
+                    signal: AbortSignal.timeout(3e4),
+                  })
+                : fetch(`${Nt}/models/${this.model}:generateContent`, {
+                    method: `POST`,
+                    headers: { 'Content-Type': `application/json`, 'x-goog-api-key': this.apiKey },
+                    body: JSON.stringify({ ...e, generationConfig: n }),
+                    signal: AbortSignal.timeout(3e4),
+                  });
+            }
+            async pickModel() {
+              if (this.viaProxy) return null;
+              try {
+                let e = await fetch(`${Nt}/models?pageSize=200`, {
+                  headers: { 'x-goog-api-key': this.apiKey },
+                });
+                if (!e.ok) return null;
+                let t = ((await e.json()).models ?? [])
+                  .filter((e) => e.supportedGenerationMethods?.includes(`generateContent`))
+                  .map((e) => e.name.replace(/^models\//, ``))
+                  .filter(
+                    (e) =>
+                      /flash/.test(e) &&
+                      !/image|tts|live|audio|embed|exp|thinking|robotics|computer/.test(e),
+                  );
+                return (
+                  t.find((e) => /lite/.test(e) && !/preview/.test(e)) ??
+                  t.find((e) => !/preview/.test(e)) ??
+                  t[0] ??
+                  null
+                );
+              } catch {
+                return null;
+              }
+            }
+            async explainError(e) {
+              let t = ``;
+              this.lastRetryAfterSec = 0;
+              try {
+                let body = (await e.json()).error ?? {};
+                t = body.message ?? ``;
+                // A 429 usually carries RetryInfo with a delay like "23s".
+                let info = (body.details ?? []).find((d) => /RetryInfo/.test(d?.[`@type`] ?? ``));
+                let secs = parseFloat(info?.retryDelay ?? ``);
+                if (Number.isFinite(secs) && secs > 0) this.lastRetryAfterSec = Math.ceil(secs);
+              } catch {}
+              return e.status === 429
+                ? `Free-tier limit reached. Wait a minute and try again.`
+                : e.status === 400 && /api key/i.test(t)
+                  ? `The API key is not valid.`
+                  : e.status === 403
+                    ? `Access denied (check the API key or region). ${t}`.trim()
+                    : `Gemini error ${e.status}${t ? `: ${t.slice(0, 160)}` : ``}`;
+            }
+          };
+var zt = class {
+            store;
+            root = document.getElementById(`settings`);
+            keyInput = this.root.querySelector(`#ai-key`);
+            modelInput = this.root.querySelector(`#ai-model`);
+            status = this.root.querySelector(`.status`);
+            onSaved = () => {};
+            constructor(e) {
+              ((this.store = e), (this.modelInput.placeholder = Mt));
+              for (let e of [this.keyInput, this.modelInput])
+                (e.addEventListener(`keydown`, (e) => {
+                  (e.stopPropagation(), e.key === `Escape` && this.toggle());
+                }),
+                  e.addEventListener(`keyup`, (e) => e.stopPropagation()));
+              (this.root.querySelector(`#ai-save`).addEventListener(`click`, () => this.save()),
+                this.root
+                  .querySelector(`#ai-test`)
+                  .addEventListener(`click`, () => void this.test()),
+                this.root.querySelector(`#ai-clear`).addEventListener(`click`, () => this.clear()),
+                this.root
+                  .querySelector(`#ai-close`)
+                  .addEventListener(`click`, () => this.toggle()));
+              let t = this.root.querySelector(`#save-file`);
+              (this.root
+                .querySelector(`#save-export`)
+                .addEventListener(`click`, () => this.exportSave()),
+                this.root.querySelector(`#save-import`).addEventListener(`click`, () => t.click()),
+                t.addEventListener(`change`, () => void this.importSave(t)));
+            }
+            exportSave() {
+              this.store.save();
+              let e = URL.createObjectURL(
+                  new Blob([this.store.exportJson()], { type: `application/json` }),
+                ),
+                t = document.createElement(`a`);
+              ((t.href = e),
+                (t.download = `english-town-save-${new Date().toISOString().slice(0, 10)}.json`),
+                t.click(),
+                URL.revokeObjectURL(e),
+                this.setStatus(`Save exported. Keep the file somewhere safe.`, !0));
+            }
+            async importSave(e) {
+              let t = e.files?.[0];
+              if (((e.value = ``), t && confirm(`Replace your current progress with this file?`)))
+                try {
+                  (this.store.importJson(await t.text()),
+                    this.setStatus(`Imported! Reloading...`, !0),
+                    setTimeout(() => location.reload(), 600));
+                } catch (e) {
+                  this.setStatus(
+                    e instanceof SyntaxError ? `This file is not valid JSON.` : e.message,
+                    !1,
+                  );
+                }
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            toggle() {
+              if (this.isOpen) {
+                this.root.style.display = `none`;
+                return;
+              }
+              let e = vt();
+              ((this.keyInput.value = e.geminiKey),
+                (this.modelInput.value = e.geminiModel),
+                this.setStatus(
+                  e.geminiKey
+                    ? `A key is saved. NPCs use Gemini.`
+                    : `No key yet. NPCs use simple offline replies.`,
+                ),
+                (this.root.style.display = `block`),
+                setTimeout(() => this.keyInput.focus(), 0));
+            }
+            setStatus(e, t) {
+              ((this.status.textContent = e),
+                (this.status.style.color = t === void 0 ? `#aab` : t ? `#8fe08f` : `#ff8a8a`));
+            }
+            save() {
+              (yt({
+                geminiKey: this.keyInput.value.trim(),
+                geminiModel: this.modelInput.value.trim(),
+              }),
+                this.setStatus(`Saved.`, !0),
+                this.onSaved());
+            }
+            clear() {
+              ((this.keyInput.value = ``),
+                this.save(),
+                this.setStatus(`Key removed. NPCs use simple offline replies.`));
+            }
+            async test() {
+              let e = this.keyInput.value.trim();
+              if (!e) {
+                this.setStatus(`Paste your API key first.`, !1);
+                return;
+              }
+              this.setStatus(`Testing...`);
+              try {
+                let t = await new Rt(e, this.modelInput.value).test();
+                this.setStatus(`Connected! Model: ${t}. Press Save to use it.`, !0);
+              } catch (e) {
+                this.setStatus(e.message, !1);
+              }
+            }
+          };
+var Bt = clas

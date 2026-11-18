@@ -1,0 +1,1875 @@
+      g.fillStyle(0xffffff, 0.2).fillRect(9, 23, 5, 1);
+          }
+          if (c.glasses) {
+            g.fillStyle(0xd7f1ff, 0.19).fillRect(8, 13, 2, 1);
+          }
+          // Extra hair styles and a backpack for the character creator.
+          const hairColor = typeof c.hair === 'number' ? c.hair : 0x5a3b2a;
+          const isSide = dir === 'side',
+            isDiag = dir === 'dside' || dir === 'uside',
+            isBack = dir === 'up' || dir === 'uside',
+            dx = isDiag ? 0.5 : 0;
+          if (c.style === 'bob') {
+            if (isBack) Lr(g, 4, 10, isDiag ? 15 : 16, 10, hairColor);
+            else if (isSide) Lr(g, 4, 10, 6, 9, hairColor);
+            else {
+              Lr(g, 2, 10, 4, 9, hairColor);
+              Lr(g, 18, 10, 4, 9, hairColor);
+            }
+          } else if (c.style === 'ponytail') {
+            if (isBack) Lr(g, 10, 14, 4, 12, hairColor);
+            else if (isSide) Lr(g, 4, 11, 3, 10, hairColor);
+            else Lr(g, 19, 12, 3, 8, hairColor);
+          } else if (c.style === 'spiky' && !c.hat) {
+            g.fillStyle(hairColor, 1);
+            for (const k of [-6, -2, 2, 6])
+              g.fillTriangle(12 + dx + k - 2.5, 5, 12 + dx + k + 2.5, 5, 12 + dx + k, 0);
+          } else if (c.style === 'curly' && !c.hat) {
+            for (const [cx, cy] of [
+              [5, 7],
+              [19, 7],
+              [8, 3],
+              [16, 3],
+              [12, 2],
+            ])
+              Rr(g, cx + dx, cy, 3.5, hairColor);
+          }
+          // Head details of a kimono wearer follow the raised head (see zr).
+          if (c.kimono) g.translateCanvas(0, -1);
+          // Glowing eyes: a white spark and a pale lower highlight so a light eye colour reads as luminous.
+          if (c.eyeGlow && typeof c.eye === 'number' && dir !== 'up' && dir !== 'uside') {
+            const exs = isSide ? [17] : isDiag ? [11, 16] : [8, 14];
+            for (const ex of exs) {
+              g.fillStyle(c.eye, 1).fillRect(ex, 13, 2, 3);
+              g.fillStyle(0xffffff, 1).fillRect(ex, 13, 1, 1);
+              g.fillStyle(0xc9f4ff, 1).fillRect(ex + 1, 15, 1, 1);
+            }
+          }
+          // Four eyes: the second pair is small and sits out on the cheeks, away from the centre of the face.
+          if (c.extraEyes && typeof c.eye === 'number' && dir !== 'up' && dir !== 'uside') {
+            const lowers = isSide ? [[14, 16]] : isDiag ? [[9, 16], [19, 16]] : [[6, 16], [16, 16]];
+            for (const [ex, ey] of lowers) g.fillStyle(c.eye, 1).fillRect(ex, ey, 2, 1);
+          }
+          // Face markings: a stripe beside each main eye, one on each cheek, a bar across the nose and a dash on
+          // the forehead.
+          if (c.faceMarks && dir !== 'up' && dir !== 'uside') {
+            g.fillStyle(0x23181c, 1);
+            if (isSide) g.fillRect(11, 14, 2, 1).fillRect(11, 18, 3, 1).fillRect(16, 10, 1, 2);
+            else if (isDiag)
+              g.fillRect(8, 14, 2, 1).fillRect(18, 14, 2, 1).fillRect(10, 18, 2, 1).fillRect(17, 18, 2, 1).fillRect(13, 14, 3, 1).fillRect(14, 10, 1, 2);
+            else g.fillRect(5, 14, 3, 1).fillRect(16, 14, 3, 1).fillRect(6, 18, 3, 1).fillRect(15, 18, 3, 1).fillRect(10, 14, 4, 1).fillRect(12, 10, 1, 2);
+          }
+          if (c.kimono) g.translateCanvas(0, 1);
+          // Kimono: one long robe down to the ankles (it hides the legs; only the feet peek out, and they step with
+          // the walk frames), an open V neckline showing the chest, a wide black sash and wide sleeves.
+          if (c.kimono) {
+            // Palette from the reference: white robe, navy borders/scarf, a thin blue-grey sash with a diamond pattern.
+            const navy = 0x2a3558,
+              deep = 0x151a2a,
+              obi = 0x3a4d73,
+              obiHi = 0x86a0c8;
+            const robe = typeof c.outfit === 'number' ? c.outfit : 0xe9e4d6;
+            // Thin patterned sash (2 rows, no heavy outline): light diamond pixels on a blue-grey band.
+            const sash = (x0, x1, y) => {
+              g.fillStyle(obi, 1).fillRect(x0, y, x1 - x0, 2);
+              g.fillStyle(deep, 1).fillRect(x0, y + 2, x1 - x0, 1);
+              g.fillStyle(obiHi, 1);
+              for (let x = x0 + 1; x < x1 - 1; x += 3) g.fillRect(x + 1, y, 1, 1).fillRect(x, y + 1, 1, 1).fillRect(x + 2, y + 1, 1, 1);
+            };
+            // Scarf around the neck, just under the chin (the mouth row stays visible).
+            const scarf = (x, w) => {
+              g.fillStyle(navy, 1).fillRect(x, 19, w, 2);
+              g.fillStyle(deep, 1).fillRect(x, 21, w, 1);
+            };
+            const poly = (pts, color) => {
+              g.beginPath();
+              g.moveTo(pts[0], pts[1]);
+              for (let k = 2; k < pts.length; k += 2) g.lineTo(pts[k], pts[k + 1]);
+              g.closePath();
+              g.fillStyle(color, 1);
+              g.fillPath();
+              g.lineStyle(1, Fr, 1);
+              g.strokePath();
+            };
+            // Skirt of the robe: a plain, nearly straight fall to the ankles (it hides the legs).
+            if (isSide) poly([7, 26, 17, 26, 18.5, 34, 5.5, 34], robe);
+            else poly([5 + dx, 26, 19 + dx, 26, 20 + dx, 34, 4 + dx, 34], robe);
+            // Feet (black zori) just under the hem; one lifts per walk frame.
+            g.fillStyle(0x1f1a1a, 1);
+            if (isSide) g.fillRect(12, 34 - (frame === 1 ? 1 : 0), 4, 2).fillRect(6, 34 - (frame === 2 ? 1 : 0), 4, 2);
+            else g.fillRect(7 + dx, 34 - (frame === 1 ? 1 : 0), 3, 2).fillRect(14 + dx, 34 - (frame === 2 ? 1 : 0), 3, 2);
+            if (isBack) {
+              scarf(6 + dx, 12);
+              sash(5 + dx, 19 + dx, 26);
+              g.fillStyle(navy, 1).fillRect(10 + dx, 24, 4, 2);
+            } else if (isSide) {
+              scarf(9, 10);
+              sash(7, 17, 26);
+              g.fillStyle(navy, 1).fillRect(14, 29, 1, 5);
+            } else {
+              scarf(6 + dx, 12);
+              // Open V neckline with navy borders, the sash, then the navy front band down to the hem.
+              g.fillStyle(c.skin, 1).fillTriangle(8 + dx, 22, 16 + dx, 22, 12 + dx, 25);
+              g.lineStyle(2, navy, 1);
+              g.lineBetween(8 + dx, 21.5, 12 + dx, 25.5);
+              g.lineBetween(16 + dx, 21.5, 12 + dx, 25.5);
+              sash(5 + dx, 19 + dx, 26);
+              g.fillStyle(navy, 1).fillRect(11 + dx, 29, 2, 5);
+            }
+            // Arms folded in the sleeves: the two sleeves cross the belly and meet in the middle, each ending in a
+            // navy cuff (the hands are hidden). They stay still while walking. From behind they just hang.
+            if (isSide) {
+              Lr(g, 7, 22, 12, 5, robe);
+              g.fillStyle(navy, 1).fillRect(18, 22, 1, 5);
+            } else if (isBack) {
+              Lr(g, 0, 20, 6, 9, robe);
+              Lr(g, 18, 20, 6, 9, robe);
+              g.fillStyle(navy, 1).fillRect(0, 28, 6, 1).fillRect(18, 28, 6, 1);
+            } else if (!isDiag) {
+              Lr(g, 0, 19, 5, 4, robe);
+              Lr(g, 19, 19, 5, 4, robe);
+              Lr(g, 1, 22, 22, 5, robe);
+              g.fillStyle(navy, 1).fillRect(8, 22, 1, 5).fillRect(15, 22, 1, 5);
+            }
+          }
+          // Jujutsu-style uniform: black jacket with a tall stand collar that covers the mouth and chin, a hidden
+          // centre placket and a thin purple-black trim along the collar rim and the hem.
+          if (c.uniform) {
+            const base = typeof c.outfit === 'number' ? c.outfit : 0x14141b;
+            const collar = Ir(base, 1.25);
+            // Purple-black trim in three tones: bright rim, mid line and a dark shadow line under it.
+            // A look can carry its own trim colour (Megumi: steel blue); otherwise the purple of the Gojo uniform.
+            const tr = typeof c.trim === 'number' ? c.trim : null;
+            const rim = tr === null ? 0x7a4cc0 : Ir(tr, 1.5),
+              mid = tr === null ? 0x5a3b8c : tr,
+              shade = tr === null ? 0x2e1f47 : Ir(tr, 0.4);
+            // The collar starts one row below the cheeks (y=18, the mouth row) so only the lower face is covered.
+            if (isBack) {
+              Lr(g, 6 + dx, 18, 12, 4, collar);
+              g.fillStyle(rim, 1).fillRect(7 + dx, 18, 10, 1);
+              g.fillStyle(shade, 1).fillRect(7 + dx, 19, 10, 1);
+            } else if (isSide) {
+              // Wraps the jaw but flows back into the torso (x 7..17) instead of sticking out like a box.
+              Lr(g, 8, 18, 12, 4, collar);
+              g.fillStyle(rim, 1).fillRect(9, 18, 10, 1);
+              g.fillStyle(shade, 1).fillRect(9, 19, 10, 1);
+              g.fillStyle(mid, 1).fillRect(9, 21, 6, 1);
+            } else {
+              Lr(g, 5 + dx, 18, 14, 4, collar);
+              g.fillStyle(rim, 1).fillRect(6 + dx, 18, 12, 1);
+              g.fillStyle(shade, 1).fillRect(6 + dx, 19, 12, 1);
+              g.fillStyle(mid, 1).fillRect(6 + dx, 20, 1, 2).fillRect(17 + dx, 20, 1, 2);
+              g.fillStyle(shade, 1).fillRect(12, 20, 1, 8);
+              // Pocket slits: the hands are tucked in.
+              g.fillStyle(shade, 1).fillRect(7 + dx, 25, 3, 1).fillRect(14 + dx, 25, 3, 1);
+              g.fillStyle(mid, 1).fillRect(12, 22, 1, 1).fillRect(12, 25, 1, 1);
+              g.fillStyle(mid, 1).fillRect(7 + dx, 27, 10, 1);
+              g.fillStyle(shade, 1).fillRect(7 + dx, 28, 10, 1);
+            }
+          }
+          if (c.kimono) g.translateCanvas(0, -1);
+          // Blindfold (drawn under the hair so loose strands fall over it).
+          if (c.blindfold) {
+            g.fillStyle(0x14141c, 1);
+            if (isBack) g.fillRect(3 + dx, 12, 18, 2);
+            else if (isSide) g.fillRect(13, 12, 8, 4);
+            else if (isDiag) g.fillRect(8, 12, 13, 4);
+            else g.fillRect(4, 12, 16, 4);
+          }
+          // Anime-inspired hairstyles (see __lqHairSpecs).
+          __lqDrawHair(g, c, dir, dx);
+          if (c.kimono) g.translateCanvas(0, 1);
+          if (c.backpack) {
+            const bag = typeof c.backpack === 'number' ? c.backpack : 0x8a4b2a;
+            if (isBack) Lr(g, 6, 19, 12, 11, bag);
+            else if (isSide) Lr(g, 2, 20, 6, 10, bag);
+            else g.fillStyle(bag, 1).fillRect(7, 19, 2, 8).fillRect(15, 19, 2, 8);
+          }
+        };
+        var Br = [`down`, `up`, `side`, `dside`, `uside`];
+        function Vr(e, t, n) {
+          for (let r of Br)
+            for (let i = 0; i < 3; i++) {
+              let a = `ch_${t}_${r}_${i}`;
+              if (e.textures.exists(a)) continue;
+              let o = e.add.graphics();
+              (zr(o, n, r, i),
+                o.generateTexture(a, 24, 38),
+                o.destroy(),
+                e.textures.get(a).setFilter(Y.Textures.FilterMode.NEAREST));
+            }
+        }
+        // Custom looks get 12 extra pixels above the head so tall spikes are not cut off by the 38px sprite.
+        const __LQ_PAD = 12;
+        function VrTall(e, t, n, pad) {
+          for (let r of Br)
+            for (let i = 0; i < 3; i++) {
+              let a = `ch_${t}_${r}_${i}`;
+              if (e.textures.exists(a)) continue;
+              let o = e.add.graphics();
+              (o.translateCanvas(0, pad),
+                zr(o, n, r, i),
+                o.generateTexture(a, 24, 38 + pad),
+                o.destroy(),
+                e.textures.get(a).setFilter(Y.Textures.FilterMode.NEAREST));
+            }
+        }        // ---- Character creator support: turn the player's saved "look" into a sprite description ----
+        // Hairstyles were renamed; looks saved under the old names keep working.
+        const __lqStyleAlias = { gojo: 'storm', itadori: 'scruffy', megumi: 'thorn', nobara: 'flare', maki: 'highpony', geto: 'longbun', nanami: 'swept', sukuna: 'blaze', yuta: 'tousled', toji: 'crop' };
+        const __lqStyle = (s) => __lqStyleAlias[s] || s || 'short';
+        function __lqLookKey(l) {
+          const s = JSON.stringify([
+            l.skin,
+            l.hair,
+            __lqStyle(l.style),
+            l.eye,
+            l.outfit,
+            l.pants,
+            l.hat && [l.hat.kind, l.hat.color],
+            !!l.glasses,
+            !!l.dress,
+            l.backpack || 0,
+            !!l.blindfold,
+            !!l.collar,
+            l.tie || 0,
+            !!l.uniform,
+            !!l.eyeGlow,
+            l.aura === 'infinity',
+            !!l.extraEyes,
+            !!l.faceMarks,
+            !!l.kimono,
+            l.trim || 0,
+            !!l.riding,
+          ]);
+          let h = 5381;
+          for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+          return 'pl' + h.toString(36);
+        }
+        function __lqLookToAppearance(l) {
+          return {
+            skin: l.skin,
+            hair: l.hair,
+            style: __lqStyle(l.style),
+            eye: l.eye,
+            outfit: l.outfit,
+            pants: l.pants,
+            hat: l.hat ? { kind: l.hat.kind, color: l.hat.color } : undefined,
+            glasses: !!l.glasses,
+            dress: !!l.dress,
+            backpack: l.backpack || undefined,
+            blindfold: !!l.blindfold,
+            collar: !!l.collar,
+            tie: l.tie || undefined,
+            uniform: !!l.uniform,
+            eyeGlow: !!l.eyeGlow,
+            // Infinity users glide: they hover above the ground with their legs trailing behind.
+            glide: l.aura === 'infinity',
+            extraEyes: !!l.extraEyes,
+            faceMarks: !!l.faceMarks,
+            kimono: !!l.kimono,
+            trim: l.trim || undefined,
+            riding: !!l.riding,
+          };
+        }
+        window.LQCharacter = {
+          pad: __LQ_PAD,
+          size: { w: 24, h: 38 + __LQ_PAD },
+          keyFor: __lqLookKey,
+          appearance: __lqLookToAppearance,
+          ensure(scene, look) {
+            const key = __lqLookKey(look);
+            VrTall(scene, key, __lqLookToAppearance(look), __LQ_PAD);
+            return key;
+          },
+          imageFor(scene, look, dir = 'down', frame = 0) {
+            const key = this.ensure(scene, look);
+            return scene.textures.get(`ch_${key}_${dir}_${frame}`).getSourceImage();
+          },
+        };
+        function Hr(e, t, n) {
+          let r = Math.abs(t),
+            i = Math.abs(n);
+          (r < 0.01 && i < 0.01) ||
+            (i < r * 0.4
+              ? ((e.dir = `side`), (e.flip = t < 0))
+              : r < i * 0.4
+                ? (e.dir = n < 0 ? `up` : `down`)
+                : ((e.dir = n < 0 ? `uside` : `dside`), (e.flip = t < 0)));
+        }
+        function Ur(e, t, n, r) {
+          // Sprites flagged lqSlow (kimono wearers) change walk frame 2.4x less often: a slow, dignified pace.
+          let i = r ? 1 + (Math.floor(n.phase / (e.lqSlow ? 24 : 10)) % 2) : 0,
+            a = `ch_${t}_${n.dir}_${i}`;
+          (e.texture.key !== a && e.setTexture(a),
+            e.setFlipX(n.flip && n.dir !== `down` && n.dir !== `up`));
+        }
+        var Wr = 34;
+var Gr = 0.68;
+var Kr = 1;
+var qr = 6;
+var Jr = 90;
+var Yr = 2e4;
+var Xr = 0;
+var Zr = (e) => e >= 1140 || e < 300;
+var Qr = class extends Y.Scene {
+            area;
+            player;
+            playerKey = `player0`;
+            pFace = Or();
+            pMoving = !1;
+            badge;
+            keys;
+            npcs = [];
+            chat;
+            journal;
+            settings;
+            helper;
+            briefing;
+            quests;
+            store = new Be();
+            walls = [];
+            areaObjs = [];
+            switching = !1;
+            dimAlpha = 0;
+            groupBtn = document.getElementById(`group-btn`);
+            groupMenu = document.getElementById(`group-menu`);
+            hud;
+            prompt;
+            dim;
+            ticks = 0;
+            inside = null;
+            doorCooldown = 0;
+            sleeping = !1;
+            constructor() {
+              super(`Town`);
+            }
+            create() {
+              this.store.load();
+              // Free exploration build: Art District is available on every save (old or new).
+              // Only the map access flag changes; NPC missions and achievements are untouched.
+              if (!this.store.game.artDistrictUnlocked) {
+                this.store.game.artDistrictUnlocked = true;
+                this.store.save();
+              }
+              let e = this.store.game;
+              // Development-only map preview (?preview=art-district). It changes the in-memory starting scene, not the saved unlocks.
+              try {
+                this.artDistrictPreview = new URLSearchParams(location.search).get(`preview`) === `art-district`;
+              } catch { this.artDistrictPreview = !1; }
+              this.area = this.artDistrictPreview ? we(`art-district`) : we(e.area);
+              if (!this.artDistrictPreview) e.area = this.area.id;
+              for (let e of De()) console.warn(`[area]`, e);
+              this.chat = new ft(new lr(), this.store, (t) => {
+                let n = this.npcs.find((e) => e.def.id === t.id),
+                  r =
+                    n &&
+                    (n.inside
+                      ? this.area.places[n.slot.place]
+                      : { x: Math.floor(n.sprite.x / 32), y: Math.floor(n.sprite.y / 32) });
+                return {
+                  day: e.day,
+                  minutes: e.minutes,
+                  activity: n?.slot.label ?? `in town`,
+                  rep: e.rep,
+                  here: r,
+                };
+              });
+              let t = () =>
+                void Promise.resolve(window.__lqModelReady)
+                  .catch(() => {})
+                  .then(() => pr())
+                  .then((e) => {
+                    this.chat.setProvider(e);
+                  });
+              (t(),
+                (this.helper = new ut(this.store, () => this.chat.currentProvider)),
+                (this.briefing = new Bt()),
+                (this.settings = new zt(this.store)),
+                (this.settings.onSaved = t),
+                (this.chat.onGoalDone = (e) => this.gain(e.goal.reward, e.goal.rep)),
+                (this.journal = new gt(this.store)),
+                (this.quests = new un(this.store, this.area)),
+                (this.quests.onReward = (e) => this.gain(e.reward.money, e.reward.rep)),
+                (this.chat.onSaid = (e, t) => {
+                  const oldMessages = this.quests.onSaid(e.id, t);
+                  this.checkArtDistrictAccess();
+                  const extra = adventure.onNpcMessage(e.id, t);
+                  // Ten Shadows quest (tenshadows.js): legends and clues; runs before the quest panel hears about this message.
+                  let shadowLines = [];
+                  try {
+                    shadowLines = (window.LQTenShadows && window.LQTenShadows.onNpcMessage(e.id, t, this.area.id)) || [];
+                  } catch (err) {
+                    console.warn('Ten Shadows hook', err);
+                  }
+                  // The Old Map (oldmap.js): Ms. Green's map, the three relics and the past-tense report (Chapter 2).
+                  try {
+                    shadowLines = shadowLines.concat(
+                      (window.LQOldMap && window.LQOldMap.onNpcMessage(e.id, t, this.area.id)) || [],
+                    );
+                  } catch (err) {
+                    console.warn('Old Map hook', err);
+                  }
+                  try {
+                    window.LQV8?.onEvent('npc', { npc: e.id, text: t, area: this.area.id });
+                    window.LQStory?.onNpc?.(e.id, t, this.area.id);
+                  } catch (err) {
+                    console.warn('V8 NPC event', err);
+                  }
+                  return [...oldMessages, ...extra, ...shadowLines];
+                }));
+              let n = mt(e.rep);
+              ((this.playerKey = `player${n.idx}`), Vr(this, this.playerKey, Pr(n.color)));
+              let r = ce(this.area.spawn.x, this.area.spawn.y);
+              ((this.player = this.add
+                .image(r.x, r.y, `ch_${this.playerKey}_down_0`)
+                .setOrigin(0.5, Gr)
+                .setDepth(10)),
+                (this.badge = this.add
+                  .text(0, 0, ``, { fontSize: `16px` })
+                  .setOrigin(0.5, 1)
+                  .setDepth(11)),
+                this.applyRankLook(),
+                this.buildArea(),
+                adventure.restorePosition(this),
+                this.unstick(),
+                this.fitCamera(),
+                this.cameras.main.startFollow(this.player, !0, 0.1, 0.1),
+                this.scale.on(`resize`, () => {
+                  this.inside || this.fitCamera();
+                }),
+                (this.keys = this.input.keyboard.addKeys(`W,A,S,D,UP,DOWN,LEFT,RIGHT`)),
+                this.input.keyboard.on(`keydown-E`, () => this.tryTalk()),
+                window.addEventListener(`keydown`, (e) => {
+                  this.chat.isOpen ||
+                    this.settings.isOpen ||
+                    this.briefing.isOpen ||
+                    this.helper.isOpen ||
+                    this.journal.isOpen ||
+                    this.quests.isOpen ||
+                    (e.key === `h` || e.key === `H`
+                      ? this.act(`helper`)
+                      : e.key === `j` || e.key === `J`
+                        ? this.act(`journal`)
+                        : e.key === `k` || e.key === `K`
+                          ? this.act(`settings`)
+                          : e.key === `q` || e.key === `Q`
+                            ? this.act(`quests`)
+                            : e.key === `F8`
+                              ? this.act(`reset`)
+                              : e.key === `g` || e.key === `G`
+                                ? this.toggleGroup()
+                                : e.key === `Escape` && this.toggleGroup(!1));
+                }),
+                this.groupBtn.addEventListener(`click`, () => {
+                  (this.toggleGroup(), this.groupBtn.blur());
+                }),
+                this.groupMenu.querySelectorAll(`button[data-act]`).forEach((e) => {
+                  e.addEventListener(`click`, () => {
+                    (e.blur(), this.toggleGroup(!1), this.act(e.dataset.act));
+                  });
+                }),
+                window.addEventListener(`beforeunload`, () => {
+                  if (this.inside && this.store.game.rpg) {
+                    this.store.game.rpg.lastInterior = {
+                      area: this.area.id,
+                      building: this.inside.b.name,
+                      floor: this.inside.floor || 0,
+                      tx: +((this.player.x - Yr) / (32 * this.inside.k)).toFixed(3),
+                      ty: +((this.player.y - Xr) / (32 * this.inside.k)).toFixed(3),
+                    };
+                  }
+                  this.store.save();
+                }),
+                (this.hud = this.add
+                  .text(8, 8, ``, {
+                    fontSize: `15px`,
+                    color: `#fff`,
+                    backgroundColor: `#000a`,
+                    padding: { x: 6, y: 4 },
+                  })
+                  .setScrollFactor(0)
+                  .setDepth(100)
+                  .setVisible(!1)),
+                (this.prompt = this.add
+                  .text(0, 0, ``, { fontSize: `13px`, color: `#ffd36b`, backgroundColor: `#000b` })
+                  .setOrigin(0.5)
+                  .setDepth(12)
+                  .setVisible(!1)),
+                this.time.addEvent({ delay: 1e3, loop: !0, callback: () => this.tickClock() }),
+                attachTownScene(this),
+                __lqV7RestoreInterior(this),
+                this.events.once(`shutdown`, () => detachTownScene(this)));
+            }
+            toggleGroup(e = !this.groupMenu.classList.contains(`open`)) {
+              (this.groupMenu.classList.toggle(`open`, e), this.groupBtn.classList.toggle(`on`, e));
+            }
+            act(e) {
+              if (!(this.chat.isOpen || this.settings.isOpen || this.briefing.isOpen)) {
+                if (e === `helper`) {
+                  this.sleeping || this.helper.toggle();
+                  return;
+                }
+                this.helper.isOpen ||
+                  (e === `journal`
+                    ? this.journal.toggle()
+                    : e === `settings`
+                      ? this.settings.toggle()
+                      : e === `quests`
+                        ? this.quests.toggle()
+                        : e === `reset`
+                          ? confirm(`Erase ALL progress and NPC memories?`) &&
+                            (this.store.reset(), location.reload())
+                          : e === `talk` &&
+                            (!this.inside && this.doorAhead() && this.doorCooldown <= 0
+                              ? this.enterBuilding(this.doorAhead())
+                              : this.nearestNpc(this.inside ? 56 * this.inside.k : 48) ||
+                                  this.bedNear() ||
+                                  this.portalNear()
+                                ? this.tryTalk()
+                                : this.quests.toast([
+                                    `💬 Nobody is close enough.`,
+                                    `Walk up to someone, or stand at a door, then press Talk (E).`,
+                                  ])));
+              }
+            }
+            // Chapter 2 (js/past.js) counts as the historical requirement: the village of 70 years ago has no
+            // per-NPC missions (its npcs list is empty), so finishing the chapter is what is checked.
+            artHistoryDone() {
+              if (window.LQPast && typeof window.LQPast.isDone === `function`) return !!window.LQPast.isDone();
+              return !0;
+            }
+            checkArtDistrictAccess() {
+              const game = this.store.game;
+              if (game.artDistrictUnlocked || this.artDistrictPreview) return !0;
+
+              // These are the original progression quotas. The wandering artists do not count as town missions.
+              const countDone = (areaId, excluded = []) =>
+                Te(we(areaId)).filter((npc) => !excluded.includes(npc.id) && this.store.get(npc.id).goalDone).length;
+              const englishDone = countDone(`english-town`, [`rook`]);
+              const mineralsDone = countDone(`mining-town`, [`vex`, `morrow`]);
+              const historyDone = this.artHistoryDone();
+              const guideIds = [`rook`, `vex`, `morrow`];
+              const marksDone = guideIds.filter((id) => this.store.get(id).goalDone).length;
+              const unlocked = englishDone >= 4 && mineralsDone >= 3 && marksDone === 3 && historyDone;
+
+              if (unlocked) {
+                game.artDistrictUnlocked = !0;
+                this.store.save();
+                this.quests?.toast([
+                  `🎨 THE THREE MARKS ARE COMPLETE`,
+                  `Rook, Vex and Morrow have revealed the forgotten freight route.`,
+                  `The hidden tunnel in Minerals Town is now open.`,
+                ]);
+                // The entrance label was intentionally hidden until now; reveal it without rebuilding the map.
+                const warp = this.area?.id === `mining-town`
+                  ? this.area.warps.find((item) => item.requiresArtDistrict)
+                  : null;
+                if (warp && this.add && this.areaObjs) {
+                  const label = this.add.text((warp.x + warp.w / 2) * 32, warp.y * 32 - 8, warp.label, {
+                    fontSize: `12px`, color: `#ffda72`, backgroundColor: `#18202beF`, padding: { x: 5, y: 3 },
+                  }).setOrigin(0.5, 1).setDepth(12);
+                  this.areaObjs.push(label);
+                }
+              }
+              return unlocked;
+            }
+            gain(e, t) {
+              let n = this.store.game,
+                r = mt(n.rep);
+              ((n.money += e), (n.rep += t));
+              let i = mt(n.rep);
+              (i.idx > r.idx &&
+                (this.quests.toast([`${i.icon} NEW TITLE: ${i.title}!`, i.perk]),
+                this.cameras.main.flash(500, 255, 230, 120)),
+                this.applyRankLook(),
+                this.store.save());
+            }
+            applyRankLook() {
+              let e = mt(this.store.game.rep);
+              const __look = this.store.game.rpg && this.store.game.rpg.look;
+              this.player.lqSlow = !!(__look && __look.kimono);
+              if (__look) {
+                this.playerKey = window.LQCharacter.ensure(this, __look);
+                this.player.setOrigin(0.5, (Gr * 38 + window.LQCharacter.pad) / (38 + window.LQCharacter.pad));
+              } else {
+                this.playerKey = `player${e.idx}`;
+                Vr(this, this.playerKey, Pr(e.color));
+                this.player.setOrigin(0.5, Gr);
+              }
+              (Ur(this.player, this.playerKey, this.pFace, this.pMoving),
+                this.badge.setText(e.icon).setVisible(!!e.icon));
+            }
+            placeLabel(e) {
+              let short = nt[e.def.id]?.short || e.def.name;
+              let done = this.store?.get(e.def.id)?.goalDone;
+              let sleeping = e.slot?.kind === `sleep`;
+              let badge = sleeping ? `💤 ` : !done ? `⭐ ` : ``;
+              let targetText = badge + short;
+              if (e.label.text !== targetText) {
+                e.label.setText(targetText);
+                if (!done && !sleeping) {
+                  e.label.setColor(`#ffd36b`);
+                } else if (sleeping) {
+                  e.label.setColor(`#8fd3ff`);
+                } else {
+                  e.label.setColor(`#ffffff`);
+                }
+              }
+              e.label.setPosition(e.sprite.x, e.sprite.y - Wr * e.sprite.scaleX);
+            }
+            buildArea() {
+              this.drawWorld();
+              window.LQWorldUpgrade?.attach(this);
+              window.LQCareerWorlds?.attach(this);
+              let e = this.store.game.minutes;
+              for (let t of Te(this.area)) {
+                let n = ae(t.id, e),
+                  r = this.area.places[n.place],
+                  i = ce(r.x, r.y);
+                Vr(this, t.id, Nr[t.id]);
+                let a = this.add
+                  .image(i.x, i.y, `ch_${t.id}_down_0`)
+                  .setOrigin(0.5, Gr)
+                  .setDepth(9)
+                  .setInteractive({ cursor: `pointer` });
+                a.on(`pointerdown`, () => {
+                  let dist = Y.Math.Distance.Between(this.player.x, this.player.y, a.x, a.y);
+                  if (dist < 72 * (this.inside?.k ?? 1)) {
+                    this.tryTalk();
+                  } else {
+                    this.quests.toast([`Walk a bit closer to ${nt[t.id].short} to talk (E)`]);
+                  }
+                });
+                let o = this.add
+                    .text(i.x, i.y - Wr, nt[t.id].short, {
+                      fontSize: `12px`,
+                      color: `#fff`,
+                      backgroundColor: `#0008`,
+                    })
+                    .setOrigin(0.5)
+                    .setDepth(11),
+                  s = {
+                    def: t,
+                    sprite: a,
+                    face: Or(),
+                    label: o,
+                    slot: n,
+                    path: [],
+                    idleTimer: Y.Math.Between(2, 6),
+                    inside: !1,
+                  };
+                (this.setHidden(s, n.kind === `sleep`), this.npcs.push(s));
+              }
+              this.dim = this.add
+                .rectangle(0, 0, this.area.w * 32, this.area.h * 32, 659504, this.dimAlpha)
+                .setOrigin(0)
+                .setDepth(50);
+            }
+            unstick() {
+              if (this.inside || !this.blocked(this.player.x, this.player.y)) return;
+              let e = Math.floor(this.player.x / 32),
+                t = Math.floor(this.player.y / 32);
+              for (let n = 1; n < 10; n++)
+                for (let r = -n; r <= n; r++)
+                  for (let i = -n; i <= n; i++) {
+                    if (Math.max(Math.abs(i), Math.abs(r)) !== n) continue;
+                    let a = ce(e + i, t + r);
+                    if (!this.blocked(a.x, a.y)) {
+                      this.player.setPosition(a.x, a.y);
+                      return;
+                    }
+                  }
+            }
+            fitCamera() {
+              let e = this.scale.width,
+                t = this.scale.height,
+                n = this.area.w * 32,
+                r = this.area.h * 32,
+                i = Math.max(n, e),
+                a = Math.max(r, t);
+              this.cameras.main.setBounds(Math.min(0, (n - i) / 2), Math.min(0, (r - a) / 2), i, a);
+            }
+            clearArea() {
+              window.LQ52?.detach?.(this);
+              window.LQWorldUpgrade?.detach(this);
+              for (let e of this.areaObjs) e.destroy();
+              this.areaObjs = [];
+              this.artDistrictWarpLabel = null;
+              for (let e of this.walls) e.destroy();
+              this.walls = [];
+              for (let e of this.npcs) (e.sprite.destroy(), e.label.destroy());
+              ((this.npcs = []),
+                (this.dimAlpha = this.dim.fillAlpha),
+                this.dim.destroy(),
+                this.prompt.setVisible(!1));
+            }
+            drawWorld() {
+              let e = `world_${this.area.id}`;
+              if (!this.textures.exists(e)) {
+                let t = this.add.graphics();
+                if (window.LQCareerWorlds?.isNew(this.area.id)) {
+                  window.LQCareerWorlds.paint(t, this.area);
+                } else if (this.area.theme === `past` && window.LQPast) {
+                  // Chapter 2 village (js/past.js) has its own ground, buildings and props.
+                  window.LQPast.paint(t, this.area);
+                  window.LQWorldUpgrade?.ground(t, this.area);
+                  window.LQWorldV15?.ground(t, this.area);
+                  window.LQWorldUpgrade?.details(t, this.area);
+                  window.LQWorldV15?.landmark(t, this.area);
+                } else {
+                  (hn(t, this.area),
+                    LQ9.drawTerrain(t, this.area),
+                    Rn(t, this.area),
+                    LQ9.drawLandscape(t, this.area));
+                  window.LQWorldUpgrade?.ground(t, this.area);
+                  window.LQWorldV15?.ground(t, this.area);
+                  for (let e of this.area.buildings) {
+                    Zt(t, e, this.area);
+                  }
+                  LQ9.drawStation(t, this.area);
+                  window.LQWorldUpgrade?.details(t, this.area);
+                  window.LQWorldV15?.landmark(t, this.area);
+                }
+                (t.generateTexture(e, this.area.w * 32, this.area.h * 32), t.destroy());
+              }
+              this.areaObjs.push(this.add.image(0, 0, e).setOrigin(0).setDepth(0));
+              for (let e of this.area.obstacles)
+                this.walls.push(
+                  this.add
+                    .rectangle(e.x * 32, e.y * 32, e.w * 32, e.h * 32)
+                    .setOrigin(0)
+                    .setVisible(!1),
+                );
+              for (let e of this.area.buildings)
+                ( (e.collisionRects || [e]).forEach(part=>
+                  this.walls.push(
+                    this.add
+                      .rectangle(part.x * 32, part.y * 32, part.w * 32, part.h * 32)
+                      .setOrigin(0)
+                      .setVisible(!1),
+                  )),
+                  this.areaObjs.push(
+                    this.add
+                      .text((e.x + e.w) * 32, e.y * 32 - 36, e.name, {
+                        fontSize: `11px`,
+                        color: `#fff`,
+                        backgroundColor: `#000a`,
+                        padding: { x: 3, y: 1 },
+                      })
+                      .setOrigin(1, 0)
+                      .setDepth(12),
+                  ));
+              for (let e of this.area.warps) {
+                if (e.hiddenUntilArtUnlock && !this.store.game.artDistrictUnlocked && !this.artDistrictPreview) continue;
+                this.areaObjs.push(
+                  this.add
+                    .text((e.x + e.w / 2) * 32, e.y * 32 - 8, e.label, {
+                      fontSize: `12px`,
+                      color: `#bff4ff`,
+                      backgroundColor: `#000a`,
+                      padding: { x: 4, y: 2 },
+                    })
+                    .setOrigin(0.5, 1)
+                    .setDepth(12),
+                );
+              }
+              LQ9.stationLabels(this);
+            }
+            switchArea(e, t, n) {
+              if (window.LQCareerWorlds && !window.LQCareerWorlds.allowed(e)){window.LQCareerWorlds.feedback(this,e);return;}
+              if (this.switching) return;
+              cancelTownAutopilot();
+              this.switching = !0;
+              let r = this.cameras.main;
+              (r.fadeOut(500, 0, 0, 0),
+                r.once(`camerafadeoutcomplete`, () => {
+                  let i = this.inside;
+                  if (i) {
+                    LQ57.onLeave();
+              LQ58.onLeave(); LQ59.onLeave(); LQ60.onLeave(); LQ61.onLeave(); LQ62.onLeave(); LQ63.onLeave(); LQ64.onLeave();
+                    for (let e of i.objs) e.destroy();
+                    this.inside = null;
+                  }
+                  (this.clearArea(), (this.area = we(e)), (this.store.game.area = this.area.id));
+                  if (this.store.game.rpg) delete this.store.game.rpg.lastInterior;
+                  let a = !this.store.game.visited.includes(this.area.id);
+                  (a && this.store.game.visited.push(this.area.id),
+                    this.quests.setArea(this.area),
+                    this.buildArea());
+                  LQ57.decorateExterior(this);
+                  let o = ce(t.x, t.y);
+                  (this.player.setScale(1).setPosition(o.x, o.y),
+                    this.unstick(),
+                    (this.doorCooldown = 1),
+                    this.fitCamera(),
+                    r.startFollow(this.player, !0, 0.1, 0.1),
+                    r.centerOn(o.x, o.y),
+                    this.store.save(),
+                    r.fadeIn(500, 0, 0, 0),
+                    this.quests.toast([
+                      `📍 ${this.area.name}`,
+                      n,
+                      ...(a ? [`💡 Tip: stuck on a word? Press H to open the word helper.`] : []),
+                    ]),
+                    (this.switching = !1));
+                }));
+            }
+            setHidden(e, t) {
+              (e.sprite.setVisible(!t), e.label.setVisible(!t));
+            }
+            blockedInside(e, t) {
+              let n = this.inside,
+                r = n.k,
+                i = 32 * r,
+                a = 7 * r;
+              return (
+                e < Yr + 6 * r + a ||
+                e > Yr + n.spec.w * i - 6 * r - a ||
+                t < Xr + 2 * i + a ||
+                t > Xr + n.spec.h * i - 4 * r - a ||
+                n.rects.some(
+                  (n) => e > n.x - a && e < n.x + n.w + a && t > n.y - a && t < n.y + n.h + a,
+                )
+              );
+            }
+            blocked(e, t) {
+              if (this.inside) return this.blockedInside(e, t);
+              if(this.area?.__lqPrecise)return LQPrecisePhysics.playerBlocked(this.area,e,t);
+              // Defensive fallback for a map without precision geometry.
+              return !Number.isFinite(e)||!Number.isFinite(t)||e<8||t<8||
+                e>this.area.w*32-8||t>this.area.h*32-8||
+                this.walls.some(n=>e>n.x-7&&e<n.x+n.width+7&&t>n.y-7&&t<n.y+n.height+7);
+            }
+            nearestNpc(e = 48) {
+              let t = null,
+                n = e;
+              for (let e of this.npcs) {
+                if (!e.sprite.visible) continue;
+                let r = Y.Math.Distance.Between(
+                  this.player.x,
+                  this.player.y,
+                  e.sprite.x,
+                  e.sprite.y,
+                );
+                r < n && ((n = r), (t = e));
+              }
+              return t;
+            }
+            tryTalk() {
+              if (
+                this.chat.isOpen ||
+                this.journal.isOpen ||
+                this.settings.isOpen ||
+                this.quests.isOpen ||
+                this.helper.isOpen ||
+                this.briefing.isOpen ||
+                this.sleeping ||
+                this.switching
+              )
+                return;
+              let e = this.nearestNpc(this.inside ? 56 * this.inside.k : 48);
+              if (!this.inside && this.doorCooldown <= 0 && this.doorAhead()) {
+                this.enterBuilding(this.doorAhead());
+                return;
+              }
+              if (e)
+                (Hr(e.face, this.player.x - e.sprite.x, this.player.y - e.sprite.y),
+                  Hr(this.pFace, e.sprite.x - this.player.x, e.sprite.y - this.player.y),
+                  this.chat.open(e.def));
+              else if (this.bedNear()) this.trySleep();
+              else if (this.useStairs()) return;
+              else {
+                let gate = this.portalNear();
+                if (gate) this.useGate(gate);
+                else if (!this.inside && window.LQ52?.tryInteract?.(this)) return;
+                else this.inspectObject();
+              }
+            }
+            gateKeeper(e) {
+              return e.guard
+                ? (this.npcs.find((t) => t.def.id === e.guard && t.inside) ?? null)
+                : null;
+            }
+            gateOpen(e) {
+              return !e.guard || this.gateKeeper(e) !== null;
+            }
+            useGate(e) {
+              let t = this.store.game;
+              if (!this.gateOpen(e)) {
+                let t = nt[e.guard].short,
+                  n = Vt(e.guard, `hall`);
+                this.quests.toast([
+                  `🚪 The gate is closed.`,
+                  `${t} opens it during office hours${n ? `: ${n}` : ``}.`,
+                ]);
+                return;
+              }
+              let n = this.gateKeeper(e);
+              if (!n) {
+                this.switchArea(e.to, e.spawn, e.label);
+                return;
+              }
+              Hr(n.face, this.player.x - n.sprite.x, this.player.y - n.sprite.y);
+              let r = Ut(e.to, {
+                minutes: t.minutes,
+                playerName: this.store.get(n.def.id).playerName,
+                first: !t.visited.includes(e.to),
+              });
+              this.briefing.show(n.def.name, r, (t) => {
+                t && this.switchArea(e.to, e.spawn, e.label);
+              });
+            }
+            portalNear() {
+              let e = this.inside;
+              if (!e) return null;
+              let t = this.area.portals[e.b.name],
+                n = e.spec.items.find((e) => e.k === `portal`);
+              if (!t || !n) return null;
+              let r = 32 * e.k,
+                i = Yr + (n.x + n.w / 2) * r,
+                a = Xr + (n.y + n.h / 2) * r;
+              return Y.Math.Distance.Between(this.player.x, this.player.y, i, a) < 2.4 * r
+                ? t
+                : null;
+            }
+            doorAhead() {
+              return LQ56Doors.find(this);
+            }
+            enterBuilding(e, floor = 0, preserved = null) {
+              cancelTownAutopilot();
+              if (!e) return;
+              LQ56Doors.ensure(this.area, e);
+              if (!_r[e.name]) return;
+              const chosen = floor === 1 && _r[e.name + '::2'] ? 1 : 0;
+              const t = chosen ? _r[e.name + '::2'] : _r[e.name];
+              LQ53.prepare(this.area.id, e.name, t, chosen);
+              window.LQInteriorV55?.enrichRoom?.(t);
+              LQ57.preEnter(this,this.area.id,e.name,t,chosen);
+              LQ58.preEnter(this,this.area.id,e.name,t,chosen);
+              LQ60.preEnter(this,this.area.id,e.name,t,chosen);
+              if (this.inside) {
+                for (const obj of this.inside.objs) obj.destroy();
+                for (const npc of this.npcs)
+                  if (npc.inside) {
+                    npc.inside = false;
+                    npc.sprite.setScale(1);
+                    const pos = this.area.places[npc.slot.place];
+                    if (pos) npc.sprite.setPosition(pos.x * 32 + 16, pos.y * 32 + 16);
+                    this.placeLabel(npc);
+                  }
+              }
+              const bounds = { x: e.door * 32 + 16, y: (e.y + e.h) * 32 + 26 };
+              const out = preserved?.out || this.inside?.out || bounds;
+              const width = this.scale.width,
+                height = this.scale.height;
+              const k = t.w * 64 <= width * 0.92 && t.h * 64 <= height * 0.82 ? 2 : 1;
+              const unit = 32 * k,
+                key = 'int_v7_' + this.area.id + '_' + e.name + '_' + chosen;
+              if (!this.textures.exists(key)) {
+                const gfx = this.add.graphics();
+                Dr(gfx, t);
+                gfx.generateTexture(key, t.w * 32, t.h * 32);
+                gfx.destroy();
+                this.textures.get(key).setFilter(Y.Textures.FilterMode.NEAREST);
+              }
+              const objs = [this.add.image(Yr, Xr, key).setOrigin(0).setScale(k).setDepth(0)];
+              const center = Yr + (t.w / 2) * unit;
+              objs.push(
+                this.add
+                  .text(center, Xr + (t.h - 0.5) * unit, 'EXIT ▼', {
+                    fontSize: '12px',
+                    color: '#ffe7ae',
+                    backgroundColor: '#1b263ac0',
+                    padding: { x: 6, y: 3 },
+                  })
+                  .setOrigin(0.5)
+                  .setDepth(4),
+              );
+              for (const label of t.labels || []) {
+                objs.push(
+                  this.add
+                    .text(Yr + (label.x + 0.5) * unit, Xr + (label.y + 0.32) * unit, label.text, {
+                      fontSize: k === 2 ? '12px' : '10px',
+                      fontFamily: 'monospace',
+                      color: '#e5f8ff',
+                      backgroundColor: '#152034bb',
+                      padding: { x: 3, y: 2 },
+                    })
+                    .setOrigin(0.5)
+                    .setDepth(3),
+                );
+              }
+              const rects = t.items
+                .filter(gr)
+                .map((item) => ({
+                  x: Yr + item.x * unit,
+                  y: Xr + item.y * unit,
+                  w: item.w * unit,
+                  h: item.h * unit,
+                }));
+              this.inside = { b: e, spec: t, k, rects, objs, out, floor: chosen };
+              LQ57.onEnter(this);
+              LQ58.onEnter(this);
+              LQ59.onEnter(this); LQ60.onEnter(this); LQ61.onEnter(this); LQ62.onEnter(this); LQ63.onEnter(this); LQ64.onEnter(this);
+              window.LQCareerWorlds?.onInteriorEnter?.(this);
+              if (!chosen) {
+                let guest = 0;
+                for (const npc of this.npcs) {
+                  const place = this.area.places[npc.slot.place];
+                  if (
+                    vr[npc.slot.place] !== e.name ||
+                    npc.slot.kind === 'sleep' ||
+                    !npc.sprite.visible ||
+                    !place
+                  )
+                    continue;
+                  const pt = t.spots[npc.def.id] ||
+                    t.guests[guest++] || [Math.floor(t.w / 2), Math.max(3, t.h - 4)];
+                  npc.inside = true;
+                  npc.path = [];
+                  npc.sprite
+                    .setScale(k)
+                    .setPosition(Yr + (pt[0] + 0.5) * unit, Xr + (pt[1] + 0.5) * unit);
+                  npc.face.dir = 'down';
+                  this.placeLabel(npc);
+                }
+              }
+              const entranceX = Yr + Math.floor(t.w / 2) * unit;
+              const entranceY = Xr + (t.h - 1.55) * unit;
+              let targetX = entranceX,
+                targetY = entranceY;
+              if (chosen) {
+                const stair = t.items.find((z) => z.k === 'stairs');
+                if (stair) {
+                  targetX = Yr + (stair.x + stair.w / 2) * unit;
+                  targetY = Xr + (stair.y + stair.h + 1) * unit;
+                }
+              }
+              this.player.setScale(k).setPosition(targetX, targetY);
+              // Avoid spawning in furniture or beyond the interior collision margin.
+              if (this.blocked(targetX, targetY)) {
+                for (let y = t.h - 2; y >= 3; y--) {
+                  let found = false;
+                  for (let dx = 0; dx < t.w - 2; dx++)
+                    for (const x of [Math.floor(t.w / 2) + dx, Math.floor(t.w / 2) - dx]) {
+                      if (x < 1 || x >= t.w - 1) continue;
+                      const px = Yr + (x + 0.5) * unit,
+                        py = Xr + (y + 0.5) * unit;
+                      if (!this.blocked(px, py)) {
+                        this.player.setPosition(px, py);
+                        found = true;
+                        break;
+                      }
+                    }
+                  if (found) break;
+                }
+              }
+              const cam = this.cameras.main;
+              cam.stopFollow();
+              cam.removeBounds();
+              cam.centerOn(Yr + (t.w * unit) / 2, Xr + (t.h * unit) / 2);
+              this.prompt?.setVisible(false);
+              this.doorCooldown = 0.8;
+              this.quests.toast([
+                '🏠 ' + e.name + (chosen ? ' · Floor 2' : ''),
+                'E: interact · WASD: move · Go down to the door to exit',
+              ]);
+              const rpg = this.store.game?.rpg;
+              if (rpg)
+                rpg.lastInterior = {
+                  area: this.area.id,
+                  building: e.name,
+                  floor: chosen,
+                  x: Math.round(this.player.x),
+                  y: Math.round(this.player.y),
+                };
+              this.store.save();
+            }
+            nearStairs() {
+              if (!this.inside) return null;
+              const stair = this.inside.spec.items.find((v) => v.k === 'stairs');
+              if (!stair) return null;
+              const size = 32 * this.inside.k;
+              const x = Yr + (stair.x + stair.w / 2) * size,
+                y = Xr + (stair.y + stair.h / 2) * size;
+              return Y.Math.Distance.Between(this.player.x, this.player.y, x, y) < size * 2.25
+                ? stair
+                : null;
+            }
+            useStairs() {
+              const inside = this.inside;
+              if (!inside || !this.nearStairs()) return false;
+              if (!_r[inside.b.name + '::2']) return false;
+              this.enterBuilding(inside.b, inside.floor === 0 ? 1 : 0, { out: inside.out });
+              return true;
+            }
+            mysteryInspect(item) {
+              if (!this.inside || !item) return false;
+              const game = this.store.game || (this.store.game = {});
+              if (!game.rpg || typeof game.rpg !== `object`) game.rpg = {};
+              const rpg = game.rpg;
+              if (
+                !rpg.inventory ||
+                typeof rpg.inventory !== `object` ||
+                Array.isArray(rpg.inventory)
+              )
+                rpg.inventory = { note: 1 };
+              if (!rpg.mystery || typeof rpg.mystery !== `object` || Array.isArray(rpg.mystery))
+                rpg.mystery = {};
+              const m = rpg.mystery;
+              const addItem = (id, count = 1) =>
+                (rpg.inventory[id] = Math.max(0, (Number(rpg.inventory[id]) || 0) + count));
+              const award = (key, title, body, money = 0, rep = 0, itemId = ``, itemName = ``) => {
+                if (m[key]) {
+                  this.store.save();
+                  return true;
+                }
+                m[key] = 1;
+                if (itemId) addItem(itemId, 1);
+                if (money || rep) this.gain(money, rep);
+                this.store.save();
+                const rewards = [];
+                if (itemName) rewards.push(`Received item: ${itemName}`);
+                if (money) rewards.push(`+$${money}`);
+                if (rep) rewards.push(`+${rep} reputation`);
+                this.quests.toast([
+                  `🗝️ ${title}`,
+                  body + (rewards.length ? ` · ` + rewards.join(' · ') : ``),
+                ]);
+                return true;
+              };
+              if (
+                this.inside.b.name === `Library` &&
+                this.inside.floor === 1 &&
+                [`board`, `desk`, `shelf`].includes(item.k)
+              ) {
+                if (m.archiveNote) {
+                  this.quests.toast([
+                    `📚 The Secret Archive is already cleared.`,
+                    `You keep the old note for the next clue.`,
+                  ]);
+                  return true;
+                }
+                return award(
+                  `archiveNote`,
+                  `Mystery Quest: Forgotten Archive`,
+                  `You found an old archive note pointing to a hidden attic workshop.`,
+                  35,
+                  2,
+                  `archive_note`,
+                  `Old Archive Note`,
+                );
+              }
+              if (
+                this.inside.b.name === `Hero's Home` &&
+                this.inside.floor === 1 &&
+                [`crate`, `desk`, `board`].includes(item.k)
+              ) {
+                if (!m.archiveNote) {
+                  this.quests.toast([
+                    `🔐 Something is hidden here.`,
+                    `Search the Secret Archive in the Library first.`,
+                  ]);
+                  return true;
+                }
+                if (m.atticKey) {
+                  this.quests.toast([
+                    `🧰 This attic has already been searched.`,
+                    `The rusty key and map fragment are in your inventory.`,
+                  ]);
+                  return true;
+                }
+                return award(
+                  `atticKey`,
+                  `Mystery Quest: Attic Workshop`,
+                  `Behind the crates you discover a rusty mine key and a torn map fragment.`,
+                  55,
+                  3,
+                  `rusty_key`,
+                  `Rusty Mine Key`,
+                );
+              }
+              if (
+                this.inside.b.name === `Great Mine` &&
+                this.inside.floor === 1 &&
+                item.k === `crystal`
+              ) {
+                if (!m.atticKey) {
+                  this.quests.toast([
+                    `⛏️ The crystal wall hums softly.`,
+                    `A hidden key from another mysterious place may be important.`,
+                  ]);
+                  return true;
+                }
+                if (m.crystalHeart) {
+                  this.quests.toast([
+                    `💎 The Crystal Chamber has already been solved.`,
+                    `The Crystal Heart is safe in your inventory.`,
+                  ]);
+                  return true;
+                }
+                return award(
+                  `crystalHeart`,
+                  `Mystery Quest: Crystal Chamber`,
+                  `The chamber reacts to the rusty key. You uncover the Crystal Heart and finish the mystery trail.`,
+                  90,
+                  5,
+                  `crystal_heart`,
+                  `Crystal Heart`,
+                );
+              }
+              return false;
+            }
+            inspectObject() {
+              if (!this.inside) return false;
+              if (LQ58.inspect(this)) return true;
+              const size = 32 * this.inside.k;
+              let nearest = null,
+                dist = Infinity;
+              for (const item of this.inside.spec.items) {
+                if (!__lqV7ObjectHints[item.k]) continue;
+                const x = Yr + (item.x + item.w / 2) * size,
+                  y = Xr + (item.y + item.h / 2) * size;
+                const d = Y.Math.Distance.Between(this.player.x, this.player.y, x, y);
+                if (d < dist) {
+                  dist = d;
+                  nearest = item;
+                }
+              }
+              if (!nearest || dist > size * 2.25) return false;
+              try {
+                const inspection = {
+                  building: this.inside.b.name,
+                  object: nearest.k,
+                  floor: this.inside.floor || 0,
+                  area: this.area.id,
+                };
+                window.LQV8?.onEvent('inspect', inspection);
+                window.LQStory?.onEvent?.('inspect', inspection);
+              } catch (_) {}
+              if (this.mysteryInspect(nearest)) return true;
+              if (window.LQ52?.interiorInteract?.(this, nearest)) return true;
+              if (LQ57.inspect(this)) return true;
+              const msg = __lqV7ObjectHints[nearest.k];
+              if (msg)
+                this.quests.toast(['🔎 ' + msg, 'Practice: describe this object in English!']);
+              return !!msg;
+            }
+            leaveBuilding() {
+              LQ57.onLeave();
+              LQ58.onLeave(); LQ59.onLeave(); LQ60.onLeave(); LQ61.onLeave(); LQ62.onLeave(); LQ63.onLeave(); LQ64.onLeave();
+              let e = this.inside;
+              if (!e) return;
+              for (let t of e.objs) t.destroy();
+              for (let e of this.npcs) {
+                if (!e.inside) continue;
+                ((e.inside = !1), e.sprite.setScale(1));
+                let t = this.area.places[e.slot.place],
+                  n = ce(t.x, t.y);
+                (e.sprite.setPosition(n.x, n.y), this.placeLabel(e));
+              }
+              ((this.inside = null),
+                (this.doorCooldown = 0.7),
+                this.player.setScale(1).setPosition(e.out.x, e.out.y));
+              const rpg = this.store.game?.rpg;
+              if (rpg) {
+                delete rpg.lastInterior;
+                rpg.lastPosition = {
+                  area: this.area.id,
+                  x: Math.round(e.out.x),
+                  y: Math.round(e.out.y),
+                };
+              }
+              LQ57.decorateExterior(this);
+              window.LQCareerWorlds?.onInteriorLeave?.(this);
+              this.store.save();
+              let t = this.cameras.main;
+              (this.fitCamera(),
+                t.centerOn(this.player.x, this.player.y),
+                t.startFollow(this.player, !0, 0.1, 0.1));
+            }
+            tickClock() {
+              let e = this.store.game;
+              ((e.minutes += Zr(e.minutes) ? qr : Kr),
+                !this.sleeping &&
+                  (e.minutes >= 1440 && ((e.minutes -= 1440), this.newDay()),
+                  this.updateSchedules(),
+                  ++this.ticks % 5 == 0 && this.store.save()));
+            }
+            newDay() {
+              let e = this.store.game;
+              (e.day++, (e.money += 10 + e.rep * 3));
+              for (let t of Object.keys(e.quests)) t.startsWith(`fav-`) && delete e.quests[t];
+              this.quests.toast([`☀ A new day! Press Q to see today's favors.`]);
+            }
+            bedNear() {
+              let e = this.inside;
+              // Chapter 2 (js/past.js): the player also sleeps in the Brown Family Home in the village of 70 years ago.
+              if (
+                !e ||
+                (e.b.name !== `Hero's Home` &&
+                  !(window.LQPast && window.LQPast.canSleepIn && window.LQPast.canSleepIn(e.b.name)))
+              )
+                return !1;
+              let t = e.spec.items.find((e) => e.k === `bed`);
+              if (!t) return !1;
+              let n = 32 * e.k,
+                r = Yr + (t.x + t.w / 2) * n,
+                i = Xr + (t.y + t.h / 2) * n;
+              return Y.Math.Distance.Between(this.player.x, this.player.y, r, i) < 2.3 * n;
+            }
+            trySleep() {
+              // Chapter 2 days are counted by js/past.js (it handles the whole night when it returns true).
+              if (window.LQPast && window.LQPast.sleep && window.LQPast.sleep(this)) return;
+              let e = this.store.game;
+              if (!Zr(e.minutes)) {
+                this.quests.toast([`😴 You are not sleepy yet.`, `Come back to bed after 19:00.`]);
+                return;
+              }
+              ((this.sleeping = !0), this.store.save());
+              let t = this.cameras.main;
+              (t.fadeOut(900, 0, 0, 0),
+                t.once(`camerafadeoutcomplete`, () => {
+                  let n = e.minutes >= 1140;
+                  ((e.minutes = 420),
+                    n && this.newDay(),
+                    this.snapNpcs(),
+                    this.store.save(),
+                    t.fadeIn(900, 0, 0, 0),
+                    this.quests.toast([
+                      `💤 You slept well. Day ${e.day}, ${se(e.minutes)}.`,
+                      `The town is waking up!`,
+                    ]),
+                    (this.sleeping = !1));
+                }));
+            }
+            snapNpcs() {
+              for (let e of this.npcs) {
+                if (e.inside) continue;
+                e.slot = ae(e.def.id, this.store.game.minutes);
+                let t = ce(this.area.places[e.slot.place].x, this.area.places[e.slot.place].y);
+                (e.sprite.setPosition(t.x, t.y),
+                  this.placeLabel(e),
+                  (e.path = []),
+                  this.setHidden(e, e.slot.kind === `sleep`));
+              }
+            }
+            updateSchedules() {
+              for (let e of this.npcs) {
+                let t = ae(e.def.id, this.store.game.minutes);
+                if (t === e.slot) continue;
+                if (e.inside) {
+                  let t = this.inside;
+                  ((e.inside = !1),
+                    e.sprite.setScale(1).setPosition(t.out.x, t.out.y),
+                    this.placeLabel(e));
+                }
+                ((e.slot = t), this.setHidden(e, !1));
+                let n = this.area.places[t.place];
+                e.path = this.area.findPath({ x: e.sprite.x, y: e.sprite.y }, n);
+              }
+            }
+            wanderIdle(e, t) {
+              if (
+                ((e.idleTimer -= t / 1e3),
+                e.idleTimer > 0 || ((e.idleTimer = Y.Math.Between(3, 8)), e.slot.kind === `sleep`))
+              )
+                return;
+              let n = this.area.places[e.slot.place],
+                r = n.x + Y.Math.Between(-1, 1),
+                i = n.y + Y.Math.Between(-1, 1);
+              !this.area.isTileBlocked(r, i) && !this.area.warpAt(r,i) && (e.path=this.area.findPath({x:e.sprite.x,y:e.sprite.y},{x:r,y:i}));
+            }
+            update(e, t) {
+              LQ57.update(this,t);
+              LQ58.update(this,t); LQ59.update(this,t); LQ60.update(this,t); LQ61.update(this,t); LQ62.update(this,t); LQ63.update(this,t); LQ64.update(this,t);
+              window.LQWorldUpgrade?.update(this, t);
+              window.LQCareerWorlds?.update(this, this.time.now);
+              window.LQ52?.update?.(this, t);
+              if(window.LQCareerWorlds?.isDialogOpen()){this.pMoving=false;return;}
+              if(window.LQOrigins?.isPlaying?.(this)){ this.pMoving=false; return; }
+              if (this.sleeping || this.switching) return;
+              let n =
+                this.chat.isOpen ||
+                this.journal.isOpen ||
+                this.settings.isOpen ||
+                this.quests.isOpen ||
+                this.helper.isOpen ||
+                this.briefing.isOpen;
+              if (
+                (this.inside ||
+                  this.quests.onTile(
+                    Math.floor(this.player.x / 32),
+                    Math.floor(this.player.y / 32),
+                  ),
+                (this.doorCooldown -= t / 1e3),
+                !this.inside && !n && this.doorCooldown <= 0)
+              ) {
+                let e = this.area.warpAt(
+                  Math.floor(this.player.x / 32),
+                  Math.floor(this.player.y / 32),
+                );
+                if (e) {
+                  if (window.LQCareerWorlds && !window.LQCareerWorlds.gate(this,e)){this.doorCooldown=1.8;return;}
+                  if (e.requiresArtDistrict && !this.checkArtDistrictAccess()) {
+                    this.doorCooldown = 1.8;
+                    const done = (id) => Te(we(id)).filter((npc) => this.store.get(npc.id).goalDone).length;
+                    const marks = [`rook`, `vex`, `morrow`].filter((id) => this.store.get(id).goalDone).length;
+                    this.quests.toast([
+                      `🔒 THE FREIGHT TUNNEL IS STILL LOCKED`,
+                      `English Town: ${done(`english-town`)}/4 missions · Minerals Town: ${done(`mining-town`)}/3 missions.`,
+                      `Artist clues completed: ${marks}/3 (Rook, Vex, Morrow) · Chapter 2: ${this.artHistoryDone() ? `done` : `not yet`}.`,
+                    ]);
+                    return;
+                  }
+                  if (e.needsPass) {
+                    this.doorCooldown = 2;
+                    window.LQ10_ECONOMY?.boardTrain?.(e, this);
+                  } else {
+                    this.switchArea(e.to, e.spawn, e.label);
+                    return;
+                  }
+                }
+              }
+              let r = this.inside || n ? null : this.doorAhead();
+              if (
+                !this.chat.isOpen &&
+                !this.settings.isOpen &&
+                !this.helper.isOpen &&
+                !this.briefing.isOpen
+              ) {
+                let ctrl = window.__townControls || {};
+                if (ctrl.actionRequested) {
+                  ctrl.actionRequested = false;
+                  if (r && this.doorCooldown <= 0) {
+                    this.enterBuilding(r);
+                    return;
+                  }
+                  this.act(`talk`);
+                }
+                let e = this.keys;
+                let right = e.D.isDown || e.RIGHT.isDown || !!ctrl.right;
+                let left = e.A.isDown || e.LEFT.isDown || !!ctrl.left;
+                let down = e.S.isDown || e.DOWN.isDown || !!ctrl.down;
+                let up = e.W.isDown || e.UP.isDown || !!ctrl.up;
+                let n = (right ? 1 : 0) - (left ? 1 : 0);
+                let i = (down ? 1 : 0) - (up ? 1 : 0);
+                // Keyboard and touchscreen input always override AI-assisted walking.
+                if (n || i) {
+                  cancelTownAutopilot();
+                } else {
+                  const aiSteering = updateTownAutopilot(this, t);
+                  if (aiSteering) {
+                    n = aiSteering.x;
+                    i = aiSteering.y;
+                  }
+                }
+                if (r && (ctrl.action || (i < 0 && LQ56Doors.nearAuto(this, r))) && this.doorCooldown <= 0) {
+                  this.enterBuilding(r);
+                  return;
+                }
+                if (((this.pMoving = !1), n || i)) {
+                  let e = Math.hypot(n, i),
+                    r = Math.min(22 * (this.inside?.k ?? 1), (160 * t * (this.inside?.k ?? 1)) / 1e3),
+                    a = this.player.x + (n / e) * r,
+                    o = this.player.y + (i / e) * r,
+                    s = this.player.x,
+                    c = this.player.y;
+                  (this.blocked(a, this.player.y) || (this.player.x = a),
+                    this.blocked(this.player.x, o) || (this.player.y = o),
+                    Hr(this.pFace, n, i),
+                    (this.player.x !== s || this.player.y !== c) &&
+                      ((this.pMoving = !0), (this.pFace.phase += r / (this.inside?.k ?? 1))));
+                }
+              } else this.pMoving = !1;
+              Ur(this.player, this.playerKey, this.pFace, this.pMoving);
+              let i = this.inside;
+              if (i && this.doorCooldown <= 0) {
+                let e = 32 * i.k;
+                if (
+                  this.player.y > Xr + (i.spec.h - 1) * e + e / 2 &&
+                  Math.abs(this.player.x - (Yr + (i.spec.w >> 1) * e)) < e
+                ) {
+                  this.leaveBuilding();
+                  return;
+                }
+              }
+              for (let e of this.npcs) {
+                if (e.inside) {
+                  LQ58.resident(this,e,t);
+                  (this.placeLabel(e), Ur(e.sprite, e.def.id, e.face, !1));
+                  continue;
+                }
+                if (this.chat.currentId === e.def.id) {
+                  Ur(e.sprite, e.def.id, e.face, !1);
+                  continue;
+                }
+                let n = !1;
+                const lq52PreviousPosition = { x: e.sprite.x, y: e.sprite.y };
+                if (e.path.length) {
+                  let r = e.path[0],
+                    i = Y.Math.Distance.Between(e.sprite.x, e.sprite.y, r.x, r.y),
+                    a = Math.min(20, (Jr * t) / 1e3);
+                  if (
+                    ((n = !0),
+                    Hr(e.face, r.x - e.sprite.x, r.y - e.sprite.y),
+                    (e.face.phase += Math.min(i, a)),
+                    i <= a)
+                  )
+                    (e.sprite.setPosition(r.x, r.y),
+                      e.path.shift(),
+                      !e.path.length && e.slot.kind === `sleep` && this.setHidden(e, !0));
+                  else {
+                    let t = Math.atan2(r.y - e.sprite.y, r.x - e.sprite.x);
+                    ((e.sprite.x += Math.cos(t) * a), (e.sprite.y += Math.sin(t) * a));
+                  }
+                } else e.sprite.visible && this.wanderIdle(e, t);
+                (window.LQ52?.guardNpc?.(this, e, lq52PreviousPosition, t), Ur(e.sprite, e.def.id, e.face, n), this.placeLabel(e));
+              }
+              let a = n ? null : this.nearestNpc(this.inside ? 56 * this.inside.k : 48),
+                o = !n && !a && this.bedNear(),
+                s = !n && !a && !o ? this.portalNear() : null,
+                stair = !n && !a && !o && !s ? this.nearStairs() : null;
+              (this.prompt.setVisible(!!a || !!r || o || !!s || !!stair),
+                stair
+                  ? (this.prompt.setText(this.inside.floor ? 'E: go to floor 1' : 'E: go to floor 2'),
+                    this.prompt.setPosition(this.player.x, this.player.y - 44 * this.player.scaleX))
+                  : o
+                    ? (this.prompt.setText(
+                        Zr(this.store.game.minutes)
+                          ? `E: go to sleep until morning`
+                          : `E: bed (you can sleep after 19:00)`,
+                      ),
+                      this.prompt.setPosition(
+                        this.player.x,
+                        this.player.y - 48 * this.player.scaleX,
+                      ))
+                    : s
+                      ? (this.prompt.setText(
+                          this.gateOpen(s)
+                            ? `E: use the gate (${s.label})`
+                            : `E: the gate is closed (${nt[s.guard].short} is away)`,
+                        ),
+                        this.prompt.setPosition(
+                          this.player.x,
+                          this.player.y - 48 * this.player.scaleX,
+                        ))
+                      : a
+                        ? (this.prompt.setText(
+                            `E: talk to ${nt[a.def.id].short} (${a.slot.label})`,
+                          ),
+                          this.prompt.setPosition(a.sprite.x, a.sprite.y - 50 * a.sprite.scaleX))
+                        : r &&
+                          (this.prompt.setText(`E / W: enter ${r.name}`),
+                          this.prompt.setPosition(this.player.x, this.player.y - 46)));
+              let c = this.store.game,
+                l = mt(c.rep),
+                u = ht(c.rep);
+              this.badge
+                .setPosition(this.player.x, this.player.y - 28 * this.player.scaleX)
+                .setScale(this.player.scaleX);
+              let d = !this.chat.providerLabel.startsWith(`Offline`);
+              this.hud
+                .setText(`${this.area.name}${this.inside ? ' · ' + this.inside.b.name + (this.inside.floor ? ' · Floor 2' : '') : ''}  · ${window.LQPast?.dayLabel ? window.LQPast.dayLabel(c.day) : `Day ${c.day}`}  ${se(c.minutes)}  · $${c.money}  · ${l.icon} ${l.title}
+${this.quests.hudLine()}`);
+              let f = c.minutes < 300 || c.minutes > 1200 ? 0.45 : 0;
+              (Math.abs(this.dim.fillAlpha - f) > 0.002
+                ? this.dim.setFillStyle(659504, Y.Math.Linear(this.dim.fillAlpha, f, 0.05))
+                : this.dim.fillAlpha !== f && this.dim.setFillStyle(659504, f),
+                this.dim.setVisible(this.dim.fillAlpha > 0.002));
+            }
+          };
+        function __lqV7RestoreInterior(scene) {
+          try {
+            const saved = scene.store.game?.rpg?.lastInterior;
+            if (
+              !saved ||
+              saved.area !== scene.area.id ||
+              !_r[saved.building] ||
+              !scene.area.buildings.some((b) => b.name === saved.building)
+            )
+              return;
+            const b = scene.area.buildings.find((v) => v.name === saved.building);
+            const floor = Number(saved.floor) === 1 && _r[b.name + '::2'] ? 1 : 0;
+            scene.enterBuilding(b, floor);
+            const k = scene.inside?.k || 1;
+            const sx = Number.isFinite(saved.tx) ? Yr + saved.tx * 32 * k : Number(saved.x),
+              sy = Number.isFinite(saved.ty) ? Xr + saved.ty * 32 * k : Number(saved.y);
+            if (Number.isFinite(sx) && Number.isFinite(sy) && !scene.blocked(sx, sy))
+              scene.player.setPosition(sx, sy);
+            scene.quests.toast(['🏠 Keep exploring ' + b.name + (floor ? ' · Floor 2' : '')]);
+          } catch (err) {
+            console.warn('Could not restore room:', err);
+          }
+        }
+        // V9 effect lifecycle: keep Phaser world engine authoritative and all V7/V8 saves intact.
+        const __lq9BuildArea = Qr.prototype.buildArea;
+        Qr.prototype.buildArea = function (...a) {
+          const result = __lq9BuildArea.apply(this, a);
+          LQ9.createLights(this);
+          return result;
+        };
+        const __lq9Enter = Qr.prototype.enterBuilding;
+        Qr.prototype.enterBuilding = function (...a) {
+          const result = __lq9Enter.apply(this, a);
+          if (this.inside) LQ9.createLights(this);
+          return result;
+        };
+        const __lq9Leave = Qr.prototype.leaveBuilding;
+        Qr.prototype.leaveBuilding = function (...a) {
+          const result = __lq9Leave.apply(this, a);
+          LQ9.createLights(this);
+          return result;
+        };
+        const __lq9Clear = Qr.prototype.clearArea;
+        Qr.prototype.clearArea = function (...a) {
+          LQ9.destroy(this);
+          return __lq9Clear.apply(this, a);
+        };
+        const __lq9Update = Qr.prototype.update;
+        Qr.prototype.update = function (time, delta) {
+          __lq9Update.call(this, time, delta);
+          LQ9.tick(this, delta);
+        };
+        const __lqOriginalNpcOpen = ft.prototype.open;
+        ft.prototype.open = function (npc) {
+          const answer = __lqOriginalNpcOpen.call(this, npc);
+          try {
+            adventure.onNpcOpen(npc.id);
+          } catch (e) {
+            console.warn('NPC enhancement', e);
+          }
+          return answer;
+        };
+        window.__lifequestNpcSchedules = () => ie;
+        // V8 hooks are observers: original Phaser mechanics remain authoritative.
+        for (const [method, eventKind] of [
+          ['enterBuilding', 'enter'],
+          ['useStairs', 'stairs'],
+          ['leaveBuilding', 'exit'],
+          ['switchArea', 'area'],
+        ]) {
+          const original = Qr.prototype[method];
+          if (typeof original !== 'function') continue;
+          Qr.prototype[method] = function (...args) {
+            const before = this.inside
+              ? { building: this.inside.b.name, floor: this.inside.floor }
+              : null;
+            const result = original.apply(this, args);
+            if (eventKind === 'enter' && this.inside) {
+              // Large interiors must track the player; static centering can otherwise hide movement.
+              const inside = this.inside,
+                cam = this.cameras?.main;
+              const realWidth = inside.spec.w * 32 * inside.k,
+                realHeight = inside.spec.h * 32 * inside.k;
+              if (
+                cam &&
+                (realWidth > this.scale.width * 0.94 || realHeight > this.scale.height * 0.92)
+              ) {
+                cam.setBounds(20000, 0, realWidth, realHeight);
+                cam.startFollow(this.player, true, 0.12, 0.12);
+              }
+              window.LQV8?.onEvent('enter', {
+                area: this.area.id,
+                building: this.inside.b.name,
+                floor: this.inside.floor || 0,
+              });
+              window.LQV8?.onEvent('floor', {
+                area: this.area.id,
+                building: this.inside.b.name,
+                floor: this.inside.floor || 0,
+              });
+              window.LQV8?.sound('door');
+            }
+            if (eventKind === 'stairs' && result && this.inside) {
+              window.LQV8?.onEvent('floor', {
+                area: this.area.id,
+                building: this.inside.b.name,
+                floor: this.inside.floor || 0,
+              });
+              window.LQV8?.sound('door');
+            }
+            if (eventKind === 'exit' && before) window.LQV8?.sound('door');
+            return result;
+          };
+        }
+        const __v8BaseUpdate = Qr.prototype.update;
+        Qr.prototype.update = function (time, delta) {
+          if (window.LQMineIntro?.isPlaying?.(this)) { this.pMoving = false; return; }
+          if (window.LQV8?.isPanelOpen?.()) {
+            this.pMoving = false;
+            return;
+          }
+          const result = __v8BaseUpdate.call(this, time, delta);
+          try {
+            window.LQV8?.onFrame(this, delta);
+          } catch (e) {
+            console.warn('V8 HUD render', e);
+          }
+          return result;
+        };
+        const __v8BaseCreate = Qr.prototype.create;
+        Qr.prototype.create = function (...args) {
+          const result = __v8BaseCreate.apply(this, args);
+          window.dispatchEvent(new Event('lifequest:worldready'));
+          return result;
+        };
+
+        let __gameInstance = null;
+        function startGame() {
+          if (__gameInstance) {
+            try {
+              __gameInstance.destroy(true);
+            } catch (e) {}
+            __gameInstance = null;
+          }
+          const el = document.getElementById('game');
+          if (!el) return null;
+          el.innerHTML = '';
+          __gameInstance = new Y.Game({
+            type: Y.AUTO,
+            parent: 'game',
+            backgroundColor: '#1b1b1b',
+            scale: {
+              mode: Y.Scale.RESIZE,
+              width: window.innerWidth,
+              height: window.innerHeight,
+            },
+            scene: [Qr],
+          });
+          return __gameInstance;
+        }
+
+        function stopGame() {
+          if (__gameInstance) {
+            try {
+              __gameInstance.destroy(true);
+            } catch (e) {}
+            __gameInstance = null;
+          }
+        }
+
+        return { startGame, stopGame };
+      })();
+
+      const Yr = 20000,
+        Xr = 0; // shared interior origin for V8 save/restore adapters
+      const studyLab = (() => {
+        const STORE = 'lifequest_study_lab_v1',
+          today = () => new Date().toLocaleDateString('en-CA');
+        const starter = [
+          ['library', 'thư viện'],
+          ['borrow', 'mượn'],
+          ['appointment', 'cuộc hẹn'],
+          ['receipt', 'hóa đơn'],
+          ['directions', 'chỉ đường'],
+          ['polite', 'lịch sự'],
+          ['healthy', 'khỏe mạnh'],
+          ['ticket', 'vé'],
+          ['recommend', 'giới thiệu'],
+          ['confidence', 'sự tự tin'],
+          ['breakfast', 'bữa sáng'],
+          ['careful', 'cẩn thận'],
+        ];
+        let data;
+        try {
+          data = JSON.parse(localStorage.getItem(STORE) || 'null');
+        } catch {}
+        if (!data || typeof data !== 'object' || !Array.isArray(data.words))
+          data = { words: [], quizzes: 0, correct: 0, practice: 0, byDay: {} };
+        data.words = data.words
+          .filter((x) => x && typeof x.en === 'string' && typeof x.vi === 'string')
+          .slice(0, 300);
+        data.quizzes = Number(data.quizzes) || 0;
+        data.correct = Number(data.correct) || 0;
+        data.practice = Number(data.practice) || 0;
+        data.byDay = data.byDay && typeof data.byDay === 'object' ? data.byDay : {};
+        let card = null;
+        function save() {
+          try {
+            localStorage.setItem(STORE, JSON.stringify(data));
+          } catch {}
+          window.dispatchEvent(new Event('lifequest:studyupdate'));
+        }
+        function day() {
+          let d = data.byDay[today()];
+          if (!d || typeof d !== 'object')
+            d = data.byDay[today()] = { quiz: 0, correct: 0, review: 0 };
+          return d;
+        }
+        function summary() {
+          return `📊 Quiz: ${data.correct}/${data.quizzes} correct · Saved words: ${data.words.length} · Cards reviewed: ${data.practice}`;
+        }
+        function registerQuiz(ok) {
+          data.quizzes++;
+          day().quiz++;
+          if (ok) {
+            data.correct++;
+            day().correct++;
+          }
+          save();
+        }
+        function ensureStarter() {
+          if (data.words.length) return;
+          for (const [en, vi] of starter) data.words.push({ en, vi, box: 0, due: 0 });
+          save();
+        }
+        function handle(message, level = 'B1') {
+          const raw = String(message || '').trim(),
+            s = raw
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/đ/g, 'd')
+              .replace(/\s+/g, ' ')
+              .trim();
+          const matched = raw.match(
+            /^(?:lưu từ|lưu từ vựng|save word|add word)\s*[:：]\s*([^=:\n]{2,40})\s*(?:=|:)\s*(.{1,90})$/i,
+          );
+          if (matched) {
+            const en = matched[1].trim(),
+              vi = matched[2].trim();
+            if (!/^[\p{L}\s'-]+$/u.test(en)) return '📒 The word to save can only contain letters and spaces.';
+            const i = data.words.findIndex((w) => w.en.toLowerCase() === en.toLowerCase());
+            const word = { en, vi, box: 0, due: 0 };
+            if (i >= 0) data.words[i] = word;
+            else data.words.push(word);
+            data.words = data.words.slice(-300);
+            save();
+            return `📒 Saved “${en}” — ${vi}. Type “flashcard” to review.`;
+          }
+          if (/^(so tu vung|danh sach tu|tu da luu|saved words|my words)$/.test(s)) {
+            if (!data.words.length)
+              return '📒 Your word book is empty. Try “save word: explore = khám phá” or “flashcard” to get a sample card.';
+            return (
+              `📒 Word book (${data.words.length}):\n` +
+              data.words
+                .slice(-18)
+                .map((w, i) => `${i + 1}. ${w.en} — ${w.vi}`)
+                .join('\n') +
+              '\nYou can export everything with the 📒 button below.'
+            );
+          }
+          if (/^(flashcard|the ghi nho|the tu vung|on tu|review words|review cards)$/.test(s)) {
+            ensureStarter();
+            const now = Date.now();
+            const due = data.words.filter((w) => (w.due || 0) <= now);
+            const list = due.length ? due : data.words;
+            card = list[Math.floor(Math.random() * list.length)];
+            return `🃏 FLASHCARD — ${card.en}\nDo you remember the meaning? Type “flip card” to check, then type “remember” or “forgot” to schedule your review. (${due.length} words due)`;
+          }
+          if (/^(lat the|show answer|flip card|xem dap an)$/.test(s))
+            return card
+              ? `🔎 ${card.en} = ${card.vi}.\nType “remember” if you know it or “forgot” if not.`
+              : 'Type “flashcard” to pick a card first.';
+          if (/^(nho|quen|remember|forgot|kho nho|da thuoc)$/.test(s) && card) {
+            const ok = /^(nho|remember|da thuoc)$/.test(s);
+            card.box = ok ? Math.min(4, (card.box || 0) + 1) : 0;
+            const days = [0, 1, 3, 7, 14][card.box];
+            card.due = Date.now() + days * 86400000;
+            data.practice++;
+            day().review++;
+            const word = card.en;
+            card = null;
+            save();
+ 

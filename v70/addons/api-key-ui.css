@@ -1,0 +1,20 @@
+/* The Gemini API key is configured by the owner in Render's backend only.
+   Hide ALL old in-game entry / save / clear controls, not gameplay settings. */
+#lq-title .keybox,
+#lq-title #lq-title-key,
+#lq-title #lq-title-keyshow,
+#lq-title #lq-title-keytest,
+#lq-title .key-row,
+#lq-title .key-links,
+#lq-title .lq-key-warning,
+#lq-api-quick,
+#settings #ai-key,
+#settings #ai-model,
+#settings #ai-save,
+#settings #ai-test,
+#settings #ai-clear,
+#settings .lq-api-controls {
+  display: none !important;
+}
+#settings > h3:first-child { color: #c8ebff; }
+#settings > h3:first-child + p { color: #abc5d9; }

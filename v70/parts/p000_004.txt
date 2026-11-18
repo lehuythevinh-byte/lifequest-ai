@@ -1,0 +1,2130 @@
+ v.select(QUEST_ID);
+        v.onEvent('shadows', {});
+      }
+    } catch (e) {
+      console.warn('ten shadows quest sync failed', e);
+    }
+  }
+
+  function collect(sc, s) {
+    const d = data(true);
+    d.found[s.id] = Date.now();
+    save();
+    const n = count();
+    const a = A();
+    if (n >= SHADOWS.length) finish();
+    else if (a) a.toast('🌑 Shadow found', `${s.name} · ${n}/${SHADOWS.length}`, n === 9 ? 'One left… Mahoraga is waiting.' : 'Keep asking the villagers.');
+    refreshQuest();
+    window.dispatchEvent(new CustomEvent('lifequest:shadows', { detail: { count: n } }));
+  }
+
+  // ---- chat hook: what villagers say when asked about the shadows -----------------------------------------------
+  function onNpcMessage(npcId, text, areaId) {
+    const m = norm(text);
+    if (!ASKING.test(m)) return [];
+    const sc = getScene();
+    const d = data(true);
+    if (!d) return [];
+    const who = npcName(sc, npcId);
+    const say = (t) => `📜 ${who}: ${t}`;
+    const n = count();
+    const v8 = V8();
+
+    if (npcId === 'librarian') {
+      if (!d.started) {
+        d.started = Date.now();
+        save();
+        try {
+          v8 && v8.select(QUEST_ID);
+        } catch (e) {}
+        refreshQuest();
+        const a = A();
+        if (a) a.toast('📜 New quest', 'The Ten Shadows', 'Ask the villagers about the shadows. See Quests (V) for clues.');
+        return [
+          say('Ah, the Ten Shadows! An old legend says a sorcerer could call ten shadow beasts from his own shadow.'),
+          say('When he vanished, the shadows left their marks across English Town and Minerals Town.'),
+          say('Ask the villagers about the shadows: each one knows a story and a clue. Find all ten marks, and tell me when you are done.'),
+        ];
+      }
+      if (n >= SHADOWS.length) {
+        try {
+          v8 && v8.select(QUEST_ID);
+        } catch (e) {}
+        return [say('You found all ten shadows! The power of the Ten Shadows answers you now. Well done!')];
+      }
+      return [say(`You have found ${n} of the ten shadows. ${pending() ? 'Remember the clue: ' + pending().clue : 'Ask the villagers about the shadows to learn the next clue.'}`)];
+    }
+
+    if (!d.started) return [say('Shadows? I only know old stories. Ms. Green in the Library knows the whole legend. Try asking her.')];
+
+    const s = SHADOWS.find((x) => x.npc === npcId);
+    if (!s) {
+      const open = SHADOWS.filter((x) => !d.told[x.id] && !(x.needs && n < x.needs));
+      const here = open.find((x) => x.area === areaId) || open[0];
+      return [say(here ? `I do not know much about the shadows. Try asking ${askWho(sc, here)}.` : 'I do not know much about the shadows. Check the quest panel for your next clue.')];
+    }
+    if (d.found[s.id]) return [say(`You already found the ${s.name}. Well done!`)];
+    if (d.told[s.id]) return [say(`I already told you about the ${s.name}. Remember: ${s.clue}`)];
+    if (s.needs && n < s.needs) return [say(`Come back when you have found the other ${s.needs} shadows. Ask the villagers about them first.`)];
+    d.told[s.id] = Date.now();
+    save();
+    refreshQuest();
+    const a = A();
+    if (a) a.toast('📜 New clue', s.name, s.clue);
+    return [say(s.legend), `🌑 Clue: ${s.clue}`];
+  }
+
+  // ---- marks in the world -----------------------------------------------------------------------------------------
+  // World position (pixels) and scale of a mark in what the player currently sees, or null when it is not here.
+  function spotFor(sc, s) {
+    if (s.area !== sc.area.id) return null;
+    const ins = sc.inside;
+    if (!s.in) return ins ? null : { x: s.x * 32 + 16, y: s.y * 32 + 16, k: 1 };
+    if (!ins || ins.floor !== 0 || ins.b.name !== s.in || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    const t = ins.spec;
+    const at = (pt) => ({ x: ins.objs[0].x + (pt[0] + 0.5) * unit, y: ins.objs[0].y + (pt[1] + 0.5) * unit, k: ins.k });
+    const margin = 12 * ins.k;
+    const covered = (p) => (ins.rects || []).some((r) => p.x > r.x - margin && p.x < r.x + r.w + margin && p.y > r.y - margin && p.y < r.y + r.h + margin);
+    // Try the guest tiles from the end so a mark does not share a tile with a finger (those use the first free one).
+    const cands = [...(t.guests || []), [Math.floor(t.w / 2) + 1, Math.max(3, t.h - 4)]].map(at).reverse();
+    return cands.find((p) => !covered(p)) || cands[0];
+  }
+
+  function drawMark(g, cx, cy, s, time, seed) {
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.003 + seed);
+    // Blue-violet glow that builds up towards the centre.
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle(i % 2 ? 0x5a6cff : 0x8a4bff, 0.03 + pulse * 0.014);
+      g.fillCircle(cx, cy, (22 - i * 3) * s);
+    }
+    // A dark pool on the ground with a slowly spreading ring.
+    const ring = (time * 0.0008 + seed * 0.37) % 1;
+    g.fillStyle(0x6a5cff, 0.2 * (1 - ring));
+    g.fillEllipse(cx, cy + 5 * s, (14 + 16 * ring) * s, (5 + 6 * ring) * s);
+    g.fillStyle(0x07070f, 0.85);
+    g.fillEllipse(cx, cy + 5 * s, 18 * s, 7 * s);
+    g.fillStyle(0x15152a, 0.9);
+    g.fillEllipse(cx - 2 * s, cy + 4 * s, 9 * s, 3 * s);
+  }
+
+  function draw(sc, time) {
+    const st = sc.__lqTenShadows;
+    if (!st) return;
+    st.g.clear();
+    st.texts.forEach((t) => t.setVisible(false));
+    if (!sc.area || sc.switching || !sc.player || !sc.store || !sc.store.game) return;
+    const d = data(false);
+    if (!d || !d.started) return;
+    const px = sc.player.x;
+    const py = sc.player.y;
+    SHADOWS.forEach((s, i) => {
+      // A mark exists in the world only after its villager told the clue, and until it is collected.
+      if (!d.told[s.id] || d.found[s.id]) return;
+      const p = spotFor(sc, s);
+      if (!p) return;
+      if (Math.hypot(px - p.x, py - p.y) < PICK_RADIUS * p.k) {
+        collect(sc, s);
+        return;
+      }
+      drawMark(st.g, p.x, p.y, p.k, time, i);
+      const t = st.texts[i];
+      t.setPosition(p.x, p.y - 4 * p.k + Math.sin(time * 0.002 + i) * 1.5 * p.k).setScale(p.k).setVisible(true);
+    });
+  }
+
+  function attach(sc) {
+    if (sc.__lqTenShadows) return;
+    sc.__lqTenShadows = {
+      g: sc.add.graphics().setDepth(8.8),
+      texts: SHADOWS.map((s) => sc.add.text(0, 0, s.icon, { fontSize: '16px' }).setOrigin(0.5, 1).setDepth(8.9).setVisible(false)),
+    };
+    sc.events.on('update', (time) => draw(sc, time));
+    sc.events.once('shutdown', () => {
+      sc.__lqTenShadows = null;
+    });
+  }
+
+  setInterval(() => {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqTenShadows) {
+      try {
+        attach(sc);
+      } catch (e) {
+        console.warn('ten shadows attach failed', e);
+      }
+    }
+  }, 1000);
+
+  // All ten found but the achievement is not marked done (for example an older save): finish it quietly.
+  setInterval(() => {
+    const a = A();
+    if (a && getScene() && count() >= SHADOWS.length && !a.isUnlocked(ACH_ID)) finish();
+  }, 2000);
+
+  window.LQTenShadows = {
+    list: SHADOWS,
+    total: SHADOWS.length,
+    count,
+    isFound,
+    isTold,
+    isStarted,
+    status,
+    onNpcMessage,
+    drawMark,
+    // Where a mark is in what the player sees right now ({x, y, k}) or null; for testing.
+    spot: (id) => {
+      const sc = getScene();
+      const s = SHADOWS.find((x) => x.id === id);
+      return sc && s ? spotFor(sc, s) : null;
+    },
+    // Handy while testing: LQTenShadows.reset() starts over (does not lock Megumi again).
+    reset() {
+      const d = data(false);
+      if (d) {
+        d.started = 0;
+        d.told = {};
+        d.found = {};
+        save();
+        refreshQuest();
+      }
+    },
+  };
+})();
+
+</script>
+    <script>
+/*
+ * The Old Map: the way into Chapter 2 ("70 Years Ago"). Script: Chapter2.md (scenario A, with the helmet from C).
+ *
+ *  0. Opens after the quest "🌱 First Day in Town" (or for old saves that skipped the tutorial). A toast says Ms. Green
+ *     found something strange in the Library.
+ *  1. Ask Ms. Green about the old map (map / old / history / strange / find…). She shows an English Town map from
+ *     seventy years ago and asks the player to find three old things that are still in town today.
+ *  2. Find the three relics: a wall stone with the Oriaris crest, the brass plate of the old village well under the
+ *     park fountain, and an old soldier's helmet in Mr. Brown's House. Walk onto a relic to find it.
+ *  3. Tell Ms. Green what you found IN THE PAST TENSE ("I found an old stone."). Each relic needs its own sentence
+ *     with the relic word and a past verb. Present tense gets a gentle hint (find → found).
+ *  4. When all three are told, she starts the story. After the chat closes, the world turns grey and the Chapter 2
+ *     prelude plays over the old map (drawn from the real English Town data, without the modern buildings).
+ *
+ * Quest panel: quest 'old-map' in 14-v8-quests-and-minimap.js (steps 'oldmap' and 'oldmap-tell', texts from
+ * status()/tellStatus() here). Progress: game.ach.oldmap = { hinted, started, found, told, storyAt, seen }.
+ * Chat hook: 10-core-characters-and-scene.js calls onNpcMessage().
+ * Testing: LQOldMap.status(), LQOldMap.preview() (or index.html?oldmap=1), LQOldMap.reset().
+ */
+(function () {
+  'use strict';
+
+  const TOWN = 'english-town';
+  const QUEST_ID = 'old-map';
+  const PICK_RADIUS = 22;
+
+  // Outdoor relics use tile x/y of English Town; the indoor one uses `in` (ground floor, first free guest tile).
+  const RELICS = [
+    {
+      id: 'stone',
+      name: 'Wall stone',
+      icon: '🪨',
+      area: TOWN,
+      x: 42,
+      y: 16,
+      words: /\b(stones?|rocks?|walls?|crest)\b/,
+      clue: 'On the east side of town, by the trees near the road to the school.',
+      plate: 'This stone was part of the Wall of Oriaris.',
+      plateVi: 'Hòn đá này từng là một phần của Tường Oriaris.',
+      example: 'I found an old stone.',
+    },
+    {
+      id: 'well',
+      name: 'Village well',
+      icon: '🪣',
+      area: TOWN,
+      x: 28,
+      y: 16,
+      // "well" is also a filler word ("Well, …"), so it only counts after "the/old/a/village".
+      words: /\b(the|an?|old|village) well\b|\b(fountain|plate|water)\b/,
+      clue: 'In the park, next to the fountain.',
+      plate: 'Here was the village well. Every family came here for water.',
+      plateVi: 'Đây từng là giếng làng. Mọi gia đình đều đến đây lấy nước.',
+      example: 'I saw the old well.',
+    },
+    {
+      id: 'helmet',
+      name: 'Old helmet',
+      icon: '⛑️',
+      area: TOWN,
+      in: "Mr. Brown's House",
+      words: /\b(helmets?|hat|soldier)\b/,
+      clue: "Inside Mr. Brown's House (the mayor's home).",
+      plate: 'This helmet belonged to a young soldier of the village.',
+      plateVi: 'Chiếc mũ sắt này từng thuộc về một người lính trẻ của làng.',
+      example: 'I found an old helmet.',
+    },
+  ];
+
+  // Regular past (-ed, five letters or more so "need"/"red" do not count) and the irregular verbs players use most.
+  const PAST =
+    /\b(was|were|found|saw|went|came|had|did|got|took|made|felt|heard|thought|knew|left|ran|became|told|said|wore|stood|sat|gave|met|read|brought|built|lost|kept|began|fell|ate|drank|wrote)\b|\b[a-z]{3,}ed\b/;
+  const PRESENT = /\b(find|see|is|are|go|have|look|touch|visit|discover)\b/;
+  const START = /\b(maps?|old|history|strange|past|something|find|found|discover\w*)\b/;
+  const BROWN = /\b(helmets?|maps?|old|father|dad|flag|war|soldier|history)\b/;
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const A = () => window.LQAchievements;
+  const V8 = () => window.LQV8;
+  const norm = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd');
+  const toast = (title, sub, hint) => {
+    try {
+      A() && A().toast && A().toast(title, sub, hint);
+    } catch (e) {}
+  };
+
+  function game() {
+    const sc = getScene();
+    return (sc && sc.store && sc.store.game) || null;
+  }
+  function data(create) {
+    const g = game();
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') {
+      if (!create) return null;
+      g.ach = { steps: {}, done: {} };
+    }
+    if (!g.ach.oldmap || typeof g.ach.oldmap !== 'object') {
+      if (!create) return null;
+      g.ach.oldmap = { hinted: 0, started: 0, found: {}, told: {}, storyAt: 0, seen: 0 };
+    }
+    const d = g.ach.oldmap;
+    if (!d.found) d.found = {};
+    if (!d.told) d.told = {};
+    return d;
+  }
+  const save = () => {
+    const sc = getScene();
+    try {
+      sc && sc.store && sc.store.save();
+    } catch (e) {
+      console.warn('old map save failed', e);
+    }
+  };
+
+  // Open after the first quest; saves from before the tutorial existed (game.tut.done === 'old') are let in too.
+  function isOpen() {
+    const g = game();
+    if (!g) return false;
+    if (g.tut && g.tut.done === 'old') return true;
+    try {
+      return !!(V8() && V8().isDone && V8().isDone('first-day'));
+    } catch (e) {
+      return false;
+    }
+  }
+  const isStarted = () => !!(data(false) && data(false).started);
+  const isFound = (id) => !!(data(false) && data(false).found[id]);
+  const isTold = (id) => !!(data(false) && data(false).told[id]);
+  const foundCount = () => RELICS.filter((r) => isFound(r.id)).length;
+  const toldCount = () => RELICS.filter((r) => isTold(r.id)).length;
+  const allFound = () => foundCount() >= RELICS.length;
+  const allTold = () => toldCount() >= RELICS.length;
+
+  // ---- quest panel texts ------------------------------------------------------------------------------------------
+  function status() {
+    if (!isOpen()) return 'Finish "🌱 First Day in Town" first. Then visit Ms. Green in the Library.';
+    if (!isStarted()) return 'Ask Ms. Green in the Library about the old map. Try: "Did you find something old?"';
+    if (allFound()) return 'You found all three old things!';
+    const next = RELICS.filter((r) => !isFound(r.id));
+    return `Old things found: ${foundCount()}/3. ${next.map((r) => r.icon + ' ' + r.clue).join(' ')}`;
+  }
+  function tellStatus() {
+    const next = RELICS.find((r) => isFound(r.id) && !isTold(r.id));
+    return (
+      `Tell Ms. Green what you found, in the past tense (${toldCount()}/3).` +
+      (next ? ` Try: "${next.example}"` : ' Find the old things first.')
+    );
+  }
+
+  const refreshQuest = () => {
+    try {
+      V8() && V8().renderQuest();
+    } catch (e) {}
+  };
+  // Keep the quest panel in step with what happened here (also repairs saves where the panel fell behind).
+  function syncQuest() {
+    const v = V8();
+    if (!v || !v.progressOf) return;
+    try {
+      if (allFound() && v.progressOf(QUEST_ID) === 0) {
+        v.select(QUEST_ID);
+        v.onEvent('oldmap', {});
+      }
+      if (allTold() && v.progressOf(QUEST_ID) === 1) {
+        v.select(QUEST_ID);
+        v.onEvent('oldmap-tell', {});
+      }
+    } catch (e) {
+      console.warn('old map quest sync failed', e);
+    }
+  }
+
+  // ---- chat hook ----------------------------------------------------------------------------------------------------
+  function onNpcMessage(npcId, text, areaId) {
+    if (npcId !== 'librarian' && npcId !== 'mayor') return [];
+    const m = norm(text);
+    const sc = getScene();
+    const who = (id) => {
+      const n = sc && sc.npcs && sc.npcs.find((x) => x.def.id === id);
+      return n ? n.def.name : id === 'mayor' ? 'Mr. Brown (Mayor)' : 'Ms. Green (Librarian)';
+    };
+    const say = (id, t) => `📜 ${who(id)}: ${t}`;
+
+    if (npcId === 'mayor') {
+      // After Chapter 2 (past.js): he tells the end of his father's story.
+      if (window.LQPast && window.LQPast.isDone && window.LQPast.isDone() && /\b(father|dad|flag|glory|war|helmet|soldier|story|village|oriaris)\b/.test(m))
+        return [
+          say('mayor', 'You saw it? Yes. My father ran home with the victory flag on March 29th.'),
+          say('mayor', 'He was only seventeen. Every year on the Day of Glory, we remember him and everyone at the wall.'),
+          say('mayor', 'Thank you for listening to their story.'),
+        ];
+      if (!isStarted() || !BROWN.test(m)) return [];
+      if (!isFound('helmet'))
+        return [say('mayor', 'An old helmet? Yes, there is one in my house. It was my father’s. You can go in and look.')];
+      return [
+        say('mayor', 'That helmet? My father wore it when he was young. One day I will tell you the whole story.'),
+        say('mayor', 'Ms. Green knows the history better than me. Tell her what you found.'),
+      ];
+    }
+
+    // Ms. Green
+    if (!isOpen()) {
+      if (/\b(maps?|history)\b/.test(m)) return [say('librarian', 'Old maps? I am still cleaning the old shelves. Come back another day, dear.')];
+      return [];
+    }
+    const d = data(true);
+    if (!d.started) {
+      if (!START.test(m)) return [];
+      d.started = Date.now();
+      d.hinted = d.hinted || Date.now();
+      save();
+      try {
+        V8() && V8().select(QUEST_ID);
+      } catch (e) {}
+      refreshQuest();
+      toast('📜 New quest', 'The Old Map', 'Find three old things in town. See Quests (V) for clues.');
+      return [
+        say('librarian', 'Oh, you came at the right time! I was cleaning the old shelves, and I found this.'),
+        say('librarian', 'It is a map of English Town. But look: there is no school, no cinema, no station.'),
+        say('librarian', 'There was a big stone wall around the village, and rice fields everywhere. This map was made seventy years ago.'),
+        say('librarian', 'Some old things are still here, in our town today. Can you find three of them?'),
+        '🗺️ Clue: ' + RELICS.map((r) => r.icon + ' ' + r.clue).join(' '),
+      ];
+    }
+    if (d.storyAt) {
+      if (d.seen && /\b(back|village|past|again|return|take me)\b/.test(m)) {
+        d.goPast = Date.now();
+        save();
+        return [say('librarian', 'You want to see the old village again? Close your eyes, dear…'), '🗺️ (Close the chat to go back seventy years.)'];
+      }
+      if (START.test(m) || /\b(story|again)\b/.test(m))
+        return [say('librarian', d.seen ? 'I put the old map on the wall. Look at it any time you want.' : 'Sit down and listen, dear. The story starts when we finish talking.')];
+      return [];
+    }
+
+    // Telling: every sentence that names a found relic in the past tense counts once.
+    const named = RELICS.filter((r) => isFound(r.id) && !isTold(r.id) && r.words.test(m));
+    if (named.length) {
+      if (!PAST.test(m)) {
+        const verb = (m.match(PRESENT) || [])[1];
+        const hint = verb ? ` Say it in the past: "${verb}" → "${pastOf(verb)}".` : '';
+        return [say('librarian', `Almost! Tell me about it in the past, dear.${hint} For example: "${named[0].example}"`)];
+      }
+      named.forEach((r) => (d.told[r.id] = Date.now()));
+      save();
+      refreshQuest();
+      const lines = named.map((r) => say('librarian', reaction(r.id)));
+      if (allTold()) {
+        d.storyAt = Date.now();
+        save();
+        lines.push(
+          say('librarian', 'You found all three! The wall, the well, and the helmet.'),
+          say('librarian', 'Now I can tell you their story. Sit down, dear. Look at the map, and listen…'),
+          '🗺️ (Close the chat to hear the story.)',
+        );
+        syncQuest();
+      } else {
+        const left = RELICS.filter((r) => !isTold(r.id));
+        lines.push(say('librarian', `What else did you find? (${toldCount()}/3)`));
+        if (left.some((r) => !isFound(r.id))) lines.push('🗺️ Clue: ' + left.filter((r) => !isFound(r.id)).map((r) => r.icon + ' ' + r.clue).join(' '));
+      }
+      return lines;
+    }
+    // Named a relic that is not found yet.
+    const early = RELICS.find((r) => !isFound(r.id) && r.words.test(m));
+    if (early) return [say('librarian', `Did you find it? Look again: ${early.clue}`)];
+    if (START.test(m)) {
+      if (!allFound()) return [say('librarian', `You found ${foundCount()} of the three old things. ` + RELICS.filter((r) => !isFound(r.id)).map((r) => r.icon + ' ' + r.clue).join(' '))];
+      return [say('librarian', `Tell me what you found, in the past tense. For example: "${RELICS.find((r) => !isTold(r.id)).example}"`)];
+    }
+    return [];
+  }
+  const PAST_OF = { find: 'found', see: 'saw', is: 'was', are: 'were', go: 'went', have: 'had', look: 'looked', touch: 'touched', visit: 'visited', discover: 'discovered' };
+  const pastOf = (v) => PAST_OF[v] || v + 'ed';
+  function reaction(id) {
+    if (id === 'stone') return 'Yes! That stone was part of the Wall of Oriaris. The people built it with their own hands.';
+    if (id === 'well') return 'The old well! Every family came there for water. Now children play by the fountain.';
+    return 'The helmet! It belonged to Mr. Brown’s father. He was a young soldier then.';
+  }
+
+  // ---- relics in the world ------------------------------------------------------------------------------------------
+  function spotFor(sc, r) {
+    if (r.area !== sc.area.id) return null;
+    const ins = sc.inside;
+    if (!r.in) return ins ? null : { x: r.x * 32 + 16, y: r.y * 32 + 16, k: 1 };
+    if (!ins || ins.floor !== 0 || ins.b.name !== r.in || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    const t = ins.spec;
+    const at = (pt) => ({ x: ins.objs[0].x + (pt[0] + 0.5) * unit, y: ins.objs[0].y + (pt[1] + 0.5) * unit, k: ins.k });
+    const margin = 12 * ins.k;
+    const covered = (p) => (ins.rects || []).some((q) => p.x > q.x - margin && p.x < q.x + q.w + margin && p.y > q.y - margin && p.y < q.y + q.h + margin);
+    const cands = [...(t.guests || []), [Math.floor(t.w / 2) + 1, Math.max(3, t.h - 4)]].map(at);
+    return cands.find((p) => !covered(p)) || cands[0];
+  }
+
+  // Gold crest of the Oriaris family: a shield with a tower. Keep this shape; it comes back in Chapter 2.
+  function drawCrest(g, cx, cy, s) {
+    g.fillStyle(0xd9a93a, 1);
+    g.fillRect(cx - 4 * s, cy - 4 * s, 8 * s, 5 * s);
+    g.fillTriangle(cx - 4 * s, cy + 1 * s, cx + 4 * s, cy + 1 * s, cx, cy + 5 * s);
+    g.fillStyle(0x6b4a12, 1);
+    g.fillRect(cx - 1.5 * s, cy - 2.5 * s, 3 * s, 5 * s);
+    g.fillRect(cx - 2.5 * s, cy - 3 * s, 1 * s, 1 * s);
+    g.fillRect(cx - 0.5 * s, cy - 3 * s, 1 * s, 1 * s);
+    g.fillRect(cx + 1.5 * s, cy - 3 * s, 1 * s, 1 * s);
+  }
+  function drawRelic(g, cx, cy, s, r, time, seed) {
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.003 + seed);
+    for (let i = 0; i < 5; i++) {
+      g.fillStyle(0xffe2a0, 0.03 + pulse * 0.02);
+      g.fillCircle(cx, cy, (20 - i * 3) * s);
+    }
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(cx, cy + 9 * s, 20 * s, 6 * s);
+    if (r.id === 'stone') {
+      g.fillStyle(0x7d7a74, 1);
+      g.fillRect(cx - 10 * s, cy - 6 * s, 20 * s, 15 * s);
+      g.fillStyle(0x99958d, 1);
+      g.fillRect(cx - 10 * s, cy - 6 * s, 20 * s, 3 * s);
+      g.fillStyle(0x5f5c57, 1);
+      g.fillRect(cx - 10 * s, cy + 2 * s, 7 * s, 1 * s);
+      g.fillRect(cx + 4 * s, cy + 5 * s, 6 * s, 1 * s);
+      drawCrest(g, cx, cy + 1 * s, s);
+    } else if (r.id === 'well') {
+      g.fillStyle(0x6e4a1e, 1);
+      g.fillRect(cx - 7 * s, cy - 5 * s, 14 * s, 11 * s);
+      g.fillStyle(0xc99a4a, 1);
+      g.fillRect(cx - 6 * s, cy - 4 * s, 12 * s, 9 * s);
+      g.fillStyle(0x8a6526, 1);
+      g.fillRect(cx - 4 * s, cy - 2 * s, 8 * s, 1 * s);
+      g.fillRect(cx - 4 * s, cy, 8 * s, 1 * s);
+      g.fillRect(cx - 4 * s, cy + 2 * s, 5 * s, 1 * s);
+    } else {
+      g.fillStyle(0x4d5248, 1);
+      g.fillEllipse(cx, cy + 4 * s, 22 * s, 6 * s);
+      g.fillStyle(0x6c7362, 1);
+      g.fillCircle(cx, cy + 2 * s, 8 * s);
+      g.fillStyle(0x4d5248, 1);
+      g.fillRect(cx - 8 * s, cy + 2 * s, 16 * s, 3 * s);
+      g.fillStyle(0x8e9682, 1);
+      g.fillCircle(cx - 3 * s, cy - 2 * s, 2 * s);
+    }
+  }
+
+  function find(sc, r) {
+    const d = data(true);
+    d.found[r.id] = Date.now();
+    save();
+    const n = foundCount();
+    toast(r.icon + ' ' + r.name, `“${r.plate}”`, `${r.plateVi} · ${n}/3`);
+    if (n >= RELICS.length) {
+      setTimeout(() => toast('🗺️ All three found!', 'Go back to Ms. Green.', 'Tell her what you found, in the past tense: "I found…", "I saw…"'), 4200);
+      syncQuest();
+    }
+    refreshQuest();
+  }
+
+  function draw(sc, time) {
+    const st = sc.__lqOldMap;
+    if (!st) return;
+    st.g.clear();
+    if (!sc.area || sc.switching || !sc.player || !sc.store || !sc.store.game) return;
+    const d = data(false);
+    if (!d || !d.started) return;
+    RELICS.forEach((r, i) => {
+      if (d.found[r.id]) return;
+      const p = spotFor(sc, r);
+      if (!p) return;
+      if (Math.hypot(sc.player.x - p.x, sc.player.y - p.y) < PICK_RADIUS * p.k) {
+        find(sc, r);
+        return;
+      }
+      drawRelic(st.g, p.x, p.y, p.k, r, time, i);
+    });
+  }
+
+  function attach(sc) {
+    if (sc.__lqOldMap) return;
+    sc.__lqOldMap = { g: sc.add.graphics().setDepth(8.7) };
+    sc.events.on('update', (time) => draw(sc, time));
+    sc.events.once('shutdown', () => {
+      sc.__lqOldMap = null;
+    });
+  }
+
+  // ---- Chapter 2 prelude --------------------------------------------------------------------------------------------
+  const CSS = `
+#lq-oldmap{position:fixed;inset:0;z-index:10050;background:#000;opacity:0;transition:opacity .9s;font-family:system-ui,'Segoe UI',sans-serif;cursor:pointer;user-select:none;-webkit-user-select:none}
+#lq-oldmap.on{opacity:1}
+#lq-oldmap canvas{position:absolute;inset:0;width:100%;height:100%}
+#lq-oldmap .chap{position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);text-align:center;color:#eee;text-shadow:0 2px 12px #000c;opacity:0;animation:lqOmChap 3s ease forwards;pointer-events:none;white-space:nowrap}
+#lq-oldmap .chap small{display:block;font:700 13px system-ui,sans-serif;letter-spacing:.35em;color:#d6d0c4;text-transform:uppercase}
+#lq-oldmap .chap b{display:block;font:800 clamp(30px,6vw,52px)/1.1 Georgia,'Times New Roman',serif;margin:6px 0}
+#lq-oldmap .chap span{font:600 14px system-ui,sans-serif;color:#bdbdbd}
+@keyframes lqOmChap{0%{opacity:0;transform:translate(-50%,-40%)}18%{opacity:1;transform:translate(-50%,-50%)}80%{opacity:1}100%{opacity:0}}
+#lq-oldmap .skip{position:absolute;top:14px;right:14px;background:#0009;color:#fff;border:1px solid #ffffff55;border-radius:999px;padding:7px 14px;font:700 13px system-ui,sans-serif;cursor:pointer}
+#lq-oldmap .box{position:absolute;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(760px,calc(100vw - 32px));box-sizing:border-box;background:#1c1c1cf0;border:2px solid #b9b2a4;border-radius:14px;padding:14px 18px 10px;color:#f2f2f2;box-shadow:0 10px 30px #000a;opacity:0;transition:opacity .35s}
+#lq-oldmap .box.show{opacity:1}
+#lq-oldmap .who{font:800 12px system-ui,sans-serif;color:#d6d0c4;letter-spacing:.04em;margin-bottom:4px}
+#lq-oldmap .en{margin:0;font:600 clamp(16px,2.4vw,20px)/1.4 Georgia,'Times New Roman',serif;min-height:1.4em}
+#lq-oldmap .vi{margin:6px 0 0;font:15px/1.4 system-ui,sans-serif;color:#b8b8b8}
+#lq-oldmap .foot{display:flex;justify-content:flex-end;margin-top:8px}
+#lq-oldmap .next{background:#d6d0c4;color:#1c1c1c;border:0;border-radius:8px;padding:7px 14px;font:800 14px system-ui,sans-serif;cursor:pointer}
+`;
+  // Ms. Green tells the start of the story in the past tense (the topic of Chapter 2).
+  const STORY = [
+    { en: 'Seventy years ago, English Town was a small village.', vi: 'Bảy mươi năm trước, English Town chỉ là một ngôi làng nhỏ.' },
+    { en: 'There were only a few houses, some rice fields and a long stone wall.', vi: 'Làng chỉ có vài ngôi nhà, mấy thửa ruộng lúa và một bức tường đá dài.' },
+    { en: 'The Oriaris family ruled the village. Their leader was Lord Gusest.', vi: 'Gia tộc Oriaris cai quản ngôi làng. Người đứng đầu là Lãnh chúa Gusest.' },
+    { en: 'One day, warriors from North Ire came. The villagers built the wall to protect their homes.', vi: 'Một ngày nọ, chiến binh Bắc Ire kéo đến. Dân làng dựng bức tường để bảo vệ nhà cửa.' },
+    { en: 'And a young soldier wore that helmet…', vi: 'Và một người lính trẻ đã đội chiếc mũ sắt ấy…' },
+    { en: 'Close your eyes, dear… and you will see it.', vi: 'Nhắm mắt lại nào cháu… rồi cháu sẽ thấy.', end: true },
+  ];
+  const OLD_HOUSES = ["Lily's House", "Ms. Green's House", "Mr. Brown's House", "Hero's Home", "Tom's House", "Mia's House"];
+  const WALL = { x: 1, y: 1, w: 42, h: 30 };
+
+  // The old village drawn from the real English Town data: no modern buildings, a wall around the centre,
+  // rice fields where the school and the station are now, the well where the fountain is.
+  function drawOldMap(cv, area, t) {
+    const ctx = cv.getContext('2d');
+    const W = (cv.width = cv.clientWidth * (window.devicePixelRatio || 1));
+    const H = (cv.height = cv.clientHeight * (window.devicePixelRatio || 1));
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, W, H);
+    const aw = (area && area.w) || 64;
+    const ah = 48;
+    const zoom = 1 + 0.04 * Math.min(1, t / 20000);
+    const k = Math.min(W / (aw + 4), H / (ah + 4)) * zoom;
+    const ox = (W - aw * k) / 2;
+    const oy = (H - ah * k) / 2.4;
+    const R = (x, y, w, h) => [ox + x * k, oy + y * k, w * k, h * k];
+    // Paper
+    ctx.fillStyle = '#c9c4b8';
+    ctx.fillRect(...R(-1, -1, aw + 2, ah + 2));
+    ctx.strokeStyle = '#6f6a60';
+    ctx.lineWidth = Math.max(2, k * 0.25);
+    ctx.strokeRect(...R(-1, -1, aw + 2, ah + 2));
+    // Rice fields: rows of short lines
+    const field = (x, y, w, h) => {
+      ctx.fillStyle = '#b3ae9f';
+      ctx.fillRect(...R(x, y, w, h));
+      ctx.strokeStyle = '#8f8a7c';
+      ctx.lineWidth = Math.max(1, k * 0.08);
+      for (let yy = y + 0.6; yy < y + h; yy += 1.1)
+        for (let xx = x + 0.4; xx < x + w - 0.6; xx += 1.3) {
+          ctx.beginPath();
+          ctx.moveTo(ox + xx * k, oy + yy * k);
+          ctx.lineTo(ox + (xx + 0.6) * k, oy + yy * k);
+          ctx.stroke();
+        }
+    };
+    field(47, 2, 15, 12);
+    field(47, 16, 15, 16);
+    field(2, 34, 18, 12);
+    field(22, 34, 22, 12);
+    // Pond (now the lake)
+    const lake = { x: 51, y: 36, w: 8, h: 4 };
+    ctx.fillStyle = '#8d9192';
+    ctx.beginPath();
+    ctx.ellipse(ox + (lake.x + lake.w / 2) * k, oy + (lake.y + lake.h / 2) * k, (lake.w / 2) * k, (lake.h / 2) * k, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Dirt paths where the main roads are now
+    ctx.fillStyle = '#b9b2a2';
+    ctx.fillRect(...R(17, 1, 3, 30));
+    ctx.fillRect(...R(1, 10.5, 41, 2));
+    // The wall
+    ctx.strokeStyle = '#4b4842';
+    ctx.lineWidth = Math.max(3, k * 0.6);
+    ctx.setLineDash([k * 0.9, k * 0.25]);
+    ctx.strokeRect(...R(WALL.x, WALL.y, WALL.w, WALL.h));
+    ctx.setLineDash([]);
+    // Houses (the six family houses) and the Oriaris hall where the Town Hall is now
+    const buildings = (area && area.buildings) || [];
+    const roof = (b, big) => {
+      const [x, y, w, h] = R(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = big ? '#5e5a52' : '#77726a';
+      ctx.fillRect(x, y + h * 0.35, w, h * 0.65);
+      ctx.fillStyle = big ? '#3f3c37' : '#56524b';
+      ctx.beginPath();
+      ctx.moveTo(x - k * 0.2, y + h * 0.4);
+      ctx.lineTo(x + w / 2, y);
+      ctx.lineTo(x + w + k * 0.2, y + h * 0.4);
+      ctx.closePath();
+      ctx.fill();
+    };
+    buildings.filter((b) => OLD_HOUSES.includes(b.name)).forEach((b) => roof(b));
+    const hall = buildings.find((b) => b.name === 'Town Hall');
+    if (hall) roof(hall, true);
+    // The well (now the fountain)
+    ctx.fillStyle = '#4b4842';
+    ctx.beginPath();
+    ctx.arc(ox + 27 * k, oy + 15 * k, k * 0.9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2a2826';
+    ctx.beginPath();
+    ctx.arc(ox + 27 * k, oy + 15 * k, k * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Labels
+    const label = (txt, x, y, size) => {
+      ctx.fillStyle = '#3a3731';
+      ctx.font = `italic ${Math.max(10, k * size)}px Georgia, 'Times New Roman', serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(txt, ox + x * k, oy + y * k);
+    };
+    label('Village of Oriaris', aw / 2, -2.2, 1.6);
+    if (hall) label('Oriaris Hall', hall.x + hall.w / 2, hall.y + hall.h + 1.4, 0.9);
+    label('the well', 27, 17.6, 0.85);
+    label('Wall of Oriaris', 21.5, 32.4, 0.95);
+    label('rice fields', 54.5, 9, 0.95);
+    label('rice fields', 22, 41, 0.95);
+    label('pond', 55, 43, 0.85);
+    // Old paper: soft vignette
+    const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  let playing = null;
+  function playPrelude() {
+    if (playing) return playing;
+    if (!document.getElementById('lq-oldmap-css')) {
+      const st = document.createElement('style');
+      st.id = 'lq-oldmap-css';
+      st.textContent = CSS;
+      document.head.appendChild(st);
+    }
+    playing = new Promise((resolve) => {
+      const sc = getScene();
+      const canvas = sc && sc.game && sc.game.canvas;
+      // 1. The world loses its colour.
+      if (canvas) {
+        canvas.style.transition = 'filter 1.8s ease';
+        canvas.style.filter = 'grayscale(1) brightness(.85)';
+      }
+      setTimeout(() => {
+        let paused = false;
+        try {
+          if (sc && sc.scene && sc.scene.isActive && sc.scene.isActive()) {
+            sc.scene.pause();
+            paused = true;
+          }
+        } catch (e) {}
+        const root = document.createElement('div');
+        root.id = 'lq-oldmap';
+        root.setAttribute('role', 'dialog');
+        root.setAttribute('aria-label', 'Chapter 2 prelude');
+        root.innerHTML =
+          '<canvas></canvas>' +
+          '<div class="chap"><small>Chapter 2</small><b>70 Years Ago</b><span>Chương 2 · 70 năm trước</span></div>' +
+          '<button class="skip" type="button">Skip ⏭</button>' +
+          '<div class="box"><div class="who">Ms. Green</div><p class="en"></p><p class="vi"></p><div class="foot"><button class="next" type="button">Next ▶</button></div></div>';
+        document.body.appendChild(root);
+        const cv = root.querySelector('canvas');
+        const box = root.querySelector('.box');
+        const en = root.querySelector('.en');
+        const vi = root.querySelector('.vi');
+        const next = root.querySelector('.next');
+        const t0 = performance.now();
+        let raf = 0;
+        const frame = () => {
+          drawOldMap(cv, sc && sc.area, performance.now() - t0);
+          raf = requestAnimationFrame(frame);
+        };
+        frame();
+        requestAnimationFrame(() => root.classList.add('on'));
+
+        let i = -1;
+        let typing = 0;
+        let full = '';
+        const show = () => {
+          const l = STORY[i];
+          full = l.en;
+          en.textContent = '';
+          vi.textContent = l.vi;
+          next.textContent = l.end ? 'Close ✓' : 'Next ▶';
+          clearInterval(typing);
+          let n = 0;
+          typing = setInterval(() => {
+            n += 1;
+            en.textContent = full.slice(0, n);
+            if (n >= full.length) clearInterval(typing);
+          }, 32);
+        };
+        const advance = () => {
+          if (i >= 0 && en.textContent.length < full.length) {
+            clearInterval(typing);
+            en.textContent = full;
+            return;
+          }
+          i += 1;
+          if (i >= STORY.length) return finish();
+          show();
+        };
+        let ended = false;
+        const finish = () => {
+          if (ended) return;
+          ended = true;
+          clearInterval(typing);
+          window.removeEventListener('keydown', onKey, true);
+          root.classList.remove('on');
+          if (canvas) canvas.style.filter = '';
+          setTimeout(() => {
+            cancelAnimationFrame(raf);
+            root.remove();
+            try {
+              if (paused && sc && sc.scene) sc.scene.resume();
+            } catch (e) {}
+            playing = null;
+            resolve();
+          }, 900);
+        };
+        const onKey = (e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            if (box.classList.contains('show')) advance();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            finish();
+          } else e.stopPropagation();
+        };
+        window.addEventListener('keydown', onKey, true);
+        root.addEventListener('click', (e) => {
+          if (e.target.closest('.skip')) return finish();
+          if (box.classList.contains('show')) advance();
+        });
+        // 2. Chapter card, then Ms. Green's story box.
+        setTimeout(() => {
+          if (ended) return;
+          box.classList.add('show');
+          advance();
+        }, 2900);
+      }, canvas ? 1900 : 0);
+    });
+    return playing;
+  }
+
+  // ---- loops --------------------------------------------------------------------------------------------------------
+  setInterval(() => {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqOldMap) {
+      try {
+        attach(sc);
+      } catch (e) {
+        console.warn('old map attach failed', e);
+      }
+    }
+  }, 1000);
+
+  setInterval(() => {
+    const sc = getScene();
+    if (!sc || !sc.store || !sc.store.game || playing) return;
+    // The quest opens: tell the player once.
+    if (isOpen()) {
+      const d = data(true);
+      if (!d.hinted && !(sc.chat && sc.chat.isOpen)) {
+        d.hinted = Date.now();
+        save();
+        toast('📜 Town news', 'Ms. Green found something strange in the Library.', 'Ask her: "Did you find something old?"');
+        refreshQuest();
+      }
+      // Story is ready and the chat is closed: play the prelude once.
+      // Then into the village of 70 years ago (past.js), with its lead-in film.
+      if (d.storyAt && !d.seen && !(sc.chat && sc.chat.isOpen)) {
+        d.seen = Date.now();
+        save();
+        playPrelude().then(() => window.LQPast && window.LQPast.enter({ film: true }));
+      }
+      // Asked Ms. Green to go back to the village.
+      if (d.goPast && !(sc.chat && sc.chat.isOpen)) {
+        d.goPast = 0;
+        save();
+        if (window.LQPast) window.LQPast.enter({ film: false });
+      }
+    }
+    if (isStarted()) syncQuest();
+  }, 1500);
+
+  if (/[?&]oldmap=1\b/.test(location.search)) {
+    const wait = setInterval(() => {
+      const sc = getScene();
+      if (sc && sc.player) {
+        clearInterval(wait);
+        setTimeout(playPrelude, 800);
+      }
+    }, 500);
+  }
+
+  window.LQOldMap = {
+    list: RELICS,
+    status,
+    tellStatus,
+    onNpcMessage,
+    isOpen,
+    isStarted,
+    isFound,
+    isTold,
+    foundCount,
+    toldCount,
+    drawRelic,
+    spot: (id) => {
+      const sc = getScene();
+      const r = RELICS.find((x) => x.id === id);
+      return sc && r ? spotFor(sc, r) : null;
+    },
+    // Watch the Chapter 2 prelude without changing progress.
+    preview: playPrelude,
+    // Handy while testing: start the quest over.
+    reset() {
+      const d = data(false);
+      if (!d) return;
+      Object.assign(d, { hinted: 0, started: 0, found: {}, told: {}, storyAt: 0, seen: 0 });
+      save();
+      refreshQuest();
+    },
+  };
+})();
+
+</script>
+    <script>
+/*
+ * Chapter 2 · "70 Years Ago": the village of Oriaris (English Town seventy years ago) as a playable area.
+ * Setting: NewGoal.md ("Ý tưởng mở rộng") and Chapter2.md.
+ *
+ *  - Area 'english-town-past' (64×48). It uses the SAME tile grid as today's English Town, so things line up with the
+ *    Old Map quest: the well is where the fountain is now, Oriaris Hall stands where the Town Hall is, the east wall
+ *    passes (42,16) where the wall stone is today, and rice fields cover the land of the school and the station.
+ *  - No new NPCs: the story is told by objects (signs, an inscription, a letter, a notice) in the past tense.
+ *  - The whole chapter is pale grey (CSS filter on the game canvas while the player is here).
+ *  - Lead-in film (play()): in the real map, with the camera: the village, Lord Gusest's speech on the hall steps,
+ *    the people cheer, he leaves and sends food. Then the player walks around.
+ *  - Exit: the glowing path at the south end ("Back to today") leads to the Library in English Town.
+ *
+ * Hooks in the game code: 03-core-areas-and-map.js registers `area` (needs the `ue` class there);
+ * 10-core-characters-and-scene.js (drawWorld) calls paint() for theme 'past'. Entry from oldmap.js (after the
+ * Ms. Green prelude) or Ms. Green later ("take me back"). Progress: game.ach.past = { visits, read }.
+ * Testing: index.html?past=1 (film) or ?past=2 (no film), LQPast.enter(), LQPast.play().
+ */
+(function () {
+  'use strict';
+
+  const ID = 'english-town-past';
+  const W = 64;
+  const H = 48;
+  const WALL = { x1: 1, y1: 1, x2: 42, y2: 31 };
+  const GATES = [
+    { side: 'south', from: 17, to: 19 }, // x on the bottom wall
+    { side: 'east', from: 10, to: 12 }, // y on the right wall
+  ];
+  const SPAWN = { x: 22, y: 17 };
+  const SQUARE = { x: 21, y: 13, w: 12, h: 6 };
+
+  const BUILDINGS = [
+    { name: 'Oriaris Hall', x: 27, y: 3, w: 7, h: 4, color: 0x5b5f66, wall: 0xb7b0a3, door: 30, kind: 'hall' },
+    { name: 'Granary', x: 5, y: 3, w: 7, h: 4, color: 0x8a6a42, wall: 0xa88a5e, door: 8, kind: 'barn' },
+    // kind 'thatch' = straw-roofed cottage, 'wood' = plank house with a shingle roof.
+    { name: "Weaver's Cottage", x: 2, y: 25, w: 4, h: 3, color: 0xc2a766, door: 3, kind: 'thatch' },
+    { name: "Baker's House", x: 8, y: 25, w: 4, h: 3, color: 0x6e5a48, door: 9, kind: 'wood' },
+    { name: "Miller's Cottage", x: 13, y: 25, w: 4, h: 3, color: 0xc2a766, door: 14, kind: 'thatch' },
+    { name: 'Brown Family Home', x: 23, y: 25, w: 4, h: 3, color: 0x6e5a48, door: 24, kind: 'wood' },
+    { name: "Farmer's Cottage", x: 30, y: 25, w: 4, h: 3, color: 0xc2a766, door: 31, kind: 'thatch' },
+    { name: "Shepherd's House", x: 35, y: 25, w: 4, h: 3, color: 0x6e5a48, door: 36, kind: 'wood' },
+  ];
+  const PLACES = {
+    square: { x: 24, y: 17 },
+    well: { x: 26, y: 17 },
+    hall: { x: 30, y: 8 },
+    granary: { x: 8, y: 8 },
+    south_gate: { x: 18, y: 33 },
+    east_gate: { x: 44, y: 11 },
+    fields_east: { x: 49, y: 11 },
+    fields_south: { x: 18, y: 40 },
+    // Lord Gusest (chat NPC, game/02): in front of Oriaris Hall, beside the spots of days 7 and 13
+    gusest_post: { x: 32, y: 8 },
+  };
+  const WARPS = [
+    { x: 17, y: 46, w: 3, h: 1, label: '↩ Back to today (Library)', to: 'english-town', spawn: { x: 8, y: 23 } },
+    // the east road leaves the village toward the North Trail and the camp (js/front.js)
+    { x: 63, y: 10, w: 1, h: 3, label: 'Tech-Co → Workplace English (B1)', to: 'tech-co', spawn: { x: 2, y: 17 } },
+  ];
+
+  // Things to read. All in the past tense: the topic of the chapter.
+  const SIGNS = [
+    {
+      id: 'notice', x: 24, y: 13,
+      title: '📜 Notice board',
+      en: 'By order of Lord Gusest: every family received bread and rice this week.',
+      vi: 'Theo lệnh Lãnh chúa Gusest: tuần này mỗi gia đình đã nhận bánh mì và gạo.',
+    },
+    {
+      id: 'hallplate', x: 34, y: 8,
+      title: '🛡️ Plate on Oriaris Hall',
+      en: 'The Oriaris family built this hall. Lord Gusest lived and worked here.',
+      vi: 'Gia tộc Oriaris đã xây sảnh này. Lãnh chúa Gusest đã sống và làm việc ở đây.',
+    },
+    {
+      id: 'wall', x: 16, y: 31,
+      title: '🪨 Words on the wall',
+      en: 'We built this wall stone by stone. Nobody was alone.',
+      vi: 'Chúng tôi đã xây bức tường này từng viên đá một. Không ai phải đơn độc.',
+    },
+    {
+      id: 'field', x: 45, y: 14,
+      title: '🌾 Wooden board',
+      en: 'These fields fed the village. The children carried water every morning.',
+      vi: 'Những thửa ruộng này đã nuôi cả làng. Bọn trẻ gánh nước mỗi sáng.',
+    },
+    {
+      id: 'letter', x: 27, y: 28,
+      title: '✉️ A letter by the door',
+      en: '“Dear Mother, I was afraid today, but I stayed at the wall. — Your son.”',
+      vi: '“Mẹ yêu, hôm nay con đã sợ, nhưng con vẫn ở lại bên tường. — Con trai của mẹ.”',
+    },
+    {
+      id: 'well', x: 28, y: 15,
+      title: '🪣 The village well',
+      en: 'Every family came here for water. People talked and laughed here before the war.',
+      vi: 'Mọi gia đình đều đến đây lấy nước. Trước chiến tranh, mọi người đã trò chuyện và cười đùa ở đây.',
+    },
+  ];
+  // More things to read outside (added with the village details).
+  SIGNS.push(
+    {
+      id: 'tower', x: 14, y: 33,
+      title: '🗼 The south watchtower',
+      en: 'From this tower, the guards watched the road day and night.',
+      vi: 'Từ tòa tháp này, lính gác đã canh con đường cả ngày lẫn đêm.',
+    },
+    {
+      id: 'market', x: 32, y: 17,
+      title: '🧺 The little market',
+      en: 'The market was very small. People shared what they had.',
+      vi: 'Phiên chợ rất nhỏ. Mọi người đã chia sẻ những gì mình có.',
+    },
+  );
+  const READ_RADIUS = 46;
+
+  // ---- interiors -------------------------------------------------------------------------------------------------------
+  // Same format as the game's rooms (_r in 07b/08): items are { k, x, y, w, h, c } and use the game's furniture art.
+  const I = (k, x, y, w = 1, h = 1, c) => ({ k, x, y, w, h, c });
+  const ROOMS = {
+    'Oriaris Hall': {
+      w: 18,
+      h: 12,
+      floor: 'stone',
+      f1: 0x8f8a80,
+      f2: 0x837e74,
+      wall: 0xb7b0a3,
+      items: [
+        I('flag', 2, 0, 2, 2, 0x7d2e2e),
+        I('paint', 8, 0, 2, 2, 0x5b4a33),
+        I('flag', 14, 0, 2, 2, 0x7d2e2e),
+        I('shelf', 1, 2, 3, 1),
+        I('fireplace', 8, 2, 2, 1),
+        I('table', 13, 3, 3, 1, 0x5b4a33), // not 'desk': the game draws a computer on desks
+        I('chair', 14, 4),
+        I('rug', 6, 5, 6, 4, 0x7d2e2e),
+        I('table', 6, 6, 6, 1, 0x7a5e3a),
+        I('chair', 6, 5), I('chair', 8, 5), I('chair', 10, 5),
+        I('chair', 6, 7), I('chair', 8, 7), I('chair', 10, 7),
+        I('crate', 1, 8), I('crate', 2, 8), I('crate', 1, 9), I('crate', 2, 9),
+        I('crate', 15, 8), I('crate', 16, 9),
+      ],
+      spots: {},
+      guests: [[4, 9], [13, 9]],
+    },
+    'Brown Family Home': {
+      w: 12,
+      h: 10,
+      floor: 'wood',
+      f1: 0x8a6e4e,
+      f2: 0x7f6446,
+      wall: 0xcfc3a8,
+      items: [
+        I('paint', 3, 0, 2, 2, 0x6b5233),
+        I('bed', 1, 2, 2, 2, 0x8a7a5a),
+        I('wardrobe', 3, 2, 1, 2, 0x6b5233),
+        I('fireplace', 6, 2, 2, 1),
+        I('shelf', 9, 2, 2, 1),
+        I('table', 6, 5, 2, 1, 0x7a5e3a),
+        I('chair', 6, 6), I('chair', 7, 6),
+        I('rug', 2, 6, 3, 2, 0x8a7a5a),
+        I('crate', 10, 7),
+      ],
+      spots: {},
+      guests: [[5, 7]],
+    },
+  };
+  // Things to read inside (tile = room tile). Walk up to them like the signs outside.
+  const NOTES = [
+    {
+      id: 'portrait', room: 'Oriaris Hall', x: 9, y: 2,
+      title: '🖼️ A portrait',
+      en: 'A portrait of Lord Gusest. He looked kind, but very tired.',
+      vi: 'Bức chân dung Lãnh chúa Gusest. Ngài trông hiền hậu, nhưng rất mệt mỏi.',
+    },
+    {
+      id: 'warmap', room: 'Oriaris Hall', x: 14, y: 5,
+      title: '🗺️ A war map on the desk',
+      en: 'The knights went north, to the border of North Ire. Someone drew a red line there.',
+      vi: 'Các kỵ sĩ đã đi về phía bắc, tới biên giới Bắc Ire. Có người đã vẽ một đường đỏ ở đó.',
+    },
+    {
+      id: 'foodlist', room: 'Oriaris Hall', x: 3, y: 8,
+      title: '📋 A list on the crates',
+      en: '“Rice for thirty-two families. The old and the young ate first.”',
+      vi: '“Gạo cho ba mươi hai gia đình. Người già và trẻ nhỏ được ăn trước.”',
+    },
+    {
+      id: 'peg', room: 'Brown Family Home', x: 4, y: 2,
+      title: '🪝 An empty peg',
+      en: 'An empty peg by the door. The young soldier took his helmet to the wall.',
+      vi: 'Một chiếc móc trống cạnh cửa. Người lính trẻ đã mang mũ sắt ra bức tường.',
+    },
+    {
+      id: 'diary', room: 'Brown Family Home', x: 6, y: 4,
+      title: '📔 A small diary',
+      en: '“Day three. We waited. Mother cooked rice soup. I was not hungry.”',
+      vi: '“Ngày thứ ba. Chúng tôi chờ đợi. Mẹ nấu cháo. Tôi không thấy đói.”',
+    },
+  ];
+  const ALL_READ = () => SIGNS.length + NOTES.length;
+
+  // ---- obstacles ------------------------------------------------------------------------------------------------------
+  function makeObstacles(a) {
+    const r = [];
+    const add = (kind, x, y, w = 1, h = 1) => r.push({ kind, x, y, w, h });
+    const inGate = (side, v) => GATES.some((g) => g.side === side && v >= g.from && v <= g.to);
+    // The wall: one tile thick, with two gates.
+    for (let x = WALL.x1; x <= WALL.x2; x++) {
+      add('wall', x, WALL.y1);
+      if (!inGate('south', x)) add('wall', x, WALL.y2);
+    }
+    for (let y = WALL.y1 + 1; y < WALL.y2; y++) {
+      add('wall', WALL.x1, y);
+      if (!inGate('east', y)) add('wall', WALL.x2, y);
+    }
+    // The well (where the fountain is today)
+    add('well', 26, 14, 2, 2);
+    // Big rice paddies east (school + park land today) and south (station land today), with one-tile dikes to walk on.
+    [[46, 2, 8, 7], [55, 2, 8, 7], [46, 14, 8, 7], [55, 14, 8, 7], [46, 22, 8, 7], [55, 22, 8, 7]].forEach((p) => add('paddy', ...p));
+    [[2, 35, 7, 6], [10, 35, 6, 6], [2, 42, 7, 5], [10, 42, 6, 5]].forEach((p) => add('paddy', ...p));
+    [[21, 35, 8, 6], [30, 35, 8, 6], [39, 35, 8, 6], [48, 35, 7, 6], [56, 35, 7, 6]].forEach((p) => add('paddy', ...p));
+    [[22, 42, 7, 5], [30, 42, 8, 5], [39, 42, 8, 5], [48, 42, 7, 5], [56, 42, 7, 5]].forEach((p) => add('paddy', ...p));
+    // Village life inside the wall
+    [[4, 9], [13, 8], [36, 9], [39, 15], [4, 16], [9, 20], [38, 21], [20, 22]].forEach(([x, y]) => add('tree', x, y));
+    [[10, 8], [12, 9]].forEach(([x, y]) => add('hay', x, y));
+    add('cart', 14, 4, 2, 1);
+    [[11, 7], [12, 7]].forEach(([x, y]) => add('barrel', x, y));
+    add('banner', 26, 7);
+    add('banner', 34, 7);
+    // Little vegetable gardens behind the cottages
+    [[2, 29, 4], [8, 29, 4], [30, 29, 4], [35, 29, 4]].forEach(([x, y, w]) => add('garden', x, y, w, 1));
+    // Trees outside the wall
+    [[45, 33], [61, 33], [63, 30], [44, 2], [63, 13], [1, 34], [1, 44], [63, 46], [20, 46]].forEach(([x, y]) => add('tree', x, y));
+    // Watchtowers outside both gates
+    add('tower', 15, 32, 2, 2);
+    add('tower', 20, 32, 2, 2);
+    add('tower', 43, 7, 2, 2);
+    add('tower', 43, 13, 2, 2);
+    // Torches along the inside of the wall
+    [[2, 2], [10, 2], [22, 2], [36, 2], [41, 6], [41, 20], [41, 28], [2, 14], [2, 22], [15, 30], [21, 30]].forEach(([x, y]) => add('torch', x, y));
+    // Rice drying racks between the wall and the south fields
+    add('rack', 24, 32, 3, 1);
+    add('rack', 30, 32, 3, 1);
+    add('rack', 36, 32, 3, 1);
+    // Market stall in the square, a wood pile, a hen house
+    add('stall', 30, 16, 2, 1);
+    add('woodpile', 37, 13, 2, 1);
+    add('coop', 5, 20, 2, 2);
+    // Signs (readable)
+    SIGNS.forEach((s) => add('sign', s.x, s.y));
+    return r.filter((o) => o.x >= 0 && o.y >= 0 && o.x + o.w <= a.w && o.y + o.h <= a.h);
+  }
+
+  const area = {
+    id: ID,
+    name: 'Oriaris Village · 70 Years Ago',
+    w: W,
+    h: H,
+    theme: 'past',
+    buildings: BUILDINGS,
+    places: PLACES,
+    roadsH: [{ y: 10, h: 3 }],
+    roadsV: [{ x: 17, w: 3 }],
+    spawn: SPAWN,
+    npcs: ['gusest'],
+    portals: {},
+    warps: WARPS,
+    makeObstacles,
+  };
+
+  // ---- painting (Phaser Graphics, called once for the area texture) ------------------------------------------------
+  // Everything is drawn with code (no image files). The world is shown through a pale filter (applyFilter), so the
+  // drawing relies on light/shadow more than on colour: every object gets a soft shadow, a lit top and a dark base.
+  function rnd(seed) {
+    let s = seed | 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Multiply a colour (k < 1 darker, k > 1 lighter).
+  const shade = (c, k) => {
+    const f = (v) => Math.max(0, Math.min(255, Math.round(v * k)));
+    return (f((c >> 16) & 255) << 16) | (f((c >> 8) & 255) << 8) | f(c & 255);
+  };
+  const T = 32;
+  let R = rnd(1);
+  const pick = (arr) => arr[Math.floor(R() * arr.length)];
+  // Things that stick up above their tile: drawn as their own sprites, in front of or behind the player.
+  const TALL = new Set(['tower', 'tree', 'well', 'banner', 'torch', 'stall', 'coop', 'rack']);
+  const shadow = (g, cx, cy, w, h, a = 0.22) => g.fillStyle(0x1a160f, a).fillEllipse(cx, cy, w, h);
+  const poly = (g, color, alpha, pts) => g.fillStyle(color, alpha).fillPoints(pts.map(([x, y]) => ({ x, y })), true);
+
+  function paint(g, a) {
+    if (a.id !== ID && window.LQFront) return window.LQFront.paint(g, a);
+    R = rnd(7070);
+    const W2 = a.w * T;
+    const H2 = a.h * T;
+    // 1. Grass: three tones per tile, then blades, clover and a few pale flowers.
+    // Soft patches instead of per-tile squares, so no grid shows through.
+    g.fillStyle(0x8e9a68, 1).fillRect(0, 0, W2, H2);
+    for (let i = 0; i < a.w * a.h * 0.9; i++) {
+      const c = pick([0x96a271, 0x86925f, 0x9aa676, 0x8a965f]);
+      g.fillStyle(c, 0.35).fillEllipse(R() * W2, R() * H2, 30 + R() * 60, 18 + R() * 36);
+    }
+    for (let i = 0; i < a.w * a.h * 0.25; i++) g.fillStyle(0x7f8b56, 0.25).fillEllipse(R() * W2, R() * H2, 10 + R() * 18, 6 + R() * 10);
+    for (let i = 0; i < a.w * a.h * 1.6; i++) {
+      const px = R() * W2;
+      const py = R() * H2;
+      const c = R() < 0.6 ? 0x6c7848 : 0xa6b07c;
+      g.lineStyle(1.4, c, 0.9).lineBetween(px, py, px - 2, py - 5).lineBetween(px, py, px + 1, py - 6).lineBetween(px, py, px + 3, py - 4);
+    }
+    for (let i = 0; i < 160; i++) {
+      const px = R() * W2;
+      const py = R() * H2;
+      g.fillStyle(R() < 0.5 ? 0xe9e2c8 : 0xd8c27a, 0.85).fillCircle(px, py, 1.6).fillCircle(px + 3, py + 1, 1.4).fillCircle(px + 1, py - 2, 1.4);
+    }
+
+    // 2. The village square: trodden earth with a soft grassy edge and pebbles.
+    const sq = { x: SQUARE.x * T, y: SQUARE.y * T, w: SQUARE.w * T, h: SQUARE.h * T };
+    g.fillStyle(0xb6a582, 1).fillRoundedRect(sq.x - 6, sq.y - 6, sq.w + 12, sq.h + 12, 26);
+    g.fillStyle(0xbfae8b, 1).fillRoundedRect(sq.x + 10, sq.y + 8, sq.w - 20, sq.h - 16, 20);
+    for (let i = 0; i < 120; i++) g.fillStyle(pick([0x9e8d6c, 0xcdbd99, 0xa89676]), 1).fillEllipse(sq.x + R() * sq.w, sq.y + R() * sq.h, 4 + R() * 4, 3 + R() * 2);
+
+    // 3. Dirt roads: worn middle, two wheel ruts, stones, grass creeping over the edges.
+    const dirt = (x, y, w, h, vertical) => {
+      g.fillStyle(0xa8966f, 1).fillRect(x, y, w, h);
+      if (vertical) g.fillStyle(0xbba985, 1).fillRect(x + 8, y, w - 16, h);
+      else g.fillStyle(0xbba985, 1).fillRect(x, y + 8, w, h - 16);
+      const rut = (rx, ry, rw, rh) => g.fillStyle(0x92805e, 0.8).fillRect(rx, ry, rw, rh);
+      if (vertical) {
+        rut(x + w * 0.3, y, 4, h);
+        rut(x + w * 0.66, y, 4, h);
+      } else {
+        rut(x, y + h * 0.32, w, 4);
+        rut(x, y + h * 0.66, w, 4);
+      }
+      for (let i = 0; i < (w * h) / 260; i++) {
+        const px = x + R() * w;
+        const py = y + R() * h;
+        g.fillStyle(0x8a7a5c, 0.6).fillEllipse(px + 1, py + 1, 5, 3);
+        g.fillStyle(pick([0xcfc2a2, 0xb7a787, 0xd8ccae]), 1).fillEllipse(px, py, 4, 3);
+      }
+      // grass tufts over both edges
+      const n = (vertical ? h : w) / 9;
+      for (let i = 0; i < n; i++) {
+        const t = R() * (vertical ? h : w);
+        [0, 1].forEach((side) => {
+          const px = vertical ? x + (side ? w - 2 : 2) : x + t;
+          const py = vertical ? y + t : y + (side ? h - 2 : 4);
+          g.lineStyle(1.5, 0x748052, 1).lineBetween(px, py, px - 2, py - 6).lineBetween(px, py, px + 2, py - 7);
+        });
+      }
+    };
+    a.roadsH.forEach((r) => dirt(0, r.y * T, W2, r.h * T, false));
+    a.roadsV.forEach((r) => dirt(r.x * T, 0, r.w * T, H2, true));
+    // crossings: smooth the middle again
+    a.roadsH.forEach((h) => a.roadsV.forEach((v) => g.fillStyle(0xb4a27e, 1).fillRect(v.x * T + 6, h.y * T + 6, v.w * T - 12, h.h * T - 12)));
+
+    // 4. Flat objects only. Tall things (buildings, towers, trees…) are separate sprites sorted against the player,
+    //    so the player can walk behind them (see tallSprites below).
+    [...a.obstacles].filter((o) => !TALL.has(o.kind)).sort((p, q) => p.y + p.h - (q.y + q.h)).forEach((o) => drawThing(g, o, a));
+    // 6. The way back to today
+    a.warps.forEach((w) => {
+      const cx = (w.x + w.w / 2) * T;
+      const cy = (w.y + 0.5) * T;
+      for (let i = 0; i < 6; i++) g.fillStyle(0xffe6a8, 0.07).fillEllipse(cx, cy, w.w * T + 40 - i * 9, T + 22 - i * 4);
+      g.fillStyle(0xfff6dc, 0.55).fillEllipse(cx, cy, w.w * T - 16, 12);
+      for (let i = 0; i < 14; i++) g.fillStyle(0xfff6dc, 0.7).fillCircle(cx + (R() - 0.5) * w.w * T, cy - R() * 26, 1.5);
+    });
+  }
+
+  function drawThing(g, o) {
+    const x = o.x * T;
+    const y = o.y * T;
+    const w = o.w * T;
+    const h = o.h * T;
+    switch (o.kind) {
+      case 'wall':
+        return wallTile(g, o);
+      case 'well':
+        return well(g, x, y, w, h);
+      case 'paddy':
+        return paddy(g, x, y, w, h);
+      case 'tree':
+        return tree(g, x + 16, y + 26);
+      case 'tower':
+        return tower(g, x, y, w, h);
+      case 'hay':
+        shadow(g, x + 18, y + 27, 28, 9);
+        g.fillStyle(0xb39a52, 1).fillEllipse(x + 16, y + 18, 28, 22);
+        g.fillStyle(0xcdb56c, 1).fillEllipse(x + 14, y + 15, 22, 15);
+        for (let i = 0; i < 9; i++) g.lineStyle(1, 0x9a8240, 0.9).lineBetween(x + 6 + i * 2.5, y + 10 + (i % 3), x + 4 + i * 2.6, y + 24);
+        return;
+      case 'cart':
+        shadow(g, x + w / 2, y + 28, w - 4, 8);
+        g.fillStyle(0x6b5233, 1).fillRect(x + 4, y + 6, w - 12, 16);
+        g.fillStyle(0x8a6a44, 1).fillRect(x + 4, y + 6, w - 12, 4);
+        for (let xx = x + 10; xx < x + w - 10; xx += 10) g.fillStyle(0x5a4429, 1).fillRect(xx, y + 10, 2, 12);
+        g.fillStyle(0xc9b06a, 1).fillEllipse(x + w / 2 - 4, y + 6, w - 22, 10);
+        [x + 14, x + w - 22].forEach((cx) => {
+          g.fillStyle(0x3d2f1f, 1).fillCircle(cx, y + 24, 8);
+          g.fillStyle(0x7a5e3a, 1).fillCircle(cx, y + 24, 5);
+          g.fillStyle(0x3d2f1f, 1).fillCircle(cx, y + 24, 2);
+        });
+        g.lineStyle(3, 0x6b5233, 1).lineBetween(x + w - 8, y + 14, x + w + 6, y + 18);
+        return;
+      case 'barrel':
+        shadow(g, x + 17, y + 28, 20, 6);
+        g.fillStyle(0x6e5132, 1).fillRoundedRect(x + 7, y + 5, 18, 23, 5);
+        g.fillStyle(0x8a6842, 1).fillRect(x + 10, y + 6, 6, 21);
+        g.fillStyle(0x4a4640, 1).fillRect(x + 7, y + 9, 18, 2).fillRect(x + 7, y + 21, 18, 2);
+        g.fillStyle(0x9a7a50, 1).fillEllipse(x + 16, y + 6, 18, 6);
+        return;
+      case 'banner':
+        g.fillStyle(0x4b3a26, 1).fillRect(x + 14, y - 22, 4, 52);
+        g.fillStyle(0xc9a24a, 1).fillCircle(x + 16, y - 23, 3);
+        poly(g, 0x7d2e2e, 1, [[x + 18, y - 18], [x + 34, y - 18], [x + 34, y + 6], [x + 26, y + 2], [x + 18, y + 6]]);
+        g.fillStyle(0x9a3c3c, 1).fillRect(x + 18, y - 18, 16, 3);
+        crest(g, x + 26, y - 8, 1.1);
+        return;
+      case 'garden':
+        g.fillStyle(0x6e5c40, 1).fillRoundedRect(x + 2, y + 6, w - 4, h - 10, 4);
+        for (let xx = x + 8; xx < x + w - 4; xx += 9) {
+          g.fillStyle(0x5c7a3c, 1).fillCircle(xx, y + 16, 4);
+          g.fillStyle(0x7a9a50, 1).fillCircle(xx - 1, y + 14, 2.4);
+        }
+        g.lineStyle(2, 0x8a6a44, 1).strokeRect(x + 2, y + 6, w - 4, h - 10);
+        return;
+      case 'torch': {
+        for (let i = 0; i < 4; i++) g.fillStyle(0xffd27a, 0.06).fillCircle(x + 16, y + 6, 22 - i * 5);
+        shadow(g, x + 18, y + 29, 10, 4);
+        g.fillStyle(0x4b3a26, 1).fillRect(x + 14, y + 8, 4, 21);
+        g.fillStyle(0x3a3a3a, 1).fillRect(x + 11, y + 7, 10, 4);
+        poly(g, 0xd9822e, 1, [[x + 10, y + 8], [x + 22, y + 8], [x + 19, y - 1], [x + 16, y - 9], [x + 13, y - 1]]);
+        poly(g, 0xffd27a, 1, [[x + 13, y + 8], [x + 19, y + 8], [x + 17, y + 1], [x + 16, y - 3], [x + 15, y + 1]]);
+        return;
+      }
+      case 'rack': {
+        shadow(g, x + w / 2, y + 30, w, 8);
+        g.fillStyle(0x5e4630, 1).fillRect(x + 4, y + 2, 4, 28).fillRect(x + w - 8, y + 2, 4, 28);
+        g.fillStyle(0x7a5e3a, 1).fillRect(x + 2, y + 4, w - 4, 4);
+        for (let xx = x + 11; xx < x + w - 8; xx += 8) {
+          poly(g, 0xb79a52, 1, [[xx - 4, y + 8], [xx + 4, y + 8], [xx + 3, y + 22], [xx, y + 27], [xx - 3, y + 22]]);
+          g.fillStyle(0xd5bc72, 1).fillRect(xx - 2, y + 9, 2, 12);
+          g.fillStyle(0x6b5a30, 1).fillRect(xx - 4, y + 12, 8, 2);
+        }
+        return;
+      }
+      case 'stall': {
+        shadow(g, x + w / 2, y + 30, w + 6, 8);
+        g.fillStyle(0x5e4630, 1).fillRect(x + 3, y - 12, 3, 40).fillRect(x + w - 6, y - 12, 3, 40);
+        g.fillStyle(0x7a5e3a, 1).fillRect(x + 1, y + 12, w - 2, 14);
+        g.fillStyle(0x8f7048, 1).fillRect(x + 1, y + 12, w - 2, 4);
+        for (let i = 0; i < 8; i++) g.fillStyle(i % 2 ? 0xd9cdb4 : 0x9a8466, 1).fillRect(x - 3 + i * ((w + 6) / 8), y - 16, (w + 6) / 8, 9);
+        for (let i = 0; i < 8; i++) g.fillStyle(i % 2 ? 0xd9cdb4 : 0x9a8466, 1).fillTriangle(x - 3 + i * ((w + 6) / 8), y - 7, x - 3 + (i + 1) * ((w + 6) / 8), y - 7, x - 3 + (i + 0.5) * ((w + 6) / 8), y - 2);
+        [[x + 12, 0xb7964e], [x + 26, 0xd8cfb0], [x + 42, 0x9a6e44], [x + 54, 0xb7964e]].forEach(([cx, c]) => {
+          g.fillStyle(0x6b5233, 1).fillEllipse(cx, y + 13, 12, 6);
+          g.fillStyle(c, 1).fillCircle(cx - 2, y + 10, 3).fillCircle(cx + 2, y + 10, 3).fillCircle(cx, y + 8, 3);
+        });
+        return;
+      }
+      case 'woodpile':
+        shadow(g, x + w / 2, y + 30, w, 7);
+        for (let i = 0; i < 3; i++)
+          for (let j = 0; j < 5 - i; j++) {
+            const cx = x + 10 + j * 11 + i * 5.5;
+            const cy = y + 25 - i * 8;
+            g.fillStyle(0x5a4429, 1).fillCircle(cx, cy, 5.5);
+            g.fillStyle(0xb8955f, 1).fillCircle(cx, cy, 3.8);
+            g.fillStyle(0x8f7048, 1).fillCircle(cx, cy, 1.5);
+          }
+        return;
+      case 'coop': {
+        shadow(g, x + w / 2 + 3, y + h - 6, w, 12);
+        g.fillStyle(0x6b5233, 1).fillRect(x + 8, y + 22, w - 16, h - 30);
+        for (let xx = x + 10; xx < x + w - 10; xx += 7) g.fillStyle(0x7d6142, 1).fillRect(xx, y + 22, 4, h - 30);
+        poly(g, 0xb79a5a, 1, [[x + 2, y + 25], [x + w - 2, y + 25], [x + w - 10, y + 6], [x + 10, y + 6]]);
+        for (let yy = y + 9; yy < y + 25; yy += 4) g.lineStyle(1, 0x95793e, 1).lineBetween(x + 8, yy, x + w - 8, yy);
+        g.fillStyle(0x2e261c, 1).fillRoundedRect(x + w / 2 - 6, y + h - 20, 12, 12, 5);
+        // little ramp and scattered grain; the hens themselves are alive (see the flock below)
+        g.fillStyle(0x7a5e3a, 1).fillRect(x + w / 2 - 5, y + h - 8, 10, 8);
+        for (let i = 0; i < 14; i++) g.fillStyle(0xd8c07e, 0.9).fillCircle(x + 4 + ((i * 37) % (w + 20)), y + h + 4 + ((i * 13) % 18), 1.2);
+        return;
+      }
+      case 'sign':
+        shadow(g, x + 16, y + 29, 22, 6);
+        g.fillStyle(0x4b3a26, 1).fillRect(x + 8, y + 10, 3, 19).fillRect(x + 21, y + 10, 3, 19);
+        g.fillStyle(0x7a5e3a, 1).fillRoundedRect(x + 2, y + 1, 28, 15, 3);
+        g.fillStyle(0x8f7048, 1).fillRect(x + 3, y + 2, 26, 3);
+        g.fillStyle(0xe2d3a8, 1).fillRect(x + 6, y + 7, 20, 2).fillRect(x + 6, y + 11, 14, 2);
+        g.fillStyle(0x3a2e20, 1).fillCircle(x + 5, y + 4, 1).fillCircle(x + 27, y + 4, 1);
+        return;
+      default:
+        return;
+    }
+  }
+
+  function hen(g, cx, cy) {
+    shadow(g, cx, cy + 4, 10, 3, 0.2);
+    g.fillStyle(0xefe9dc, 1).fillEllipse(cx, cy, 11, 8);
+    g.fillStyle(0xf7f3ea, 1).fillCircle(cx + 4, cy - 4, 3.4);
+    g.fillStyle(0xc8432f, 1).fillRect(cx + 3, cy - 9, 3, 2);
+    g.fillStyle(0xd9a13a, 1).fillTriangle(cx + 7, cy - 4, cx + 10, cy - 3, cx + 7, cy - 2);
+  }
+
+  // Stone wall: irregular blocks, a lit top, crenels on the outer rows and a shadow on the ground below.
+  function wallTile(g, o) {
+    const x = o.x * T;
+    const y = o.y * T;
+    const r = rnd(o.x * 131 + o.y * 977);
+    const STONES = [0x8e897f, 0x98938a, 0x86817a, 0xa19c92];
+    g.fillStyle(0x1a160f, 0.18).fillRect(x, y + T, T, 6);
+    g.fillStyle(0x5d5850, 1).fillRect(x, y, T, T);
+    const rows = [[1, 9], [11, 9], [21, 10]];
+    rows.forEach(([ry, rh], i) => {
+      let cx = x + (i % 2 ? -6 : 0);
+      while (cx < x + T) {
+        const sw = 9 + Math.floor(r() * 9);
+        const sx = Math.max(x, cx + 1);
+        const ex = Math.min(x + T, cx + sw - 1);
+        if (ex - sx > 2) {
+          const c = STONES[Math.floor(r() * STONES.length)];
+          g.fillStyle(c, 1).fillRoundedRect(sx, y + ry, ex - sx, rh - 1, 2);
+          g.fillStyle(shade(c, 1.12), 1).fillRect(sx + 1, y + ry, ex - sx - 2, 2);
+          g.fillStyle(shade(c, 0.82), 1).fillRect(sx + 1, y + ry + rh - 3, ex - sx - 2, 2);
+        }
+        cx += sw;
+      }
+    });
+    // walkway cap and crenels on top
+    g.fillStyle(0xb2ada2, 1).fillRect(x, y - 3, T, 4);
+    if ((o.x + o.y) % 2 === 0) {
+      g.fillStyle(0x9a958b, 1).fillRect(x + 4, y - 10, T - 8, 8);
+      g.fillStyle(0xb8b3a8, 1).fillRect(x + 4, y - 10, T - 8, 2);
+    }
+    // a little moss
+    if (r() < 0.35) g.fillStyle(0x6f7d4c, 0.8).fillEllipse(x + r() * T, y + T - 3, 8, 4);
+  }
+
+  function well(g, x, y, w, h) {
+    const cx = x + w / 2;
+    const cy = y + h / 2 + 4;
+    shadow(g, cx + 4, cy + 18, w + 6, 18, 0.25);
+    // stone ring
+    g.fillStyle(0x6f6a62, 1).fillEllipse(cx, cy + 6, 54, 34);
+    for (let i = 0; i < 16; i++) {
+      const ang = (i / 16) * Math.PI * 2;
+      g.fillStyle(i % 2 ? 0x9a958b : 0x8a857c, 1).fillEllipse(cx + Math.cos(ang) * 22, cy + 4 + Math.sin(ang) * 13, 12, 9);
+    }
+    g.fillStyle(0x26323a, 1).fillEllipse(cx, cy + 3, 30, 16);
+    g.fillStyle(0x3f5560, 1).fillEllipse(cx - 4, cy + 1, 16, 6);
+    g.fillStyle(0xdfe8ea, 0.5).fillEllipse(cx - 7, cy, 6, 2);
+    // posts, beam, little thatch roof, rope and bucket
+    g.fillStyle(0x5e4630, 1).fillRect(cx - 25, cy - 30, 5, 36).fillRect(cx + 20, cy - 30, 5, 36);
+    g.fillStyle(0x7a5e3a, 1).fillRect(cx - 27, cy - 26, 54, 5);
+    poly(g, 0xb39a5a, 1, [[cx - 32, cy - 26], [cx + 32, cy - 26], [cx + 22, cy - 44], [cx - 22, cy - 44]]);
+    for (let i = 0; i < 5; i++) g.fillStyle(i % 2 ? 0xc6ad6a : 0xa58c4c, 1).fillRect(cx - 30 + i, cy - 30 - i * 3, 60 - i * 2, 2);
+    g.fillStyle(0x8a7340, 1).fillRect(cx - 23, cy - 46, 46, 4);
+    g.lineStyle(1, 0x3a3127, 1).lineBetween(cx + 2, cy - 21, cx + 2, cy - 6);
+    g.fillStyle(0x6b5233, 1).fillRect(cx - 3, cy - 8, 10, 8);
+    g.fillStyle(0x4a4640, 1).fillRect(cx - 3, cy - 6, 10, 1);
+  }
+
+  // A big rice paddy: earth dike, water with sky reflections, rows of rice (some fields ripe and golden).
+  function paddy(g, x, y, w, h) {
+    const r = rnd(x * 7 + y * 13);
+    const ripe = r() < 0.35;
+    g.fillStyle(0x1a160f, 0.15).fillRect(x + 2, y + h, w, 5);
+    g.fillStyle(0x86744f, 1).fillRoundedRect(x, y, w, h, 6);
+    g.fillStyle(0x9a875f, 1).fillRect(x + 2, y + 1, w - 4, 4);
+    g.fillStyle(0x7f9893, 1).fillRoundedRect(x + 6, y + 7, w - 12, h - 13, 4);
+    g.fillStyle(0x96aea9, 1).fillRect(x + 8, y + 9, w - 16, 5);
+    // sky reflections and ripples on the water
+    for (let i = 0; i < (w * h) / 700; i++) g.fillStyle(0xd3dfdb, 0.4).fillRoundedRect(x + 10 + r() * (w - 50), y + 14 + r() * (h - 30), 18 + r() * 26, 3, 1.5);
+    for (let i = 0; i < (w * h) / 1400; i++) g.lineStyle(1, 0xc4d2cd, 0.5).strokeEllipse(x + 20 + r() * (w - 40), y + 20 + r() * (h - 40), 10, 4);
+    const GREEN = [0x5f8a3c, 0x72a04a, 0x679444];
+    const GOLD = [0xc9a84d, 0xd8bb62, 0xb89640];
+    for (let yy = y + 20; yy < y + h - 8; yy += 15)
+      for (let xx = x + 14 + (Math.round((yy - y) / 15) % 2) * 6; xx < x + w - 12; xx += 13) {
+        const c = ripe ? pick2(r, GOLD) : pick2(r, GREEN);
+        // one rice clump: a dark reflection, five blades fanning out, a light tip (ripe ones bow with grain)
+        g.fillStyle(0x4a5e5a, 0.4).fillEllipse(xx, yy + 1, 10, 3);
+        g.lineStyle(1.8, shade(c, 0.78), 1).lineBetween(xx, yy, xx - 5, yy - 9).lineBetween(xx, yy, xx + 5, yy - 9);
+        g.lineStyle(1.8, c, 1).lineBetween(xx, yy, xx - 2, yy - 12).lineBetween(xx, yy, xx + 2, yy - 12).lineBetween(xx, yy, xx, yy - 13);
+        g.lineStyle(1.2, shade(c, 1.25), 1).lineBetween(xx - 1, yy - 5, xx - 2, yy - 11);
+        if (ripe) {
+          g.fillStyle(0xe6cd78, 1).fillEllipse(xx + 4, yy - 11, 4, 6).fillEllipse(xx - 4, yy - 10, 4, 5);
+        }
+      }
+  }
+  const pick2 = (r, arr) => arr[Math.floor(r() * arr.length)];
+
+  function tree(g, cx, by) {
+    const r = rnd(cx * 3 + by * 5);
+    shadow(g, cx + 6, by + 2, 34, 11, 0.24);
+    g.fillStyle(0x4b3a26, 1).fillRect(cx - 3, by - 16, 6, 17);
+    g.fillStyle(0x5e4a30, 1).fillRect(cx - 3, by - 16, 2, 17);
+    const LEAF = [0x45603d, 0x52703f, 0x5e7d48];
+    [[0, -24, 15], [-9, -18, 11], [9, -17, 11], [-4, -31, 10], [6, -29, 10]].forEach(([dx, dy, rr], i) => {
+      g.fillStyle(LEAF[i % 3], 1).fillCircle(cx + dx, by + dy, rr);
+    });
+    for (let i = 0; i < 6; i++) g.fillStyle(0x7b9a5c, 0.8).fillCircle(cx - 8 + r() * 12, by - 34 + r() * 14, 2.5);
+    g.fillStyle(0x2f4229, 0.35).fillEllipse(cx + 4, by - 12, 22, 8);
+  }
+
+  // Watchtower: about four tiles high, ladder, railing, a guard with a helmet and a spear, a thatch roof.
+  function tower(g, x, y, w, h) {
+    const base = y + h - 4; // feet on the ground
+    const P = y - 30; // platform floor
+    const cx = x + w / 2;
+    shadow(g, cx + 10, base + 2, w + 26, 16, 0.26);
+    // back legs (darker), then front legs
+    g.fillStyle(0x4a3826, 1).fillRect(x + 14, P, 5, base - P - 6).fillRect(x + w - 19, P, 5, base - P - 6);
+    g.fillStyle(0x5e4630, 1).fillRect(x + 6, P, 7, base - P).fillRect(x + w - 13, P, 7, base - P);
+    g.fillStyle(0x7a5e3a, 1).fillRect(x + 6, P, 2, base - P).fillRect(x + w - 13, P, 2, base - P);
+    // cross braces
+    g.lineStyle(3, 0x5e4630, 1);
+    g.lineBetween(x + 10, P + 14, x + w - 10, base - 24).lineBetween(x + w - 10, P + 14, x + 10, base - 24);
+    g.lineBetween(x + 10, base - 22, x + w - 10, base - 2).lineBetween(x + w - 10, base - 22, x + 10, base - 2);
+    // ladder
+    g.fillStyle(0x8a6a44, 1).fillRect(cx - 7, P + 8, 2, base - P - 8).fillRect(cx + 5, P + 8, 2, base - P - 8);
+    for (let yy = P + 14; yy < base; yy += 7) g.fillStyle(0x8a6a44, 1).fillRect(cx - 7, yy, 14, 2);
+    // platform
+    g.fillStyle(0x6b5233, 1).fillRect(x - 2, P, w + 4, 10);
+    g.fillStyle(0x8f7048, 1).fillRect(x - 2, P, w + 4, 3);
+    for (let xx = x; xx < x + w; xx += 8) g.fillStyle(0x5a4429, 1).fillRect(xx, P + 3, 1, 7);
+    // guard (behind the railing): boots hidden, tunic, belt, helmet, face, spear
+    const gx = cx + 4;
+    g.lineStyle(2, 0x6b5a45, 1).lineBetween(gx + 9, P - 2, gx + 9, P - 58);
+    g.fillStyle(0xbfc3c4, 1).fillTriangle(gx + 6, P - 56, gx + 12, P - 56, gx + 9, P - 66);
+    g.fillStyle(0x5c5246, 1).fillRect(gx - 7, P - 22, 14, 20);
+    g.fillStyle(0x7a6c5a, 1).fillRect(gx - 7, P - 22, 14, 4);
+    g.fillStyle(0x3d342a, 1).fillRect(gx - 7, P - 11, 14, 2);
+    g.fillStyle(0xe2c4a4, 1).fillRect(gx + 7, P - 18, 3, 6);
+    g.fillStyle(0xe2c4a4, 1).fillCircle(gx, P - 27, 5.5);
+    g.fillStyle(0x8e9294, 1).fillEllipse(gx, P - 31, 14, 8);
+    g.fillStyle(0xaeb2b4, 1).fillRect(gx - 8, P - 29, 16, 2);
+    g.fillStyle(0x2a241d, 1).fillRect(gx - 2, P - 27, 1.5, 1.5).fillRect(gx + 2, P - 27, 1.5, 1.5);
+    // railing in front of the guard
+    g.fillStyle(0x6b5233, 1).fillRect(x - 2, P - 14, w + 4, 4);
+    g.fillStyle(0x8f7048, 1).fillRect(x - 2, P - 14, w + 4, 1);
+    for (let xx = x; xx <= x + w; xx += 11) g.fillStyle(0x5e4630, 1).fillRect(xx - 1, P - 14, 3, 14);
+    // roof posts and thatch roof
+    g.fillStyle(0x5e4630, 1).fillRect(x, P - 40, 3, 40).fillRect(x + w - 3, P - 40, 3, 40);
+    poly(g, 0xb39a5a, 1, [[x - 10, P - 36], [x + w + 10, P - 36], [cx + 4, P - 70], [cx - 4, P - 70]]);
+    for (let i = 0; i < 6; i++) {
+      const yy = P - 38 - i * 5;
+      const half = (w / 2 + 10) * (1 - i / 7);
+      g.fillStyle(i % 2 ? 0xc6ad6a : 0xa58c4c, 1).fillRect(cx - half, yy, half * 2, 3);
+    }
+    g.fillStyle(0x8a7340, 1).fillRect(cx - 5, P - 72, 10, 5);
+    g.fillStyle(0x1a160f, 0.22).fillRect(x - 6, P - 36, w + 12, 3);
+  }
+
+  // Gold shield with a brown tower: the Oriaris crest (same shape as in oldmap.js).
+  function crest(g, cx, cy, s) {
+    g.fillStyle(0xd9a93a, 1).fillRect(cx - 4 * s, cy - 4 * s, 8 * s, 5 * s);
+    g.fillTriangle(cx - 4 * s, cy + 1 * s, cx + 4 * s, cy + 1 * s, cx, cy + 5 * s);
+    g.fillStyle(0x6b4a12, 1).fillRect(cx - 1.5 * s, cy - 2.5 * s, 3 * s, 5 * s);
+    g.fillRect(cx - 2.5 * s, cy - 3 * s, 1 * s, 1 * s).fillRect(cx - 0.5 * s, cy - 3 * s, 1 * s, 1 * s).fillRect(cx + 1.5 * s, cy - 3 * s, 1 * s, 1 * s);
+  }
+
+  // Shared house parts --------------------------------------------------------------------------------------------------
+  function door(g, dx, by, wd = 18, ht = 26) {
+    g.fillStyle(0x3a2d1f, 1).fillRoundedRect(dx - wd / 2 - 3, by - ht - 3, wd + 6, ht + 3, { tl: 6, tr: 6, bl: 0, br: 0 });
+    g.fillStyle(0x6b5233, 1).fillRoundedRect(dx - wd / 2, by - ht, wd, ht, { tl: 5, tr: 5, bl: 0, br: 0 });
+    for (let i = 1; i < 3; i++) g.fillStyle(0x553f27, 1).fillRect(dx - wd / 2 + (wd / 3) * i, by - ht + 2, 1, ht - 2);
+    g.fillStyle(0x3a3a3a, 1).fillRect(dx - wd / 2, by - ht + 7, wd, 2).fillRect(dx - wd / 2, by - 8, wd, 2);
+    g.fillStyle(0xc9a24a, 1).fillCircle(dx + wd / 2 - 4, by - ht / 2, 1.6);
+    g.fillStyle(0x8f887a, 1).fillRect(dx - wd / 2 - 4, by, wd + 8, 4);
+  }
+  function windowBox(g, wx, wy, ww = 14, wh = 12, shutters = true) {
+    if (shutters) {
+      g.fillStyle(0x5e4630, 1).fillRect(wx - 7, wy - 1, 6, wh + 2).fillRect(wx + ww + 1, wy - 1, 6, wh + 2);
+      g.fillStyle(0x4a3826, 1).fillRect(wx - 5, wy + 2, 2, wh - 4).fillRect(wx + ww + 3, wy + 2, 2, wh - 4);
+    }
+    g.fillStyle(0x4a3826, 1).fillRect(wx - 2, wy - 2, ww + 4, wh + 4);
+    g.fillStyle(0x2b3236, 1).fillRect(wx, wy, ww, wh);
+    g.fillStyle(0xe8c77a, 0.35).fillRect(wx + 1, wy + 1, ww / 2 - 1, wh / 2 - 1);
+    g.fillStyle(0x4a3826, 1).fillRect(wx + ww / 2 - 1, wy, 2, wh).fillRect(wx, wy + wh / 2 - 1, ww, 2);
+    g.fillStyle(0x7a5e3a, 1).fillRect(wx - 3, wy + wh + 1, ww + 6, 3);
+  }
+  function foundation(g, x, y, w) {
+    const r = rnd(x + y);
+    g.fillStyle(0x6f6a62, 1).fillRect(x - 2, y - 7, w + 4, 8);
+    for (let xx = x; xx < x + w; xx += 8 + r() * 6) g.fillStyle(r() < 0.5 ? 0x8e897f : 0x9a958b, 1).fillRoundedRect(xx, y - 6, 7 + r() * 4, 6, 2);
+  }
+  function chimney(g, cx, top) {
+    g.fillStyle(0x6f6a62, 1).fillRect(cx - 6, top, 12, 18);
+    g.fillStyle(0x8e897f, 1).fillRect(cx - 6, top, 4, 18);
+    g.fillStyle(0x55504a, 1).fillRect(cx - 7, top - 2, 14, 4);
+    [[0, -8, 6], [4, -16, 7], [-1, -25, 8], [5, -34, 7]].forEach(([dx, dy, rr], i) => g.fillStyle(0xe8e4dc, 0.28 - i * 0.05).fillCircle(cx + dx, top + dy, rr));
+  }
+
+  function building(g, b) {
+    const x = b.x * T;
+    const y = b.y * T;
+    const w = b.w * T;
+    const h = b.h * T;
+    shadow(g, x + w / 2 + 8, y + h + 2, w + 20, 18, 0.26);
+    if (b.kind === 'hall') return hall(g, b, x, y, w, h);
+    if (b.kind === 'barn') return barn(g, b, x, y, w, h);
+    if (b.kind === 'wood') return woodHouse(g, b, x, y, w, h);
+    return thatchHouse(g, b, x, y, w, h);
+  }
+
+  // Straw-roofed cottage: thick layered thatch, daub walls with a timber frame, stone footing.
+  function thatchHouse(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.42;
+    const by = y + h;
+    // walls
+    g.fillStyle(0xddd1b4, 1).fillRect(x + 2, wallTop, w - 4, by - wallTop);
+    g.fillStyle(0xcfc2a2, 1).fillRect(x + 2, by - 16, w - 4, 10);
+    // timber frame: posts, beam, braces
+    g.fillStyle(0x5a4429, 1);
+    [x + 2, x + w / 2 - 2, x + w - 6].forEach((px) => g.fillRect(px, wallTop, 4, by - wallTop));
+    g.fillRect(x + 2, wallTop + 4, w - 4, 3);
+    g.lineStyle(3, 0x5a4429, 1).lineBetween(x + 6, by - 8, x + w / 2 - 2, wallTop + 8).lineBetween(x + w - 6, by - 8, x + w / 2 + 2, wallTop + 8);
+    foundation(g, x + 2, by, w - 4);
+    // window on the side away from the door
+    const dx = b.door * T + 16;
+    const winX = dx < x + w / 2 ? x + w - 34 : x + 18;
+    windowBox(g, winX, wallTop + 14, 14, 12, true);
+    g.fillStyle(0x6f7d4c, 1).fillRect(winX - 2, wallTop + 29, 18, 4);
+    g.fillStyle(0xd9cfa0, 1).fillCircle(winX + 2, wallTop + 29, 2).fillCircle(winX + 9, wallTop + 28, 2);
+    door(g, dx, by - 2, 18, 26);
+    // thatch roof: rounded mass, layered bands with ragged edges, bound ridge
+    const ry = y - 10;
+    const rh = h * 0.56 + 10;
+    g.fillStyle(0x1a160f, 0.25).fillRoundedRect(x - 8, wallTop - 2, w + 16, 10, 5);
+    g.fillStyle(0x9a8044, 1).fillRoundedRect(x - 10, ry, w + 20, rh, 18);
+    const r = rnd(x * 3 + y);
+    const bands = 6;
+    for (let i = bands - 1; i >= 0; i--) {
+      const yy = ry + 6 + (i * (rh - 10)) / bands;
+      const c = i % 2 ? 0xc8ae6c : 0xb79c58;
+      g.fillStyle(c, 1).fillRoundedRect(x - 9 + i * 0.5, yy, w + 18 - i, (rh - 10) / bands + 4, 8);
+      for (let xx = x - 8; xx < x + w + 8; xx += 5) {
+        const len = 4 + r() * 5;
+        g.fillStyle(shade(c, 0.8), 1).fillRect(xx, yy + (rh - 10) / bands + 1, 2, len - 2);
+        g.lineStyle(1, shade(c, 1.12), 0.9).lineBetween(xx + 1, yy + 2, xx + 1, yy + 6);
+      }
+    }
+    g.fillStyle(0x8a7038, 1).fillRoundedRect(x - 4, ry - 4, w + 8, 10, 5);
+    for (let xx = x; xx < x + w; xx += 12) g.fillStyle(0x6b5a30, 1).fillRect(xx, ry - 4, 2, 10);
+    g.fillStyle(0xd8c07e, 0.6).fillRoundedRect(x - 2, ry - 3, w + 4, 3, 2);
+    chimney(g, x + w - 22, ry - 12);
+  }
+
+  // Plank house: vertical boards, a shingle roof with a lit ridge, a little porch roof over the door.
+  function woodHouse(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.44;
+    const by = y + h;
+    const PL = [0x7f6142, 0x8a6a48, 0x76593c];
+    for (let xx = x + 2; xx < x + w - 2; xx += 7) {
+      g.fillStyle(PL[Math.floor(((xx - x) / 7) % 3)], 1).fillRect(xx, wallTop, 7, by - wallTop);
+      g.fillStyle(0x4a3826, 1).fillRect(xx + 6, wallTop, 1, by - wallTop);
+      g.fillStyle(0x9a7a52, 0.6).fillRect(xx + 1, wallTop, 1, by - wallTop);
+    }
+    g.fillStyle(0x5a4429, 1).fillRect(x + 2, wallTop, 4, by - wallTop).fillRect(x + w - 6, wallTop, 4, by - wallTop);
+    g.fillStyle(0x5a4429, 1).fillRect(x + 2, wallTop + 2, w - 4, 3);
+    foundation(g, x + 2, by, w - 4);
+    const dx = b.door * T + 16;
+    const winX = dx < x + w / 2 ? x + w - 34 : x + 18;
+    windowBox(g, winX, wallTop + 13, 14, 12, true);
+    door(g, dx, by - 2, 18, 26);
+    // porch roof over the door
+    poly(g, 0x5d4a3a, 1, [[dx - 18, by - 30], [dx + 18, by - 30], [dx + 14, by - 38], [dx - 14, by - 38]]);
+    g.fillStyle(0x4a3826, 1).fillRect(dx - 17, by - 30, 3, 28).fillRect(dx + 14, by - 30, 3, 28);
+    // shingle roof
+    const ry = y - 8;
+    const rh = h * 0.56 + 8;
+    g.fillStyle(0x1a160f, 0.25).fillRect(x - 6, wallTop - 2, w + 12, 8);
+    g.fillStyle(shade(b.color, 0.8), 1).fillRect(x - 8, ry, w + 16, rh);
+    const rows = 7;
+    for (let i = 0; i < rows; i++) {
+      const yy = ry + 4 + (i * (rh - 6)) / rows;
+      const off = i % 2 ? 6 : 0;
+      for (let xx = x - 8 - off; xx < x + w + 8; xx += 12) {
+        const sx = Math.max(x - 8, xx);
+        const ex = Math.min(x + w + 8, xx + 11);
+        if (ex <= sx) continue;
+        const c = shade(b.color, 0.92 + ((xx * 7 + i * 3) % 5) * 0.05);
+        g.fillStyle(c, 1).fillRect(sx, yy, ex - sx, (rh - 6) / rows + 2);
+        g.fillStyle(shade(c, 0.7), 1).fillRect(sx, yy + (rh - 6) / rows, ex - sx, 2);
+      }
+    }
+    g.fillStyle(shade(b.color, 0.6), 1).fillRect(x - 8, ry, 3, rh).fillRect(x + w + 5, ry, 3, rh);
+    g.fillStyle(shade(b.color, 1.3), 1).fillRect(x - 6, ry - 4, w + 12, 6);
+    g.fillStyle(shade(b.color, 0.75), 1).fillRect(x - 6, ry + 1, w + 12, 2);
+    chimney(g, x + 20, ry - 10);
+  }
+
+  // Big stone hall with an arched door, tall windows, buttresses, a slate roof and a square tower with a banner.
+  function hall(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.4;
+    const by = y + h;
+    const r = rnd(4242);
+    g.fillStyle(0x8f897d, 1).fillRect(x, wallTop, w, by - wallTop);
+    for (let yy = wallTop; yy < by - 4; yy += 9) {
+      const off = ((yy - wallTop) / 9) % 2 ? 10 : 0;
+      for (let xx = x - off; xx < x + w; xx += 20) {
+        const sx = Math.max(x, xx + 1);
+        const ex = Math.min(x + w, xx + 19);
+        const c = pick2(r, [0xb2ab9e, 0xa9a295, 0xbab4a8]);
+        g.fillStyle(c, 1).fillRect(sx, yy + 1, ex - sx, 7);
+        g.fillStyle(shade(c, 1.1), 1).fillRect(sx, yy + 1, ex - sx, 1);
+      }
+    }
+    // buttresses
+    [x - 4, x + w - 8, x + w / 2 - 50, x + w / 2 + 38].forEach((bx) => {
+      g.fillStyle(0x8f897d, 1).fillRect(bx, wallTop + 6, 12, by - wallTop - 6);
+      g.fillStyle(0xc2bcb0, 1).fillRect(bx, wallTop + 6, 12, 3);
+    });
+    // tall arched windows
+    [x + 26, x + w - 46].forEach((wx) => {
+      g.fillStyle(0x6f6a62, 1).fillRoundedRect(wx - 2, wallTop + 10, 20, 36, { tl: 10, tr: 10, bl: 0, br: 0 });
+      g.fillStyle(0x2b3236, 1).fillRoundedRect(wx, wallTop + 12, 16, 32, { tl: 8, tr: 8, bl: 0, br: 0 });
+      g.fillStyle(0xe8c77a, 0.3).fillRect(wx + 2, wallTop + 16, 5, 12);
+      g.fillStyle(0x6f6a62, 1).fillRect(wx + 7, wallTop + 12, 2, 32).fillRect(wx, wallTop + 28, 16, 2);
+    });
+    // arched double door with studs, steps
+    const dx = b.door * T + 16;
+    g.fillStyle(0x6f6a62, 1).fillRoundedRect(dx - 19, by - 44, 38, 44, { tl: 19, tr: 19, bl: 0, br: 0 });
+    g.fillStyle(0x4b3a26, 1).fillRoundedRect(dx - 15, by - 40, 30, 40, { tl: 15, tr: 15, bl: 0, br: 0 });
+    g.fillStyle(0x3a2d1f, 1).fillRect(dx - 1, by - 38, 2, 38);
+    for (let yy = by - 32; yy < by - 2; yy += 8) g.fillStyle(0x2a2a2a, 1).fillCircle(dx - 9, yy, 1.3).fillCircle(dx + 9, yy, 1.3);
+    g.fillStyle(0x9a958b, 1).fillRect(dx - 26, by, 52, 4).fillRect(dx - 22, by + 4, 44, 4);
+    // slate roof
+    const ry = y - 2;
+    const rh = h * 0.42 + 6;
+    g.fillStyle(0x1a160f, 0.25).fillRect(x - 6, wallTop - 2, w + 12, 7);
+    g.fillStyle(0x4c535b, 1).fillRect(x - 8, ry, w + 16, rh);
+    for (let i = 0; i < 6; i++) {
+      const yy = ry + 2 + i * (rh / 6);
+      for (let xx = x - 8 - (i % 2) * 5; xx < x + w + 8; xx += 10) {
+        const sx = Math.max(x - 8, xx);
+        const ex = Math.min(x + w + 8, xx + 9);
+        if (ex <= sx) continue;
+        g.fillStyle(pick2(r, [0x5a626b, 0x535b64, 0x626a73]), 1).fillRect(sx, yy, ex - sx, rh / 6);
+        g.fillStyle(0x3c4249, 1).fillRect(sx, yy + rh / 6 - 1, ex - sx, 1);
+      }
+    }
+    g.fillStyle(0x7a828a, 1).fillRect(x - 6, ry - 3, w + 12, 4);
+    // central tower with crenels, pyramid roof, flag
+    const tw = 54;
+    const tx = x + w / 2 - tw / 2;
+    const tt = y - 52;
+    g.fillStyle(0x9a9386, 1).fillRect(tx, tt, tw, ry - tt + 10);
+    for (let yy = tt + 4; yy < ry + 8; yy += 9) g.fillStyle(0x8a8377, 1).fillRect(tx, yy, tw, 1);
+    g.fillStyle(0xb2ab9e, 1).fillRect(tx, tt, 4, ry - tt + 10);
+    for (let i = 0; i < 5; i++) g.fillStyle(0xa39c8f, 1).fillRect(tx + 2 + i * 11, tt - 7, 7, 8);
+    g.fillStyle(0x2b3236, 1).fillRoundedRect(tx + tw / 2 - 5, tt + 14, 10, 16, { tl: 5, tr: 5, bl: 0, br: 0 });
+    crest(g, tx + tw / 2, tt + 40, 2.2);
+    g.fillStyle(0x4b3a26, 1).fillRect(tx + tw / 2 - 1, tt - 40, 3, 34);
+    poly(g, 0x7d2e2e, 1, [[tx + tw / 2 + 2, tt - 40], [tx + tw / 2 + 30, tt - 36], [tx + tw / 2 + 24, tt - 30], [tx + tw / 2 + 30, tt - 24], [tx + tw / 2 + 2, tt - 26]]);
+    crest(g, tx + tw / 2 + 13, tt - 33, 0.9);
+    // banners hanging on the front wall
+    [x + 8, x + w - 20].forEach((bx) => {
+      poly(g, 0x7d2e2e, 1, [[bx, wallTop + 4], [bx + 12, wallTop + 4], [bx + 12, wallTop + 34], [bx + 6, wallTop + 29], [bx, wallTop + 34]]);
+      crest(g, bx + 6, wallTop + 15, 1);
+    });
+  }
+
+  // Wooden granary: planks, a big X-braced door, a hay loft and a gambrel-style shingle roof.
+  function barn(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.36;
+    const by = y + h;
+    for (let xx = x + 2; xx < x + w - 2; xx += 8) {
+      g.fillStyle(((xx - x) / 8) % 2 ? 0x8a6a48 : 0x7f6142, 1).fillRect(xx, wallTop, 8, by - wallTop);
+      g.fillStyle(0x4a3826, 1).fillRect(xx + 7, wallTop, 1, by - wallTop);
+    }
+    g.fillStyle(0x5a4429, 1).fillRect(x + 2, wallTop, 5, by - wallTop).fillRect(x + w - 7, wallTop, 5, by - wallTop).fillRect(x + 2, wallTop + 3, w - 4, 3);
+    foundation(g, x + 2, by, w - 4);
+    const dx = b.door * T + 16;
+    g.fillStyle(0x4a3826, 1).fillRect(dx - 24, by - 46, 48, 46);
+    g.fillStyle(0x6b5233, 1).fillRect(dx - 22, by - 44, 21, 44).fillRect(dx + 1, by - 44, 21, 44);
+    g.lineStyle(3, 0x8f7048, 1).strokeRect(dx - 22, by - 44, 44, 44);
+    g.lineBetween(dx - 22, by - 44, dx - 1, by).lineBetween(dx - 1, by - 44, dx - 22, by);
+    g.lineBetween(dx + 1, by - 44, dx + 22, by).lineBetween(dx + 22, by - 44, dx + 1, by);
+    // hay loft window with hay
+    g.fillStyle(0x2e261c, 1).fillRect(dx - 10, wallTop + 4, 20, 14);
+    g.fillStyle(0xcdb56c, 1).fillEllipse(dx, wallTop + 16, 18, 8);
+    // roof
+    const ry = y - 10;
+    const rh = h * 0.4 + 10;
+    g.fillStyle(0x1a160f, 0.25).fillRect(x - 6, wallTop - 2, w + 12, 7);
+    poly(g, 0x5d4a3a, 1, [[x - 10, wallTop], [x + w + 10, wallTop], [x + w + 2, ry + rh * 0.4], [x + w - 20, ry], [x + 20, ry], [x - 2, ry + rh * 0.4]]);
+    for (let i = 0; i < 7; i++) {
+      const yy = ry + 3 + i * (rh / 7);
+      g.lineStyle(2, 0x45372b, 1).lineBetween(x - 8 + (i < 3 ? 12 - i * 4 : 0), yy, x + w + 8 - (i < 3 ? 12 - i * 4 : 0), yy);
+    }
+    g.fillStyle(0x7d6852, 1).fillRect(x + 18, ry - 3, w - 36, 5);
+    // hay bales by the wall
+    [[x - 12, by - 6], [x - 4, by - 16]].forEach(([hx, hy]) => {
+      g.fillStyle(0xb39a52, 1).fillRoundedRect(hx, hy, 22, 14, 3);
+      g.fillStyle(0xcdb56c, 1).fillRect(hx + 2, hy + 2, 18, 4);
+      g.fillStyle(0x8a7038, 1).fillRect(hx + 7, hy, 2, 14).fillRect(hx + 14, hy, 2, 14);
+    });
+  }
+
+  // ---- tall sprites: depth-sorted against the player ----------------------------------------------------------------
+  // Each tall thing is baked once into its own texture (translateCanvas moves it to 0,0), then shown as an image.
+  // Every frame: if the player's feet are above (north of) the thing's base, the thing is drawn over the player.
+  const PLAYER_DEPTH = 10;
+  function tallList(a) {
+    const out = [];
+    a.obstacles.forEach((o, i) => {
+      if (!TALL.has(o.kind)) return;
+      const x = o.x * T;
+      const y = o.y * T;
+      const w = o.w * T;
+      const h = o.h * T;
+      const pad = {
+        tower: [16, 96, 16, 16],
+        tree: [12, 30, 12, 14],
+        well: [14, 40, 14, 22],
+        banner: [4, 32, 14, 8],
+        torch: [10, 24, 10, 8],
+        stall: [10, 24, 10, 10],
+        coop: [8, 4, 30, 18],
+        rack: [6, 4, 6, 12],
+      }[o.kind];
+      out.push({ key: `past_o${i}_${o.kind}`, x0: x - pad[0], y0: y - pad[1], x1: x + w + pad[2], y1: y + h + pad[3], base: (o.y + o.h) * T, draw: (g) => drawThing(g, o, a) });
+    });
+    a.buildings.forEach((b, i) => {
+      const x = b.x * T;
+      const y = b.y * T;
+      out.push({ key: `past_b${i}`, x0: x - 36, y0: y - 104, x1: x + b.w * T + 36, y1: y + b.h * T + 24, base: (b.y + b.h) * T, draw: (g) => building(g, b) });
+    });
+    return out;
+  }
+  function buildTall(sc) {
+    const items = tallList(sc.area).map((t) => {
+      const w = Math.ceil(t.x1 - t.x0);
+      const h = Math.ceil(t.y1 - t.y0);
+      if (!sc.textures.exists(t.key)) {
+        const g = sc.add.graphics();
+        g.translateCanvas(-t.x0, -t.y0);
+        t.draw(g);
+        g.generateTexture(t.key, w, h);
+        g.destroy();
+      }
+      return { img: sc.add.image(t.x0, t.y0, t.key).setOrigin(0).setDepth(PLAYER_DEPTH - 0.6), base: t.base };
+    });
+    const st = { area: sc.area, items };
+    st.update = () => {
+      if (sc.area !== st.area) return clearTall(sc);
+      if (!sc.player) return;
+      const hide = !!sc.inside;
+      const py = sc.player.y;
+      for (const it of items) {
+        it.img.setVisible(!hide);
+        it.img.setDepth(py < it.base ? PLAYER_DEPTH + 0.6 : PLAYER_DEPTH - 0.6);
+      }
+    };
+    sc.events.on('update', st.update);
+    sc.__lqPastTall = st;
+    st.update();
+  }
+  function clearTall(sc) {
+    const st = sc && sc.__lqPastTall;
+    if (!st) return;
+    sc.events.off('update', st.update);
+    st.items.forEach((it) => it.img.destroy());
+    sc.__lqPastTall = null;
+  }
+  function syncTall(sc) {
+    const st = sc.__lqPastTall;
+    if (here(sc) && !sc.switching) {
+      if (st && st.area !== sc.area) clearTall(sc);
+      if (!sc.__lqPastTall) {
+        try {
+          buildTall(sc);
+        } catch (e) {
+          console.warn('past tall sprites failed', e);
+          sc.__lqPastTall = { area: sc.area, items: [], update() {} };
+        }
+      }
+    } else if (st) clearTall(sc);
+  }
+
+  // ---- the flock: hens, a rooster and chicks that wander, peck, and run away from the player ------------------------
+  // Each group stays near its home (tile cx, cy, radius r). Drawn every frame into one Graphics just below the player.
+  const FLOCKS = [
+    { cx: 7, cy: 23.5, r: 2.8, hens: 5, rooster: true, chicks: 3 },
+    { cx: 25, cy: 19.5, r: 2.6, hens: 3, chicks: 2 },
+    { cx: 11, cy: 9.5, r: 2.2, hens: 2 },
+    { cx: 21, cy: 29.5, r: 2, hens: 2, chicks: 2 },
+  ];
+  const HEN_SPEED = 26;
+  const RUN_SPEED = 95;
+  const SCARE = 46;
+  function makeFlock(a) {
+    const r = rnd(2024);
+    const birds = [];
+    const free = (x, y) => !a.isTileBlocked(Math.floor(x / T), Math.floor(y / T));
+    const spot = (f) => {
+      for (let i = 0; i < 40; i++) {
+        const ang = r() * Math.PI * 2;
+        const d = Math.sqrt(r()) * f.r * T;
+        const x = (f.cx + 0.5) * T + Math.cos(ang) * d;
+        const y = (f.cy + 0.5) * T + Math.sin(ang) * d;
+        if (free(x, y)) return { x, y };
+      }
+      return { x: (f.cx + 0.5) * T, y: (f.cy + 0.5) * T };
+    };
+    FLOCKS.forEach((f) => {
+      const add = (kind) => {
+        const p = spot(f);
+        birds.push({ kind, f, x: p.x, y: p.y, tx: p.x, ty: p.y, state: 'idle', t: r() * 2, face: r() < 0.5 ? -1 : 1, phase: r() * 10, flap: 0, mom: null });
+      };
+      for (let i = 0; i < f.hens; i++) add('hen');
+      if (f.rooster) add('rooster');
+      const moms = birds.filter((b) => b.f === f && b.kind === 'hen');
+      for (let i = 0; i < (f.chicks || 0); i++) {
+        add('chick');
+        birds[birds.length - 1].mom = moms[i % moms.length] || null;
+      }
+    });
+    return { birds, free, spot, r };
+  }
+  function henTick(fl, sc, dt) {
+    const who = scarers(sc);
+    for (const b of fl.birds) {
+      b.t -= dt;
+      b.phase += dt * (b.state === 'walk' || b.state === 'run' ? 14 : 3);
+      b.flap = Math.max(0, b.flap - dt);
+      // The nearest one who scares it: the player, or a running child.
+      let px = who[0].x;
+      let py = who[0].y;
+      for (const s of who) {
+        if (Math.hypot(b.x - s.x, b.y - s.y) < Math.hypot(b.x - px, b.y - py)) {
+          px = s.x;
+          py = s.y;
+        }
+      }
+      const dp = Math.hypot(b.x - px, b.y - py);
+      // Scared: run straight away from the player, flapping.
+      if (dp < SCARE && b.state !== 'run') {
+        const k = 70 / Math.max(1, dp);
+        b.tx = b.x + (b.x - px) * k;
+        b.ty = b.y + (b.y - py) * k;
+        b.state = 'run';
+        b.flap = 0.6;
+        b.t = 1.2;
+      }
+      if (b.state === 'walk' || b.state === 'run') {
+        const sp = (b.state === 'run' ? RUN_SPEED : HEN_SPEED) * (b.kind === 'chick' ? 1.15 : 1) * dt;
+        const dx = b.tx - b.x;
+        const dy = b.ty - b.y;
+        const d = Math.hypot(dx, dy);
+        if (Math.abs(dx) > 0.5) b.face = dx < 0 ? -1 : 1;
+        if (d <= sp || b.t <= 0) {
+          b.state = fl.r() < 0.6 ? 'peck' : 'idle';
+          b.t = 0.8 + fl.r() * 2.2;
+        } else {
+          const nx = b.x + (dx / d) * sp;
+          const ny = b.y + (dy / d) * sp;
+          if (fl.free(nx, ny)) {
+            b.x = nx;
+            b.y = ny;
+          } else {
+            b.state = 'idle';
+            b.t = 0.3;
+          }
+        }
+      } else if (b.t <= 0) {
+        // Pick the next place: chicks follow their mother, the others wander around home.
+        let p;
+        if (b.kind === 'chick' && b.mom) p = { x: b.mom.x + (fl.r() - 0.5) * 30, y: b.mom.y + 6 + (fl.r() - 0.5) * 16 };
+        else p = fl.spot(b.f);
+        b.tx = p.x;
+        b.ty = p.y;
+        b.state = 'walk';
+        b.t = 6;
+        if (b.kind === 'rooster' && fl.r() < 0.15) b.flap = 0.8;
+      }
+    }
+  }
+  function drawBird(g, b) {
+    const f = b.face;
+    const x = b.x;
+    const walking = b.state === 'walk' || b.state === 'run';
+    const bob = walking ? Math.abs(Math.sin(b.phase)) * 1.6 : 0;
+    const y = b.y - bob;
+    if (b.kind === 'chick') {
+      g.fillStyle(0x1a160f, 0.2).fillEllipse(b.x, b.y + 4, 8, 3);
+      g.fillStyle(0xf1d36a, 1).fillCircle(x, y, 3.6);
+      g.fillStyle(0xf6df86, 1).fillCircle(x + f * 2.5, y - 3, 2.6);
+      g.fillStyle(0xd9822e, 1).fillTriangle(x + f * 4.5, y - 3.5, x + f * 6.5, y - 3, x + f * 4.5, y - 2.3);
+      g.fillStyle(0x2a241d, 1).fillRect(x + f * 3 - 0.5, y - 4, 1.2, 1.2);
+      return;
+    }
+    const big = b.kind === 'rooster' ? 1.18 : 1;
+    const body = b.kind === 'rooster' ? 0xc0743c : 0xefe9dc;
+    const wing = b.kind === 'rooster' ? 0x9a5a2e : 0xd9d2c2;
+    const pecking = b.state === 'peck' && Math.sin(b.phase * 2.2) > 0.2;
+    g.fillStyle(0x1a160f, 0.2).fillEllipse(b.x, b.y + 6 * big, 14 * big, 4);
+    // legs (step when walking)
+    const step = walking ? Math.sin(b.phase) * 2 : 0;
+    g.lineStyle(1.3, 0xd9a13a, 1).lineBetween(x - 1.5, y + 2, x - 1.5 + step, y + 6 * big).lineBetween(x + 1.5, y + 2, x + 1.5 - step, y + 6 * big);
+    // tail
+    if (b.kind === 'rooster') {
+      g.fillStyle(0x2f4a3a, 1).fillTriangle(x - f * 4, y - 1, x - f * 11, y - 11, x - f * 9, y + 1);
+      g.fillStyle(0x23382c, 1).fillTriangle(x - f * 5, y, x - f * 12, y - 6, x - f * 8, y + 3);
+    } else g.fillStyle(0xe2dccd, 1).fillTriangle(x - f * 4, y - 1, x - f * 9, y - 7, x - f * 8, y + 1);
+    // body + wing (wing lifts when flapping)
+    g.fillStyle(body, 1).fillEllipse(x, y, 13 * big, 9 * big);
+    if (b.flap > 0) {
+      const up = Math.sin(b.flap * 40) * 4;
+      g.fillStyle(wing, 1).fillTriangle(x - f * 2, y - 2, x - f * 8, y - 7 - up, x + f * 3, y - 3);
+    } else g.fillStyle(wing, 1).fillEllipse(x - f * 1, y + 0.5, 7 * big, 5 * big);
+    // head: down to the ground when pecking
+    const hx = x + f * (pecking ? 7 : 5) * big;
+    const hy = y - (pecking ? -1 : 5) * big;
+    g.fillStyle(body === 0xefe9dc ? 0xf7f3ea : 0xd08446, 1).fillCircle(hx, hy, 3.4 * big);
+    g.fillStyle(0xc8432f, 1).fillRect(hx - 1.5, hy - 4.6 * big, 3 * big, 2 * big);
+    if (b.kind === 'rooster') g.fillStyle(0xc8432f, 1).fillCircle(hx + f * 1, hy - 4.5 * big, 1.6).fillCircle(hx - f * 1, hy - 5 * big, 1.6).fillCircle(hx + f * 2.5, hy + 2.5, 1.3);
+    g.fillStyle(0xd9a13a, 1).fillTriangle(hx + f * 3, hy - 0.8, hx + f * 6, hy, hx + f * 3, hy + 1);
+    g.fillStyle(0x2a241d, 1).fillRect(hx + f * 1.2 - 0.6, hy - 1.4, 1.3, 1.3);
+  }
+  function hensUpdate(sc, delta) {
+    let st = sc.__lqPastHens;
+    if (!here(sc) || sc.switching || !sc.player) {
+      if (st) {
+        st.g.destroy();
+        sc.__lqPastHens = null;
+      }
+      return;
+    }
+    if (!st || st.area !== sc.area) {
+      if (st) st.g.destroy();
+      st = sc.__lqPastHens = { area: sc.area, g: sc.add.graphics().setDepth(PLAYER_DEPTH - 0.5), fl: makeFlock(sc.area) };
+    }
+    st.g.clear();
+    if (sc.inside) return;
+    henTick(st.fl, sc, Math.min(0.05, (delta || 16) / 1000));
+    [...st.fl.birds].sort((a, b) => a.y - b.y).forEach((b) => drawBird(st.g, b));
+  }
+
+  // ---- villagers: men, women and children living their day in the village ----------------------------------------------
+  // They use the game's own character art (window.LQCharacter), scaled by height: seventy years ago people were shorter.
+  // Only the grown men are as tall as the player; women are a little shorter, children much shorter.
+  // Positions are in tiles (25.5 = middle of tile 25). Modes: home [x, y, radius] = wander around it; still = stand there;
+  // path = walk the points in a loop; follow = stay next to another villager (index); play: 'tag' = children's game.
+  const HEIGHT = { man: 1, woman: 0.88, girl: 0.72, boy: 0.72, kid: 0.6 };
+  const WALK = { man: 34, woman: 30, girl: 42, boy: 42, kid: 38 };
+  const TAG_RUN = 74;
+  const FEET = 9.2; // from player.y (origin Gr of the 38px sprite) down to the feet
+  const OLD_SKIN = [0xf6d2b0, 0xe8b88a, 0xf6d2b0, 0xc98e62];
+  const OLD_HAIR = [0x1b1b1b, 0x3a2418, 0x5a3b2a, 0x8a5a3b];
+  const TUNIC = [0x7a5a3a, 0x8a7a5a, 0x5d6b5a, 0x6b5a45, 0x9a8a6a, 0x5a4a3a];
+  const GOWN = [0x8a6a5a, 0x7a7a8a, 0x9a8466, 0x6a5a6a, 0xa89a7a, 0x7d5f4a];
+  const BREECHES = [0x4a3a2a, 0x3b3127, 0x5a4a38];
+  // work: [door x of their house, x, y of their place in the paddy]. Those villagers (the children and their mothers)
+  // follow the working day of the village: see workMode below.
+  const FOLK = [
+    // the well: women fetching water and talking, a little girl holding on to her mother
+    { kind: 'woman', home: [25.5, 16.7, 1.3], style: 'bun', work: [14, 11.5, 39.6] },
+    { kind: 'woman', home: [28.7, 16.5, 1.1], style: 'long', work: [31, 31.6, 39.6] },
+    { kind: 'woman', home: [27.2, 17.6, 1.5], style: 'ponytail', hair: 0x5a3b2a, work: [36, 41.2, 39.4] },
+    { kind: 'kid', follow: 2, style: 'bob', dress: true, work: [36, 42.2, 39.9] },
+    // the little market: a woman selling, a man buying
+    { kind: 'woman', home: [30.9, 17.6, 0.4], still: 'down', style: 'bun', hair: 0x8a5a3b },
+    { kind: 'man', home: [31, 19.2, 1.4], style: 'short' },
+    // children playing tag in the square (they scare the hens too)
+    { kind: 'boy', play: 'tag', home: [22.5, 19.6, 2.6], style: 'short', work: [14, 13.2, 37.6] },
+    { kind: 'boy', play: 'tag', home: [22.5, 19.6, 2.6], style: 'curly', work: [14, 14.6, 39.8] },
+    { kind: 'girl', play: 'tag', home: [22.5, 19.6, 2.6], style: 'ponytail', work: [31, 33.6, 37.8] },
+    { kind: 'kid', play: 'tag', home: [22.5, 19.6, 2.6], style: 'short', work: [31, 35.6, 39.5] },
+    // the granary: a man carrying a sack to the market, an old man by the door
+    { kind: 'man', path: [[8.5, 7.6], [8.5, 11.5], [29, 11.5], [30.5, 15.4], [29, 11.5], [8.5, 11.5]], style: 'short', hair: 0x3a2418 },
+    { kind: 'man', home: [8.5, 7.8, 1.2], style: 'bald', hair: 0x9a9a9a },
+    // the wood pile
+    { kind: 'man', home: [37.9, 14.7, 0.3], still: 'up', style: 'curly' },
+    // a girl carrying water from the well out to the east fields (the board there says so)
+    { kind: 'girl', path: [[29.5, 17.3], [29.5, 13], [36, 11.5], [44, 11.5], [51, 11.5], [44, 11.5], [36, 11.5], [29.5, 13]], style: 'long', work: [9, 5.4, 43.4] },
+    // farmers on the dikes between the paddies
+    { kind: 'man', path: [[54.5, 3], [54.5, 27.5]], style: 'short' },
+    { kind: 'man', path: [[29.5, 35], [29.5, 46.5]], style: 'crop' },
+    // the cottages: a grandmother and her grandson, a man at the Farmer's Cottage
+    { kind: 'woman', home: [6.8, 29.9, 1.2], style: 'long', hair: 0xb8b8b8 },
+    { kind: 'kid', home: [7.2, 30.2, 1.5], style: 'short', work: [3, 51.2, 43.6] },
+    { kind: 'man', home: [33, 29.9, 1.6], style: 'scruffy' },
+    // the young soldier's mother, waiting at the door of the Brown Family Home
+    { kind: 'woman', home: [24.5, 28.7, 0.3], still: 'down', style: 'bun', hair: 0x5a3b2a, mother: true },
+    // (Lord Gusest is a real chat NPC now: id 'gusest' in game/02, standing at PLACES.gusest_post.)
+    // The young soldier (Mayor Brown's father, 17) is away at the wall for 13 days: he is only home after the Day of Glory.
+    { kind: 'man', home: [25.7, 28.8, 0.3], still: 'down', style: 'short', hair: 0x3a2418, outfit: 0x6b5a45, name: 'Tom Brown', say: 'soldier', after: true },
+  ];
+  // What they say when the player stops next to them: always the past tense (the topic of the chapter).
+  const SAY = {
+    man: [
+      ['We built this wall last spring.', 'Mùa xuân năm ngoái chúng tôi đã xây bức tường này.'],
+      ['I worked in the rice fields all day.', 'Tôi đã làm ngoài ruộng cả ngày.'],
+      ['My brother went north with the knights.', 'Anh trai tôi đã đi về phía bắc cùng các kỵ sĩ.'],
+    ],
+    woman: [
+      ['I carried water from the well this morning.', 'Sáng nay tôi đã gánh nước từ giếng.'],

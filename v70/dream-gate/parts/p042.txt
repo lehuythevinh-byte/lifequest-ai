@@ -1,0 +1,845 @@
+,76,2,H-120,0xc2c7ac,.51);for(let y=76;y<H-40;y+=21)R(xx-7,y,22,4,0x384c4f,.80)}
+ for(let x=20;x<W-15;x+=70){R(x,77,45,19,0x324753,.53);border(x,77,45,19,0xa6bbba,2,.4);for(let j=0;j<4;j++)R(x+6+j*8,82,4,3,j%2?0xf5b763:0x71dbc5,.78);}
+ for(let x of [W*.25,W*.75]){glow(x,68,38,p.accent);R(x-10,44,20,13,0x2a555d);R(x-3,47,6,7,p.accent,.86)}
+}
+function drawHeritage(c,ranger=false){const {W,H,R,L,p,O,T,border,E,h,spar}=c;planks(c,67,H-6,ranger?23:27);R(8,8,W-16,44,ranger?0x68795a:0xb09a75);for(let x=17;x<W-15;x+=79){R(x,5,12,62,0x654b33);R(x+3,5,2,54,0xe8c78b,.50);L(x+8,7,x+64,47,0xd5c39a,.41,4)}
+ for(let x=38;x<W-30;x+=145)windowFrame(c,x,13,55,29,ranger?'forest':'sky');
+ // timber canopy / beaten earth border, fireside gathering. Negative space is purposeful.
+ for(let y=78;y<H-25;y+=50)for(let x=14;x<W-10;x+=65){R(x,y,44,33,ranger?0x718869:0x9c7855,.26);L(x,y+2,x+38,y+29,ranger?0x334b3c:0x694e37,.22,2)}
+ if(ranger){for(let x of [20,W-21]){R(x-10,57,22,H-85,0x365540,.6);for(let y=91;y<H-36;y+=53)outlineLeaves(c,x,y,4);}R(14,46,W-28,8,0x526a51)}
+ else {R(18,48,W-36,13,0x74523b);R(18,49,W-36,3,0xd5aa6d,.57);for(let x=15;x<W-20;x+=47){R(x,60,23,6,0x624730,.46)}}
+ carpet(c,W*.37,H*.35,W*.26,H*.30,ranger?0x728962:0x9e7758,true);
+}
+function drawAtelier(c){const {W,H,R,L,p,O,T,border,E,h,spar}=c;R(7,6,W-14,47,0x53576e);for(let x=11,i=0;x<W-10;x+=89,i++){const colors=[0xe4a38e,0x96cac0,0xe9c97d,0x9a96c7,0xdca2be];R(x,11,74,33,0x262c43);R(x+4,14,66,27,colors[i%5]);T(x+9,32,x+25,19,x+47,34,colors[(i+2)%5]);R(x+4,44,66,3,0xe9d6b9);}
+ // Non orthogonal creative floor composition, deliberately larger and higher contrast.
+ R(7,65,W-14,H-72,0xc4ac9f);T(8,67,W*.51,67,8,H-8,0xe7bfa8,.88);T(W*.48,67,W-8,67,W-8,H-8,0x8abbb4,.8);T(8,H*.77,W*.42,H*.45,W*.46,H-8,0xe8d18a,.65);
+ for(let i=0;i<18;i++){let xx=26+spar(i,7,1)*(W-55),yy=86+spar(5,i,4)*(H-130);R(xx,yy,4+(i%3)*3,5+(i%4)*2,[0xf1bd98,0x7fc2ac,0xe9c979,0x9c8ac0][i%4],.51)}
+ // Sculptural display platforms that read as art workshops, not colored tile sheets.
+ for(let x of [65,W-65]){R(x-32,72,64,14,0x3d4656);R(x-28,76,56,6,0xc0c4cb,.59);R(x-12,58,24,22,0x6e8083);O(x,54,9,0xe5ac95,.89)}
+ carpet(c,W*.39,H*.48,W*.22,H*.26,0x9f8bb3);
+}
+function drawTech(c){const {W,H,R,L,p,O,E,T,border,glow}=c;R(7,6,W-14,49,0x1d4058);for(let x=20;x<W-12;x+=112){R(x,11,97,37,0x0c273a);R(x+4,15,89,28,0x27768b,.67);for(let j=0;j<5;j++){R(x+10,19+j*5,58-j*7,2,[0x61e9de,0xbef8ed,0x468bb1][j%3],.8);}R(x+2,48,93,5,0x78c4d4)}
+ R(7,65,W-14,H-72,0x35687e);for(let y=73;y<H-9;y+=28)for(let x=13;x<W-10;x+=28){R(x,y,26,26,((x+y)/28|0)%2?0x477c92:0x26566e,.68);R(x+3,y+2,20,1,0xb2eaff,.27);R(x,y+25,26,1,0x1a4962,.73);}
+ // Tech company circulation system: luminous wiring in floor that actually conveys room shape.
+ for(let x of [Math.floor(W*.25),Math.floor(W*.75)]){R(x-2,67,4,H-120,0x75d4ed,.55);R(x-5,67,10,3,0xe0fff5,.89);for(let y=100;y<H-50;y+=50){R(x-9,y,18,4,0x7effdf,.57);O(x,y+2,3,0xe3fffa)}}
+ E(W*.5,H*.41,W*.40,H*.25,0x89daf0,.18);E(W*.5,H*.41,W*.32,H*.17,0x1b7389,.45);
+ carpet(c,W*.40,H*.52,W*.20,H*.25,0x28556e,true);
+}
+function drawRoyal(c){const {W,H,R,L,p,O,E,T,border,glow}=c;R(7,6,W-14,50,0x806c85);for(let x=13;x<W-10;x+=92){R(x,8,79,45,0x3b314d);R(x+4,12,71,36,0xa48399);E(x+39,21,48,25,0xe0c4a2);R(x+14,22,51,22,0x5e6182);for(let j=0;j<4;j++)R(x+18+j*12,27,8,16,[0xc7a1bc,0x85a7c9,0xf0d28b,0xa882aa][j]);R(x+4,49,71,5,0xefcf91);}
+ R(7,65,W-14,H-72,0xb5a98f);for(let y=66;y<H-7;y+=32)for(let x=8;x<W-6;x+=32){R(x+2,y+2,29,29,((x+y)/32|0)%2?0xdbc8a9:0xc8b795,.52);R(x+5,y+5,24,1,0xf3e5c1,.25);}
+ // Monumental columns and processional aisle.
+ for(let x of [31,W-32])for(let y of [83,Math.max(125,H*.45)]){E(x,y+19,28,10,0x51465a,.38);R(x-12,y-15,24,32,0xd8c3a5);R(x-15,y-21,30,7,0xffdea8);R(x-16,y+13,32,6,0x70516d);R(x-7,y-13,5,25,0xffffff,.18)}
+ const ww=clamp(W*.30,95,173);carpet(c,W*.5-ww/2,70,ww,H-82,0x9b415c,true);
+ for(let x of [W*.18,W*.82]){glow(x,75,44,0xffd38b);O(x,68,6,0xffebbb,.8)}
+}
+function drawLiving(c){const {W,H,R,L,p,O,E,T,border,h,spar,glow}=c; // Carved cross-section of a living tree (irregular elliptical negative space).
+ R(7,6,W-14,53,0x274939);R(7,65,W-14,H-72,0x274535);E(W/2,H*.53,W*.98,H*.91,0x304f3e);E(W/2,H*.53,W*.90,H*.82,0x526f4d);E(W/2,H*.53,W*.77,H*.69,0x88996a);E(W/2,H*.53,W*.65,H*.61,0xa1a477,.47);
+ // Layered winding grain and root ribs; same building has organic silhouette not square room.
+ for(let z=0;z<5;z++){let k=z*13;E(W/2,H*.55,W*.94-k,H*.88-k,0x2d513e,z%2?.08:.19);}
+ for(let i=0;i<8;i++){const x=17+i*(W-34)/7;const curve=Math.sin(i*1.3)*22;L(x,1,x+curve,62,0x17382b,.85,10);L(x+3,1,x+curve+3,58,0x9ac68e,.42,3);outlineLeaves(c,x+curve,42,4)}
+ for(let side of [-1,1])for(let j=0;j<4;j++){const x=side===-1?14+j*10:W-14-j*10, y=86+j*(H-148)/4;L(x,58,x+side*(27+j*3),y,0x2e4b34,.82,9-j);E(x+side*(27+j*3),y,31+j*5,12,0xb6bd85,.27);}
+ // Living household: branching, curved inlays that connect gathering alcoves.
+ for(let i=0;i<3;i++){const y=H*.26+i*H*.16;E(W*.25,y,W*.29,26,0x3e6348,.31);E(W*.76,y+11,W*.31,28,0x386047,.30)}
+ for(let i=0;i<26;i++){let x=25+spar(i,12,6)*(W-50),y=74+spar(4,i,12)*(H-130);if((x-W/2)**2/(W*.42)**2+(y-H*.53)**2/(H*.42)**2>1)continue;E(x,y,9+(i%3)*3,5+(i%2)*4,[0x9bbd80,0xd5c689,0x6c9874][i%3],.40)}
+ for(let x of [W*.25,W*.75]){glow(x,67,43,0xeff5ac);E(x,67,20,12,0xf0eac7,.72)}
+}
+function drawBazaar(c){const {W,H,R,L,p,O,E,T,border,h,glow}=c;R(7,6,W-14,47,0x69465b);R(7,64,W-14,H-71,0xbb9075);for(let y=72;y<H-5;y+=21)for(let x=12+(y/21|0)%2*13;x<W-11;x+=26){R(x,y,25,20,(x/13+y/21|0)%2?0xb98d71:0xd2aa86,.42);R(x,y,25,1,0x5a4653,.18)}
+ // Textile market's overhead canopies and attached trade bays.
+ const awns=[0xa65871,0xe1b87c,0x71618b,0x62a6a0,0xde8f79];for(let x=12,i=0;x<W-10;x+=72,i++){R(x,9,63,45,awns[i%5]);for(let j=0;j<4;j++){R(x+j*16,9,8,33,0xffe1b2,.4);T(x+j*16,39,x+j*16+8,52,x+j*16+16,39,awns[i%5]);}R(x,50,63,5,0x4e374d);}
+ R(8,61,W-16,9,0x593f4c);for(let x of [28,W-29]){R(x-12,62,24,34,0x785369);R(x-8,66,16,30,0xd4b98a);R(x-3,67,6,25,0xfae8b7,.38)}
+ for(let x of [W*.22,W*.78]){R(x-15,74,30,H*.29,0x70536a,.35);R(x-11,79,22,H*.29-10,0xf3d6a7,.15)}
+ carpet(c,W*.37,81,W*.26,H*.35,0xa4616b);
+}
+function roleFocal(c){const {W,H,R,L,p,O,E,T,border,d,glow}=c,role=d.role||'',id=c.id,cx=W/2;
+  // Architectural focal pieces are painted into the wall/background and do not create invisible walls.
+  if(id==='royal'){
+    if(role==='opera'){R(cx-100,66,200,54,0x403043);R(cx-93,70,186,43,0xc1957e);for(let i=0;i<4;i++){T(cx-95+i*16,66,cx-82+i*16,66,cx-95+i*16,114,0xa54f6a,.73);T(cx+95-i*16,66,cx+82-i*16,66,cx+95-i*16,114,0xa54f6a,.73)}R(cx-72,91,144,15,0x744759);R(cx-68,87,136,3,0xf3d294,.65);}
+    else if(role==='throne'||role==='salon'){R(cx-48,70,96,62,0x574054);R(cx-38,76,76,48,0xd4a26d);R(cx-27,72,54,19,0xa1466c);R(cx-20,91,40,33,0x86384f);R(cx-34,122,68,6,0xefcd8d);for(let x of [cx-42,cx+37]){R(x,81,6,48,0xeac88c)}O(cx,83,8,0xffeaa6)}
+    else if(role==='academy'){for(let i=0;i<4;i++){R(22+i*(W-45)/4,68,52,57,0x624d57);R(26+i*(W-45)/4,72,44,48,0x9e796d);for(let j=0;j<5;j++)R(29+i*(W-45)/4+j*8,79,5,31,[0xf1d89b,0x91b4bf,0xc79e9e][j%3])}}
+  }
+  if(id==='living'){
+    if(role==='elders'||role==='council'){E(cx,H*.30,134,70,0x2b5e40,.77);E(cx,H*.29,104,48,0xa7be79,.64);E(cx,H*.29,60,20,0xe0d399,.38);for(let i=0;i<8;i++){let a=i*Math.PI/4;O(cx+Math.cos(a)*78,H*.30+Math.sin(a)*40,5,0xd0c892,.65)}}
+    else if(role==='root-home'||role==='talori-home'){for(let x of [W*.17,W*.83]){E(x,97,73,49,0x3d6747);E(x,95,55,35,0x8eac79,.72);outlineLeaves(c,x,80,5)} }
+    else if(role==='market'){for(let i=0;i<3;i++){let x=W*(i+.5)/3;E(x,93,W*.27,48,[0x88a868,0xaaa36d,0x75a281][i],.74);R(x-W*.105,110,W*.21,7,0x5f5136);for(let j=0;j<4;j++)O(x-23+j*15,105,7,[0xe5bb6b,0xa8b56d,0xe39470][(i+j)%3])}}
+  }
+  if(id==='industrial'){
+    if(role==='station'){R(cx-57,70,114,61,0x254049);R(cx-51,75,102,48,0x78afb0);for(let i=0;i<4;i++){R(cx-44+i*24,80,20,35,0x29465d);R(cx-40+i*24,84,12,5,0xd9e5ca)}R(cx-64,124,128,6,0xcea86b)}
+    else {R(cx-50,69,100,45,0x354957);R(cx-42,74,84,30,0x172e38);for(let j=0;j<5;j++){R(cx-33+j*14,79,8,16,j%2?0xf3b16b:0x76e4d8)}R(cx-47,107,94,5,0xb9a777);}
+  }
+  if(id==='tech'){R(cx-45,71,90,46,0x173d55);R(cx-39,77,78,33,0x58afbf,.68);for(let i=0;i<5;i++)R(cx-32,82+i*5,Math.max(10,52-i*8),2,i%2?0xfff7ca:0x76f9e0,.8);R(cx-15,113,30,6,0xb5ffec)}
+  if(id==='bazaar'){
+    if(['clockmaker','jewels','tailor','pottery','metal','food','archive','warehouse','exchange','lord'].includes(role)){
+      R(cx-67,66,134,56,0x4b3446,.81);R(cx-62,70,124,48,0xae826b);R(cx-58,73,116,42,0x523e4d);
+      for(let i=0;i<5;i++){
+        const x=cx-46+i*23, col=role==='jewels'?[0x75f2da,0xe7a5e6,0x8eacef][i%3]:role==='tailor'?[0xe5b3a1,0xa29ec8,0xe7d28b][i%3]:role==='metal'?0xf0ae77:0xecc988;
+        if(role==='clockmaker'){O(x,91,10,0xe9c88e);O(x,91,6,0x56404b);L(x,91,x+4,87,0xffebba,.93,2);}
+        else if(role==='jewels'){T(x,80,x-9,97,x+9,97,col);T(x,80,x+2,95,x+8,96,0xffffff,.35);}
+        else if(role==='tailor'){T(x,81,x-10,101,x+10,101,col);R(x-3,77,6,4,0xf6e7be)}
+        else if(role==='pottery'){E(x,90,15,18,0xc68762);R(x-5,78,10,3,0xf9d0a0);}
+        else if(role==='metal'){R(x-9,80,18,17,0x68747a);L(x-5,83,x+6,94,0xffb56e,.88,2)}
+        else if(role==='food'){O(x,91,9,0xf5c482);O(x+3,88,4,0xd9895a)}
+        else {R(x-7,81,14,19,[0xf2d6a0,0xb1ccca,0xdca89d][i%3]);R(x-4,84,8,11,0x624c56,.55)}
+      }
+    }
+  }
+}
+function drawBack(g,s){if(!s.__lq53)return;const c=ctx(g,s);base(c);
+ switch(c.id){case 'civic':drawCivic(c);break;case 'industrial':drawIndustrial(c);break;case 'heritage':drawHeritage(c);break;case 'ranger':drawHeritage(c,true);break;case 'atelier':drawAtelier(c);break;case 'tech':drawTech(c);break;case 'royal':drawRoyal(c);break;case 'living':drawLiving(c);break;case 'bazaar':drawBazaar(c);break;}
+ roleFocal(c);
+ // Entrance reads as an actual open threshold, never a giant invisible barrier.
+ const {W,H,p,R,border,L}=c,cx=W/2;R(0,0,6,H,p.edge);R(W-6,0,6,H,p.edge);R(0,H-7,cx-36,7,p.edge);R(cx+36,H-7,W-cx-36,7,p.edge);R(cx-32,H-33,64,33,p.edge,.72);R(cx-26,H-28,52,28,mix(p.floor,p.dark,.26));R(cx-29,H-32,58,5,p.lit,.8);R(cx-12,H-9,24,3,p.accent,.90);}
+const itemMap=new Set(['table','counter','desk','schooldesk','chair','sofa','bed','hospbed','shelf','goods','plant','rug','mat','paint','poster','board','screen','glass','glasscase','mirror','clock','flag','lantern','crate','barrel','locker','wardrobe','pew','seat','stove','fireplace','forge','anvil','crystal','orepile','minecart','piano','altar','cakecase','partition','stairs','menu','rack']);
+function drawItem(g,it,s){if(!s.__lq53||!itemMap.has(it.k))return false;const c=ctx(g,s),{p,R,L,O,E,T,border,h}=c;const x=it.x*32,y=it.y*32,w=it.w*32,hh=it.h*32,k=it.k,cen=x+w/2,cy=y+hh/2,accent=it.c??p.accent;
+ const drop=(xx=x+2,yy=y+4,ww=w-3,hh2=hh-4)=>R(xx+2,yy+3,ww,hh2,p.edge,.25);
+ const plank=(xx,yy,ww,hh2,col)=>{R(xx+2,yy+5,ww,hh2,p.edge,.25);R(xx,yy,ww,hh2,col);R(xx,yy,ww,3,mix(col,p.lit,.52));R(xx,yy+hh2-4,ww,4,mix(col,p.edge,.43));border(xx,yy,ww,hh2,p.edge,2,.79);};
+ const illumin=(xx,yy,rad,col)=>{O(xx,yy,rad,col,.05);O(xx,yy,rad*.45,col,.12)};
+ if(['rug','mat'].includes(k)){carpet(c,x+2,y+1,w-4,hh-2,k==='mat'?mix(p.mat,p.accent,.25):mix(accent,p.mat,.47),k==='rug');return true;}
+ if(['table','counter','desk','schooldesk'].includes(k)){drop();R(x+5,y+hh-8,7,8,p.dark);R(x+w-12,y+hh-8,7,8,p.dark);plank(x+2,y+3,w-4,Math.max(14,hh-11),mix(accent,p.wall2,.39));
+   if(k==='desk'||k==='schooldesk'){R(x+w*.36,y+6,Math.min(32,w*.4),17,p.edge);R(x+w*.36+3,y+8,Math.min(26,w*.4-6),11,c.id==='tech'?0x54d7e9:0x8bb0b6);R(x+w*.52,y+23,4,5,p.edge);R(x+10,y+hh-16,23,12,p.lit,.82);L(x+12,y+hh-12,x+30,y+hh-12,p.dark,.49,1)}
+   else if(k==='counter'){for(let i=1;i<Math.floor(w/26);i++){R(x+i*26,y+hh-10,2,9,p.lit,.48)}R(x+10,y+10,w-20,6,p.lit,.31);for(let i=0;i<Math.min(5,w/28);i++)O(x+14+i*24,y+hh-16,4,[0xe9be75,0xa0d5b0,0xda8da0][i%3]);}
+   else {R(x+8,y+10,19,14,0xf1dfbf);R(x+11,y+13,13,2,p.dark,.31);O(x+w-18,y+12,8,0xf4e6c7);O(x+w-18,y+12,5,0x956a55);R(x+9,y+hh-16,14,4,mix(p.accent,p.lit,.4));}return true;}
+ if(k==='chair'){R(x+7,y+4,w-14,11,p.dark);R(x+9,y+5,w-18,8,mix(accent,p.wall2,.20));R(x+7,y+17,w-14,hh-23,p.edge);R(x+10,y+18,w-20,Math.max(5,hh-27),mix(accent,p.lit,.13));R(x+9,y+hh-6,4,5,p.dark);R(x+w-13,y+hh-6,4,5,p.dark);return true;}
+ if(['sofa','pew','seat'].includes(k)){drop();plank(x+2,y+5,w-4,hh-7,k==='pew'?p.wall2:mix(accent,p.wall2,.28));R(x+5,y+8,w-10,hh*.31,p.dark,.45);for(let i=0;i<Math.max(1,Math.floor(w/26));i++){R(x+7+i*26,y+11,21,Math.max(7,hh*.25),mix(accent,p.lit,.25));R(x+7+i*26,y+hh*.53,21,Math.max(5,hh*.23),mix(accent,p.lit,.12));}R(x+2,y+8,6,hh-12,p.dark,.71);R(x+w-8,y+8,6,hh-12,p.dark,.71);return true;}
+ if(['bed','hospbed'].includes(k)){drop();plank(x+2,y+2,w-4,hh-4,p.dark);R(x+6,y+7,w-12,hh-14,0xe0d9c2);R(x+8,y+hh*.49,w-16,hh*.41,k==='hospbed'?0x70b3b6:mix(accent,p.accent,.5));R(x+9,y+hh*.51,w-18,4,p.lit,.4);for(let i=0;i<(w>=55?2:1);i++){R(x+8+i*((w-16)/2),y+11,(w-19)/(w>=55?2:1),16,0xf9ebd7);R(x+10+i*((w-16)/2),y+11,(w-23)/(w>=55?2:1),3,0xffffff,.45)}return true;}
+ if(['shelf','goods','rack','locker','wardrobe'].includes(k)){drop();R(x+2,y,w-4,hh,p.edge);R(x+5,y+3,w-10,hh-6,mix(accent,p.wall2,.32));let ny=Math.max(1,Math.floor(hh/26));for(let row=0;row<ny;row++){const by=y+7+row*(hh-12)/ny;R(x+5,by+(hh-12)/ny-4,w-10,4,p.dark);for(let j=0;j<Math.max(1,Math.floor((w-15)/11));j++){const bx=x+8+j*11;if(bx>x+w-12)break;const choice=(j+row+((h>>>2)%7))%5;if(c.id==='bazaar'&&c.d.role==='jewels'){T(bx,by+3,bx-5,by+15,bx+5,by+15,[0xcab5f3,0xa7eedc,0xffd39d][choice%3]);}else if(c.id==='living'){O(bx,by+14,5,[0xd5c186,0x89b876,0xe7a780][choice%3]);}else{R(bx,by+4+(choice%2)*3,7,13-(choice%2)*3,[0xf0c78d,0xa6c4ba,0xdd9aa2,0xe9d2a1,0x6faeb9][choice]);R(bx,by+5,2,6,p.lit,.24)}}}border(x+2,y,w-4,hh,p.edge,2,.66);return true;}
+ if(k==='plant'){R(x+10,y+20,13,10,0x926949);R(x+12,y+20,9,3,0xd4af7d);for(let i=0;i<7;i++){const ax=x+16+Math.cos(i*2.33)*9,ay=y+13+Math.sin(i*2.33)*7;E(ax,ay,12,9,c.id==='living'?[0x9dca86,0x557b5a,0xb4d495][i%3]:[0x548c68,0x79a478,0x3d7963][i%3]);R(ax+1,ay-2,3,2,0xddedbc,.39)}return true;}
+ if(['paint','poster','board','screen','glass','mirror','menu','flag'].includes(k)){R(x+3,y+1,w-6,hh-2,p.edge);R(x+6,y+4,w-12,hh-8,(['glass','mirror'].includes(k))?0x4a9ba2:mix(p.wall2,p.lit,.25));if(k==='glass'||k==='mirror'){T(x+8,y+6,x+8+w*.35,y+6,x+8,y+hh*.68,0xf4ffff,.43);R(x+6,y+6,w-12,4,0xe8ffec,.48)}else if(k==='board'||k==='menu'||k==='screen'){for(let i=0;i<3;i++)R(x+12,y+12+i*9,Math.max(14,w-25-i*10),3,k==='screen'?0x8de9ed:0xffdfad,.84);}else{const inks=[0xebad8d,0xb7d39b,0x8abac6,0xc5a6d6];T(x+9,y+hh*.7,x+w*.55,y+10,x+w-12,y+hh*.66,inks[h%4],.83);O(x+w*.69,y+hh*.25,5,0xffe6b4);R(x+8,y+hh*.73,w-16,3,p.lit,.5)}border(x+3,y+1,w-6,hh-2,p.lit,2,.68);return true;}
+ if(k==='glasscase'){drop();plank(x+2,y+7,w-4,hh-11,p.wall2);R(x+6,y+2,w-12,hh*.57,0x5b9faf,.46);border(x+6,y+2,w-12,hh*.57,0xe2ffff,2,.8);for(let i=0;i<Math.max(1,w/27);i++){let xx=x+14+i*26;T(xx,y+8,xx-6,y+hh*.46,xx+6,y+hh*.46,[0x9af5de,0xefb5de,0xb8ccf4][i%3]);}return true;}
+ if(k==='clock'){O(cen,cy,Math.min(w,hh)*.38,p.edge);O(cen,cy,Math.min(w,hh)*.32,0xf0d8a8);O(cen,cy,Math.min(w,hh)*.25,0x745a60);for(let i=0;i<12;i++){let a=i*Math.PI/6;L(cen+Math.cos(a)*Math.min(w,hh)*.19,cy+Math.sin(a)*Math.min(w,hh)*.19,cen+Math.cos(a)*Math.min(w,hh)*.24,cy+Math.sin(a)*Math.min(w,hh)*.24,p.lit,.75,2)}L(cen,cy,cen+6,cy-7,p.lit,.9,2);L(cen,cy,cen-2,cy-10,p.lit,.9,1);return true;}
+ if(k==='lantern'){illumin(cen,cy,31,p.lit);R(cen-8,cy-7,16,16,p.edge);R(cen-5,cy-5,10,13,p.lit);R(cen-2,cy-11,4,4,0xc6ac7e);R(cen-4,cy-3,3,6,0xfff7d3,.7);return true;}
+ if(['crate','barrel'].includes(k)){drop();if(k==='barrel'){E(cen,cy+8,w*.7,hh*.62,0x70563b);R(x+7,y+6,w-14,hh-12,0x9b7651);R(x+4,y+8,w-8,4,p.dark);R(x+4,y+hh-11,w-8,4,p.dark);E(cen,y+6,w*.66,8,0xc39f66);}else{plank(x+3,y+5,w-6,hh-8,0xa47a54);L(x+7,y+9,x+w-7,y+hh-8,0x6b4e3d,.81,3);L(x+w-7,y+9,x+7,y+hh-8,0x6b4e3d,.81,3);R(x+5,y+5,w-10,3,0xf1c18e,.46);}return true;}
+ if(['stove','fireplace','forge','anvil'].includes(k)){drop();plank(x+2,y+6,w-4,hh-9,k==='forge'?0x495c65:p.dark);R(x+8,y+10,w-16,hh*.45,0x293543);for(let i=0;i<Math.max(2,w/25);i++){O(x+15+i*21,y+hh*.39,7,0xf2a762);O(x+13+i*21,y+hh*.42,4,0xffe5a1)}R(x+7,y+hh-14,w-14,4,0xffd4a4,.53);return true;}
+ if(k==='crystal'||k==='orepile'){for(let i=0;i<Math.max(3,w/19);i++){let xx=x+8+i*(w-16)/Math.max(3,w/19),height=hh*.35+(i%3)*hh*.13;T(xx,y+hh-7,xx+7,y+hh-7-height,xx+14,y+hh-7,[0x79e4e7,0x9eb5e5,0xb2f4cf][i%3]);T(xx+7,y+hh-7-height,xx+7,y+hh-8,xx+14,y+hh-7,0xffffff,.31)}return true;}
+ if(k==='minecart'){drop();R(x+2,y+6,w-4,hh-15,0x394750);R(x+5,y+8,w-10,hh-23,0x828b86);R(x+9,y+12,w-18,hh-29,0x70bcc3,.63);O(x+10,y+hh-7,5,p.dark);O(x+w-10,y+hh-7,5,p.dark);return true;}
+ if(k==='piano'){plank(x+2,y+4,w-4,hh-8,0x283047);R(x+6,y+hh*.48,w-12,hh*.34,0xe9e5d6);for(let i=0;i<Math.floor((w-13)/9);i++){R(x+8+i*9,y+hh*.5,8,hh*.27,0xffffff);if(i%3)R(x+12+i*9,y+hh*.5,4,hh*.14,0x1c2432);}return true;}
+ if(k==='altar'){plank(x+2,y+6,w-4,hh-8,p.wall2);R(x+10,y+11,w-20,6,p.lit);for(let xx of [x+12,x+w-15]){R(xx,y-3,4,13,0xffdb91);O(xx+2,y-5,5,0xffbb70)}return true;}
+ if(k==='partition'){R(x+2,y+1,w-4,hh-2,p.dark);for(let yy=y+7;yy<y+hh-7;yy+=17){R(x+5,yy,w-10,8,p.wall2);R(x+8,yy+3,w-16,2,p.lit,.43)}return true;}
+ if(k==='stairs'){for(let j=0;j<it.h*3;j++){R(x+3,y+j*hh/(it.h*3),w-6,hh/(it.h*3)-1,mix(p.floor,p.dark,j/(it.h*4)));R(x+5,y+j*hh/(it.h*3),w-10,2,p.lit,.5)}return true;}
+ if(k==='cakecase'){plank(x+2,y+4,w-4,hh-7,0xc7a18c);R(x+4,y+7,w-8,hh*.45,0x9fc5cf,.65);for(let i=0;i<Math.max(2,w/24);i++){O(x+12+i*22,y+15,6,[0xffd997,0xeab6b1,0xf0c59d][i%3]);R(x+9+i*22,y+15,7,2,0xffffff,.56)}return true;}
+ return false;
+}
+function drawFront(g,s){if(!s.__lq53)return;const c=ctx(g,s),{W,H,R,L,p,E,O}=c;
+ // Deliberately limited front trim; objects and player remain legible.
+ if(c.id==='living'){for(let x=25;x<W-15;x+=91){outlineLeaves(c,x,18,5);L(x-7,0,x-2,26,p.edge,.73,4);}for(let x of [24,W-25]){E(x,H*.67,28,54,0x284b39,.55)}}
+ else if(c.id==='industrial'){for(let x=21;x<W-10;x+=70){R(x,56,32,8,p.edge);R(x+3,56,25,3,0xeec788,.46);bolt(c,x+5,59)}}
+ else if(c.id==='royal'){for(let x=18;x<W-11;x+=92){R(x,52,60,8,p.edge);R(x+6,54,48,4,p.lit,.54)}}
+ else if(c.id==='bazaar'){for(let x=12;x<W-10;x+=72){R(x,54,63,6,p.edge);R(x+5,55,53,3,p.lit,.48)}}
+ else if(c.id==='tech'){for(let x=20;x<W-20;x+=112){R(x+9,54,80,4,p.edge);R(x+18,55,63,2,p.accent,.84)}}
+ else if(c.id==='atelier'){for(let x=13;x<W-10;x+=89){R(x+6,52,57,4,p.lit,.55)}}
+ else {for(let x=17;x<W-12;x+=96){R(x+6,52,58,4,p.lit,.37)}}
+ // No opaque global HUD: labels & controls from original game are preserved.
+}
+return Object.freeze({drawBack,drawItem,drawFront,pal,version:'54.0.0',preview:{ctx,drawBackdrop:drawBack}});
+})();
+window.LQInteriorV54=LQ54;
+
+
+/* LIFEQUEST AI V55 — MASTER CRAFTED INTERIORS
+ * Architectural sets and occupation-specific furniture, painted directly into the
+ * game's native Phaser Graphics. No new colliders, no changes to quest identifiers.
+ * This module uses the same model-data and deterministic room seed as V53/V54.
+ */
+const LQ55 = (() => {
+'use strict';
+const C=(a,b,t)=>{t=Math.min(1,Math.max(0,t));return [16,8,0].reduce((n,s)=>n|(Math.round(((a>>>s)&255)*(1-t)+((b>>>s)&255)*t)<<s),0)>>>0};
+const hs=t=>{let a=2166136261;for(const l of String(t)){a^=l.charCodeAt(0);a=Math.imul(a,16777619)}return a>>>0};
+const palettes={
+ civic:{ink:0x293849, timber:0x997259,hi:0xf5d9a0,metal:0x768a90,fabric:0xb77769,glow:0xffdca3},
+ industrial:{ink:0x182e37,timber:0x655346,hi:0xe2c792,metal:0x839ba4,fabric:0x60767e,glow:0xffaa63},
+ heritage:{ink:0x493b30,timber:0x906443,hi:0xf2cd95,metal:0x79796b,fabric:0xbd9b73,glow:0xffd68d},
+ ranger:{ink:0x2b4237,timber:0x786344,hi:0xd9d0a1,metal:0x637d65,fabric:0x8ea078,glow:0xf8c885},
+ atelier:{ink:0x333448,timber:0x94766d,hi:0xf6dfa8,metal:0x7a8498,fabric:0xe5a8b5,glow:0xffd4ac},
+ tech:{ink:0x112d40,timber:0x3c6371,hi:0xcbfff1,metal:0x668ea2,fabric:0x5087a5,glow:0x7cffee},
+ royal:{ink:0x3c314b,timber:0x8d6a61,hi:0xffdb94,metal:0xc0b5ae,fabric:0xa45775,glow:0xffdc9c},
+ living:{ink:0x233d30,timber:0x6a573c,hi:0xebdfa3,metal:0x7c9a76,fabric:0xa7b681,glow:0xe9f4a1},
+ bazaar:{ink:0x3a3040,timber:0x936446,hi:0xffdb9b,metal:0xb4a29a,fabric:0xbb7387,glow:0xffd79b}
+};
+function context(g,s){const d=s.__lq53||{},style=d.theme?.id||'civic',p=palettes[style]||palettes.civic,W=s.w*32,H=s.h*32,seed=hs(d.key||'default');
+ const r=(x,y,w,h,c,a=1)=>{if(w>0&&h>0)g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)))};
+ const l=(x,y,X,Y,c,a=1,weight=2)=>g.lineStyle(weight,c,a).lineBetween(Math.round(x),Math.round(y),Math.round(X),Math.round(Y));
+ const e=(x,y,w,h,c,a=1)=>{if(w>0&&h>0)g.fillStyle(c,a).fillEllipse(Math.round(x),Math.round(y),Math.round(w),Math.round(h))};
+ const o=(x,y,R,c,a=1)=>{if(R>0)g.fillStyle(c,a).fillCircle(Math.round(x),Math.round(y),R)};
+ const t=(a,b,c,d,e0,f,col,alpha=1)=>g.fillStyle(col,alpha).fillTriangle(a,b,c,d,e0,f);
+ const border=(x,y,w,h,col= p.ink,b=2,a=1)=>{r(x,y,w,b,col,a);r(x,y+h-b,w,b,col,a);r(x,y,b,h,col,a);r(x+w-b,y,b,h,col,a)};
+ const rnd=n=>((Math.imul((seed+n*5381)^(seed>>>13),1103515245)+12345)>>>0)/4294967296;
+ return {g,s,d,style,p,W,H,seed,r,l,e,o,t,border,rnd};
+}
+function brass(c,x,y,w,h){c.r(x+1,y+1,w,h,c.p.ink,.7);c.r(x,y,w,h,c.p.timber);c.r(x+1,y+1,w-2,2,c.p.hi,.67);c.r(x+1,y+h-3,w-2,2,c.p.ink,.48);}
+function jewel(c,x,y,scale=1,color=0x83d6ce){const {t,r}=c;t(x,y+scale*7,x+scale*7,y,x+scale*15,y+scale*7,color);t(x,y+scale*7,x+scale*7,y+scale*19,x+scale*15,y+scale*7,C(color,0x142b38,.4));t(x+scale*7,y,x+scale*7,y+scale*19,x+scale*3,y+scale*7,0xffffff,.38);r(x+scale*3,y+scale*3,scale*2,scale*2,0xffffff,.73)}
+function cog(c,x,y,radius=18,col=0xdfb86c){const {r,o,l,p}=c;o(x+2,y+3,radius+2,p.ink,.5);o(x,y,radius,col);o(x,y,radius-5,C(col,0x44364c,.24));o(x,y,radius-9,p.ink);o(x,y,radius-12,p.hi);for(let j=0;j<12;j++){const a=j*Math.PI/6;l(x+Math.cos(a)*(radius-1),y+Math.sin(a)*(radius-1),x+Math.cos(a)*(radius+6),y+Math.sin(a)*(radius+6),col,1,5)}o(x,y,4,p.ink);o(x-2,y-2,2,0xfff4d1)}
+function leaf(c,x,y,k=1){const {e,l,o}=c;l(x,y+12*k,x,y-9*k,0x456744,.9,2);for(let j=0;j<5;j++){const dx=[-13,13,-9,9,0][j]*k,dy=[2,2,-6,-6,-10][j]*k;e(x+dx,y+dy,17*k,10*k,[0x5c966b,0x9cc588,0x457e5d,0xc2ce8d,0x82a777][j]);o(x+dx+1,y+dy-2,2,0xe9edb7,.6)}}
+function light(c,x,y,power=36){const {o,p}=c;o(x,y,power,p.glow,.038);o(x,y,power*.56,p.glow,.071);o(x,y,power*.23,p.glow,.15)}
+function cloth(c,x,y,w,h,col,folds=6){const {r,t,l}=c;r(x,y,w,h,col);r(x,y,w,4,C(col,0xffffff,.26));for(let i=0;i<folds;i++){let xx=x+(i+.5)*w/folds;r(xx,y+4,Math.max(2,w/folds*.22),h-8,C(col,0x160b25,.34),.42);r(xx+4,y+6,2,h-11,0xffffff,.15);t(xx-w/folds*.45,y+h-2,xx,y+h+8,xx+w/folds*.45,y+h-2,col)}l(x,y,x+w,y,0xf4d59c,.7,2)}
+function lamp(c,x,y){const {r,o,e,p}=c;light(c,x,y+7,35);r(x-2,y-7,4,8,p.ink);o(x,y,7,p.hi,.8);e(x,y+6,21,9,p.glow,.62);r(x-12,y+1,24,3,p.ink);r(x-8,y-7,16,9,p.timber);r(x-5,y-4,10,7,p.glow);r(x-1,y-4,3,5,0xffffff,.77)}
+function arch(c,x,y,w,h,{glass=false,root=false}= {}){const {r,e,l,p,border,t}=c;const col=root?0x4b704f:glass?0x32576b:0x695567;r(x,y+Math.round(h*.36),w,h*.64,col);e(x+w/2,y+h*.36,w,h*.7,col);r(x+8,y+Math.round(h*.38),w-16,h*.62,glass?0x398ca1:root?0x426b4f:0x3d334c);e(x+w/2,y+h*.4,w-16,h*.62,glass?0x4a9aaf:root?0x759968:0x9b7c83);if(glass){for(let i=0;i<4;i++){r(x+15+i*(w-26)/4,y+h*.45,4,h*.50,0x8adfe0,.55)}r(x+w/2-3,y+Math.round(h*.17),6,h*.79,p.hi,.64);r(x+10,y+h*.65,w-20,5,p.hi,.71)}else{r(x+w/2-2,y+h*.4,4,h*.57,p.hi,.33);r(x+12,y+h*.68,w-24,3,p.hi,.37)}r(x-6,y+h*.35,8,h*.65,p.ink);r(x+w-2,y+h*.35,8,h*.65,p.ink);r(x-8,y+h*.34,12,5,p.hi);r(x+w-4,y+h*.34,12,5,p.hi)}
+function pennant(c,x,y,col){const {t,l,r}=c;l(x,y-20,x,y+42,c.p.ink,.8,3);t(x+2,y-16,x+30,y-10,x+3,y+30,col);r(x+5,y-13,4,22,c.p.hi,.36);t(x+10,y+3,x+19,y+7,x+10,y+14,c.p.hi,.69)}
+function instruments(c,x,y,s=1){const {r,l,o,e}=c;for(let i=0;i<4;i++){r(x+i*23*s,y,14*s,20*s,[0x83968a,0xae9e86,0x8099a5,0xb1956c][i]);r(x+i*23*s+3,y+3*s,8*s,3*s,0xffffff,.35);r(x+i*23*s+4,y+12*s,5*s,5*s,0x384f5e);l(x+i*23*s+7,y+17*s,x+i*23*s+10,y+24*s,0x473d3b,.85,2)}}
+function shelvesWall(c,x,y,w,h,role){const {r,l,border,p}=c;r(x+4,y+5,w,h,p.ink,.38);r(x,y,w,h,p.timber);r(x+3,y+3,w-6,h-6,C(p.timber,p.hi,.20));for(let row=0;row<3;row++){const yy=y+9+row*(h-16)/3;r(x+4,yy,w-8,4,p.ink);r(x+5,yy+4,w-10,2,p.hi,.45);for(let j=0;j<Math.max(2,Math.floor((w-17)/16));j++){const xx=x+9+j*16;if(xx+12>x+w-4)break;let sel=(j+row)%5;if(role==='archive'||role==='academy'||role==='family'){r(xx,yy-12,9,12,[0xb4a2a5,0xe3b48a,0x789e9c,0xb2a078,0x8b95bf][sel]);r(xx+2,yy-10,2,7,p.hi,.44)}else if(role==='jewels'){jewel(c,xx,yy-14,.50,[0x80e4d3,0xe7adc8,0x98a8ef][sel%3]);}else if(role==='food'||role==='market'){c.o(xx+4,yy-5,5,[0xe3ad6c,0xbfad68,0xda805c][sel%3]);}else{r(xx,yy-10,9,10,[0xa9c6ad,0xdaaa86,0xd9c6a6][sel%3]);r(xx+3,yy-12,3,2,p.hi)}}}border(x,y,w,h,p.ink,3)}
+// Narrow, highly authored environment vignettes on the rear wall. Everything
+// here is scenery, not a new obstacle. Side niches stay near existing walls.
+function backdrop(c){const {r,l,e,o,t,p,W,H,style,d,rand,rnd}=c;const role=d.role||'';let mid=W/2;
+ // Common 3-dimensional architectural cornice and soft edge shading.
+ r(8,61,W-16,5,p.ink,.78);r(13,65,W-26,3,p.hi,.31);r(9,73,8,H-82,p.ink,.28);r(W-17,73,8,H-82,p.ink,.28);
+ if(style==='industrial'){
+   for(let x=20;x<W-30;x+=92){r(x-6,4,13,59,0x1d323a);r(x-2,6,3,53,0xc4c7b4,.42);for(let y=11;y<57;y+=15)r(x, y,3,3,0xd4c4a3);l(x+9,6,x+75,58,0x94adb0,.42,4)}
+   // Furnace / control-room skyline — a central engine and companion piping.
+   r(mid-78,8,156,46,0x253a43);r(mid-70,12,140,32,0x4c616b);for(let i=0;i<7;i++){r(mid-60+i*19,15,12,23,0x233b44);r(mid-58+i*19,17,8,6,i%2?0x82f7dd:0xf7ae64,.84)}r(mid-70,42,140,4,0xdbb680);for(let i=0;i<4;i++){r(mid-88+i*54,7,9,22,0x8f9a99);r(mid-86+i*54,7,4,22,0xf3d39c,.42)}
+   if(role==='station'){for(let j=0;j<3;j++){r(mid-63+j*43,13,39,28,0x1b303b);r(mid-59+j*43,17,31,18,0xacc1aa);r(mid-56+j*43,20,25,3,0x365365);r(mid-56+j*43,26,21,3,0x546875)}cog(c,mid,42,13,0xf6c985)}
+   else if(role==='miners-home'){shelvesWall(c,mid-70,10,140,37,'family');lamp(c,mid-100,35);lamp(c,mid+100,35)}
+   else {cog(c,mid-52,39,14);cog(c,mid+48,36,19);r(mid-32,47,64,6,0xf3b66c);for(let i=0;i<5;i++)r(mid-24+i*12,23,7,11,[0x78d3ce,0x8aa1ad,0xe4b76b][i%3])}
+   for(let x of [29,W-32]){r(x,48,10,44,0x243943);r(x-2,47,14,4,0xb4b4a0);r(x+3,57,4,6,0xedaa69)}
+ }else if(style==='living'){
+   // Thick interwoven root arches. An airy center contrasts naturally dark edges.
+   for(let i=0;i<5;i++){let x=17+i*(W-34)/4,o0=(i-2)*19;l(x,-2,x+o0,60,0x234d37,.93,13);l(x+3,0,x+o0+3,56,0x8ca97b,.45,4);leaf(c,x+o0,44,.75)}
+   arch(c,mid-59,-7,118,61,{root:true});for(let i=0;i<5;i++){let x=mid-45+i*22;r(x,26,9,13,0x7e9b68);r(x+2,28,3,8,0xcfe2a0,.65)}
+   for(const x of [27,W-27]){e(x,72,48,66,0x1f4c35,.77);e(x,76,32,49,0x76966e,.76);leaf(c,x,43,1.1)}
+   if(role==='elders'||role==='council'){for(let i=0;i<10;i++){const x=mid-66+i*15;r(x,51,7,3,[0xc3ca94,0xf2d5a4,0x849f6e][i%3])}r(mid-48,56,96,5,0xb6ac80)}
+   if(role==='expedition'){r(mid-57,9,114,42,0x8b8c67);r(mid-53,13,106,34,0xd2c28b);for(let i=0;i<4;i++){let x=mid-40+i*22;l(x,17,x+12,41,0x8c8a5c,.76,2)}jewel(c,mid-7,19,1,0x81e8d1)}
+ }else if(style==='royal'){
+   for(let x=16;x<W-16;x+=100){r(x+8,4,12,64,0xc7b89e);r(x+11,4,3,61,0xffe1ad,.67);r(x+1,52,29,8,0x675269);r(x+2,4,27,7,0xe4c992);r(x+5,57,21,5,0xa8836e)}
+   arch(c,mid-67,-3,134,61,{glass:true});for(let i=0;i<7;i++){const x=mid-55+i*18;r(x,22,14,25,[0xba6697,0x7289b7,0xecc589][i%3]);t(x,20,x+14,20,x+7,8,[0xe4b48e,0x7bb0bc,0xa182a9][i%3])}r(mid-66,51,132,5,0xf1d393);
+   for(let x of [mid-114,mid+114]){pennant(c,x,18,role==='opera'?0x9d3b61:0x8f4669);lamp(c,x,57)}
+   if(role==='opera'){cloth(c,mid-115,3,54,50,0x9c3755);cloth(c,mid+61,3,54,50,0x9c3755);r(mid-56,53,112,12,0x664452);r(mid-52,54,104,3,0xeebf86)}
+   if(role==='academy'||role==='archive'||role==='ancestral')shelvesWall(c,mid-54,8,108,46,'academy');
+   if(role==='conservatory'){for(let x=mid-50;x<=mid+50;x+=25)leaf(c,x,37,.75)}
+   if(role==='throne'||role==='salon'){r(mid-33,33,66,32,0x66334d);r(mid-26,29,52,15,0xd1a069);r(mid-19,38,38,20,0x9c486c);jewel(c,mid-7,19,.8,0xf4c77e)}
+ }else if(style==='tech'){
+   for(let x=24;x<W-20;x+=108){r(x,7,95,46,0x102e42);r(x+3,10,89,37,0x22657b);for(let j=0;j<6;j++){r(x+10,14+j*5,65-j*9,2,[0xa0f6e6,0x65b6da,0x54f1cd][j%3],.75)}r(x+3,48,89,3,0x76f9e0)}
+   // Floating wall hologram, orbital geometry and cable conduits.
+   e(mid,39,94,38,0x175573,.95);e(mid,39,73,22,0x3c95ab,.71);o(mid,39,13,0x9bffeb,.76);for(let i=0;i<8;i++){const a=i*Math.PI/4;const x=mid+Math.cos(a)*40,y=39+Math.sin(a)*16;r(x-2,y-2,4,4,0xeafff0,.8)}l(mid-45,19,mid+45,57,0xbbfff1,.34,2);
+   if(role==='green-tech')for(let x=mid-59;x<mid+61;x+=28)leaf(c,x,36,.68);
+ }else if(style==='bazaar'){
+   // A patchwork upper arcade and an individual atelier's signboard.
+   for(let x=11,i=0;x<W-9;x+=76,i++){const cc=[0xc67d78,0xf1c083,0x78649b,0x76b2a9][i%4];cloth(c,x,8,69,43,cc,5)}
+   r(mid-80,16,160,43,0x4c3545);r(mid-75,20,150,34,0x977060);r(mid-72,23,144,29,0x563d4d);for(let i=0;i<4;i++){r(mid-69+i*35,46,32,5,0xe3c38c,.56)}
+   if(role==='clockmaker'){for(let i=0;i<4;i++)cog(c,mid-51+i*33,36,i%2?9:13,0xe5bf80)}
+   else if(role==='jewels'){for(let i=0;i<5;i++)jewel(c,mid-53+i*22,27,.75,[0x8deeda,0xeab7e6,0xc1c8fa][i%3])}
+   else if(role==='tailor'){for(let i=0;i<5;i++)cloth(c,mid-63+i*26,23,20,26,[0xd8998c,0xa8a6ca,0xdfb780,0x8fbabc][i%4],3)}
+   else if(role==='metal'){r(mid-44,31,88,13,0x535f62);for(let i=0;i<6;i++){let x=mid-35+i*13;l(x,23,x+8,39,0xd9e0d8,.83,3)}}
+   else if(role==='pottery'){for(let i=0;i<5;i++){const x=mid-49+i*26;e(x,41,18,25,0xc48662);r(x-5,24,10,5,0xf3d1aa);e(x,27,11,5,0xe6a77f)}}
+   else if(role==='food'){for(let i=0;i<8;i++){const x=mid-60+i*17;leaf(c,x,30,.46);r(x,43,8,6,[0xd1b36c,0xc77e5b,0x9cad69][i%3])}}
+   else {shelvesWall(c,mid-57,24,114,29,role)}
+   for(let x of [20,W-20]){r(x-8,54,16,29,0x6d4d5c);r(x-5,55,10,27,0xffd5a0,.19)}
+ }else if(style==='atelier'){
+   for(let i=0;i<6;i++){let x=18+i*(W-36)/6;const col=[0xebad89,0x85bbb1,0xc9a3c5,0xf0d68e,0x8daccb,0xe39faf][i];r(x,8,Math.min(65,(W-32)/6-5),43,0x333748);r(x+3,11,Math.min(59,(W-35)/6-9),37,col);t(x+8,42,x+25,17,x+43,40,C(col,0x2c4556,.34))}
+   r(mid-49,51,98,7,0xf6d39b);for(let i=0;i<9;i++){let x=mid-45+i*11;r(x,57,7,4,[0xe4bd99,0x68a7ae,0xeac585][i%3])}
+   if(role==='studio'){r(mid-34,3,68,11,0x53506b);r(mid-29,5,58,6,0xffebbf,.43)}
+ }else if(style==='civic'){
+   for(let x=23;x<W-20;x+=95){arch(c,x,9,69,42,{glass:false});r(x+14,22,40,17,0x83b9c1);r(x+16,27,36,12,0x436b83)}
+   for(let x=32;x<W-20;x+=115){r(x,51,53,9,0x77533f);r(x+3,52,47,3,0xf1d3a2);for(let j=0;j<3;j++)c.o(x+9+j*14,54,3,0xf5c486)}
+   if(role==='street-shop'){for(let i=0;i<8;i++){r(mid-65+i*17,16,10,20,[0xefc68e,0x91b2b8,0xd4a1a0][i%3]);r(mid-63+i*17,20,4,8,0xffffff,.27)}}
+ }else{
+   for(let x=20;x<W-15;x+=82){r(x-3,5,11,57,p.timber);r(x,7,3,50,p.hi,.42);l(x+9,5,x+70,45,p.timber,.59,4)}
+   for(let x=35;x<W-50;x+=132){arch(c,x,10,68,45,{glass:false});r(x+18,32,35,15,0x8ba38c,.7)}
+   if(style==='ranger')for(let x=30;x<W-15;x+=80)leaf(c,x,55,.55);
+ }
+ // Entrance intentionally stays unobstructed and original actor collision unchanged.
+}
+function floor(c){const {W,H,r,l,e,o,p,style,d,rnd}=c;const role=d.role||'';
+ // Gradual ambient occlusion at edges: zero extra physics and minimal texture cost.
+ for(let k=0;k<5;k++){r(10+k,67+k,W-20-2*k,2,p.ink,.11);r(10+k,H-14-k,W-20-2*k,2,p.ink,.045)}
+ if(style==='royal'){const center=W/2;for(let i=0;i<4;i++){let y=125+i*(H-187)/4;r(center-71,y,142,3,0xe6c99a,.30);for(let x of [center-67,center+67]){r(x,y-7,4,17,0xfce4b0,.42)}}for(let i=0;i<12;i++){let x=32+i*(W-60)/11;o(x,H-39,3,0xf0d4a1,.45)}}
+ else if(style==='living'){for(let k=0;k<4;k++){e(W/2,H*.56,W*(.72-k*.07),H*(.57-k*.07),k%2?0xb4ae7e:0x284e38,.055)}for(let i=0;i<21;i++){let x=30+rnd(i)*Math.max(4,W-60),y=90+rnd(i+45)*Math.max(4,H-135);e(x,y,7+(i%3)*5,4+(i%2)*2,[0xb2ba83,0x9aa979,0x6b926c][i%3],.23)}}
+ else if(style==='industrial'){for(let y=H*.48;y<H-43;y+=55){r(17,y,W-34,4,0x202f38,.26);r(17,y+1,W-34,1,0xe5c187,.2)}for(let x of [W*.28,W*.72]){r(x-3,93,6,H-151,0x203b48,.62);r(x-1,97,2,H-158,0xf4c589,.37)}}
+ else if(style==='bazaar'){for(let y=120;y<H-25;y+=72){r(28,y,W-56,2,0xe6b998,.20);for(let i=0;i<12;i++){let x=38+i*(W-76)/11;r(x,y-4,4,4,[0xe4be94,0xac8fc3,0x93c0b7][i%3],.31)}}}
+ else if(style==='tech'){for(let y=113;y<H-22;y+=55){for(let x=30;x<W-24;x+=110){r(x,y,36,2,0x75f8e7,.35);r(x+35,y-9,2,11,0x8adfea,.29);o(x+35,y-9,3,0xc3fef2,.55)}}}
+ else if(style==='atelier'){for(let i=0;i<16;i++){const x=21+rnd(i)*Math.max(1,W-42),y=104+rnd(i+73)*Math.max(1,H-135);r(x,y,5+(i%3)*3,3,[0xf0c089,0xe19bad,0x70bbaa,0xb6a2d5][i%4],.47)}}
+}
+function moreFurniture(c,it){const {r,l,e,o,t,p,style,d, rnd}=c;const x=it.x*32,y=it.y*32,w=it.w*32,h=it.h*32,k=it.k,cx=x+w/2,cy=y+h/2,role=d.role||'';
+ // Existing V54 object has already been painted; these are richer handcrafted
+ // overlays, respecting precisely the same rect/size and interaction ID.
+ if(k==='table'||k==='counter'||k==='desk'||k==='schooldesk'){
+  let edge=style==='tech'?0x16405b:style==='living'?0x3f5c3d:style==='industrial'?0x243945:p.ink;
+  r(x+5,y+5,w-10,Math.max(9,h-16),style==='royal'?0xe4c99c:style==='tech'?0x28718a:style==='living'?0x94764e:style==='industrial'?0x536b72:p.timber);
+  r(x+5,y+5,w-10,3,p.hi,.58);r(x+6,y+h-14,w-12,4,edge,.57);
+  if(style==='tech'){for(let i=0;i<6;i++){r(x+10+i*(w-20)/6,y+11,8,3,0x80f4e2,.82);r(x+13+i*(w-20)/6,y+18,3,5,0x23516b)}r(cx-18,y+9,36,13,0x133e59);r(cx-15,y+12,30,7,0x80dded)}
+  else if(style==='living'){for(let j=0;j<5;j++)l(x+8+j*(w-17)/5,y+12,x+14+j*(w-17)/5,y+h-18,0x5a6c3f,.65,2);leaf(c,x+w-17,y+16,.38);o(x+18,y+18,7,0xdec585);o(x+18,y+18,4,0xa98155)}
+  else if(style==='industrial'){instruments(c,x+8,y+10,.68);if(k==='desk')r(x+w-34,y+12,20,11,0x2e4e55)}
+  else if(style==='royal'){r(x+9,y+10,w-18,7,0x9d6a68,.71);for(let j=0;j<6;j++){let xx=x+12+j*(w-24)/6;r(xx,y+11,3,5,0xffd99c,.68)}o(cx,y+15,7,0xf3d9aa);o(cx,y+15,4,0x8b405e)}
+  else if(style==='bazaar'){for(let j=0;j<Math.min(8,Math.floor((w-14)/14));j++){let xx=x+12+j*14;if(role==='clockmaker')cog(c,xx,y+20,5,0xe6c28c);else if(role==='jewels')jewel(c,xx-4,y+12,.35,[0x8ce6dd,0xf2a5d8,0xa8a8f3][j%3]);else if(role==='food')o(xx,y+17,5,[0xeeb870,0xbe9466,0xa4b976][j%3]);else if(role==='tailor')r(xx-4,y+11,9,14,[0xe4b5a4,0x9caed4,0xe1cd91][j%3]);else if(role==='pottery'){e(xx,y+18,13,11,0xbb795c);r(xx-4,y+12,8,4,0xf0c994)}else r(xx-4,y+12,8,13,0xd2b792)}}
+  else if(style==='atelier'){for(let i=0;i<Math.min(6,(w/18|0));i++){const xx=x+10+i*19;o(xx,y+16,6,[0xebac93,0x7bc7b8,0xdfd18f,0x9d93c7][i%4]);r(xx-5,y+22,10,3,p.ink,.39)}}
+  else {o(x+18,y+16,7,0xf6e2ae);o(x+18,y+16,4,0x8f674d);r(x+w-34,y+11,20,15,0xe2c99e);r(x+w-31,y+14,14,2,0x896f55,.67)}
+  return;
+ }
+ if(k==='bed'||k==='hospbed'){
+  const col=style==='living'?0x94b17f:style==='royal'?0xad6884:style==='tech'?0x5c9bab:style==='industrial'?0x7d9fa0:style==='heritage'?0xba9866:0xc59b85;
+  r(x+7,y+9,w-14,h-18,C(col,p.hi,.26));r(x+8,y+10,w-16,5,p.hi,.56);
+  for(let j=0;j<5;j++){r(x+9,y+h*.51+j*(h*.26/5),w-18,2,j%2?col:p.hi,.28)}
+  if(style==='living'){leaf(c,x+w-15,y+13,.34);r(x+5,y+3,w-10,5,0x785f45);r(x+12,y+5,w-24,4,0x9bc08c,.69)}
+  if(style==='royal'){r(x+4,y+4,6,h-9,0xdfbc85);r(x+w-10,y+4,6,h-9,0xdfbc85);for(let i=0;i<5;i++){r(x+12+i*(w-24)/5,y+h-17,4,7,0xf4cf94,.56)}}
+  if(style==='tech')r(x+11,y+16,w-22,6,0x7df0ef,.34);
+  return;
+ }
+ if(['shelf','goods','rack','locker','wardrobe','glasscase'].includes(k)){
+   if(style==='bazaar'&&role==='jewels'&&k==='glasscase'){r(x+7,y+9,w-14,h-21,0x42647e,.70);for(let i=0;i<Math.min(8,Math.floor(w/23));i++){jewel(c,x+13+i*23,y+12,.56,[0x8ceae0,0xebafe5,0xaabafa][i%3])}r(x+4,y+h-12,w-8,6,0xefbb83,.87)}
+   else if(style==='bazaar'&&role==='clockmaker'){for(let i=0;i<Math.min(6,Math.floor(w/25));i++)cog(c,x+12+i*24,y+Math.min(h-15,24),8,0xdabb84)}
+   else if(style==='living'){for(let j=0;j<Math.min(5,(w/20|0));j++){leaf(c,x+12+j*19,y+15,.42)}}
+   else if(style==='industrial'){for(let j=0;j<Math.min(6,w/22);j++){let xx=x+10+j*22;r(xx,y+10,12,Math.max(6,h-23),0x334f55);r(xx+3,y+12,6,3,0x9fc7be);r(xx+4,y+h-15,4,3,0xe9b87b)}}
+   else if(style==='royal'){for(let j=0;j<Math.min(7,w/17);j++){r(x+9+j*17,y+7,10,h-20,[0xd5bb94,0xb38f9c,0x8798b6][j%3]);r(x+11+j*17,y+10,3,h-25,p.hi,.42)}}
+   return;
+ }
+ if(k==='forge'||k==='fireplace'||k==='stove'){
+  r(x+8,y+12,w-16,h-23,style==='living'?0x403d2e:0x26323b);for(let i=0;i<4;i++){t(x+17+i*(w-34)/4,y+h-17,x+10+i*(w-34)/4,y+h-37-(i%3)*9,x+26+i*(w-34)/4,y+h-17,[0xffa65d,0xffdd8b,0xf37a52][i%3],.88)}
+  if(style==='industrial'){r(x+4,y+4,w-8,8,0x7d9195);for(let j=0;j<6;j++)r(x+8+j*12,y+6,5,3,0xb3c3bb);r(x+w-18,y+1,10,18,0x485d60)}
+  if(style==='living'){for(let i=0;i<3;i++){l(x+7+i*7,y+h-12,x+16+i*7,y+h-29,0x7e9263,.69,3)}leaf(c,x+w-13,y+8,.34)}
+  return;
+ }
+ if(k==='piano'){r(x+7,y+13,w-14,10,0x25293d);for(let i=0;i<Math.floor((w-14)/9);i++){r(x+8+i*9,y+23,8,14,0xf0e3cb);if(i%3)r(x+13+i*9,y+23,4,8,0x202433)}r(x+10,y+4,w-20,7,0x4b364e);r(x+w*.5-6,y+3,12,4,0xe7c886);return}
+ if(k==='altar'){r(x+8,y+8,w-16,12,p.hi,.83);jewel(c,cx-10,y+7,.95,style==='living'?0xb7df8f:0xeebf91);for(let xx of [x+12,x+w-14])lamp(c,xx,y+15);return}
+ if(k==='plant'){leaf(c,cx,y+12,.9);return}
+ if(k==='clock'&&style==='bazaar'){cog(c,cx,cy,Math.min(w,h)*.32,0xe6c586);return}
+ if(k==='paint'&&style==='atelier'){r(x+7,y+7,w-14,h-14,0x34384f);for(let i=0;i<6;i++){t(x+10+i*8,y+h-18,x+18+i*8,y+14,x+20+i*8,y+h-18,[0xe2a493,0x83b7aa,0xe9c78a,0xb3a4d6][i%4],.73)}return}
+}
+function atmosphere(c){
+ const {W,H,r,l,t,e,o,p,s,style,rnd}=c;
+ // Native pixel geometry, not canvas filters: directional light beams fall across
+ // existing floor tiles, varying by cultural setting and the room's occupation.
+ let tint={living:0xe1f2a5,royal:0xffd69e,tech:0x8af4f5,industrial:0xf4ba83,heritage:0xffcf94,ranger:0xc2e5af,civic:0xffd5a6,atelier:0xffddb6,bazaar:0xffd199}[style]||p.glow;
+ const ww=W*.24;
+ for(let k=0;k<2;k++){
+  let sx=style==='living'?W*(k?.64:.36):W*(k?.76:.24), dx=(k?1:-1)*Math.min(W*.2,140);
+  t(sx-27,68,sx+22,68,sx+dx+57,Math.min(H-32,190),tint,.045);
+  t(sx-27,68,sx+dx+57,Math.min(H-32,190),sx+dx-48,Math.min(H-32,190),tint,.033);
+  e(sx+dx,Math.min(H-32,190),W*.19,22,tint,.04);
+ }
+ // Shadow under any real fixture: tells the player where the furniture actually sits.
+ for(const it of s.items||[]){
+  if(['rug','mat','paint','poster','clock','flag','glass','mirror','board','screen','menu','stairs','portal','lantern'].includes(it.k))continue;
+  const x=it.x*32,y=it.y*32,w=it.w*32,h=it.h*32;
+  if(w<=0||h<=0)continue;
+  e(x+w*.57+5,y+h*.72+7,Math.max(11,w*.85),Math.max(6,h*.42),p.ink,.16);
+  r(x+5,y+h*.82+6,Math.max(3,w-10),5,p.ink,.095);
+ }
+ // Cloth seams, timber dowels, mineral scratches, carved motifs: small but not noise.
+ for(let i=0;i<Math.min(62,Math.floor(W*H/4400));i++){
+  let xx=18+rnd(80+i)*(W-36),yy=85+rnd(230+i)*(H-124);
+  if(style==='royal'){r(xx,yy,3,3,p.hi,.17);r(xx+1,yy+1,1,1,0xffffff,.14)}
+  else if(style==='living'){e(xx,yy,9,4,i%2?0x9fbe8a:0x557853,.18)}
+  else if(style==='industrial'){r(xx,yy,8,2,i%2?0xb0b5ad:0x1c323d,.12)}
+  else if(style==='tech'){r(xx,yy,6,1,p.glow,.16)}
+  else if(style==='atelier'){r(xx,yy,3+(i%4),2+(i%3),[0xdbac8f,0x73c6b8,0x9c9fcf][i%3],.25)}
+  else if(style==='bazaar'){r(xx,yy,7,1,0xeec18b,.15)}
+ }
+}
+function signatureObject(c,it){const {p,r,l,o,e,t,style,d}=c;const x=it.x*32,y=it.y*32,w=it.w*32,h=it.h*32,cx=x+w/2,cy=y+h/2,role=d.role||'';
+ // The artisan-specific workstation should be readable by silhouette, not colour.
+ if(it.k==='table' || it.k==='desk' || it.k==='counter'){
+  if(style==='industrial' && (role==='workshop'||role==='station')){
+   for(let i=0;i<Math.min(5,Math.floor(w/24));i++){let xx=x+10+i*24;r(xx,y+9,17,18,0x2b4146);r(xx+3,y+12,11,7,0x729ba0);r(xx+6,y+12,4,3,0xebc78c);r(xx+5,y+24,7,3,0x344b55)}
+   r(x+9,y+h-19,w-18,4,0xc2ac87,.64);
+  }else if(style==='bazaar'&&role==='clockmaker'){
+   for(let i=0;i<Math.min(7,Math.floor(w/23));i++)cog(c,x+12+i*23,y+16,8,0xe8c489);
+  }else if(style==='bazaar'&&role==='tailor'){
+   for(let i=0;i<Math.min(6,Math.floor(w/25));i++){const xx=x+8+i*24;e(xx+10,y+16,17,10,[0xc67f85,0x8ca9c8,0xe2bc83,0x94b4a0][i%4]);r(xx+3,y+16,14,12,[0xc67f85,0x8ca9c8,0xe2bc83,0x94b4a0][i%4]);r(xx+7,y+19,6,2,0xffffff,.4)}
+  }else if(style==='bazaar'&&role==='metal'){
+   for(let i=0;i<Math.min(6,Math.floor(w/28));i++){let xx=x+10+i*28;r(xx,y+10,20,9,0x545e63);r(xx+5,y+10,3,11,0xc4bdae);r(xx+9,y+19,9,5,0xf4b26f)}
+  }else if(style==='living'){
+   for(let j=0;j<Math.min(7,Math.floor(w/22));j++){let xx=x+12+j*21;r(xx,y+13,14,9,0x9a875d);r(xx+2,y+15,10,3,0xd9c79c);if(j%2===0)leaf(c,xx+9,y+7,.27)}
+  }else if(style==='atelier'){
+   for(let i=0;i<Math.min(7,Math.floor(w/19));i++){const xx=x+10+i*18;r(xx,y+13,12,17,0xd4c6ad);r(xx+2,y+15,8,9,[0xea988f,0x9ac4b8,0xf0cc88,0xb2a3d3][i%4]);r(xx+3,y+27,2,5,0x5b5665)}
+  }else if(style==='royal'){
+   for(let i=0;i<Math.min(8,Math.floor(w/19));i++){const xx=x+10+i*18;o(xx,y+17,4,0xf0d59a);r(xx-2,y+21,5,3,0x9c6980)}
+  }
+ }
+ if((it.k==='pew'||it.k==='sofa'||it.k==='seat')&&style==='royal'){
+  for(let i=0;i<Math.max(1,Math.floor(w/25));i++){let xx=x+10+i*24;r(xx,y+6,17,7,0xd6aa86);r(xx+3,y+7,11,3,0xf5d298);r(xx,y+h-9,17,4,0x6d3c5e)}
+ }
+ if(it.k==='bed'&&style==='living'){
+  // Hammock between roots, drawn within the original bed footprint.
+  l(x+7,y+8,x+12,y+h-12,0x715c42,1,5);l(x+w-7,y+8,x+w-12,y+h-12,0x715c42,1,5);
+  for(let i=0;i<7;i++){let xx=x+10+i*(w-20)/7;l(xx,y+15,xx+7,y+h-14,0xe0c68c,.43,2)}
+  r(x+14,y+h*.55,w-28,8,0xa9ba90);
+ }
+ if(it.k==='bed'&&style==='industrial'){
+  r(x+4,y+5,w-8,5,0x2e4249);r(x+4,y+h-10,w-8,5,0x2e4249);r(x+7,y+9,6,h-18,0x93afb0);r(x+w-13,y+9,6,h-18,0x93afb0);
+ }
+ if((it.k==='shelf'||it.k==='goods') && style==='bazaar'&&role==='pottery'){
+  for(let i=0;i<Math.min(6,Math.floor(w/17));i++){let xx=x+10+i*16;e(xx,y+17,15,19,[0xc6875c,0xb5836c,0xa97961][i%3]);r(xx-5,y+6,10,4,0xe7bb8a);e(xx,y+6,10,4,0x7c4a44)}
+ }
+}
+// V55 ROOM DENSITY PASS: physical props, never visual-only solid objects.
+// Validate the whole walkable graph before installing them in the real room spec.
+const enrichStats={rooms:0,added:0,kept:0};
+function enrichRoom(spec){
+ if(!spec||spec.__lq55Enriched)return 0;
+ spec.__lq55Enriched=true;enrichStats.rooms++;
+ const d=spec.__lq53;if(!d||!Array.isArray(spec.items)||spec.w<10||spec.h<9){enrichStats.kept++;return 0}
+ const W=spec.w,H=spec.h,cx=Math.floor(W/2),role=d.role||'',style=d.theme?.id||'civic';
+ const noBlock=new Set(['rug','mat','paint','poster','flag','glass','mirror','board','menu','screen','clock','stairs','portal','lantern']);
+ const real=new Set(['plant','barrel','crate','rack','shelf','chair','goods','locker','wardrobe','glasscase','cakecase']);
+ const used=Array.from({length:H},()=>Array(W).fill(false));
+ const occup=(it,mark)=>{if(noBlock.has(it.k))return;for(let y=Math.max(0,it.y|0);y<Math.min(H,it.y+it.h);y++)for(let x=Math.max(0,it.x|0);x<Math.min(W,it.x+it.w);x++)used[y][x]=mark};
+ spec.items.forEach(it=>occup(it,true));
+ const occupied=(x,y)=>x<1||x>=W-1||y<2||y>=H-1||used[y][x];
+ const reachCheck=()=>{
+  let start=[cx,H-2],seen=new Set(),todo=[start];
+  if(occupied(...start))return false;
+  const key=(x,y)=>x+','+y;seen.add(key(...start));
+  for(let i=0;i<todo.length;i++){const [x,y]=todo[i];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const a=x+dx,b=y+dy,k=key(a,b);if(!seen.has(k)&&!occupied(a,b)){seen.add(k);todo.push([a,b])}}}
+  // Preserve visits to guests and NPC placements if they were reachable beforehand.
+  for(const pos of [...Object.values(spec.spots||{}),...(spec.guests||[])]){
+   if(!Array.isArray(pos))continue;const a=pos[0]|0,b=pos[1]|0;
+   if(!occupied(a,b)&&!seen.has(key(a,b)))return false;
+  }
+  // Ensure every preexisting physical fixture has an accessible neighboring cell.
+  for(const it of spec.items){if(noBlock.has(it.k))continue;let ok=false;
+   for(let y=it.y-1;y<=it.y+it.h;y++)for(let x=it.x-1;x<=it.x+it.w;x++){
+    if(x>=it.x&&x<it.x+it.w&&y>=it.y&&y<it.y+it.h)continue;
+    if(seen.has(key(x,y))){ok=true;break;}
+   }
+   if(!ok)return false;
+  }
+  return true;
+ };
+ // Do not change a room with an already unconnected design.
+ if(!reachCheck()){enrichStats.kept++;return 0;}
+ const recipe={
+   living:['plant','plant','crate','lantern'],
+   bazaar:['goods','crate','barrel','plant'],
+   royal:['plant','lantern','plant','chair'],
+   industrial:['barrel','crate','rack','barrel'],
+   tech:['plant','locker','chair','lantern'],
+   atelier:['plant','crate','chair','plant'],
+   heritage:['crate','barrel','chair','lantern'],
+   ranger:['crate','plant','barrel','plant'],
+   civic:['plant','chair','crate','plant']
+ }[style]||['plant','crate'];
+ // Physical prop arrangement along the real side bays, not in the entrance axis.
+ const spots=[];
+ for(let y=3;y<H-3;y++){for(const x of [1,W-2,2,W-3,3,W-4]){
+  if(x>=cx-2&&x<=cx+2&&y>H-6)continue;
+  spots.push({x,y,score:Math.abs(x-cx)*.6+Math.abs(y-H*.55)*.4});
+ }}
+ spots.sort((a,b)=>b.score-a.score);
+ let added=0;
+ for(let n=0;n<Math.min(recipe.length,6);n++){
+  const k=recipe[n],obj={k,x:0,y:0,w:1,h:1,c:undefined};let placed=false;
+  for(let i=n%2;i<spots.length;i++){
+   const {x,y}=spots[i];if(occupied(x,y))continue;
+   // Don't crowd existing furniture; leave at least 1 tile between two new solids.
+   if([[0,1],[0,-1],[1,0],[-1,0]].some(([dx,dy])=>occupied(x+dx,y+dy)))continue;
+   obj.x=x;obj.y=y;occup(obj,true);
+   if(reachCheck()){spec.items.push({...obj});added++;placed=true;break;}
+   occup(obj,false);
+  }
+  if(!placed)continue;
+ }
+ enrichStats.added+=added;if(!added)enrichStats.kept++;return added;
+}
+function drawBack(g,s){if(!s.__lq53)return;const c=context(g,s);LQ54.drawBack(g,s);floor(c);backdrop(c);atmosphere(c)}
+function drawItem(g,it,s){if(!s.__lq53)return LQ54.drawItem(g,it,s);let did=LQ54.drawItem(g,it,s);const c=context(g,s);moreFurniture(c,it);signatureObject(c,it);return did;}
+function drawFront(g,s){if(!s.__lq53)return;LQ54.drawFront(g,s);const c=context(g,s),{W,H,r,o,p,d,style}=c;
+ // Delicate screen-space highlights, attached to architecture only.
+ for(let x=15;x<W-13;x+=84){r(x,55,38,3,p.hi,.34);r(x+5,58,27,2,p.ink,.29)}
+ if(style==='living'){for(let x=38;x<W-18;x+=93){leaf(c,x,20,.55)}}
+ if(style==='royal'){for(let x=46;x<W-28;x+=117)lamp(c,x,59)}
+ if(style==='tech'){for(let x=44;x<W-24;x+=110)r(x,60,65,2,0x7df7e7,.51)}
+}
+return Object.freeze({drawBack,drawItem,drawFront,enrichRoom,get stats(){return {...enrichStats}},version:'55.0.0',context,palettes});
+})();
+window.LQInteriorV55 = LQ55;
+
+/* LIFEQUEST AI V57 — LIVING ARCHITECTURE
+ * Native Phaser module. Rooms and NPC sprites remain the original V56 objects.
+ * Three layers: authored architectural paintings, time-aware ambience,
+ * English interactions with persistent visible changes to each room.
+ */
+const LQ57 = (() => {
+ 'use strict';
+ const T=32, LIMIT=360;
+ const areaStyles={
+  'english-town':'civic','mining-town':'industrial','english-town-past':'heritage',
+  'oriaris-trail-1':'ranger','oriaris-trail-2':'ranger','oriaris-trail-3':'ranger','oriaris-camp':'ranger',
+  'art-district':'atelier','tech-co':'tech','old-oriaris':'royal','wish-valley':'living','vocalt-greedy-land':'bazaar'
+ };
+ const colorSets={
+  civic:[0x30485a,0xe1c99c,0x91b8b2,0x705041,0xffdfa3],
+  industrial:[0x1c313d,0x99a8a6,0x73d2bf,0x566373,0xffbd73],
+  heritage:[0x4b392d,0xe0b77d,0x987554,0x76563c,0xffd18a],
+  ranger:[0x244634,0xc5ae7a,0x86b17a,0x514b38,0xf0d99c],
+  atelier:[0x30304f,0xffd2ad,0x94c9e1,0x9a628e,0xf5cb79],
+  tech:[0x102a43,0x70dfe2,0x5096bd,0x27607a,0x9cfff0],
+  royal:[0x46334d,0xe3bb88,0xb76f8b,0x79566d,0xffdda1],
+  living:[0x234735,0xb2c795,0x70a480,0x79623f,0xf5e1aa],
+  bazaar:[0x3b3045,0xf0c98a,0xd79a75,0x795265,0xffdca1]
+ };
+ const states={};let frameCounter=0,ui=null,prompt=null,mobileAction=null,sceneNow=null;
+ const hash=v=>{let h=2166136261;for(const c of String(v)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0;};
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const key=(area,building,floor)=>`${area}::${building}::${floor}`;
+ function state(sc){const g=sc?.store?.game; if(!g)return null;
+   if(!g.v57||typeof g.v57!=='object')g.v57={version:1,completed:{},interactions:0,rooms:{}};
+   const s=g.v57;
+   if(!s.completed||typeof s.completed!=='object')s.completed={};
+   if(!s.rooms||typeof s.rooms!=='object')s.rooms={};
+   return s;
+ }
+ function roleFor(area,building,role){
+  const n=String(building||'').toLowerCase();
+  if(area==='wish-valley' && /vaela/.test(n))return 'vaela';
+  if(area==='old-oriaris'&&/opera/.test(n))return 'opera';
+  if(area==='mining-town'&&/great mine|smithy|workshop/.test(n))return 'foundry';
+  if(area==='vocalt-greedy-land'&&/chronos|clock|bellwright/.test(n))return 'clockmaker';
+  return role||'home';
+ }
+ function prepare(sc,spec){
+  if(!sc?.area||!spec||!sc?.inside?.b)return null;
+  let info=spec.__lq57||{};const area=sc.area.id,b=sc.inside.b.name,f=sc.inside.floor||0;
+  const k=key(area,b,f),st=state(sc);info={area,building:b,floor:f,key:k,style:areaStyles[area]||'civic',role:roleFor(area,b,spec.__lq53?.role),seed:hash(k),complete:!!st?.completed?.[k]};
+  spec.__lq57=info;return info;
+ }
+ function preEnter(sc,area,building,spec,floor){
+  const st=state(sc),k=key(area,building,floor),d={area,building,floor,key:k,
+   style:areaStyles[area]||'civic',role:roleFor(area,building,spec?.__lq53?.role),seed:hash(k),complete:!!st?.completed?.[k]};
+  if(spec)spec.__lq57=d;return d;
+ }
+ function art(g,s){
+  const d=s.__lq57;if(!d)return null;
+  const [dark,cream,mid,wood,light]=colorSets[d.style]||colorSets.civic;
+  const w=s.w*T,h=s.h*T, cx=w/2, seed=d.seed;
+  const r=(x,y,a,b,col,op=1)=>{if(a>0&&b>0)g.fillStyle(col,op).fillRect(Math.round(x),Math.round(y),Math.ceil(a),Math.ceil(b))};
+  const ln=(x,y,X,Y,col,op=1,size=2)=>g.lineStyle(size,col,op).lineBetween(Math.round(x),Math.round(y),Math.round(X),Math.round(Y));
+  const oval=(x,y,a,b,col,op=1)=>g.fillStyle(col,op).fillEllipse(Math.round(x),Math.round(y),a,b);
+  const circ=(x,y,rad,col,op=1)=>g.fillStyle(col,op).fillCircle(Math.round(x),Math.round(y),rad);
+  const tri=(x,y,X,Y,P,Q,col,op=1)=>g.fillStyle(col,op).fillTriangle(x,y,X,Y,P,Q);
+  function details(x,y,count,color=cream){for(let i=0;i<count;i++)r(x+i*10,y+(i%3)*2,4,2,color,.78)}
+  function shutter(x,y,wide=47){r(x-6,y-2,wide+12,45,dark);r(x,y,wide,36,mid);r(x+3,y+3,wide-6,29,0xe8dfad,.25);r(x+wide/2-2,y,4,35,wood);r(x,y+17,wide,3,cream);r(x+6,y+4,4,24,0xffffff,.20);r(x-7,y+36,wide+14,6,cream,.85);}
+  function roots(x,y,radius,depth){for(let j=0;j<4;j++){const xx=x+(j-1.5)*radius*.24;ln(xx,y,xx+(j-1.5)*radius*.28,y+depth,wood,.84,8-j);ln(xx+2,y,xx+3+(j-1.5)*radius*.28,y+depth,cream,.29,2)}}
+  function stud(x,y,width,height){r(x,y,width,height,dark);r(x+2,y+2,width-4,height-4,wood);r(x+3,y+4,2,height-6,cream,.67);r(x+width-5,y+4,2,height-6,dark,.43);}
+  function gear(x,y,radius){circ(x,y,radius+3,dark);circ(x,y,radius,cream);circ(x,y,radius-5,wood);circ(x,y,radius-10,dark);for(let i=0;i<12;i++){let theta=i*Math.PI/6;const px=x+Math.cos(theta)*radius,py=y+Math.sin(theta)*radius;r(px-3,py-3,6,6,cream);}circ(x,y,4,light);}
+  function filigree(x,y,col){r(x-19,y,38,2,col,.76);r(x-8,y-9,16,18,col,.18);r(x-3,y-4,6,8,col,.82);for(let j of [-13,13])r(x+j,y-4,2,8,col,.7)}
+  function clock(x,y,rad){circ(x,y,rad+4,dark);circ(x,y,rad+1,cream);circ(x,y,rad-4,wood);circ(x,y,rad-8,0xe4d5ae);for(let i=0;i<12;i++){const a=i*Math.PI/6;r(x+Math.sin(a)*(rad-11)-1,y-Math.cos(a)*(rad-11)-1,3,3,dark)}ln(x,y,x+rad*.25,y-rad*.48,dark,1,3);ln(x,y,x-rad*.41,y+rad*.08,dark,1,3);circ(x,y,3,dark)}
+  // Wainscot and framing are hand-placed by architectural family, not a texture recolor.
+  r(4,61,w-8,4,dark,.76);r(9,67,w-18,3,cream,.35);
+  if(d.style==='living'){
+   // Root-built houses: stepped canopy ridge, climbing buttresses, green skylights.
+   for(let i=0;i<9;i++){const t=i/8,x=30+t*(w-60),rise=Math.abs(t-.5)*52;
+    r(x,9+rise,Math.max(4,(w-60)/8+1),8,wood,.92);r(x,4+rise,5,9,cream,.45)}
+   roots(32,4,28,61);roots(w-32,4,28,61);
+   oval(cx,19,103,68,dark);oval(cx,20,89,54,mid);oval(cx,23,59,41,0xb5d0a0,.77);
+   ln(cx-39,0,cx+36,57,wood,.85,5);ln(cx+38,0,cx-34,56,wood,.85,5);
+   for(let i=0;i<13;i++){const x=29+i*(w-59)/12;oval(x,8+(i%3)*6,19,12,i%2?0x4e895e:0x8aaa79,.73)}
+   for(let x of [25,w-25]){oval(x,80,45,27,0x29503b,.63);r(x-4,65,8,18,wood);r(x-9,65,18,4,cream,.42)}
+   if(d.role==='vaela'){for(let i=0;i<6;i++){const x=cx-67+i*25;r(x,47,4,17,wood);oval(x,42,11,7,0x8cb478);}
+    r(cx-48,49,96,8,wood);r(cx-43,47,86,3,cream,.7);for(let j=0;j<5;j++)oval(cx-28+j*14,49,7,5,d.complete?0xe3c171:0x638d68);}
+   else {for(let i=0;i<7;i++)filigree(cx-90+i*30,50,cream)}
+   for(let y=90;y<h-80;y+=51){for(let side of [0,1]){let x=side? w-34:18;r(x,y,12,16,wood,.8);oval(x+6,y-4,22,12,mid,.76)}}
+  }else if(d.style==='industrial'){
+   // Steel atrium, raised engine cage, service hatches and safety markings.
+   r(10,4,w-20,53,0x2e424d);for(let x=12;x<w-8;x+=67){stud(x,3,10,70);ln(x+9,5,x+63,54,mid,.38,3)}
+   r(cx-105,9,210,44,dark);r(cx-99,14,198,31,wood);r(cx-88,19,176,19,0x344d5a);
+   for(let i=0;i<8;i++){let x=cx-82+i*22;r(x,22,15,12,i%3===0?light:mid,.74);r(x+3,25,5,3,0xffffff,.45)}
+   gear(cx-70,48,21);gear(cx+70,48,22);
+   for(let x of [43,w-43]){r(x-9,61,18,55,dark,.66);r(x-5,64,8,47,cream,.48);r(x-12,107,24,4,light,.63)}
+   for(let y=100;y<h-44;y+=34){r(cx-15,y,6,20,cream,.40);r(cx+9,y,6,20,cream,.40);}
+   if(d.role==='foundry'){r(cx-27,42,54,12,0x162b35);r(cx-20,45,40,4,d.complete?0x8df7d2:0xe49b63,.8)}
+  }else if(d.style==='royal'){
+   // Deep opera proscenium / palace with a stage, tiered cornices and velvet.
+   r(6,5,w-12,49,0x4b344c);r(16,8,w-32,5,cream);r(16,47,w-32,5,cream);
+   for(let x=17;x<w-10;x+=81){stud(x,7,16,69);r(x-4,10,24,7,cream);r(x-1,67,19,5,cream)}
+   oval(cx,20,153,74,dark);oval(cx,17,135,60,wood);oval(cx,22,113,48,0x454d67);
+   for(let x of [cx-128,cx+85]){r(x,8,45,51,0x8c3b5e);for(let i=0;i<6;i++)r(x+i*8,10,3,40,0xe3a573,.35);tri(x,58,x+22,72,x+45,58,0x8c3b5e)}
+   for(let x of [cx-166,cx+166]){filigree(x,48,cream);r(x-8,52,16,12,light,.45)}
+   if(d.role==='opera'){r(cx-70,56,140,12,dark);r(cx-64,57,128,4,cream);for(let j=0;j<7;j++)r(cx-55+j*18,62,11,5,wood,.8)}
+   else for(let j=0;j<5;j++)filigree(cx-70+j*35,54,cream);
+   for(let y=102;y<h-58;y+=49){for(let side of [-1,1]){r(cx+side*(w*.36)-18,y,36,4,cream,.30)}}
+  }else if(d.style==='bazaar'){
+   // Merchant guild architecture, trading counters and vaulted display frontage.
+   r(9,8,w-18,44,dark);for(let i=0;i<5;i++){let x=27+i*(w-54)/4;r(x-6,12,12,42,wood);r(x-4,8,8,4,cream);r(x-3,17,6,27,light,.30)}
+   if(d.role==='clockmaker'){for(let i=0;i<5;i++)clock(cx-102+i*50,29,i===2?23:15);
+    r(cx-118,59,236,6,wood);r(cx-114,60,228,2,cream,.6)}
+   else {for(let i=0;i<7;i++){const x=cx-105+i*35;r(x-11,18,24,33,wood);r(x-9,20,20,26,mid);r(x-6,23,14,17,light,.24);oval(x+2,29,9,12,[cream,mid,light][i%3],.75)}}
+   for(let side of [12,w-44]){r(side,74,30,42,wood,.49);r(side+3,77,24,4,cream,.52)}
+  }else if(d.style==='tech'){
+   for(let x=16;x<w-40;x+=94){r(x,8,86,44,dark);r(x+3,12,80,35,wood);for(let i=0;i<5;i++)r(x+9,17+i*6,58-(i%2)*16,3,i%2?cream:mid,.83)}
+   oval(cx,40,114,39,wood,.6);oval(cx,40,91,25,mid,.66);circ(cx,40,11,light,.8);
+   for(let y=93;y<h-60;y+=36){r(cx-12,y,24,2,cream,.31);r(cx-4,y+5,8,8,light,.43)}
+  }else if(d.style==='atelier'){
+   for(let x=22,i=0;x<w-28;x+=69,i++){r(x,8,62,45,dark);r(x+4,12,54,37,[0xe5a7bc,0x95cfde,0xedd498,0xb2a7ed][i%4]);
+    for(let j=0;j<5;j++)r(x+10+j*8,19+j%3*6,7,6,[cream,light,dark][j%3],.57)}
+   for(let y=94;y<h-57;y+=58){r(cx-7,y,14,31,cream,.19)}
+  }else{
+   // Human-scale civic, historic village, forest cabins all use distinct supports.
+   for(let x=22;x<w-25;x+=88){shutter(x,10,49);r(x-13,48,70,7,wood,.65)}
+   for(let x=14;x<w-10;x+=105){stud(x,4,8,67);}
+   if(d.style==='heritage'||d.style==='ranger')for(let x=38;x<w;x+=87){ln(x,0,x+45,60,wood,.74,5)}
+   if(d.style==='civic')for(let y=100;y<h-85;y+=74){filigree(cx,y,cream)}
+  }
+  // Finishing state is visible in the actual room texture and survives save/load.
+  if(d.complete){
+   for(let j=-2;j<=2;j++){const xx=cx+j*26;r(xx,75,18,8,light,.62);r(xx+4,77,10,3,cream,.9);}
+   r(cx-62,79,124,3,cream,.62);
+  }
+  // Side floor borders and tiled entrance line remain 100% non-solid decoration.
+  r(7,82,3,h-129,dark,.32);r(w-10,82,3,h-129,dark,.32);
+  for(let y=109;y<h-75;y+=49){r(11,y,13,2,cream,.24);r(w-24,y,13,2,cream,.24)}
+  return {role:d.role,style:d.style};
+ }
+ function scenario(d){
+  const a=d.area,role=d.role;
+  if(role==='vaela')return {title:'Bếp lửa của Vaela',intro:'Vaela cần chuẩn bị thảo dược trước khi gia đình trở về.',question:'What would you say to offer help?',choices:['I can help you prepare the herbs.','I can to helping the herbs.','I help herbs yesterday tomorrow.'],correct:0,success:'Vaela đã sắp xếp góc thảo dược. Ánh sáng ấm xuất hiện trong nhà.',lesson:'can + động từ nguyên mẫu: I can help...'};
+  if(role==='foundry')return {title:'Kiểm tra xưởng khoáng sản',intro:'Thiết bị ở xưởng cần một bản báo cáo trước ca làm việc.',question:'Which is the clearest report?',choices:['The machine working yesterday now.','The machine stopped because the motor overheated.','Stopped machine because no.'],correct:1,success:'Bảng điều khiển chuyển sang trạng thái ổn định.',lesson:'Dùng quá khứ đơn + because để diễn đạt nguyên nhân.'};
+  if(role==='opera')return {title:'Đêm diễn tại Grand Opera',intro:'Người quản lý cần ghi lại diễn biến một buổi tổng duyệt.',question:'Which sentence describes the interruption?',choices:['While the actors were rehearsing, the curtain fell.','While actors rehearse tomorrow, curtain fall yesterday.','The actors were rehearsal and curtain falling.'],correct:0,success:'Ánh đèn sân khấu được bật và buổi diễn sẵn sàng.',lesson:'While + quá khứ tiếp diễn, quá khứ đơn.'};
+  if(role==='clockmaker')return {title:'Chiếc đồng hồ của Chronos',intro:'Chủ tiệm đang chuẩn bị một món hàng quý cho khách.',question:'How do you politely ask about its value?',choices:['Give me why it cost!','Why this expensive clock?','Could you explain why this clock is valuable?'],correct:2,success:'Chiếc đồng hồ cổ được trưng bày với ánh đèn mới.',lesson:'Could you explain... là cách hỏi lịch sự.'};
+  if(a==='art-district')return {title:'Không gian triển lãm',intro:'Một nghệ sĩ muốn nghe ý kiến về cách trình bày tác phẩm.',question:'Give a clear opinion with a reason.',choices:['I prefer this design because the colours feel balanced.','Because design yes.','I preferred is tomorrow.'],correct:0,success:'Tác phẩm được giới thiệu tại khu trưng bày.',lesson:'I prefer... because... giúp nêu ý kiến và lý do.'};
+  if(a==='tech-co')return {title:'Cuộc họp Tech-Co',intro:'Nhóm cần lên lịch trao đổi về lỗi bảng thông tin.',question:'Choose the polite workplace suggestion.',choices:['We meet must now.','Could we meet at three to review the issue?','Meeting when to we yesterday?'],correct:1,success:'Màn hình công việc hiển thị trạng thái đã cập nhật.',lesson:'Could we... để đề nghị lịch họp lịch sự.'};
+  if(a==='old-oriaris')return {title:'Tư liệu hoàng gia',intro:'Một ghi chép mô tả tiếng chuông và đoàn khách đến kinh đô.',question:'Choose the correct description.',choices:['While bells ringing, guests arrives.','The guests was arriving when bells ring.','While the bells were ringing, the guests arrived.'],correct:2,success:'Tư liệu được sắp xếp trong phòng lưu trữ.',lesson:'while + was/were V-ing, sự kiện xen vào dùng quá khứ đơn.'};
+  if(a==='wish-valley')return {title:'Gìn giữ thung lũng',intro:'Người Maorai muốn chăm sóc cây quanh khu nhà.',question:'Give a gentle suggestion.',choices:['If I were you, I would protect these trees.','If I am you, I protected tomorrow.','I wish tree is will grow yesterday.'],correct:0,success:'Không gian sống được chăm sóc và trang trí lại.',lesson:'If I were you, I would... để đưa ra lời khuyên.'};
+  if(a==='vocalt-greedy-land')return {title:'Thương lượng tại Vocalt',intro:'Một thương nhân cần trao đổi công bằng với khách hàng.',question:'Which sentence is polite and clear?',choices:['You give cheap now.','Could we discuss a fair price for this item?','The price are the mine.'],correct:1,success:'Quầy hàng được chỉnh trang, người bán tin tưởng bạn hơn.',lesson:'Could we discuss... giúp thương lượng lịch sự.'};
+  if(a==='mining-town')return {title:'Nhật ký ca làm',intro:'Một người thợ cần mô tả quá trình hoàn thành công việc.',question:'Choose the correct past tense sentence.',choices:['We has finished today yesterday.','We finishing the tools tomorrow yesterday.','We repaired the tools before the shift ended.'],correct:2,success:'Nơi làm việc đã được sắp xếp ngăn nắp.',lesson:'We repaired... dùng quá khứ đơn.'};
+  if(a==='english-town-past'||a.startsWith('oriaris-'))return {title:'Nhật ký thư cũ',intro:'Người đưa thư cần ghi lại việc đã hoàn thành.',question:'Choose a past tense sentence.',choices:['I delivered the letter yesterday.','I deliver yesterday tomorrow.','I delivering letter yesterday.'],correct:0,success:'Những lá thư được sắp xếp và ghi chép lại.',lesson:'Quá khứ đơn: delivered.'};
+  return {title:'Một ngày ở English Town',intro:'Bạn có thể giúp cư dân giải quyết một công việc nhỏ.',question:'Choose the friendly response.',choices:['I helps you tomorrow yesterday.','I would be happy to help you.','You must doing task.'],correct:1,success:'Không gian trở nên gọn gàng và ấm áp hơn.',lesson:'I would be happy to... là cách ngỏ lời lịch sự.'};
+ }
+ function station(sc){
+  if(!sc?.inside||!sc.player)return null;
+  const items=sc.inside.spec.items ||[],unit=32*sc.inside.k;
+  // Follow original E interaction radius; only existing, physically drawn furniture qualifies.
+  const allowed=new Set(['desk','table','shelf','counter','forge','stove','board','clock','paint','glasscase','rack','bed','altar','crystal','chair','schooldesk','glass','bookshelf']);
+  let best=null,dist=Infinity;
+  for(const item of items){if(!allowed.has(item.k))continue;
+   const x=Yr+(item.x+item.w/2)*unit,y=Xr+(item.y+item.h/2)*unit;
+   const d=Math.hypot(sc.player.x-x,sc.player.y-y);
+   if(d<dist&&d<unit*2.25){best=item;dist=d;}
+  }
+  return best;
+ }
+ function ensureUI(){
+  if(ui)return;
+  const style=document.createElement('style');style.id='lq57-css';style.textContent=`
+  #lq57-modal[hidden],#lq57-hint[hidden],#lq57-mobile[hidden]{display:none!important}
+  #lq57-modal{position:fixed;inset:0;z-index:40020;background:#020817cc;display:flex;align-items:center;justify-content:center;padding:14px;font-family:system-ui,sans-serif;pointer-events:auto}
+  #lq57-dialog{width:min(580px,94vw);max-height:87vh;overflow:auto;background:linear-gradient(160deg,#1b3040,#0c1826);color:#ebf7ff;border:2px solid #7fa8a0;border-radius:15px;box-shadow:0 24px 80px #000d;padding:20px;line-height:1.55}
+  #lq57-dialog h2{margin:0 30px 5px 0;font-size:21px;color:#ffe2a8}#lq57-dialog p{font-size:14px;color:#c6dbe7}
+  #lq57-dialog .lq57-btn{display:block;width:100%;text-align:left;padding:12px 14px;margin:8px 0;color:#e6f6ff;border:1px solid #5b7a92;border-radius:9px;background:#1f3852;font-size:14px;cursor:pointer}
+  #lq57-dialog .lq57-btn:hover{background:#345b77}#lq57-dialog .lq57-btn:focus-visible{outline:3px solid #ffe4a5}
+  #lq57-dialog .lq57-close{float:right;background:#26394c;border:1px solid #69849e;color:white;border-radius:8px;font-size:18px;padding:4px 11px;cursor:pointer}
+  #lq57-message{margin-top:9px;font-size:13px;color:#bcf2d3;min-height:20px}#lq57-kicker{font-size:11px;color:#93cfc5;letter-spacing:.11em}
+  #lq57-mobile{position:fixed;right:11px;bottom:112px;z-index:45;border:1px solid #b4dcaf;border-radius:12px;padding:11px 15px;background:#1f5650;color:#fff6df;font:bold 13px system-ui;box-shadow:0 8px 25px #0009;cursor:pointer}
+  #lq57-hint{position:fixed;left:50%;bottom:66px;z-index:30;transform:translateX(-50%);border:1px solid #77aca7;border-radius:9px;padding:7px 12px;color:#fff0bd;background:#132b37ed;box-shadow:0 4px 15px #0008;font:12px system-ui,sans-serif;pointer-events:none;white-space:nowrap;max-width:86vw;text-overflow:ellipsis;overflow:hidden}`;
+  document.head.appendChild(style);
+  ui=document.createElement('div');ui.id='lq57-modal';ui.hidden=true;ui.setAttribute('role','dialog');ui.setAttribute('aria-modal','true');
+  const dialog=document.createElement('div');dialog.id='lq57-dialog';ui.appendChild(dialog);document.body.appendChild(ui);
+  ui.addEventListener('click',e=>{if(e.target===ui)close();});
+  prompt=document.createElement('div');prompt.id='lq57-hint';prompt.hidden=true;document.body.appendChild(prompt);
+  mobileAction=document.createElement('button');mobileAction.type='button';mobileAction.id='lq57-mobile';mobileAction.textContent='✦ Tương tác nội thất';mobileAction.hidden=true;document.body.appendChild(mobileAction);
+  mobileAction.onclick=()=>{const sc=window.__lifequestGetScene?.();if(sc?.inside)inspect(sc)};
+  document.addEventListener('keydown',e=>{
+   if(e.key==='Escape'&&!ui.hidden){e.stopPropagation();close();return;}
+   if(e.code==='KeyI'&&!e.repeat&&!e.ctrlKey&&!e.altKey&&!e.metaKey){
+     const tag=(document.activeElement?.tagName||'').toLowerCase();
+     if(['input','textarea','select'].includes(tag)||document.activeElement?.isContentEditable)return;
+     const sc=window.__lifequestGetScene?.();
+     if(sc?.inside&&station(sc)&&!sc.chat?.isOpen&&ui.hidden){e.preventDefault();inspect(sc);}
+   }
+  },true);
+ }
+ function close(){if(ui)ui.hidden=true;sceneNow=null;}
+ function show(sc){
+  ensureUI();const d=sc.inside?.spec.__lq57;if(!d)return false;
+  sceneNow=sc;ui.hidden=false;const card=scenario(d),done=d.complete,content=document.getElementById('lq57-dialog');content.replaceChildren();
+  const exit=document.createElement('button');exit.type='button';exit.className='lq57-close';exit.textContent='×';exit.onclick=close;content.appendChild(exit);
+  const kick=document.createElement('div');kick.id='lq57-kicker';kick.textContent=`LIFEQUEST · ${d.area.toUpperCase()} · LIVING INTERIORS`;content.appendChild(kick);
+  const h=document.createElement('h2');h.textContent=card.title;content.appendChild(h);
+  const intro=document.createElement('p');intro.textContent=card.intro;content.appendChild(intro);
+  if(done){const p=document.createElement('p');p.textContent='✓ Đã hoàn thành. '+card.success;content.appendChild(p);
+   const b=document.createElement('button');b.type='button';b.className='lq57-btn';b.textContent='Đóng và tiếp tục khám phá';b.onclick=close;content.appendChild(b);return true;}
+  const question=document.createElement('p');question.textContent=card.question;question.style.color='#fff4ce';content.appendChild(question);
+  const msg=document.createElement('div');msg.id='lq57-message';msg.setAttribute('aria-live','polite');
+  card.choices.forEach((choice,i)=>{const b=document.createElement('button');b.type='button';b.className='lq57-btn';b.textContent=String.fromCharCode(65+i)+'. '+choice;
+   b.onclick=()=>{if(i!==card.correct){msg.style.color='#ffd09d';msg.textContent='Chưa chính xác. Gợi ý: '+card.lesson;return;}
+    const st=state(sc);st.completed[d.key]=true;st.interactions=(st.interactions||0)+1;st.rooms[d.key]={at:Date.now(),area:d.area,building:d.building};d.complete=true;
+    sc.store.save();refresh(sc);msg.style.color='#baf7ca';msg.textContent='✓ '+card.success+' '+card.lesson;
+    content.querySelectorAll('.lq57-btn').forEach(x=>{x.disabled=true;x.style.opacity='.63'});
+    const cont=document.createElement('button');cont.type='button';cont.className='lq57-btn';cont.textContent='Tiếp tục khám phá căn phòng';cont.onclick=close;content.appendChild(cont);
+    try{window.LQStory?.onEvent?.('inspect',{area:d.area,building:d.building,object:'lq57-restoration'});}catch(_){ }
+   };content.appendChild(b);
+  });content.appendChild(msg);return true;
+ }
+ function inspect(sc){if(!sc.inside||!station(sc))return false;return show(sc);}
+ function refresh(sc){
+  const inside=sc.inside;if(!inside)return;
+  const k='v57_room_'+hash(inside.spec.__lq57?.key||'')+'_'+(++frameCounter);
+  try{const gfx=sc.add.graphics();Dr(gfx,inside.spec);gfx.generateTexture(k,inside.spec.w*32,inside.spec.h*32);gfx.destroy();
+   sc.textures.get(k).setFilter(Y.Textures.FilterMode.NEAREST);
+   const prev=inside.__v57texture;inside.objs[0].setTexture(k);inside.__v57texture=k;
+   if(prev&&sc.textures.exists(prev))sc.textures.remove(prev);
+  }catch(e){console.warn('V57 room refresh issue:',e)}
+ }
+ function onEnter(sc){
+  if(!sc.inside)return;ensureUI();const a=sc.inside;
+  preEnter(sc,sc.area.id,a.b.name,a.spec,a.floor);
+  // The first room texture was already produced after preEnter() in enterBuilding.
+  if(!a.__v57layer){const layer=sc.add.graphics().setDepth(1.3);a.objs.push(layer);a.__v57layer=layer;}
+  // Restore the saved room state if it was changed after the cached texture was first produced.
+  if(a.spec.__lq57?.complete)refresh(sc);
+ }
+ const residentState=new WeakMap();
+ function animateResident(sc,n,delta){
+  if(!sc.inside||!n?.sprite?.visible)return;
+  let st=residentState.get(n);if(!st){st={x:n.sprite.x,y:n.sprite.y,clock:0,phase:0};residentState.set(n,st)}
+  st.clock+=Math.min(50,Math.max(0,delta));
+  if(st.clock>8800){st.clock=0;st.phase=(st.phase+1)%3;}
+  const minute=sc.store.game?.minutes||720;const open=minute>=450&&minute<=1190;
+  const shift=st.phase===0?0:st.phase===1?(open?11:5):-8;
+  const destX=st.x+shift*sc.inside.k;
+  const safe=(!sc.blocked(destX,n.sprite.y)&&Math.abs(sc.player.x-destX)>14*sc.inside.k);
+  const x=safe?destX:st.x;
+  n.sprite.x+=(x-n.sprite.x)*Math.min(.06,delta/220);
+ }
+ let tick=0;
+ function update(sc,dt){
+  if(!sc?.inside){if(prompt)prompt.hidden=true;if(mobileAction)mobileAction.hidden=true;return;}
+  if(!ui)ensureUI();
+  // Display a compact E hint only if the interaction is actually reachable.
+  tick+=Math.min(60,dt||16);if(tick>160){tick=0;
+   const st=station(sc), showHint=!!st&&!sc.chat?.isOpen&&!sc.briefing?.isOpen&&ui.hidden;
+   prompt.hidden=!showHint;
+   const device=document.documentElement.dataset.device||'';if(mobileAction)mobileAction.hidden=!(showHint&&(device==='phone'||device==='tablet'));
+   if(showHint){const d=sc.inside.spec.__lq57;prompt.textContent=`E · ${st.k} — ${d?.complete?'Xem thành quả':'Hoạt động và khám phá'}`;}
+  }
+  const layer=sc.inside.__v57layer;if(!layer)return;
+  const d=sc.inside.spec.__lq57;const ms=sc.store.game?.minutes||720;
+  layer.clear();const k=sc.inside.k, xx=Yr, yy=Xr;
+  // Small, non-solid animated lighting effects; always behind the player and NPCs.
+  const t=((sc.time?.now||0)/1000);
+  const points=d?.style==='industrial'?[[.24,.11],[.74,.11]]:d?.style==='living'?[[.32,.12],[.68,.12]]:d?.style==='royal'?[[.19,.13],[.81,.13]]:[[.3,.14],[.7,.14]];
+  const W=sc.inside.spec.w*32*k,H=sc.inside.spec.h*32*k;
+  for(let i=0;i<points.length;i++){const p=points[i],x=xx+p[0]*W,y=yy+p[1]*H,a=.27+.18*Math.sin(t*1.8+i);
+   layer.fillStyle(d?.style==='tech'?0x78fbf6:d?.style==='industrial'?0xffc27c:0xffdcab,a).fillCircle(x,y,3*k);
+   layer.fillStyle(0xffe4a1,Math.max(.01,a*.22)).fillCircle(x,y,11*k);
+  }
+  if(d?.complete&&ms>=1120){const x=xx+W*.5,y=yy+H*.17;layer.fillStyle(0xe8d298,.25).fillCircle(x,y,9*k);}
+ }
+ function onLeave(){if(prompt)prompt.hidden=true;if(mobileAction)mobileAction.hidden=true;close();}
+ function decorateExterior(sc){
+  if(!sc?.area?.buildings?.length||!sc?.add||!sc?.store)return 0;
+  if(Array.isArray(sc.__lq57Outdoor))for(const x of sc.__lq57Outdoor){const i=sc.areaObjs?.indexOf(x)??-1;if(i>=0)sc.areaObjs.splice(i,1);try{x.destroy();}catch(_){}}
+  sc.__lq57Outdoor=[];
+  const st=state(sc);let count=0;
+  for(const b of sc.area.buildings){
+   if(!st?.completed?.[key(sc.area.id,b.name,0)])continue;
+   const x=b.door*32+16,y=(b.y+b.h)*32-45;
+   const gfx=sc.add.graphics().setDepth(11);
+   gfx.fillStyle(0xeed790,.25).fillCircle(x,y,14);
+   gfx.fillStyle(0xffd88c,1).fillRect(x-3,y-9,6,17);
+   gfx.fillStyle(0xfff4cd,1).fillRect(x-8,y-4,16,6);
+   gfx.fillStyle(0x4d926b,1).fillRect(x-2,y+4,4,7);
+   sc.__lq57Outdoor.push(gfx);sc.areaObjs?.push(gfx);count++;
+  }
+  return count;
+ }
+ function diagnostics(){const s=window.__lifequestGetScene?.();return {version:'57.0',currentRoom:s?.inside?.spec?.__lq57||null,hasStation:!!station(s),completed:Object.keys(s?.store?.game?.v57?.completed||{}).length,registeredStyles:Object.keys(areaStyles).length};}
+ return Object.freeze({version:'57.0',preEnter,onEnter,onLeave,drawBack:art,inspect,station,update,animateResident,scenario,diagnostics,decorateExterior,refresh,close});
+})();
+window.LQInteriorV57=LQ57;
+/* LIFEQUEST AI V58 — BEYOND THE WORLD
+   In-engine, independent of API services. Built on V56 entrances and V57 design language.
+   Art uses Phaser Graphics/PIXEL coordinates; no remote assets or replacement NPC sprites.
+   Save state lives in the original game store at game.v58.
+ */
+const LQ58 = (() => {
+ 'use strict';
+ const TILE=32, MAX_PARTICLES=18;
+ const STYLE={
+   'english-town':'civic','mining-town':'foundry','english-town-past':'village',
+   'oriaris-trail-1':'trail','oriaris-trail-2':'trail','oriaris-trail-3':'trail','oriaris-camp':'trail',
+   'art-district':'gallery','tech-co':'digital','old-oriaris':'opera','wish-valley':'maorai','vocalt-greedy-land':'merchant'
+ };
+ const PAL={
+  civic:{ink:0x172d36,base:0x5e827d,wood:0x96694f,light:0xffdba2,shade:0x344b54,accent:0x74b7c9},
+  foundry:{ink:0x152b37,base:0x46626b,wood:0x806a57,light:0xf8b36d,shade:0x263f4b,accent:0x84f1dd},
+  village:{ink:0x352b28,base:0x9b825e,wood:0x74513a,light:0xffdf9d,shade:0x5b4433,accent:0xc8b07b},
+  trail:{ink:0x1c3b31,base:0x66866a,wood:0x75664c,light:0xf0d89e,shade:0x355845,accent:0x8dbb91},
+  gallery:{ink:0x262943,base:0x806a83,wood:0x856c85,light:0xf8d399,shade:0x41425e,accent:0x8fdaea},
+  digital:{ink:0x092539,base:0x285575,wood:0x265779,light:0xa3f9fb,shade:0x123f57,accent:0x59dccf},
+  opera:{ink:0x322338,base:0x70526d,wood:0x926d53,light:0xffd69b,shade:0x4b344b,accent:0xc68da9},
+  maorai:{ink:0x1b382b,base:0x557b5d,wood:0x806746,light:0xf1db97,shade:0x315442,accent:0x91c78a},
+  merchant:{ink:0x38283b,base:0x8f6a62,wood:0x926344,light:0xffd69b,shade:0x533b50,accent:0xdda579}
+ };
+ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+ function idHash(s){let n=2166136261;for(const c of s){n=Math.imul(n^c.charCodeAt(0),16777619)}return n>>>0;}
+ const scene=()=>window.__lifequestGetScene?.();
+ const safeText=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+ function saved(sc){const g=sc?.store?.game;if(!g)return null;
+  if(!g.v58||g.v58.schema!==1)g.v58={schema:1,rooms:{},chronicle:[],choices:{},events:{},settings:{reducedMotion:false}};
+  return g.v58;
+ }
+ function roomRecord(sc,d){const state=saved(sc);if(!state)return {step:0};return state.rooms[d.id]||(state.rooms[d.id]={step:0,visited:0,completed:false});}
+ function scenario(d){
+  if(d.kind==='vaela')return {icon:'🌿',name:'Vaela · Hearth of Roots',subtitle:'Một mái nhà, nhiều câu chuyện bên Thác Mẹ',station:'Bàn thảo dược',accent:'#bfe5a5',steps:[
+   {title:'Chuẩn bị giỏ thảo dược',desc:'Vaela cần một giỏ thảo dược sạch và được sắp xếp cẩn thận.',question:'Hãy chạm các thao tác theo thứ tự: nhặt lá → rửa lá → xếp vào giỏ.',puzzle:{kind:'sequence',items:['Rửa lá bằng nước suối','Xếp lá vào giỏ đan','Nhặt lá trong vườn'],order:[2,0,1]},feedback:'Các bước chăm sóc đã hoàn thành. Hãy hỏi Vaela về thảo dược bằng tiếng Anh.'},
+   {title:'Lời khuyên cho khu vườn',desc:'Trời vừa mưa lớn. Hãy giúp Vaela chăm sóc khu vườn một cách hợp lý.',question:'Choose the best advice.',options:['If I were you, I would check the soil before watering.','If I were you, I will watering everything.','I wish the rain is yesterday.'],answer:0,feedback:'If I were you, I would + động từ nguyên mẫu.'},
+   {title:'Lời hứa với Vaela',desc:'Vaela muốn giữ gìn sự yên bình của thung lũng. Hãy bày tỏ sự đồng cảm.',question:'Which sentence expresses understanding?',options:['Nature should never matter.','I would help protect the valley because it is our home.','I would protecting the valley yesterday.'],answer:1,feedback:'Would + động từ và because + lý do rõ ràng.'}
+  ]};
+  if(d.kind==='mine')return {icon:'⚙️',name:'Minerals · Crystal Railway',subtitle:'Ca làm việc tại xưởng đầu máy cổ',station:'Bàn điều khiển xưởng',accent:'#8cecdf',steps:[
+   {title:'Khôi phục tuyến vận chuyển',desc:'Nối lại tuyến đường đã bị thất lạc trong bảng điều khiển.',question:'Chọn các điểm theo hành trình: mỏ quặng → kho vận → nhà ga.',puzzle:{kind:'sequence',items:['Nhà ga chính','Mỏ quặng','Kho vận'],order:[1,2,0]},feedback:'Đường vận chuyển đã được kết nối thành công.'},
+   {title:'Kiểm tra dữ liệu',desc:'Bảng hiển thị có một tuyến tàu bị thiếu thông tin. Hãy báo cáo chính xác.',question:'What is the clearest issue report?',options:['Everything bad, fix now.','The route display is missing a station name.','Route missing because maybe.'],answer:1,feedback:'Issue report nên mô tả thành phần và hiện tượng cụ thể.'},
+   {title:'Phục hồi trạm ga',desc:'Ghi nhận sự cố đã được xử lý theo đúng trình tự.',question:'Choose a correct past-tense update.',options:['We repair the map yesterday next.','We have repair the station.','We checked the records and restored the missing route.'],answer:2,feedback:'Checked và restored là quá khứ đơn phù hợp.'}
+  ]};
+  if(d.kind==='opera')return {icon:'🎭',name:'Grand Opera · The Bell that Remembered',subtitle:'Chuẩn bị buổi diễn giữa kinh đô Oriaris',station:'Bảng điều khiển sân khấu',accent:'#f2c3d8',steps:[
+   {title:'Chuẩn bị màn biểu diễn',desc:'Điều khiển sân khấu trước khi diễn viên bước ra.',question:'Thực hiện các tín hiệu đúng thứ tự: rèm → ánh sáng → chuông.',puzzle:{kind:'sequence',items:['Đánh chuông bắt đầu','Mở rèm nhung','Bật đèn sân khấu'],order:[1,2,0]},feedback:'Sân khấu đã sẵn sàng cho buổi biểu diễn.'},
+   {title:'Kiểm tra ánh sáng',desc:'Trong lúc diễn viên đang tập, đèn sân khấu bất ngờ tắt.',question:'Describe the interruption.',options:['The lamps turning off when people rehearses.','The lights went out while the actors were rehearsing.','While actors rehearsed, lights were go.'],answer:1,feedback:'Went out và were rehearsing diễn tả đúng quan hệ thời gian.'},
+   {title:'Màn hạ màn',desc:'Giúp người dẫn chuyện hoàn thành lời kết.',question:'Which line sounds most natural?',options:['Every story remembering when bells.','The bells were ringing when the old promise was discovered.','Old promise while remember rings.'],answer:1,feedback:'Mệnh đề thời gian phù hợp và cấu trúc hoàn chỉnh.'}
+  ]};
+  if(d.kind==='clock')return {icon:'🕰️',name:'Chronos · The Price of Time',subtitle:'Xưởng đồng hồ và một lời hứa chưa được thực hiện',station:'Bàn sửa đồng hồ',accent:'#f5d09a',steps:[
+   {title:'Căn chỉnh bộ máy đồng hồ',desc:'Ba bánh răng bị lệch sau chuyến vận chuyển. Cần khôi phục lại chu kỳ của chúng.',question:'Nhấn từng bánh răng để đưa về dấu khắc mục tiêu. Mỗi lần nhấn quay 60°.',puzzle:{kind:'gears',targets:[2,4,1]},feedback:'Ba bánh răng đã ăn khớp. Bộ máy hoạt động trở lại.'},
+   {title:'Đối chiếu sổ hàng',desc:'Chủ tiệm nói đồng hồ đã nằm trong kho nhiều năm.',question:'Which sentence uses the present perfect correctly?',options:['We have kept the clock for many years.','We kept have clock since last.','We has keep it for years.'],answer:0,feedback:'Have kept ... for many years diễn tả một trạng thái kéo dài.'},
+   {title:'Giá trị của ký ức',desc:'Người mua muốn định giá món đồ nhưng nó thuộc về một gia đình.',question:'Which answer is more thoughtful?',options:['Money is the only important thing.','This clock should return to its family because it holds their memories.','Take it for free now.'],answer:1,feedback:'Should + động từ nguyên mẫu và because + lý do.'}
+  ]};
+  const area={
+   'english-town':['Civic Life · A New Neighbor','Hướng dẫn một người mới đến thành phố','Could you tell me where the library is?'],
+   'english-town-past':['Letters from the Past','Đối chiếu thông tin thư cũ','I delivered the letter yesterday.'],
+   'art-district':['The Artist’s Workshop','Thảo luận ý tưởng cho một tác phẩm','I prefer the blue design because it feels calm.'],
+   'tech-co':['Innovation Nexus','Báo cáo một sự cố ở phòng làm việc','Could we meet at three to review the issue?'],
+   'old-oriaris':['Royal Archives','Mô tả hai sự kiện đã xảy ra','While the bell was ringing, the door opened.'],
+   'wish-valley':['Aylara · Living Sanctuary','Giúp cư dân bảo vệ khu vườn','If I were you, I would protect the river.'],
+   'vocalt-greedy-land':['Merchant’s Promise','Thuyết phục người bán về giá trị của ký ức','In my opinion, the letter should return home.'],
+   'mining-town':['Workers of the Valley','Ghi lại nhiệm vụ của một ca làm việc','We checked the records before leaving.']
+  };
+  const [name,desc,answer]=area[d.area]||['Memories of Oriaris','Hành trình khám phá tuyến đường cũ','I visited the old bridge yesterday.'];
+  return {icon:'✦',name,subtitle:d.building,station:'Bảng ghi chép',accent:'#afe8e1',steps:[
+   {title:'Explore',desc,question:'Choose the most natural English sentence.',options:['Yesterday I am tomorrow.','I go before because while. ',answer],answer:2,feedback:'Câu trả lời có cấu trúc tiếng Anh hoàn chỉnh.'}
+  ]};
+ }
+ function classify(area,building){const n=String(building).toLowerCase();
+  if(area==='wish-valley'&&/vaela|root home/.test(n))return 'vaela';
+  if(area==='mining-town'&&/mine|workshop|smithy|freight/.test(n))return 'mine';
+  if(area==='old-oriaris'&&/opera/.test(n))return 'opera';
+  if(area==='vocalt-greedy-land'&&/chronos|clock|bellwright/.test(n))return 'clock';
+  return STYLE[area]||'civic';
+ }
+ function preEnter(sc,area,building,spec,floor){if(!spec)return;
+  const id=area+'::'+building+'::'+floor;
+  const d={area,building,floor,id,kind:classify(area,building),seed:idHash(id),w:spec.w,h:spec.h};
+  d.complete=!!saved(sc)?.rooms?.[id]?.completed;spec.__lq58=d;return d;
+ }
+ // Draw helpers: crisp integer pixel geometry, shading layers and authored compositions.
+ function painter(g,s){const d=s.__lq58;if(!d)return null;const p=PAL[STYLE[d.area]]||PAL.civic;const W=s.w*32,H=s.h*32;
+  const r=(x,y,w,h,c,a=1)=>{if(w>0&&h>0)g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+  const ell=(x,y,w,h,c,a=1)=>g.fillStyle(c,a).fillEllipse(Math.round(x),Math.round(y),Math.round(w),Math.round(h));
+  const circ=(x,y,rad,c,a=1)=>g.fillStyle(c,a).fillCircle(Math.round(x),Math.round(y),rad);
+  const ln=(x,y,X,Y,c,a=1,w=2)=>g.lineStyle(w,c,a).lineBetween(Math.round(x),Math.round(y),Math.round(X),Math.round(Y));
+  const tr=(x,y,X,Y,U,V,c,a=1)=>g.fillStyle(c,a).fillTriangle(x,y,X,Y,U,V);
+  const rectOutline=(x,y,w,h,fill,edge)=>{r(x-3,y-3,w+6,h+7,p.ink);r(x,y,w,h,fill);r(x+2,y+2,w-4,2,p.light,.45);r(x+3,y+h-5,w-6,3,edge||p.shade,.8)};
+  const detail=(x,y,seed=0)=>{r(x,y,3,2,p.light,.6);r(x+6,y+3,2,2,p.accent,.7);r(x+11,y-1,2,2,p.ink,.6)};
+  return {d,p,W,H,r,ell,circ,ln,tr,rectOutline,detail};
+ }
+ function windowScene(c,x,y,w,h,type){const {p,r,ell,circ,ln,rectOutline}=c;
+  rectOutline(x,y,w,h,p.shade,p.wood);
+  r(x+5,y+5,w-10,h-10,type==='maorai'?0x447965:type==='mine'?0x355360:type==='opera'?0x334465:type==='clock'?0x86614d:0x70a2a9);
+  const yy=y+h*.67;
+  if(type==='maorai'){ell(x+w*.5,yy,w*.88,h*.6,0x244e40);ell(x+w*.28,yy-7,31,30,0x6b9a62);ell(x+w*.74,yy-10,42,36,0x80a56b);circ(x+w*.66,y+14,6,0xf5db96,.9);}
+  else if(type==='opera'){r(x+5,yy,w-10,3,0xbd95a7);for(let i=0;i<6;i++){const xx=x+9+i*(w-15)/6;r(xx,yy-19,3,19,0x8b7087);}}
+  else if(type==='mine'){r(x+6,yy-10,w-12,13,0x243d4b);for(let j=0;j<5;j++){r(x+9+j*(w-16)/5,yy-7,8,5,0x67b4ad,.6)}}
+  else{r(x+5,yy-8,w-10,9,p.wood,.5);for(let j=0;j<5;j++)r(x+7+j*(w-14)/5,yy-12,4,12,p.ink,.45)}
+  ln(x+w*.5,y+5,x+w*.5,y+h-5,p.wood,1,4);r(x+6,y+5,w-12,2,p.light,.45);
+ }
+ function cog(c,x,y,rad,phase=0){const {p,r,circ}=c;circ(x,y,rad+4,p.ink);circ(x,y,rad,p.light);circ(x,y,rad-4,p.wood);circ(x,y,rad-9,p.ink);
+  for(let i=0;i<12;i++){const t=i*Math.PI/6+phase;r(x+Math.cos(t)*(rad+1)-3,y+Math.sin(t)*(rad+1)-3,6,6,p.light)}circ(x,y,4,p.accent);}
+ function vegetation(c,x,y,size=1){const {p,r,ell,ln}=c;
+  ln(x,y+23*size,x-6*size,y-4*size,p.wood,1,6*size);ln(x,y+10*size,x+9*size,y-12*size,p.wood,1,4*size);
+  for(const [dx,dy,w,h,col] of [[-16,-8,28,24,0x477752],[3,-13,29,25,0x7fa26b],[-4,-23,24,23,0x609665],[11,-2,19,16,0x86b277]])ell(x+dx*size,y+dy*size,w*size,h*size,col);
+  r(x-7*size,y-19*size,4*size,3*size,p.light,.56);
+ }
+ function showcase(c,type){const {d,p,W,H,r,ell,ln,tr,circ,rectOutline}=c;const cx=W/2;
+  const b=s=>Math.round(s);const compl

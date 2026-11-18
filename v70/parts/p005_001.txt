@@ -1,0 +1,602 @@
+unt===1){state.inventory.books=(state.inventory.books||0)+1;result='Tìm được một trang tư liệu, đã thêm vào túi V52'}else result='Đã kiểm tra lại; trang tư liệu vẫn trong túi';}
+ else if(machine){
+  if(['orePile','orepile','minecart'].includes(kind)){if(it.count===1||it.day!==old.day){state.inventory.samples=(state.inventory.samples||0)+1;result='Thu thập được một mẫu khoáng vật thô'}else result='Đã kiểm tra lại mẫu ở khu vực này hôm nay'}
+  else if((state.inventory.samples||0)>0){state.inventory.samples--;state.inventory.refined=(state.inventory.refined||0)+1;result='Thiết bị đã xử lý mẫu khoáng vật thành mẫu tinh luyện'}
+  else result='Đã khởi động và hiệu chỉnh thiết bị; hãy tìm quặng thô để chế tác';
+ }
+ else if(food){if(it.day!==old.day||it.count===1){state.inventory.meals=(state.inventory.meals||0)+1;result='Đã chuẩn bị một phần ăn trong game'}else result='Góc bếp đã được chuẩn bị hôm nay';}
+ else if(writing)result='Đã nộp bản ghi ngắn bằng tiếng Anh và cập nhật hồ sơ công việc';
+ else result='Đã kiểm tra vật thể và lưu vào nhật ký';
+ if(it.count===1)record('Nội thất: '+interiorTitle(kind)+' tại '+sc.inside.b.name+' — '+result);else store();
+ try{const u=T*sc.inside.k,img=sc.inside.objs.find(o=>o.texture?.key?.startsWith('int_v7_'));if(img){const cx=img.x+(item.x+(item.w||1)/2)*u,cy=img.y+(item.y+(item.h||1)/2)*u;
+   const n=sc.add.text(cx,cy-12,'✦',{fontFamily:'monospace',fontSize:'13px',color:'#a5f1cf'}).setDepth(5);sc.inside.objs.push(n);sc.tweens.add({targets:n,alpha:0,y:cy-34,duration:950,onComplete:()=>n.destroy()});
+ }}catch{}notify('✓ '+result);sound(440);drawMenu();return true;
+}
+function showDialog(title,description,buttons){if(!dialog)return;dialog.hidden=false;
+ document.getElementById('lq52-title').textContent=title;
+ document.getElementById('lq52-description').textContent=description;
+ document.getElementById('lq52-actions').innerHTML=buttons.map((b,i)=>`<button type="button" data-lq52="${clean(b.action)}" class="${i===0?'primary':''}">${clean(b.title)}</button>`).join('');
+ const kb=scene()?.input?.keyboard;if(kb&&keyboardSave===null){keyboardSave={kb,enabled:kb.enabled};try{kb.enabled=false;kb.resetKeys?.()}catch{}}}
+function closeDialog(){if(!dialog)return;const extra=$('lq52-english-sentence');if(extra)extra.remove();dialog.hidden=true;if(keyboardSave){try{keyboardSave.kb.enabled=keyboardSave.enabled;keyboardSave.kb.resetKeys?.()}catch{}keyboardSave=null}selected=null;}
+function drawMenu(){if(!root)return;const sc=scene(),area=sc?.area?.id,areaDef=MAPS[area];
+ const project=areaDef?areaDef.props.map(p=>state.actions[area+':'+p[0]]?1:0):[],completed=Object.keys(state.projects).length;
+ const npc=Object.entries(state.npcChoices).filter(([key])=>key.startsWith(area+':')).map(([key,v])=>`<div>♥ ${clean(key.split(':').slice(1).join(':'))}: ${Number(v.trust)||0}/6</div>`).join('');
+ $('lq52-menu-content').innerHTML=`<div class="lq52-card"><b>${clean(areaDef?.name||'Hãy bắt đầu trò chơi')}</b><p>Thời gian: ${sc?.store?.game?.day||'—'} · ${Math.floor((sc?.store?.game?.minutes??720)/60)}:${String((sc?.store?.game?.minutes??720)%60).padStart(2,'0')} · ${clean(phase(sc))} · ${clean(weather())}</p><p>Sự kiện: ${clean(active?.eventName||'Chưa có chương trình')}</p><p>Dự án trong vùng: ${clean(areaDef?.project||'—')} · ${project.reduce((a,b)=>a+b,0)}/${project.length} thao tác</p>${area&&state.projects[area]?'<p class="lq52-done">✓ Công trình đã thay đổi trên bản đồ.</p>':''}</div>
+ <div class="lq52-card"><b>Hướng dẫn</b><p>Đến gần vật thể/động vật rồi nhấn <kbd>R</kbd> hoặc nhấp trực tiếp vào hình. Nhấn <kbd>E</kbd> để tương tác theo hệ thống gốc. Trong nhà, R dùng được với giường, quầy, tủ, bàn và máy móc. Nhấn <kbd>O</kbd> để mở bảng này.</p><p>Trò chuyện NPC: đến gần rồi dùng nút “♥ NPC” trong bảng này, hoặc nhấn <kbd>N</kbd> để hỏi một câu và lưu lựa chọn. Trò chuyện tiếng Anh gốc vẫn dùng E.</p><p>Hoàn thành cả hai điểm tương tác của mỗi vùng để công trình mới xuất hiện và tồn tại sau khi tải lại.</p></div>
+ <div class="lq52-card"><b>Ghi nhớ và tiến độ</b><p>${completed}/12 công trình · ${Object.keys(state.interior).length} món nội thất · ${Object.keys(state.observations).length} loài sinh vật đã quan sát.</p><p>Kho vật phẩm V52: ${state.inventory.books||0} trang tư liệu · ${state.inventory.samples||0} mẫu thô · ${state.inventory.refined||0} mẫu đã tinh luyện · ${state.inventory.meals||0} phần ăn.</p>${npc||'<p>Chưa có lựa chọn NPC được ghi nhớ trong vùng này.</p>'}</div>
+ <div class="lq52-actions"><button data-lq52="menu:npc">♥ NPC gần bạn</button><button data-lq52="menu:save">Xuất tiến độ V52</button><button data-lq52="menu:sound">${state.settings.sound?'🔊 Tắt âm thanh':'🔈 Bật âm thanh'}</button><button data-lq52="menu:motion">${state.settings.lowMotion?'Bật lại chuyển động V52':'Giảm chuyển động V52'}</button><button data-lq52="close">Đóng</button></div><h3>Nhật ký tương tác</h3>${state.history.slice(0,14).map(h=>`<p class="lq52-log">${clean(h.label)}</p>`).join('')||'<p>Hãy khám phá các vật thể trong game.</p>'}`;
+}
+function openMenu(){if(!root)return;drawMenu();const p=$('lq52-menu');p.hidden=false;const kb=scene()?.input?.keyboard;
+ if(kb&&keyboardSave===null){keyboardSave={kb,enabled:kb.enabled};try{kb.enabled=false;kb.resetKeys?.()}catch{}}}
+function closeMenu(){const p=$('lq52-menu');if(p)p.hidden=true;if(keyboardSave){try{keyboardSave.kb.enabled=keyboardSave.enabled;keyboardSave.kb.resetKeys?.()}catch{}keyboardSave=null}}
+function exportSave(){const blob=new Blob([JSON.stringify({name:'LifeQuest V52 Living World',version:1,data:state},null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='LifeQuest_V52_World_Backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000)}
+function handle(action){const sc=scene();if(action==='close'){closeDialog();closeMenu();return}
+ if(action==='prop:complete'&&selected?.kind==='prop'&&sc?.area?.id===selected.area){const prop=active?.props.find(x=>x.id===selected.id);if(prop){onAction(sc,prop);closeDialog()}return}
+ if(action==='prop:shop'||action==='interior:shop'){closeDialog();window.LQ10_ECONOMY?.show?.('shop');return}
+ if(action==='interior:use'){if(finishInterior())closeDialog();return}
+ if(action.startsWith('npc:')){const npc=sc?.npcs?.find(n=>n.def.id===selected?.id);if(npc)rememberNpc(sc,npc,action.slice(4));closeDialog();return}
+ if(action==='animal:observe'){const id=selected?.id;closeDialog();const a=active?.animals?.find(x=>`${sc?.area?.id}:${x.type}`===id);if(a)animalInteract(sc,a);return}
+ if(action==='menu:npc'){const n=sc?.nearestNpc?.(68);closeMenu();if(n)npcInteract(sc,n);else notify('Không có NPC ở gần. Di chuyển đến một người dân trước.');return}
+ if(action==='menu:save'){exportSave();return}
+ if(action==='menu:sound'){state.settings.sound=!state.settings.sound;store();drawMenu();return}
+ if(action==='menu:motion'){state.settings.lowMotion=!state.settings.lowMotion;store();drawMenu();return}
+}
+function init(){if($('lq52-root'))return;
+ root=document.createElement('section');root.id='lq52-root';root.innerHTML=`<button id="lq52-chip" hidden type="button" title="Open Living Worlds V52">🌍 Living World V52</button><button id="lq52-prompt" hidden type="button">R · Khám phá</button><div id="lq52-toast" role="status" hidden></div><div id="lq52-modal" role="dialog" aria-modal="true" hidden><div class="lq52-panel"><header><b id="lq52-title">Living World</b><button data-lq52="close" aria-label="Đóng">✕</button></header><p id="lq52-description"></p><div id="lq52-actions"></div></div></div><section id="lq52-menu" role="dialog" aria-label="World V52" hidden><div class="lq52-panel"><header><b>🌍 LifeQuest V52 · Living Engine</b><button data-lq52="close" aria-label="Đóng">✕</button></header><div id="lq52-menu-content"></div></div></section>`;
+ document.body.appendChild(root);dialog=$('lq52-modal');prompt=$('lq52-prompt');chip=$('lq52-chip');
+ chip.addEventListener('click',openMenu);prompt.addEventListener('click',()=>useNearest(scene()));
+ root.addEventListener('click',e=>{const b=e.target.closest?.('[data-lq52]');if(b)handle(b.dataset.lq52);if(e.target===dialog)closeDialog();if(e.target===$('lq52-menu'))closeMenu()});
+ document.addEventListener('keydown',e=>{if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable)return;
+  if(e.key==='Escape'&&!dialog.hidden){e.stopImmediatePropagation();e.preventDefault();closeDialog();return}
+  if(e.key==='Escape'&&!$('lq52-menu').hidden){e.stopImmediatePropagation();e.preventDefault();closeMenu();return}
+  if(e.key.toLowerCase()==='o'&&dialog.hidden){e.stopImmediatePropagation();e.preventDefault();$('lq52-menu').hidden?openMenu():closeMenu();return}
+  if((e.key==='r'||e.key==='R')&&dialog.hidden&&$('lq52-menu').hidden){if(useNearest(scene())){e.preventDefault();e.stopImmediatePropagation()}}
+  if((e.key==='n'||e.key==='N')&&dialog.hidden&&$('lq52-menu').hidden){const sc=scene(),n=sc?.nearestNpc?.(68);if(n&&!busy(sc)){e.preventDefault();e.stopImmediatePropagation();npcInteract(sc,n)}}
+ },true);
+ setInterval(()=>{const sc=scene();if(!goodScene(sc)){if(active)clearActive();if(chip)chip.hidden=true;return}if(!sc.inside&&(!active||active.sc!==sc||active.area!==sc.area.id))attach(sc);
+ if(sc.inside&&active)clearActive();if(chip)chip.hidden=busy(sc)&&!sc.inside;if(!busy(sc))updatePrompt(sc);else if(prompt)prompt.hidden=true;},340);
+}
+window.LQ52=Object.freeze({version:VERSION,attach,detach:sc=>{if(active?.sc===sc)clearActive()},update,guardNpc,tryInteract:useNearest,interiorInteract,route,openMenu,closeMenu,state:()=>JSON.parse(JSON.stringify(state)),stats:()=>({areas:Object.keys(state.projects).length,interiors:Object.keys(state.interior).length,species:Object.keys(state.observations).length}),test:{safeTile,openTile,propPosition,phase,eventKey,project:area=>!!state.projects[area]},maps:MAPS});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+
+</script>
+
+<script id="lq-physics-checks">
+/* V52.2 · precise polygon diagnostics, no sprites or assets changed. */
+(function(){'use strict';
+  window.LQPhysicsFix=Object.freeze({
+    version:'52.2',
+    check(x,y){const s=window.__lifequestGetScene?.();
+      if(!s?.area||!Number.isFinite(x)||!Number.isFinite(y))return null;
+      return {area:s.area.id, worldX:x,worldY:y,
+        tileX:Math.floor(x/32),tileY:Math.floor(y/32),
+        solid:s.blocked(x,y), geometry:window.LQPrecisePhysics?.debug(s.area,x,y),
+        obstacleTile:s.area.isTileBlocked(Math.floor(x/32),Math.floor(y/32))};
+    },
+    current(){const s=window.__lifequestGetScene?.();
+      return s?.player?this.check(s.player.x,s.player.y):null;
+    },
+    mapStats(){const s=window.__lifequestGetScene?.();const a=s?.area;
+      if(!a?.blocked)return null;
+      const count=a.blocked.reduce((sum,row)=>sum+row.reduce((n,v)=>n+(v?1:0),0),0);
+      return {area:a.id,buildings:a.buildings.length,obstacles:a.obstacles.length,solidTiles:count,
+        tileCount:a.w*a.h};
+    }
+  });
+})();
+</script>
+<script id="lq66-living-moments">
+/* LifeQuest AI V66 — Living Moments
+ * New event choreography on top of V65. Preserves existing map tiles, collision polygons,
+ * sprite frames, doors, NPC AI and all previous save namespaces.
+ * No replacement NPC art: intent bubbles follow the game's original NPC sprites.
+ */
+(function () {
+  'use strict';
+  if (window.LQ66) return;
+  const VERSION = '66.0.0';
+  const T = 32;
+  const SCENES = Object.freeze({
+    'english-town': {
+      name: 'Buổi sáng Clocktower Square', building: 'Library', color: 0x96d8cc, type: 'books',
+      actor: 'Librarian', key: 'library',
+      steps: ['Quan sát bảng thông báo', 'Giúp sắp sách và chuẩn bị khu đọc', 'Mở buổi đọc sách cho cư dân'],
+      result: 'Khu đọc sách đã được chuẩn bị; cửa sổ thư viện và bảng thông báo đổi trạng thái.'
+    },
+    'mining-town': {
+      name: 'Chuyến hàng khoáng sản', building: 'Rail Station', color: 0xe2b37c, type: 'rail',
+      actor: 'Station', key: 'station',
+      steps: ['Kiểm tra bảng tín hiệu', 'Chuẩn bị kiện hàng tại ga', 'Xác nhận chuyến tàu đến'],
+      result: 'Tín hiệu ga chuyển sang màu an toàn và khu giao hàng hoạt động.'
+    },
+    'english-town-past': {
+      name: 'Chuyến thư của Tom Brown', building: 'Oriaris Hall', color: 0xdac59c, type: 'letters',
+      actor: 'Tom', key: 'letter',
+      steps: ['Đọc dấu bưu điện', 'Sắp xếp thư cho các gia đình', 'Ghi nhận thư đã phát'],
+      result: 'Bưu kiện được sắp đúng và bảng thư tại hội trường thay đổi.'
+    },
+    'art-district': {
+      name: 'Ngày khai mạc triển lãm', building: 'Color Gallery', color: 0xe7abc9, type: 'gallery',
+      actor: 'Noor', key: 'gallery',
+      steps: ['Kiểm tra tranh trên giá', 'Chỉnh ánh sáng và trưng bày', 'Đón khách đến xem triển lãm'],
+      result: 'Đèn trưng bày bật và tranh của buổi triển lãm đã được giới thiệu.'
+    },
+    'tech-co': {
+      name: 'Một ngày tại Innovation Nexus', building: 'TECH-CO HEADQUARTERS', color: 0x8de7e0, type: 'terminal',
+      actor: 'Priya', key: 'tech',
+      steps: ['Kiểm tra thông báo công việc', 'Đồng bộ bảng thông tin', 'Hoàn thành cuộc họp và cập nhật'],
+      result: 'Bảng công nghệ chuyển trạng thái thành công.'
+    },
+    'old-oriaris': {
+      name: 'Đêm diễn tại Grand Opera', building: 'GRAND OPERA', color: 0xe7bc91, type: 'opera',
+      actor: 'Archivist', key: 'opera',
+      steps: ['Chuẩn bị đạo cụ sân khấu', 'Điều chỉnh ánh sáng và rèm', 'Bắt đầu buổi biểu diễn'],
+      result: 'Màn nhung mở, đèn sân khấu sáng và buổi diễn được lưu vào ký ức.'
+    },
+    'wish-valley': {
+      name: 'Buổi sinh hoạt bên Thác Mẹ', building: 'ROOT HOME · VAELA', color: 0xb8dda2, type: 'herbs',
+      actor: 'Vaela', key: 'vaela',
+      steps: ['Quan sát giỏ quả rừng', 'Chuẩn bị thảo dược cùng Vaela', 'Đưa vật phẩm tới khu sinh hoạt'],
+      result: 'Góc thảo dược được sắp xếp và đèn nhà Vaela ấm hơn.'
+    },
+    'vocalt-greedy-land': {
+      name: 'Phiên giao thương Grand Bazaar', building: 'CHRONOS · FINE CLOCKS', color: 0xe4bc81, type: 'merchant',
+      actor: 'Chronos', key: 'chronos',
+      steps: ['Kiểm tra món hàng', 'Trưng bày đồng hồ ở quầy', 'Hoàn thành phiên giao dịch'],
+      result: 'Quầy trưng bày đổi trạng thái và bảng hàng hoạt động.'
+    }
+  });
+  const TRAILS = Object.freeze({
+    'oriaris-trail-1': {name:'Lối qua cánh đồng',type:'trail'},
+    'oriaris-trail-2': {name:'Dấu vết dưới tán rừng',type:'trail'},
+    'oriaris-trail-3': {name:'Ngã ba ký ức',type:'trail'},
+    'oriaris-camp': {name:'Đêm lửa trại',type:'camp'}
+  });
+  const defaults = {enabled:true, particles:true, windows:true, weather:true, interior:true, focus:true, quiet:false, sound:false};
+  const CONFIG_KEY = 'lifequest_v66_visual_settings';
+  const prefs = {...defaults};
+  try {const val=JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');
+    if (val && typeof val==='object') for(const k of Object.keys(defaults)) if (typeof val[k]==='boolean') prefs[k]=val[k];
+  } catch (_) {}
+  const $ = id => document.getElementById(id);
+  const html = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const cap=(n,a,b)=>Math.max(a,Math.min(b,n));
+  const dist=(a,b,x,y)=>Math.hypot(a-x,b-y);
+  const hash = str => {let h=2166136261; for(const c of String(str))h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0;};
+  let actor=null, root=null, pane=null, widget=null, toastEl=null, keyLock=false;
+  let current=null, currentArea='', currentRoom=null, worldGraphics=null, indoorGraphics=null;
+  let windowTiles=[], puddles=[], emoteGraphics=null, lastWeather='', lastPulse=0, lastUI=0, lastPerf=0, benchmark={drawMs:0,drawCount:0};
+  let wetUntil=0, audioCtx=null;
+  const scene=()=>{try{return window.__lifequestGetScene?.()||null;}catch(_){return null}};
+  const gameReady=sc=>!!(sc?.area&&sc?.player&&sc?.add?.graphics&&sc?.store?.game);
+  const area=sc=>String(sc?.area?.id||'');
+  const validRoom=sc=>!!sc?.inside?.spec?.items;
+  function save(sc){try{sc.store?.save?.();return true;}catch(e){console.warn('[V66] Save not available',e);return false;}}
+  function state(sc=scene()){
+    if(!sc?.store?.game)return null;
+    const g=sc.store.game;
+    if(!g.v66||typeof g.v66!=='object'||g.v66.schema!==1) g.v66={schema:1,areas:{},objects:{},history:[],seen:{}};
+    const d=g.v66;
+    for (const k of ['areas','objects','seen']) if(!d[k]||typeof d[k]!=='object')d[k]={};
+    if(!Array.isArray(d.history))d.history=[];
+    return d;
+  }
+  function status(sc,key=area(sc)){
+    const d=state(sc); if(!d)return null;
+    if(!d.areas[key]) d.areas[key]={step:0,complete:false,visits:0};
+    return d.areas[key];
+  }
+  const timeOf=sc=>{const g=sc?.store?.game||{},m=cap(Number(g.minutes??720),0,1439);
+    return {minutes:m,day:Math.max(1,Number(g.day)||1), weather:String(g.weather||'clear').toLowerCase(),
+      phase:m<390?'night':m<610?'morning':m<1000?'day':m<1150?'evening':'night'};
+  };
+  function record(sc,title){const d=state(sc);if(!d)return;
+    d.history.unshift({area:area(sc),title:String(title).slice(0,110),day:timeOf(sc).day});d.history=d.history.slice(0,32);
+    save(sc);
+  }
+  function buildings(sc){return Array.isArray(sc?.area?.buildings)?sc.area.buildings:[];}
+  function matchBuilding(sc,cfg){
+    if(!cfg)return null;
+    const bs=buildings(sc),key=cfg.building.toLowerCase();
+    return bs.find(b=>String(b.name||'').toLowerCase()===key) ||
+      bs.find(b=>String(b.name||'').toLowerCase().includes(key)) || null;
+  }
+  function safe(sc,x,y){return Number.isFinite(x)&&Number.isFinite(y)&&x>24&&y>24&&x<(sc.area.w-1)*32&&y<(sc.area.h-1)*32&&!sc.blocked?.(x,y);}
+  function anchorFor(sc,cfg){
+    const b=matchBuilding(sc,cfg);
+    if(!b)return null;
+    const x=(Number(b.door)+.5)*T, y=(Number(b.y)+Number(b.h))*T+23;
+    // An interior's blocked() uses local room coordinates. Never feed it outdoor positions.
+    if(sc.inside && String(sc.inside.b?.name||'').toLowerCase()===cfg.building.toLowerCase())return{x,y,b};
+    if(safe(sc,x,y))return{x,y,b};
+    for(const radius of [16,32,48,64,80,96]){
+      for(const offset of [0,-16,16,-32,32,-48,48]){
+        for(const back of [0,12,24]){
+          const xx=x+offset,yy=y+radius+back;
+          if(safe(sc,xx,yy))return{x:xx,y:yy,b};
+        }
+      }
+    }
+    return null; // Never suggest an unreachable access point.
+  }
+  function target(sc){const cfg=SCENES[area(sc)];return cfg?anchorFor(sc,cfg):null;}
+  function nearTarget(sc){
+    if(!gameReady(sc))return false;
+    const cfg=SCENES[area(sc)], a=target(sc);
+    if(!cfg||!a)return false;
+    if(sc.inside)return String(sc.inside.b?.name||'').toLowerCase()===cfg.building.toLowerCase();
+    return dist(sc.player.x,sc.player.y,a.x,a.y)<118;
+  }
+  function realItems(sc){
+    if(!validRoom(sc))return [];
+    const obj=sc.inside, pic=obj.objs?.[0], x=pic?.x,y=pic?.y,k=obj.k||1;
+    if(!Number.isFinite(x)||!Number.isFinite(y))return [];
+    return obj.spec.items.filter(it=>it&&Number.isFinite(it.x)&&Number.isFinite(it.y)&&Number.isFinite(it.w)&&Number.isFinite(it.h))
+      .map((it,i)=>({key:[area(sc),obj.b.name,obj.floor||0,it.k,it.x,it.y,i].join('::'),it,
+        x:x+(it.x+it.w*.5)*T*k,y:y+(it.y+it.h*.5)*T*k, k}));
+  }
+  function nearestItem(sc){return realItems(sc).filter(p=>/table|counter|desk|bed|shelf|stove|forge|machine|screen|loom|herb|plant|clock|book|cabinet|chest|piano|organ|case|furnace|lantern|fireplace|display|workbench/i.test(String(p.it.k||''))).filter(p=>dist(sc.player.x,sc.player.y,p.x,p.y)<75*p.k).sort((a,b)=>dist(sc.player.x,sc.player.y,a.x,a.y)-dist(sc.player.x,sc.player.y,b.x,b.y))[0]||null;}
+  function inspectFurniture(sc){
+    const p=nearestItem(sc);if(!p)return false;
+    const d=state(sc);if(!d)return false;
+    const next=!d.objects[p.key];d.objects[p.key]=next;
+    const type=String(p.it.k||'object'), label=next?'được sử dụng':'được đặt lại';
+    record(sc,`Nội thất ${type}: ${label}`);ping(sc, next?660:420);
+    toast(`Vật thể ${type} ${label}.`);
+    redrawPanel();return true;
+  }
+  function attend(sc){
+    if(!gameReady(sc)||!SCENES[area(sc)])return {ok:false,reason:'Khu vực này không có hoạt động V66.'};
+    if(!nearTarget(sc))return {ok:false,reason:'Hãy đến gần công trình được đánh dấu hoặc vào đúng phòng.'};
+    const s=status(sc),cfg=SCENES[area(sc)];
+    if(s.complete)return {ok:false,reason:'Bạn đã hoàn thành hoạt động này. Cảnh quan vẫn ghi nhớ kết quả.'};
+    s.step=cap(Number(s.step)||0,0,2)+1;
+    if(s.step>=3){s.complete=true;s.completedDay=timeOf(sc).day;}
+    record(sc,(s.complete?'Hoàn thành: ':'Hoạt động: ')+cfg.steps[s.step-1]);
+    ping(sc,740);toast(s.complete?cfg.result:cfg.steps[s.step-1]);redrawPanel();
+    return{ok:true,step:s.step,complete:s.complete};
+  }
+  function updateLocation(sc){
+    const aid=area(sc),room=sc.inside?.b?.name||null;
+    if(aid!==currentArea){
+      currentArea=aid;lastWeather=timeOf(sc).weather;wetUntil=0;
+      const bs=buildings(sc),cfg=SCENES[aid];
+      const seed=hash(aid);
+      windowTiles=[];puddles=[];
+      for(let i=0;i<bs.length;i++){
+        if(i%3===seed%3){let b=bs[i];if(Number(b.w)>=2&&Number(b.h)>=2)
+          windowTiles.push({x:(b.x+.8+((i*7)%Math.max(1,Math.floor(b.w-1))))*T,y:(b.y+b.h*.47)*T,id:i});}
+      }
+      const a=cfg?anchorFor(sc,cfg):null;
+      if(a){for(let i=0;i<9;i++){
+        let x=a.x-128+(i*47)%260,y=a.y+48+((i*29)%84);
+        if(safe(sc,x,y)&&dist(x,y,a.x,a.y)>34)puddles.push({x,y,sz:4+(i%3)*2});
+      }}
+    }
+    if(room!==currentRoom){currentRoom=room;redrawPanel();}
+  }
+  function box(g,x,y,w,h,c,a=1){g.fillStyle(c,a);g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
+  function ring(g,x,y,r,c,a=1,w=1){g.lineStyle(w,c,a);g.strokeCircle(Math.round(x),Math.round(y),Math.max(1,r));}
+  function line(g,x,y,x2,y2,c,a=1,w=1){g.lineStyle(w,c,a);g.lineBetween(Math.round(x),Math.round(y),Math.round(x2),Math.round(y2));}
+  function shimmer(g,x,y,v,col,t,alpha=1){
+    box(g,x,y,11,1,0x18202c,.6);box(g,x+1,y+2,9,1,col,alpha*.55);
+    const tick=Math.floor(t/190)%8;box(g,x+tick,y-1,2,2,0xffe6b0,alpha);
+    if(v>=2)box(g,x+1,y+5,9,2,0x95dba6,alpha*.7);
+  }
+  function drawSignature(g,cfg,x,y,step,t,clock,quiet){
+    const color=cfg.color, tick=Math.floor(t/310)%3, pulse=(Math.sin(t*.004)+1)/2;
+    // Tiny cinematic vignettes tied to real buildings (no collision, no fake NPC sprites).
+    switch(cfg.type){
+      case 'books':
+        box(g,x-24,y-12,50,21,0x493c34,.78);box(g,x-19,y-8,39,12,0xe2d3aa,.55);
+        for(let i=0;i<3;i++){const off=(step>i?2:0);box(g,x-17+i*11,y-6-off,9,8,[0xa4e1bd,0xe9b188,0xabc6ef][i]);}
+        shimmer(g,x+9,y-18,step,color,t);break;
+      case 'rail':
+        for(let i=0;i<3;i++)line(g,x-28,y-9+i*9,x+28,y-9+i*9,0x8b8d80,.8,2);
+        const wx=x-14+(step>=2?(Math.sin(t*.0012)*8):tick*3);box(g,wx-10,y-18,22,14,0x84684a,.9);box(g,wx-8,y-15,18,4,0xd8ad78,.8);
+        for(let k of [-6,7])ring(g,wx+k,y-2,3,0x202b32,1,2);
+        box(g,x+18,y-27,5,7,step===3?0x8fe3a0:0xc7a46a,.95);break;
+      case 'letters':
+        box(g,x-26,y-10,52,15,0x76563b,.8);
+        for(let i=0;i<3;i++){const ox=x-22+i*17+(step>i?2:0);
+          box(g,ox,y-19-(step>i?3:0),14,10,0xf2debb,.96);line(g,ox,y-19,ox+7,y-13,0xb38d67,.6);}
+        break;
+      case 'gallery':
+        for(let i=0;i<3;i++){const ox=x-30+i*22;box(g,ox,y-23,19,24,0x372c39,.86);box(g,ox+3,y-20,13,17,[0x7cccb4,0xc7a9d8,0xe7b995][i],.92);
+          if(step>=2)box(g,ox+4,y-19,7,3,0xf8e4c5,.4);}
+        if(step>=2)box(g,x-29,y-27,62,2,0xffe6be,.65);break;
+      case 'terminal':
+        box(g,x-31,y-26,62,29,0x132e3f,.9);box(g,x-27,y-22,54,20,0x29636c,.92);
+        for(let i=0;i<4;i++)box(g,x-22+i*12,y-17+((i+tick)%3)*2,8,3,step>=2?0x8ee3c8:0x70aaba,.8);
+        line(g,x-29,y+5,x+29,y+5,color,.8,2);if(step>=3)shimmer(g,x+13,y-31,step,color,t);break;
+      case 'opera':
+        box(g,x-32,y-25,65,30,0x5d3346,.86);box(g,x-27,y-20,55,20,0x987b6a,.8);
+        const drape=step<2?27:11;
+        for(let i=0;i<2;i++){let dx=i?x+31-drape:x-32;box(g,dx,y-25,drape,30,0x8a324d,.95);
+          for(let j=1;j<4;j++)line(g,dx+j*drape/4,y-21,dx+j*drape/4,y+5,0xc87c81,.36,1);}
+        if(step>=2)for(let i=0;i<3;i++)line(g,x-20+i*20,y-28,x-13+i*14,y+3,0xf8e3b2,.25,2);
+        break;
+      case 'herbs':
+        box(g,x-28,y-11,56,13,0x73543b,.8);
+        for(let i=0;i<3;i++){let bx=x-18+i*18;box(g,bx-6,y-19-(step>i?3:0),13,9,0xbd9c69,.95);
+          ring(g,bx,y-20-(step>i?3:0),3,[0x85b78a,0xc9c783,0x7fa9a8][i],.9,2);}
+        if(!quiet){for(let j=0;j<2;j++){let xx=x-19+j*36+Math.sin(t*.001+j)*1.5;
+          line(g,xx,y-29,xx-2,y-37,color,.42,1);}}
+        break;
+      case 'merchant':
+        box(g,x-32,y-26,64,6,0x9a5a47,.94);box(g,x-28,y-18,56,24,0x6c543e,.88);
+        for(let i=0;i<4;i++){let ox=x-21+i*14;ring(g,ox,y-11,5,0xd7b77d,.92,2);
+          line(g,ox,y-11,ox+Math.cos(t*.0005+i)*3,y-11+Math.sin(t*.0005+i)*3,0xe8e7d1,.9);}
+        if(step>=2)for(let i=0;i<3;i++)box(g,x-15+i*15,y+1,7,3,0xf2d48e,.76);
+        break;
+    }
+    if(prefs.focus && step<3 && !quiet)ring(g,x,y-14,37+pulse*3,color,.14,1);
+  }
+  function visible(sc,x,y,pad=180){
+    const cam=sc.cameras?.main;if(!cam)return true;
+    const view=cam.worldView;if(view&&Number.isFinite(view.x))return x>view.x-pad&&x<view.right+pad&&y>view.y-pad&&y<view.bottom+pad;
+    return true;
+  }
+  function drawWindows(sc,g,t,clock){
+    if(!prefs.windows)return;
+    const night=clock.phase==='night'||clock.phase==='evening';
+    const max=prefs.quiet?5:10;let drawn=0;
+    for(const p of windowTiles){if(drawn>=max)break;if(!visible(sc,p.x,p.y))continue;
+      const lit=night||((Math.floor(t/2300)+p.id)%4===0);
+      box(g,p.x,p.y,8,9,0x1f3137,.72);box(g,p.x+2,p.y+2,4,5,lit?0xf9d6a0:0x7ca29c,lit?.65:.22);
+      if(lit && !prefs.quiet && clock.phase==='night')box(g,p.x-2,p.y-2,11,12,0xe9bd7d,.06);
+      drawn++;
+    }
+  }
+  function drawWeather(sc,g,t,clock){
+    if(!prefs.weather)return;
+    const raining=/rain|storm|mưa|mua|wet/i.test(clock.weather);
+    if(lastWeather && /rain|storm|mưa|mua|wet/i.test(lastWeather) && !raining) wetUntil=t+45000;
+    lastWeather=clock.weather;
+    if(raining)wetUntil=t+6000;
+    if(t>wetUntil)return;
+    const a=raining?.14:.12*cap((wetUntil-t)/45000,0,1);
+    for(const p of puddles){if(!visible(sc,p.x,p.y))continue;
+      g.fillStyle(0x9dcace,a);g.fillEllipse(p.x,p.y,p.sz*5,p.sz*2);
+      if(!prefs.quiet && Math.floor(t/480)%3===0)ring(g,p.x,p.y,p.sz*1.8,0xd8eff3,a*1.5);
+    }
+  }
+  function drawActorIntent(sc,g,t,a,stage){
+    if(!Array.isArray(sc.npcs))return;
+    let n=0;
+    for(const npc of sc.npcs){if(n>=3)break;
+      const s=npc?.sprite;if(!s?.visible||npc.inside||!visible(sc,s.x,s.y,65))continue;
+      if(dist(s.x,s.y,a.x,a.y)>145)continue;
+      const y=s.y-39+Math.sin(t*.004+n)*2;
+      box(g,s.x-9,y-7,18,13,0x1b3540,.78);
+      for(let j=0;j<3;j++)box(g,s.x-6+j*5,y-2,3,3,stage>=3?0x9ce2af:0xe1d7ae,.9);
+      n++;
+    }
+  }
+  function drawOutdoor(sc,t){
+    if(!worldGraphics||!gameReady(sc))return;
+    worldGraphics.clear();if(!prefs.enabled||sc.inside)return;
+    const cfg=SCENES[area(sc)],a=cfg?anchorFor(sc,cfg):null,clock=timeOf(sc);
+    if(a){
+      const statusNow=status(sc), rawStep=statusNow?.step||0;
+      // Daily scene choreography is visual; quest progress is stored separately.
+      const step=statusNow?.complete?3:Math.max(rawStep,clock.phase==='morning'?1:clock.phase==='day'?2:0);
+      const bx=(Number(a.b.door)+.5)*T,by=(Number(a.b.y)+Number(a.b.h)*.67)*T;
+      if(visible(sc,bx,by)){
+        drawSignature(worldGraphics,cfg,bx,by,step,t,clock,prefs.quiet);
+        if(!prefs.quiet) drawActorIntent(sc,worldGraphics,t,a,step);
+      }
+      if(prefs.focus && !statusNow?.complete && visible(sc,a.x,a.y)){
+        ring(worldGraphics,a.x,a.y,12+Math.sin(t*.003)*2,cfg.color,.45,2);
+        box(worldGraphics,a.x-11,a.y-15,22,2,cfg.color,.65);
+      }
+    }
+    drawWindows(sc,worldGraphics,t,clock);
+    if(!prefs.quiet)drawWeather(sc,worldGraphics,t,clock);
+  }
+  function drawInterior(sc,t){
+    indoorGraphics?.clear();
+    if(!indoorGraphics||!prefs.enabled||!prefs.interior||!validRoom(sc))return;
+    const clock=timeOf(sc),all=realItems(sc),d=state(sc),lim=prefs.quiet?3:5;
+    const bx=sc.inside.objs[0].x, by=sc.inside.objs[0].y,k=sc.inside.k||1;
+    // Light from actual wall band, never drawn into physical doorway.
+    const tone=clock.phase==='evening'||clock.phase==='night'?0xf6d39a:0xe1e5cb;
+    for(const i of [0,1]){
+      const x=bx+sc.inside.spec.w*T*k*(.21+i*.58),y=by+22*k;
+      box(indoorGraphics,x-7*k,y,14*k,3*k,tone,.3);
+      if(!prefs.quiet&&prefs.particles)box(indoorGraphics,x-3*k,y+7*k,6*k,2*k,tone,.1);
+    }
+    let count=0;
+    for(const obj of all){
+      if(count>=lim)break;
+      const kind=String(obj.it.k||'');
+      if(!/table|counter|desk|bed|shelf|stove|forge|machine|screen|loom|herb|plant|clock|book|cabinet|chest|piano|organ|case|furnace|lantern|fireplace|display|workbench/i.test(kind))continue;
+      if(!visible(sc,obj.x,obj.y,65))continue;
+      const on=!!d.objects[obj.key],x=obj.x,y=obj.y;
+      const c=on?0xbce8b2:0xe7c99b,alpha=on?.8:.3;
+      box(indoorGraphics,x-8*k,y-6*k,16*k,2*k,c,alpha);
+      if(on){box(indoorGraphics,x-5*k,y-11*k,10*k,3*k,c,.52);
+        if(!prefs.quiet && prefs.particles){let dx=Math.sin(t*.002+count)*2*k;box(indoorGraphics,x+dx,y-15*k,2*k,2*k,c,.65);}}
+      count++;
+    }
+  }
+  function attach(sc){
+    if(!gameReady(sc)||sc.__lq66Attached)return;
+    current=sc;
+    // One graphical layer per environment. No fake obstacles or replacement NPC sprites.
+    worldGraphics=sc.add.graphics().setDepth(7.15);
+    indoorGraphics=sc.add.graphics().setDepth(2.15);
+    worldGraphics.__lq66=true;indoorGraphics.__lq66=true;
+    const handleUpdate=(time,delta)=>{
+      if(!gameReady(sc)||sc!==scene())return;
+      const now=Number.isFinite(time)?time:performance.now();
+      if(now-lastPulse< (prefs.quiet?190:85))return;
+      const stamp=performance.now(); lastPulse=now;
+      updateLocation(sc);drawOutdoor(sc,now);drawInterior(sc,now);
+      const drawMs=performance.now()-stamp;
+      benchmark.drawMs=benchmark.drawMs*.9+drawMs*.1;benchmark.drawCount++;
+      if(root){const active=!sc.switching&&!sc.sleeping;
+        root.hidden=!active;
+        const hint=$('lq66-near');if(hint){const near=nearTarget(sc);
+          const furn=validRoom(sc)&&!!nearestItem(sc);
+          hint.hidden=!(active&&!paneOpen()&&(near||furn));
+          hint.textContent=near?'F3 · Hoạt động vùng':furn?'F3 · Nội thất':'V66';
+        }
+      }
+      if(paneOpen() && now-lastUI>950){lastUI=now;refreshStatus();}
+    };
+    sc.events?.on?.('update',handleUpdate);
+    sc.events?.once?.('shutdown',()=>{
+      sc.events?.off?.('update',handleUpdate);
+      if(worldGraphics)worldGraphics.destroy();if(indoorGraphics)indoorGraphics.destroy();
+      worldGraphics=null;indoorGraphics=null;current=null;currentArea='';sc.__lq66Attached=false;
+    });
+    sc.__lq66Attached=true;
+  }
+  function ping(sc,frequency){
+    if(!prefs.sound)return;
+    try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+      audioCtx=audioCtx||new AC(); if(audioCtx.state==='suspended')audioCtx.resume();
+      let o=audioCtx.createOscillator(),gain=audioCtx.createGain();
+      o.type='sine';o.frequency.value=frequency;gain.gain.setValueAtTime(.018,audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.13);
+      o.connect(gain);gain.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.14);
+    }catch(_){}
+  }
+  function toast(str){if(!toastEl)return;toastEl.textContent=String(str);toastEl.hidden=false;
+    const token=++toast.token;setTimeout(()=>{if(token===toast.token)toastEl.hidden=true;},3400);
+  }
+  toast.token=0;
+
+  function focusCamera(sc){
+    if(!gameReady(sc)||sc.switching||sc.sleeping||sc.inside)return false;
+    const cfg=SCENES[area(sc)],a=cfg?anchorFor(sc,cfg):null,cam=sc.cameras?.main;
+    if(!a||!cam||typeof cam.pan!=='function')return false;
+    const here=area(sc);close();
+    try{cam.stopFollow?.();cam.pan((a.b.x+a.b.w/2)*T,(a.b.y+a.b.h/2)*T,850,'Sine.easeInOut');}
+    catch(err){console.warn('[V66] Camera',err);cam.startFollow?.(sc.player);return false;}
+    setTimeout(()=>{if(scene()===sc && area(sc)===here && !sc.switching)cam.startFollow?.(sc.player,true,.1,.1);},1600);
+    return true;
+  }
+  function paneOpen(){return !!pane&&!pane.hidden;}
+  function close(){if(pane)pane.hidden=true;}
+  function open(){if(!pane)return;redrawPanel();pane.hidden=false;}
+  function renderStatus(sc){
+    if(!gameReady(sc))return '<p>Hãy bắt đầu chơi để xem các hoạt động.</p>';
+    const id=area(sc),cfg=SCENES[id],st=cfg?status(sc):null,clock=timeOf(sc),targetNow=cfg?target(sc):null;
+    let o=`<div class="lq66-sub"><b>${html(sc.area?.name||id)}</b> · Ngày ${clock.day} · ${String(Math.floor(clock.minutes/60)).padStart(2,'0')}:${String(clock.minutes%60).padStart(2,'0')} · ${html(clock.phase)}</div>`;
+    if(cfg){
+      o+=`<h3>${html(cfg.name)}</h3><div class="lq66-progress">${[0,1,2].map(i=>`<span class="${i<st.step?'done':''}">${i+1}</span>`).join('')}</div>`;
+      o+=`<p>${html(st.complete?cfg.result:cfg.steps[st.step])}</p>`;
+      o+=`<p class="lq66-sub">${targetNow?(nearTarget(sc)?'Đã ở gần điểm hoạt động.':'Đến gần '+html(cfg.building)+' để tham gia.'):'Chưa tìm thấy vị trí tiếp cận hợp lệ của '+html(cfg.building)+'.'}</p>`;
+      o+=`<button data-v66="progress" ${st.complete||!nearTarget(sc)||!targetNow?'disabled':''}>${st.complete?'✓ Đã hoàn thành':'Thực hiện bước '+(st.step+1)}</button>`;
+      if(!sc.inside&&targetNow)o+=` <button data-v66="camera">Quan sát địa điểm</button>`;
+    }else if(TRAILS[id])o+=`<h3>${html(TRAILS[id].name)}</h3><p>Đoạn đường thám hiểm có chuyển động theo môi trường. Nhiệm vụ gốc vẫn hoạt động bình thường.</p>`;
+    else o+='<p>Không có sự kiện V66 cho khu vực này.</p>';
+    if(sc.inside){const obj=nearestItem(sc);
+      o+=`<div class="lq66-line"><h3>Tương tác nội thất</h3><p>${obj?'Đang ở gần: '+html(obj.it.k):'Hãy đến gần bàn, giường, tủ hoặc máy móc.'}</p><button data-v66="furniture" ${obj?'':'disabled'}>Dùng vật thể gần nhất</button></div>`;
+    }
+    const done=Object.values(state(sc)?.areas||{}).filter(v=>v.complete).length;
+    o+=`<p class="lq66-sub">Tiến độ V66: ${done}/8 cảnh sinh hoạt · Tiến độ được lưu cùng trò chơi.</p>`;
+    return o;
+  }
+  function settingsHTML(){return '<div class="lq66-settings">'+Object.entries({enabled:'Bật V66',quiet:'Giảm chuyển động',windows:'Cửa sổ có sinh hoạt',weather:'Dấu vết sau mưa',interior:'Hoạt cảnh trong nhà',focus:'Nhấn mạnh điểm tương tác',particles:'Hạt chuyển động nhẹ',sound:'Âm báo ngắn'}).map(([k,name])=>`<label><input type="checkbox" data-pref66="${k}" ${prefs[k]?'checked':''}/> ${name}</label>`).join('')+'</div>'}
+  function redrawPanel(){
+    if(!pane)return;
+    const el=$('lq66-content');if(el)el.innerHTML=renderStatus(scene());
+    const statuses=$('lq66-statuses');
+    if(statuses){const sc=scene(),d=state(sc);statuses.innerHTML=Object.entries(SCENES).map(([id,conf])=>{
+      const step=d?.areas?.[id]?.step||0,done=!!d?.areas?.[id]?.complete;
+      return `<div class="lq66-event"><span>${html(conf.name)}</span><strong>${done?'✓':step+'/3'}</strong></div>`;
+    }).join('');}
+    refreshStatus();
+  }
+  function refreshStatus(){
+    if(!paneOpen())return;
+    const sc=scene(),el=$('lq66-live');if(!el)return;
+    const p=gameReady(sc)?timeOf(sc):null;
+    el.textContent=p?`${html(area(sc))} · ${p.phase} · ${sc.inside?'Trong nhà':'Ngoài trời'} · Render V66 ~${benchmark.drawMs.toFixed(2)} ms/lượt`:'Chưa bắt đầu game';
+  }
+  function mount(){
+    if(root)return;
+    const css=document.createElement('style');css.id='lq66-css';css.textContent=`
+      #lq66-root[hidden],#lq66-panel[hidden],#lq66-near[hidden],#lq66-toast[hidden]{display:none!important}
+      #lq66-root{font:13px system-ui,sans-serif;color:#e5f4ee;position:fixed;z-index:9600;inset:0;pointer-events:none}
+      #lq66-open{pointer-events:auto;position:absolute;right:12px;top:108px;color:#d7f5e6;background:#163b40e8;border:1px solid #75a79d;border-radius:9px;padding:8px 10px;box-shadow:0 3px 14px #0006;cursor:pointer}
+      #lq66-near{pointer-events:auto;position:absolute;left:50%;bottom:125px;transform:translateX(-50%);padding:7px 11px;border:1px solid #a4cdad;border-radius:8px;background:#183c3ddd;color:#e9f6e5;cursor:pointer}
+      #lq66-toast{position:absolute;top:22%;left:50%;transform:translateX(-50%);max-width:440px;min-width:170px;text-align:center;background:#19393fed;border:1px solid #b6ccaa;padding:12px 16px;border-radius:9px;box-shadow:0 8px 25px #0008}
+      #lq66-panel{pointer-events:auto;position:absolute;inset:0;background:#051016bf;display:grid;place-items:center;padding:12px}
+      #lq66-panel .lq66-card{background:#132831;color:#edf6ec;width:min(620px,96vw);max-height:88vh;overflow:auto;border:1px solid #61958d;border-radius:14px;box-shadow:0 22px 65px #000b;padding:18px}
+      #lq66-panel .lq66-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
+      #lq66-panel h2{font-size:19px;margin:0;color:#f2dab0}#lq66-panel h3{font-size:15px;margin:12px 0 7px;color:#dbe5c8}
+      #lq66-panel p{line-height:1.5;margin:8px 0 11px}#lq66-panel button{font:inherit;cursor:pointer;border:1px solid #74aa9d;border-radius:8px;background:#28595c;color:#eff8ed;padding:8px 11px}
+      #lq66-panel button:disabled{opacity:.43;cursor:not-allowed}#lq66-panel button:hover:not(:disabled){background:#376f6b}
+      #lq66-panel .lq66-sub{font-size:12px;color:#adcac3}#lq66-panel .lq66-progress{display:flex;gap:7px}
+      #lq66-panel .lq66-progress span{border:1px solid #456d64;border-radius:6px;background:#24454b;color:#a6c4ba;padding:5px 16px}
+      #lq66-panel .lq66-progress span.done{background:#597c56;color:white;border-color:#8fb78c}
+      #lq66-panel .lq66-line{border-top:1px solid #34525a;margin-top:12px;padding-top:8px}
+      #lq66-panel .lq66-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
+      #lq66-panel .lq66-settings{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+      #lq66-panel label{display:flex;align-items:center;gap:8px;color:#daeee7;line-height:1.35}
+      #lq66-panel input{accent-color:#8bc1ae}
+      #lq66-panel .lq66-event{display:flex;justify-content:space-between;gap:9px;align-items:center;border-bottom:1px solid #31525b;padding:7px 0}
+      #lq66-panel .lq66-event strong{color:#bcdfaa}
+      @media(max-width:550px){#lq66-open{right:7px;top:90px;padding:6px 8px}#lq66-panel .lq66-settings{grid-template-columns:1fr}#lq66-near{bottom:96px}}
+    `;document.head.appendChild(css);
+    root=document.createElement('div');root.id='lq66-root';root.hidden=true;
+    root.innerHTML=`<button id="lq66-open" aria-label="Mở các cảnh V66" title="F3 · Living Moments">✦ V66</button><button id="lq66-near" hidden>F3 · Hoạt động</button><div id="lq66-toast" role="status" hidden></div>
+    <div id="lq66-panel" hidden><section class="lq66-card" role="dialog" aria-modal="true" aria-label="LifeQuest V66"><div class="lq66-head"><h2>V66 · Living Moments</h2><button data-v66="close">✕</button></div><p id="lq66-live" class="lq66-sub"></p>
+    <div class="lq66-tabs"><button data-v66="tab:scene">Hoạt động</button><button data-v66="tab:events">Tất cả khu vực</button><button data-v66="tab:settings">Đồ họa</button></div>
+    <div id="lq66-content"></div><div id="lq66-statuses" hidden></div><div id="lq66-preferences" hidden>${settingsHTML()}</div>
+    <p class="lq66-sub">F3 để mở; E và tất cả điều khiển cũ vẫn hoạt động. V66 không thêm vật cản.</p></section></div>`;
+    document.body.appendChild(root);pane=$('lq66-panel');widget=$('lq66-open');toastEl=$('lq66-toast');
+    widget.addEventListener('click',open);$('lq66-near').addEventListener('click',open);
+    root.addEventListener('click',e=>{
+      if(e.target===pane){close();return;}
+      const btn=e.target.closest?.('[data-v66]');if(!btn)return;
+      const a=btn.dataset.v66,sc=scene();
+      if(a==='close'){close();return;}
+      if(a==='progress'){let r=attend(sc);if(!r.ok)toast(r.reason);return;}
+      if(a==='furniture'){if(!inspectFurniture(sc))toast('Hãy tới gần một đồ nội thất.');return;}
+      if(a==='camera'){if(!focusCamera(sc))toast('Chưa thể mở camera tại đây.');return;}
+      if(a.startsWith('tab:')){
+        for(const [id,tab] of [['lq66-content','scene'],['lq66-statuses','events'],['lq66-preferences','settings']]) $(id).hidden=a!=='tab:'+tab;
+        if(a==='tab:scene')redrawPanel();return;
+      }
+    });
+    root.addEventListener('change',e=>{
+      const key=e.target?.dataset?.pref66;if(!key||!(key in prefs))return;
+      prefs[key]=!!e.target.checked;
+      try{localStorage.setItem(CONFIG_KEY,JSON.stringify(prefs));}catch(_){}
+      toast('Đã cập nhật thiết lập đồ họa V66.');
+    });
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'&&paneOpen()){e.preventDefault();e.stopImmediatePropagation();close();return;}
+      if(e.key!=='F3'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
+      if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable)return;
+      if(!gameReady(scene()))return;
+      e.preventDefault();e.stopImmediatePropagation();paneOpen()?close():open();
+    },true);
+  }
+  function init(){mount();
+    // Check for scene identity every second, no extra animation timer. Actual effects live in scene.events update.
+    setInterval(()=>{const sc=scene();if(gameReady(sc)){if(!sc.__lq66Attached)attach(sc);
+      if(root && !sc.switching)root.hidden=false;
+    }else if(root){root.hidden=true;close();}},900);
+  }
+  const test=Object.freeze({
+    timeOf, state, status, target, nearTarget, nearestItem, realItems, attend, inspectFurniture, matchBuilding,
+    uniqueCount:()=>Object.keys(SCENES).length, stats:sc=>({area:area(sc),progress:state(sc)?.areas,objects:Object.keys(state(sc)?.objects||{}).length,
+      anchor:target(sc),renderMs:benchmark.drawMs,renderCount:benchmark.drawCount}),
+    emitFrame:(g,cfg,x,y,step,now)=>drawSignature(g,cfg,x,y,step,now,{phase:'day'},false)
+  });
+  window.LQ66=Object.freeze({version:VERSION,maps:SCENES,trails:TRAILS,open,close,focusCamera,settings:()=>({...prefs}),
+    progress:()=>state(),attend:()=>attend(scene()),inspect:()=>inspectFurniture(scene()),test});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+
+</script>
+</body>
+</html>
