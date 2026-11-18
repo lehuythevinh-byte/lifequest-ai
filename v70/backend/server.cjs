@@ -1,5 +1,5 @@
 'use strict';
-// LifeQuest V70 — server-side Gemini relay. Never send GEMINI_API_KEY to the browser.
+// LifeQuest V75 — server-side Gemini relay. Never send GEMINI_API_KEY to the browser.
 // Node.js built-ins only; no packages or build tooling required.
 const http = require('node:http');
 const fs = require('node:fs');
@@ -8,9 +8,21 @@ const crypto = require('node:crypto');
 const partsDir = path.join(__dirname,'../dream-gate/parts');
 const names = fs.readdirSync(partsDir).filter(n => /^p\d{3}\.txt$/.test(n)).sort();
 if (names.length !== 53) throw new Error('Incomplete Dream Gate release');
-const game = Buffer.concat(names.map(n => fs.readFileSync(path.join(partsDir,n))));
-const gameHash = crypto.createHash('sha256').update(game).digest('hex');
-if (gameHash !== 'e38d3cc79dcab29f526ff1f22ae196623cd4c9d9814bb9d691a5ad0067267a5a') throw new Error('Dream Gate source integrity mismatch');
+const baseGame = Buffer.concat(names.map(n => fs.readFileSync(path.join(partsDir,n))));
+const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+if (hash(baseGame) !== 'e38d3cc79dcab29f526ff1f22ae196623cd4c9d9814bb9d691a5ad0067267a5a') throw new Error('Dream Gate source integrity mismatch');
+const releaseDir = path.join(__dirname, '../../v75');
+const changes = ['patch-1.json','patch-2.json','patch-3.json'].flatMap(n => JSON.parse(fs.readFileSync(path.join(releaseDir,n),'utf8')));
+const lines = baseGame.toString('utf8').split('\n');
+let upper = lines.length;
+for (const [start,end,replacement] of changes.sort((a,b) => b[0]-a[0])) {
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end > upper || !Array.isArray(replacement) || replacement.some(s => typeof s !== 'string')) throw new Error('Invalid V75 release patch');
+  lines.splice(start,end-start,...replacement);
+  upper = start;
+}
+const game = Buffer.from(lines.join('\n'),'utf8');
+const gameHash = hash(game);
+if (gameHash !== 'cfca725459d8ae14b7a78314c47ccd4c2eebf1c487e366a9e535ed3fb400692a') throw new Error('V75 source integrity mismatch');
 const ownOrigin = (process.env.RENDER_EXTERNAL_URL || 'https://lifequest-ai-v70-gemini.onrender.com').replace(/\/$/, '');
 
 const PORT = Number(process.env.PORT || 10000);
@@ -131,12 +143,12 @@ http.createServer(async (req, res) => {
   try {
     // Opening the service URL in a browser should take players to the game.
     if (['/','/index.html'].includes(req.url.split('?')[0]) && ['GET', 'HEAD'].includes(req.method)) {
-      res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Content-Length':game.length, 'Cache-Control':'no-cache', 'X-Content-Type-Options':'nosniff', 'X-LifeQuest-Release':'V70-Dream-Gate' });
+      res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Content-Length':game.length, 'Cache-Control':'no-cache', 'X-Content-Type-Options':'nosniff', 'X-LifeQuest-Release':'V75-Context-Aware-NPC' });
       res.end(req.method === 'HEAD' ? undefined : game);
       return;
     }
     if (req.url === '/health') {
-      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', release:'V70-Dream-Gate', sha256:gameHash, configured: !!GEMINI_API_KEY });
+      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', release:'V75-Context-Aware-NPC', sha256:gameHash, configured: !!GEMINI_API_KEY });
       return;
     }
     if (req.url !== '/api/gemini') {
