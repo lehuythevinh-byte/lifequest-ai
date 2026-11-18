@@ -1,0 +1,988 @@
+function normalize(v){return ALIASES[v]||v||''}
+function validSentence(text,exp){let t=String(text||'').trim();return t.length>=12&&exp.test(t)}
+function onNpc(id,text,area){const a=normalize(area),m=String(text||'').toLowerCase();if(!id||!m.trim())return [];
+ const k=a+':'+id;data.talks[k]=(data.talks[k]||0)+1;persist();
+ if(id==='librarian'&&a==='english-town'&&/(letter|history|oriaris|map|old|bell)/i.test(m)){
+ mark('oriaris-crest','Huy hiệu Oriaris','The old crest is linked to Oriaris.','Huy hiệu cổ liên quan tới Oriaris.','english-town','Hội thoại với Ms. Green');
+ }
+ if(a==='mining-town'&&/(route|station|compass|history|oriaris|brown)/i.test(m)){
+ mark('old-route','Tuyến đường cổ','Merchants and couriers used to travel between the towns.','Thương nhân và người đưa thư từng kết nối các thị trấn.','mining-town','Hội thoại ở Minerals Town');
+ }
+ if(a==='tech-co'&&/(schedule|record|route|north|problem|map)/i.test(m))mark('digital-route','Bản đồ thiếu thông tin','An old northern route is missing from the digital display.','Một tuyến đường phía bắc chưa hiện đủ trên bảng số.','tech-co','Hội thoại về thông tin tuyến đường');
+ if(a==='old-oriaris'&&validSentence(text,/\b(while|when|was|were)\b/i))mark('bell-memory','Ký ức tháp chuông','The bell connects past events to the present records.','Tháp chuông nối những sự kiện quá khứ với tư liệu hiện tại.','old-oriaris','Câu mô tả sự kiện thời gian');
+ if(a==='wish-valley'&&validSentence(text,/\b(if i were|i wish|i would|because)\b/i))mark('valley-route','Tuyến thương nhân qua thung lũng','Traders carried old keepsakes towards Vocalt.','Thương nhân từng mang vật kỷ niệm cũ về Vocalt.','wish-valley','Đối thoại bảo vệ thung lũng');
+ if(a==='vocalt-greedy-land'&&validSentence(text,/\b(i prefer|i would rather|in my opinion|i agree|we should)\b/i))mark('promise-value','Giá trị của lời hứa','A family letter carries a meaning beyond its price.','Lá thư của gia đình có giá trị hơn giá bán.','vocalt-greedy-land','Lập luận với người dân Vocalt');
+ if(a==='art-district'&&validSentence(text,/\b(agree|prefer|because|should|rather)\b/i))mark('art-voices','Bảy góc nhìn','Art can hold many different opinions without one being wrong.','Nghệ thuật đón nhận nhiều góc nhìn.','art-district','Trao đổi với nghệ sĩ');
+ return [];
+}
+function onEvent(kind,payload){if(kind==='inspect'&&payload?.area==='english-town'&&/stone|helmet|well/i.test(String(payload.object||payload.item||''))){data.events['original-relic']=true;persist()}}
+function refresh(){const sc=scene();if(!sc||!sc.area)return;let a=normalize(sc.area.id);if(!data.visits[a]){data.visits[a]=new Date().toISOString();log('travel',`Đến ${sc.area.name||a}`);}if(window.LQOldMap?.foundCount?.()>=3&&!data.events.relics){data.events.relics=true;mark('three-relics','Ba di vật của The Old Map','Stone, brass plate and helmet form a link to Oriaris.','Hòn đá, bảng đồng và mũ sắt nối tới Oriaris.','english-town','Hệ thống The Old Map đã xác nhận');}if(window.LQPast?.isDone?.()&&!data.events.pastDone){data.events.pastDone=true;mark('homecoming','Ngày Vinh Quang','The return of Tom Brown was remembered.','Tom Brown trở về trong Ngày Vinh Quang.','past','Chương quá khứ hoàn thành');} renderCompact()}
+function esc(t){return String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+let panel,tab='story';
+function status(c){let visit=!!data.visits[c.id],clues=Object.values(data.clues).filter(x=>x.area===c.id).length;return `${visit?'Đã ghé thăm':'Chưa ghé thăm'} · ${clues} manh mối`}
+function render(){if(!panel||panel.hidden)return;const content=panel.querySelector('#ll-body');if(!content)return;
+ if(tab==='story')content.innerHTML=`<p class="ll-lead">Một lá thư chưa về nhà. Hãy kết nối các dấu vết bằng những cuộc trò chuyện và hành trình thật.</p><div class="ll-grid">${CHAPTERS.map((c,i)=>`<article class="ll-ch"><small>CHAPTER ${i+1} · ${esc(c.level)} · ${esc(status(c))}</small><h3>${esc(c.title)}</h3><p>${esc(c.aim)}</p><p class="ll-note">${esc(c.hint)}</p><div class="ll-grammar">${esc(c.grammar)}</div></article>`).join('')}</div>`;
+ else if(tab==='clues')content.innerHTML=Object.keys(data.clues).length?Object.values(data.clues).map(e=>`<article class="ll-clue"><h3>✉ ${esc(e.title)}</h3><p>${esc(e.english)}</p><p>${esc(e.vietnamese)}</p><small>${esc(e.area)} · ${esc(e.origin||'')}</small></article>`).join(''):'<p>Chưa có manh mối. Hãy tiếp tục tương tác với NPC, The Old Map và các địa điểm trong game.</p>';
+ else if(tab==='journey')content.innerHTML=CHAPTERS.map((c,i)=>`<div class="ll-place">${data.visits[c.id]?'✓':'○'} ${i+1}. ${esc(c.title)} <small>${data.visits[c.id]?new Date(data.visits[c.id]).toLocaleDateString('vi-VN'):'Chưa khám phá'}</small></div>`).join('');
+ else if(tab==='skills')content.innerHTML=CHAPTERS.map(c=>`<article class="ll-clue"><strong>${esc(c.title)} · ${esc(c.level)}</strong><p>${esc(c.topic)}</p><div class="ll-grammar">${esc(c.grammar)}</div></article>`).join('');
+ else content.innerHTML=data.history.length?data.history.map(x=>`<p class="ll-place">${esc(x.message)}<small>${new Date(x.at).toLocaleString('vi-VN')}</small></p>`).join(''):'<p>Chuyến phiêu lưu sắp bắt đầu.</p>';
+ panel.querySelectorAll('[data-ll-tab]').forEach(b=>b.classList.toggle('active',b.dataset.llTab===tab));}
+function renderCompact(){const s=scene();const c=CHAPTERS.find(x=>x.id===normalize(s?.area?.id));const b=document.getElementById('ll-current');if(b&&c)b.textContent=`✉ ${c.title} · ${c.level}`;else if(b)b.textContent='✉ The Lost Letters';}
+function init(){if(document.getElementById('ll-open'))return;const css=document.createElement('style');css.textContent=`#ll-open{position:fixed;left:12px;bottom:15px;z-index:42;background:#1c293dee;color:#ffdc92;border:1px solid #7d93b2;border-radius:10px;padding:9px 12px;font:600 12px system-ui;cursor:pointer;box-shadow:0 7px 18px #0008}#ll-panel{position:fixed;inset:0;z-index:240;background:#050917bd;display:grid;place-items:center;padding:14px;color:#e8efff;font:14px system-ui}#ll-panel[hidden]{display:none!important}.ll-dialog{width:min(850px,96vw);max-height:87vh;overflow:hidden;background:#141e31;border:1px solid #7588b2;border-radius:16px;display:flex;flex-direction:column;box-shadow:0 18px 70px #000a}.ll-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#21314b}.ll-head h2{margin:0;font-size:18px;color:#ffdd91}.ll-close{background:#334564;color:white;border:1px solid #8294b1;border-radius:8px;cursor:pointer;padding:6px 11px}.ll-tabs{display:flex;overflow-x:auto;padding:9px;gap:5px;border-bottom:1px solid #39475e}.ll-tabs button{white-space:nowrap;background:#263752;color:#bfcfe6;border:1px solid #435774;border-radius:7px;padding:8px 11px;cursor:pointer}.ll-tabs button.active{background:#5a4875;color:#fff;border-color:#c1a0e9}#ll-body{padding:14px 18px;overflow:auto;line-height:1.55}.ll-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.ll-ch,.ll-clue{background:#1b2b42;border:1px solid #3a536f;border-radius:11px;padding:11px;margin-bottom:9px}.ll-ch h3,.ll-clue h3{margin:5px 0;color:#ffe0a5;font-size:15px}.ll-ch p,.ll-clue p{margin:6px 0}.ll-ch small,.ll-clue small{color:#a5bdd6}.ll-note{color:#a9c2dc;font-size:12px}.ll-grammar{border-left:3px solid #8bb7e7;background:#213752;padding:7px 9px;font-size:12px;color:#d7e9ff;margin-top:8px}.ll-place{border-bottom:1px solid #3b4b61;padding:10px 2px;margin:0}.ll-place small{display:block;color:#9eb6ce}.ll-lead{color:#ced9e8;margin:0 0 12px}@media(max-width:700px){#ll-open{bottom:74px;left:6px}#ll-body{padding:9px}.ll-dialog{max-height:90vh}.ll-head h2{font-size:15px}}`;document.head.appendChild(css);
+ const button=document.createElement('button');button.id='ll-open';button.type='button';button.innerHTML='<span id="ll-current">✉ The Lost Letters</span> · L';button.onclick=()=>open();document.body.appendChild(button);
+ panel=document.createElement('section');panel.id='ll-panel';panel.hidden=true;panel.setAttribute('role','dialog');panel.setAttribute('aria-modal','true');panel.setAttribute('aria-label','Adventure Journal');panel.innerHTML='<div class="ll-dialog"><header class="ll-head"><h2>✉ THE LOST LETTERS · Adventure Journal</h2><button class="ll-close" type="button">✕ Đóng</button></header><nav class="ll-tabs" aria-label="Journal tabs"><button data-ll-tab="story">Cốt truyện</button><button data-ll-tab="clues">Manh mối</button><button data-ll-tab="journey">Hành trình</button><button data-ll-tab="skills">Tiếng Anh</button><button data-ll-tab="history">Nhật ký</button></nav><div id="ll-body"></div></div>';document.body.appendChild(panel);panel.querySelector('.ll-close').onclick=close;panel.addEventListener('click',e=>{if(e.target===panel)close();const t=e.target.closest?.('[data-ll-tab]');if(t){tab=t.dataset.llTab;render()}});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){e.preventDefault();close()}else if((e.key==='l'||e.key==='L')&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA/.test(document.activeElement?.tagName||'')&&!document.querySelector('#chat[style*="block"]')){if(!panel.hidden)return;open();}});refresh();}
+function open(){if(!panel)return;panel.hidden=false;render();}
+function close(){if(panel)panel.hidden=true}
+window.LQStory={chapters:CHAPTERS,getCurrent(){const c=CHAPTERS.find(x=>x.id===normalize(scene()?.area?.id));return c||null},onNpc,onEvent,mark,open,close,getState:()=>JSON.parse(JSON.stringify(data)),syncExisting:refresh};
+window.LQStoryBridge={syncExisting:refresh};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+setInterval(refresh,2500);
+})();
+
+</script>
+<script id="lq-mine-intro-v50">
+/* LIFEQUEST AI V50 — MINERALS TOWN: THE LIGHT THEY LEFT BEHIND
+ * Additive, replayable, bilingual cinematic attached to the REAL mining-town map.
+ * The existing Phaser world, player position, NPC schedules, unlock logic, quests,
+ * inventory, and V49 story progress remain authoritative.
+ */
+(function(){
+'use strict';
+const AREA='mining-town';
+const KEY='lq_v50_mine_elias_intro';
+const LANTERN_KEY='lq_v50_mine_lantern_choice';
+const T=32;
+const nodes=[
+ {id:'arrival',duration:17000,location:[30.5,60.8],zoom:1.12,
+  eyebrow:'I · THE TOWN OF A THOUSAND LIGHTS',title:'Một thị trấn từ lòng núi',
+  lines:[
+   ['Narrator','The train slows as Minerals Town comes into view. A thousand little lights shine between the mountains.','Con tàu chậm lại. Minerals Town hiện ra giữa núi rừng, nơi những ngọn đèn nhỏ đang sáng lên.'],
+   ['Mr. Hale','Welcome to Minerals Town. The trains bring people here, but their stories make this place a home.','Chào mừng đến Minerals Town. Tàu đưa mọi người tới đây, còn những câu chuyện khiến nơi này trở thành mái nhà.']
+  ],art:null},
+ {id:'work',duration:22500,location:[30,24],zoom:1.06,
+  eyebrow:'II · THE PEOPLE WHO BUILT THE TOWN',title:'Những con người thầm lặng',
+  lines:[
+   ['Narrator','Beyond the station, miners return from a long day. Every stone has passed through someone’s hands.','Phía sau nhà ga, những người thợ trở về sau ngày dài. Mỗi viên đá đều đã đi qua đôi bàn tay của một người.'],
+   ['Tomas','The mine gave us work. But the people here gave us a reason to come home.','Mỏ cho chúng tôi công việc. Nhưng chính con người nơi đây mới cho chúng tôi lý do để trở về.']
+  ],art:null},
+ {id:'bench',duration:22000,location:[24.5,61],zoom:1.28,
+  eyebrow:'III · THE LITTLE LANTERN',title:'Chiếc đèn trên băng ghế',
+  lines:[
+   ['Young Girl','Do you think a light can remember someone?','Anh có nghĩ một ngọn đèn có thể nhớ một người không?'],
+   ['Mr. Hale','Maybe not. But people can. That lantern belonged to a miner named Elias.','Có lẽ không. Nhưng con người thì có. Chiếc đèn ấy từng thuộc về người thợ mỏ Elias.']
+  ],art:'bench'},
+ {id:'promise',duration:30500,location:[24.5,61],zoom:1.25,
+  eyebrow:'IV · MANY YEARS EARLIER',title:'Lời hứa bên sân ga',
+  lines:[
+   ['Little Daughter','Dad, what is the most beautiful thing in the world?','Bố ơi, điều gì đẹp nhất trên thế giới?'],
+   ['Elias','It is not gold. It is not diamonds.','Không phải vàng. Cũng không phải kim cương.'],
+   ['Elias','It is coming home… and seeing someone waiting for you.','Mà là được trở về nhà… và thấy có một người vẫn đang đợi mình.']
+  ],art:'memory'},
+ {id:'years',duration:29000,location:[24.5,61],zoom:1.24,
+  eyebrow:'V · WHEN THE YEARS PASSED',title:'Năm tháng vẫn trôi',
+  lines:[
+   ['Narrator','The seasons changed. The trains kept coming and going. Elias grew old and never returned to this station.','Mùa này nối tiếp mùa khác. Những chuyến tàu vẫn đi rồi đến. Elias đã già đi và không còn trở lại nhà ga này.'],
+   ['His Daughter','Dad, I found my way home. Just like you taught me.','Bố ơi, con đã tìm được đường về nhà. Đúng như bố từng dạy.'],
+   ['Narrator','She placed his lantern on the bench where they had once watched the trains together.','Cô đặt chiếc đèn lên băng ghế nơi hai cha con từng ngồi ngắm những đoàn tàu.']
+  ],art:'years'},
+ {id:'newlight',duration:23000,location:[30,57],zoom:1.12,
+  eyebrow:'VI · A NEW LIGHT',title:'Ánh sáng còn ở lại',
+  lines:[
+   ['Tomas','Elias believed every journey should lead to something worth protecting.','Elias tin rằng mỗi chuyến đi đều nên dẫn ta đến một điều đáng trân trọng.'],
+   ['Young Girl','Maybe your journey will help someone find their way home, too.','Biết đâu hành trình của anh cũng giúp một người khác tìm được đường về nhà.'],
+   ['Mr. Hale','Wait… that crest on the old route board. It looks like the one in your letter.','Khoan đã… huy hiệu trên bảng tuyến đường cũ. Nó giống ký hiệu trên mảnh thư của cháu.']
+  ],art:'ending'},
+ {id:'reveal',duration:11000,location:[21,51],zoom:1.2,
+  eyebrow:'CHAPTER II · THE FORGOTTEN ROUTE',title:'THE LIGHT THEY LEFT BEHIND',
+  lines:[
+   ['Narrator','Some journeys end. Their stories never do.','Có những hành trình kết thúc. Nhưng câu chuyện của chúng thì không.']
+  ],art:'title'}
+];
+const total=nodes.reduce((a,b)=>a+b.duration,0);
+let active=null, ui=null, canvas=null, ctx=null, animationId=0, watcher=null, lastScene=null;
+let lanternScene=null, lantern=null, board=null, lanternTween=null, nearObject=null, modal=null;
+let music=null, settingSound=false, forcePreview=false, booted=false;
+const read=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
+const write=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){console.warn('Mine intro save:',e)}};
+const sc=()=>window.__lifequestGetScene?.();
+const reducedMotion=()=>!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const visible=(node)=>{if(!node)return false;const cs=getComputedStyle(node);return !node.hidden&&cs.display!=='none'&&cs.visibility!=='hidden'&&cs.opacity!=='0'};
+function ready(scene){
+ if(!scene?.sys?.isActive?.()||scene.area?.id!==AREA||scene.inside||scene.switching||!scene.player?.active)return false;
+ if(scene.chat?.isOpen||scene.briefing?.isOpen||scene.helper?.isOpen||scene.settings?.isOpen||scene.journal?.isOpen||scene.quests?.isOpen)return false;
+ if(window.LQOrigins?.isPlaying?.(scene)||window.LQIntro?.isPlaying?.()||window.LQPast?.isFilming?.()||window.LQArtDistrict?.isFilming?.())return false;
+ for(const id of ['lq-title','lq-past','lq-art','lq-intro','lq-shrine','ll-panel','lq-mine-choice'])if(visible(document.getElementById(id)))return false;
+ return true;
+}
+function styles(){
+ const st=document.createElement('style');st.id='lq-mine-style';st.textContent=`
+ #lq-mine-film[hidden],#lq-mine-choice[hidden],#lq-mine-continue[hidden]{display:none!important}
+ #lq-mine-film{--gold:#f5d899;position:fixed;inset:0;z-index:350;color:#fff2d6;font-family:Georgia,'Times New Roman',serif;pointer-events:none;isolation:isolate}
+ #lq-mine-film .mine-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#0000 33%,#02091592 100%),linear-gradient(to bottom,#071322bb 0%,transparent 23%,transparent 44%,#060c18da 100%);pointer-events:none}
+ #lq-mine-film .mine-bar{position:absolute;left:0;right:0;height:clamp(36px,6.5vh,66px);background:#050b12ea;z-index:2;pointer-events:none}
+ #lq-mine-film .mine-bar.top{top:0}#lq-mine-film .mine-bar.bottom{bottom:0}
+ #lq-mine-film header{position:absolute;z-index:5;top:clamp(42px,8.6vh,90px);left:clamp(16px,5vw,90px);right:clamp(16px,5vw,90px);display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+ #lq-mine-film header .chapter{font:700 10px/1.6 system-ui,sans-serif;letter-spacing:.26em;color:#f8d08c;text-shadow:0 2px 10px #000}
+ #lq-mine-film header .name{font:700 clamp(19px,3.8vw,42px)/1.1 Georgia,serif;margin-top:3px;color:#fff6e4;text-shadow:0 3px 12px #000a}
+ #lq-mine-film header .mini-sub{font:italic 12px Georgia,serif;color:#c8bfaf;margin-top:5px}
+ #lq-mine-film .mine-tools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;pointer-events:auto}
+ #lq-mine-film button,#lq-mine-choice button,#lq-mine-replay{touch-action:manipulation;cursor:pointer;border:1px solid #a79478;background:#172236ec;color:#ffe8b1;border-radius:8px;padding:8px 11px;font:600 12px system-ui,sans-serif}
+ #lq-mine-film button:hover,#lq-mine-choice button:hover,#lq-mine-replay:hover{background:#3e3a3a;color:#fff}
+ #lq-mine-film .mine-art{position:absolute;z-index:3;left:50%;top:44.5%;transform:translate(-50%,-50%);width:min(78vw,640px,78vh);aspect-ratio:16/9;border:3px solid #a08259;box-shadow:0 15px 100px #000c,0 0 0 9px #0c1018ba;overflow:hidden;border-radius:6px;opacity:0;transition:opacity .7s ease;pointer-events:none}
+ #lq-mine-film .mine-art.open{opacity:1}
+ #lq-mine-film canvas{image-rendering:pixelated;display:block;width:100%;height:100%}
+ #lq-mine-film .mine-art:after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 80px 25px #0c0a139e;pointer-events:none}
+ #lq-mine-film .mine-dialogue{position:absolute;z-index:6;bottom:clamp(72px,12vh,140px);left:50%;transform:translateX(-50%);width:min(780px,calc(100vw - 26px));box-sizing:border-box;text-align:center;background:linear-gradient(90deg,#07111ae5,#141a26f6,#07111ae5);border-top:1px solid #dab87385;border-bottom:1px solid #dab87385;padding:13px clamp(12px,3vw,28px);box-shadow:0 10px 40px #0008;min-height:112px}
+ #lq-mine-film .mine-dialogue .who{color:#f6d38f;font:700 11px/1.3 system-ui,sans-serif;letter-spacing:.17em;text-transform:uppercase;margin-bottom:7px}
+ #lq-mine-film .mine-dialogue .en{font:italic clamp(15px,2.5vw,22px)/1.32 Georgia,serif;min-height:22px;color:#fff8ea;text-wrap:balance}
+ #lq-mine-film .mine-dialogue .vi{font:400 clamp(12px,1.7vw,15px)/1.5 system-ui,sans-serif;color:#d1dae1;margin-top:9px;text-wrap:balance}
+ #lq-mine-film .mine-foot{position:absolute;z-index:6;bottom:clamp(44px,7.6vh,83px);left:clamp(15px,5vw,80px);right:clamp(15px,5vw,80px);display:flex;align-items:center;justify-content:space-between;gap:12px;font:11px system-ui,sans-serif;color:#cbd4dd;pointer-events:auto}
+ #lq-mine-film .mine-progress{width:min(270px,28vw);height:3px;background:#6a6b7180;overflow:hidden;border-radius:3px}
+ #lq-mine-film .mine-progress>span{display:block;height:100%;background:#f6d08b;width:0;transition:width .3s}
+ #lq-mine-film .mine-foot .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+ #lq-mine-film .mine-foot button{background:#aa88512f;border-color:#d6af72;color:#fff5d9}
+ #lq-mine-film #lq-mine-next{background:#66512bdb}
+ #lq-mine-replay{position:fixed;z-index:32;left:12px;top:130px;background:#1b2e36e9;color:#ffe2a6;font-size:12px;display:none}
+ body.lq-mine-area:not(.lq-mine-playing) #lq-mine-replay{display:block}
+ body.lq-mine-playing #ll-open,body.lq-mine-playing #lq-toolbar,body.lq-mine-playing #group-btn,body.lq-mine-playing #v48-preview-nav,body.lq-mine-playing #ai-open,body.lq-mine-playing #v8-navigation,body.lq-mine-playing #lq-mine-replay,body.lq-mine-playing #lq-mine-lantern-action{visibility:hidden!important;pointer-events:none!important}
+ #lq-mine-lantern-action{position:fixed;z-index:32;left:50%;bottom:16px;transform:translateX(-50%);background:#263548e9;border:1px solid #d6aa69;border-radius:10px;color:#ffdfaa;padding:9px 15px;font:600 13px system-ui;cursor:pointer;box-shadow:0 4px 20px #000a}
+ #lq-mine-lantern-action[hidden]{display:none!important}
+ #lq-mine-choice{position:fixed;inset:0;z-index:360;display:grid;place-items:center;background:#060913dc;color:#fbf0da;font-family:system-ui;padding:15px}
+ #lq-mine-choice .choice-card{width:min(580px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#25364c,#141e2f);border:1px solid #d2b785;border-radius:15px;box-shadow:0 20px 80px #000b;padding:24px}
+ #lq-mine-choice h2{font:700 25px Georgia,serif;color:#f6d698;margin:0 0 12px}
+ #lq-mine-choice p{font-size:14px;line-height:1.6}
+ #lq-mine-choice .choice-options{display:grid;gap:11px;margin-top:18px}
+ #lq-mine-choice .choice-options button{text-align:left;padding:14px;font-size:13px;line-height:1.5}
+ #lq-mine-choice .choice-result{color:#ffe5b0;font:italic 18px/1.4 Georgia,serif;border-left:3px solid #e5c98d;padding:10px 14px;margin:16px 0}
+ #lq-mine-choice .close-option{margin-top:12px;background:#333d50}
+ @media(max-width:700px){#lq-mine-film header{top:40px;left:12px;right:12px;gap:5px}#lq-mine-film header .chapter{font-size:8px;letter-spacing:.1em}#lq-mine-film header .name{font-size:17px}#lq-mine-film header .mini-sub{display:none}#lq-mine-film .mine-tools button{font-size:10px;padding:5px 6px}#lq-mine-film .mine-art{width:min(91vw,70vh);top:41%}#lq-mine-film .mine-dialogue{bottom:82px;padding:8px 10px;min-height:95px}#lq-mine-film .mine-dialogue .en{font-size:14px}#lq-mine-film .mine-dialogue .vi{font-size:11px;margin-top:6px}#lq-mine-film .mine-foot{bottom:42px;left:12px;right:12px}#lq-mine-film .mine-foot .chapter-count{display:none}#lq-mine-film .mine-progress{width:100px}#lq-mine-replay{top:83px;left:7px}#lq-mine-film .mine-foot button{padding:7px}}
+ @media(prefers-reduced-motion:reduce){#lq-mine-film .mine-art{transition:none!important}}
+ `;document.head.appendChild(st);
+}
+function initUI(){
+ if(ui)return;
+ styles();
+ ui=document.createElement('section');ui.id='lq-mine-film';ui.hidden=true;ui.setAttribute('role','dialog');ui.setAttribute('aria-modal','true');ui.setAttribute('aria-label','Minerals Town — The Light They Left Behind');
+ ui.innerHTML='<div class="mine-vignette"></div><div class="mine-bar top"></div><div class="mine-bar bottom"></div><header><div><div class="chapter">LIFEQUEST AI · THE LOST LETTERS</div><div class="name">THE LIGHT THEY LEFT BEHIND</div><div class="mini-sub">Ánh sáng mà những người đi trước để lại</div></div><div class="mine-tools"><button type="button" id="lq-mine-audio" aria-pressed="false">♪ Bật nhạc</button><button type="button" id="lq-mine-skip">Bỏ qua ↗</button></div></header><div class="mine-art"><canvas width="320" height="180" aria-label="Ký ức dạng pixel art về chiếc đèn tại nhà ga"></canvas></div><div class="mine-dialogue" aria-live="polite"><div class="who"></div><div class="en"></div><div class="vi"></div></div><div class="mine-foot"><div><div class="chapter-count">CINEMATIC · MINERALS TOWN</div><div class="mine-progress"><span></span></div></div><div class="controls"><span class="mine-stage">1 / 7</span><button type="button" id="lq-mine-next">Tiếp cảnh →</button></div></div>';
+ document.body.appendChild(ui);
+ canvas=ui.querySelector('canvas');ctx=canvas.getContext('2d',{alpha:false});ctx.imageSmoothingEnabled=false;
+ ui.querySelector('#lq-mine-skip').onclick=()=>finish(true);
+ ui.querySelector('#lq-mine-next').onclick=next;
+ ui.querySelector('#lq-mine-audio').onclick=()=>{settingSound=!settingSound;if(settingSound)startMusic();else stopMusic();ui.querySelector('#lq-mine-audio').textContent=settingSound?'♫ Tắt nhạc':'♪ Bật nhạc';ui.querySelector('#lq-mine-audio').setAttribute('aria-pressed',String(settingSound));};
+ const replay=document.createElement('button');replay.type='button';replay.id='lq-mine-replay';replay.textContent='↻ Xem lại intro Mine';replay.onclick=()=>play(true);document.body.appendChild(replay);
+ const action=document.createElement('button');action.type='button';action.id='lq-mine-lantern-action';action.hidden=true;action.textContent='✦ E · Xem kỷ vật';action.onclick=inspectNearest;document.body.appendChild(action);
+ document.addEventListener('keydown',onKey,true);
+}
+function onKey(e){
+ if(active){if(['Escape'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();finish(true);}else if(['Enter',' '].includes(e.key)&&!e.repeat&&!e.ctrlKey&&!e.metaKey){e.preventDefault();e.stopImmediatePropagation();next();}else if(!['Tab','Shift','Control','Alt'].includes(e.key)) {e.preventDefault();e.stopImmediatePropagation();}return;}
+ if(modal&&!modal.hidden){if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeChoice();}return;}
+ if((e.key==='e'||e.key==='E')&&nearObject&&!(document.activeElement?.matches?.('input,textarea,select,[contenteditable="true"]'))){e.preventDefault();e.stopImmediatePropagation();inspectNearest();}
+}
+function startMusic(){
+ if(!active || music)return;
+ try{
+   const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;
+   const ac=new Audio();ac.resume?.();const master=ac.createGain();master.gain.value=.12;master.connect(ac.destination);
+   const tones=[220,277.18,329.63,246.94,293.66,369.99,196,246.94,329.63,220,277.18,329.63];
+   let step=0;const playNote=()=>{if(!active||ac.state==='closed')return;
+      const f=tones[step++%tones.length],now=ac.currentTime;
+      for(const [frequency,volume] of [[f,.21],[f/2,.09]]){
+       const osc=ac.createOscillator(),g=ac.createGain();osc.type='sine';osc.frequency.setValueAtTime(frequency,now);
+       g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(volume,now+.04);g.gain.exponentialRampToValueAtTime(.0001,now+1.5);
+       osc.connect(g);g.connect(master);osc.start(now);osc.stop(now+1.6);
+      }
+   };playNote();const timer=setInterval(playNote,950);music={ac,timer};
+ }catch(e){console.warn('Mine cinematic audio:',e)}
+}
+function stopMusic(){if(!music)return;clearInterval(music.timer);try{music.ac.close()}catch{}music=null;}
+function play(replay){
+ const scene=sc(); if(active||!ready(scene))return false;
+ initUI();
+ const cam=scene.cameras?.main;if(!cam)return false;
+ const kb=scene.input?.keyboard,ctrl=window.__townControls;
+ active={scene,area:AREA,cam,zoom:cam.zoom||1,keyboard:kb,keyboardWasOn:kb?.enabled??true,replay:!!replay,
+   start:performance.now(),sceneIndex:-1,stepStart:0,closed:false,position:{x:scene.player.x,y:scene.player.y},
+   playerWasVisible:scene.player.visible,playerBadgeVisible:scene.badge?.visible};
+ try{window.cancelTownAutopilot?.();}catch{}
+ if(ctrl)ctrl.up=ctrl.down=ctrl.left=ctrl.right=ctrl.actionRequested=false;
+ if(kb){kb.enabled=false;try{kb.resetKeys();}catch{}}
+ try{cam.stopFollow()}catch{}
+ document.body.classList.add('lq-mine-playing');ui.hidden=false;
+ // Mark viewed only on completion or explicit skip; interrupted films play again safely.
+ go(0);animationId=requestAnimationFrame(frame);
+ return true;
+}
+function go(n){
+ if(!active||n>=nodes.length){finish(false);return;}
+ active.sceneIndex=n;active.stepStart=performance.now();active.lastLine=-1;
+ const shot=nodes[n],a=active;
+ ui.querySelector('.mine-stage').textContent=`${n+1} / ${nodes.length}`;
+ ui.querySelector('.mine-dialogue .who').textContent='';ui.querySelector('.mine-dialogue .en').textContent='';ui.querySelector('.mine-dialogue .vi').textContent='';
+ const art=ui.querySelector('.mine-art');art.classList.toggle('open',!!shot.art);
+ if(a.scene.area?.id===AREA){
+  try{a.cam.pan((shot.location[0]+.5)*T,(shot.location[1]+.5)*T,reducedMotion()?0:2400,'Sine.easeInOut',true);
+      a.cam.zoomTo(shot.zoom,reducedMotion()?0:2100,'Sine.easeInOut',true);}catch(err){console.warn('Mine camera:',err)}
+ }
+ updateLine(0);paint(shot.art,0);
+}
+function updateLine(progress){
+ const a=active;if(!a)return;const shot=nodes[a.sceneIndex];const index=Math.max(0,Math.min(shot.lines.length-1,Math.floor(progress*shot.lines.length)));
+ if(index===a.lastLine)return;a.lastLine=index;
+ const [who,en,vi]=shot.lines[index];
+ const obj=ui.querySelector('.mine-dialogue');obj.querySelector('.who').textContent=who;
+ obj.querySelector('.en').textContent=en;obj.querySelector('.vi').textContent=vi;
+}
+function frame(now){
+ if(!active)return;
+ const a=active;
+ if(!a.scene?.sys?.isActive?.()||a.scene.area?.id!==AREA||a.scene.inside||a.scene.switching){finish(true);return;}
+ const shot=nodes[a.sceneIndex];const elapsed=Math.max(0,now-a.stepStart),progress=Math.max(0,Math.min(1,elapsed/shot.duration));
+ updateLine(progress);
+ let done=0;for(let i=0;i<a.sceneIndex;i++)done+=nodes[i].duration;
+ ui.querySelector('.mine-progress span').style.width=((done+Math.min(shot.duration,elapsed))/total*100).toFixed(2)+'%';
+ if(shot.art){if(!a.lastDraw||now-a.lastDraw>90){a.lastDraw=now;paint(shot.art,elapsed/1000)}}
+ if(elapsed>=shot.duration){go(a.sceneIndex+1);if(!active)return;}
+ animationId=requestAnimationFrame(frame);
+}
+function next(){if(active)go(active.sceneIndex+1);}
+function finish(skipped){
+ if(!active)return;
+ const a=active;active=null;cancelAnimationFrame(animationId);
+ stopMusic();if(ui){ui.hidden=true;ui.querySelector('.mine-art')?.classList.remove('open');}
+ document.body.classList.remove('lq-mine-playing');
+ const s=a.scene;
+ if(s&&s.area?.id===AREA&&s.cameras?.main){
+  try{s.cameras.main.stopFollow();s.cameras.main.zoomTo(a.zoom,250,'Sine.easeOut',true);s.cameras.main.pan(s.player.x,s.player.y,250,'Sine.easeOut',true);s.cameras.main.startFollow(s.player,true,.12,.12);}catch(e){console.warn('Mine camera restore:',e)}
+ }
+ if(a.keyboard)a.keyboard.enabled=a.keyboardWasOn;
+ // Skipping counts as viewed, never forces a clue, NPC reward, or mission completion.
+ if(s?.area?.id===AREA)write(KEY,skipped?'skipped':'seen');
+ settingSound=false;if(ui){ui.querySelector('#lq-mine-audio').textContent='♪ Bật nhạc';ui.querySelector('#lq-mine-audio').setAttribute('aria-pressed','false')}
+}
+// Custom original 320x180 pixel scene. The existing Phaser terrain is not redrawn or replaced.
+const rc=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))};
+const line=(x1,y1,x2,y2,c,w=1)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
+function person(x,y,h,coat,child=false){
+ const head=child?8:10,body=child?15:20;
+ rc(x-4,y-h+2,8,head,'#d9aa81');rc(x-5,y-h+1,10,3,'#392b31');
+ rc(x-6,y-h+head+2,12,body,coat);
+ rc(x-8,y-h+head+8,3,12,coat);rc(x+5,y-h+head+8,3,12,coat);
+ rc(x-5,y-7,4,7,'#34313d');rc(x+1,y-7,4,7,'#34313d');
+ rc(x+2,y-h+6,1,1,'#46342a');
+}
+function drawLantern(x,y,glow){
+ const r=glow?15+Math.sin(performance.now()/350)*3:11;
+ ctx.fillStyle=`rgba(255,188,78,${glow?.13:.07})`;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+ rc(x-6,y+7,12,4,'#332b2a');rc(x-5,y-7,10,15,'#594331');rc(x-3,y-5,6,10,'#ffc763');rc(x-2,y-4,4,8,'#ffe5a3');
+ rc(x-6,y-7,12,2,'#ac9164');rc(x-4,y-11,8,4,'#89745d');rc(x-1,y-13,3,3,'#d3b77d');
+}
+function paint(kind,t){
+ if(!ctx)return;
+ const sepia=kind==='memory'||kind==='years';
+ const sky=sepia?'#302c42':kind==='title'?'#111e35':'#202c4b';
+ rc(0,0,320,180,sky);
+ // pixelated mountain silhouettes and warm village windows
+ for(let x=0;x<320;x+=6){let p=58+Math.round(15*Math.sin(x/41)+11*Math.sin(x/20));rc(x,p,6,96,sepia?'#514451':'#2d4155')}
+ for(let x=0;x<320;x+=8){let p=86+Math.round(7*Math.sin(x/18));rc(x,p,8,75,sepia?'#54424b':'#2b4952')}
+ rc(0,132,320,48,sepia?'#57494a':'#39505a');
+ // windows, station and track. Low-res style persists across the flashback cuts.
+ for(let x=14;x<320;x+=36){rc(x,90,24,43,sepia?'#675451':'#506477');rc(x,83,27,8,sepia?'#45363b':'#2e3e50');rc(x+7,104,6,7,'#f1c77c');rc(x+16,104,5,7,'#bca078');}
+ rc(0,145,320,3,'#25262b');rc(0,160,320,3,'#25262b');for(let x=0;x<320;x+=16)rc(x,145,6,20,'#8b7661');
+ for(let i=0;i<25;i++){const x=(i*53+17)%320,y=10+(i*23)%80;rc(x,y,1,1,'#d5bb94')}
+ // station bench — fixed across decades
+ rc(174,128,58,5,'#705043');rc(174,136,58,6,'#7b5545');rc(178,142,4,18,'#59413b');rc(223,142,4,18,'#59413b');
+ if(kind==='bench'){drawLantern(198,119,true);person(127,152,44,'#5a6476',true);}
+ if(kind==='memory'){
+  // a father and daughter meet a train in the past
+  person(133+Math.sin(t*.4)*2,157,62,'#53626a');person(157,157,43,'#95746b',true);
+  drawLantern(143,117,true);
+  rc(30,114,58,24,'#89776b');rc(30,105,58,8,'#b4a194');for(let x=37;x<82;x+=15)rc(x,117,9,7,'#f1d8a7');rc(35,138,12,4,'#25262b');rc(76,138,12,4,'#25262b');
+ }
+ if(kind==='years'){
+  // passing seasons: drifting leaves -> rain -> pale dawn light; adult daughter + child
+  const season=Math.floor(t/7.2)%4;
+  if(season===0){for(let i=0;i<24;i++){let x=(i*43+Math.floor(t*6))%320,y=(i*19+Math.floor(t*3))%140;rc(x,y,2,2,'#c89e65')}}
+  if(season===1){for(let i=0;i<55;i++){let x=(i*47+Math.floor(t*23))%320,y=(i*29+Math.floor(t*45))%180;line(x,y,x-2,y+7,'#9eb4c5')}}
+  if(season>=2){rc(0,0,320,12,season===2?'#85808a':'#aaa4a1');for(let i=0;i<42;i++){let x=(i*31+Math.floor(t*6))%320,y=(i*51+Math.floor(t*2))%180;rc(x,y,2,2,'#d6cbc4')}}
+  person(151,157,62,'#665c6b');person(168,157,40,'#7f716a',true);drawLantern(197,119,true);
+ }
+ if(kind==='ending'){person(151,157,61,'#656071');person(164,157,40,'#8b7d71',true);drawLantern(200,119,true);rc(14,16,35,22,'#ac9a79');rc(17,19,29,16,'#e8d6aa');rc(29,21,6,12,'#755648');rc(26,26,12,4,'#78654e')}
+ if(kind==='title'){
+  drawLantern(160,88,true);
+  ctx.fillStyle='#f6d49a';ctx.textAlign='center';ctx.font='bold 13px Georgia';ctx.fillText('THE FORGOTTEN ROUTE',160,40);
+  ctx.font='italic 8px Georgia';ctx.fillText('Some journeys end. Their stories never do.',160,115);ctx.textAlign='left';
+ }
+}
+function clearLantern(){
+ if(lanternTween){try{lanternTween.stop();lanternTween.remove()}catch{}lanternTween=null;}
+ if(lantern){try{lantern.destroy()}catch{}lantern=null;}
+ if(board){try{board.destroy()}catch{}board=null;}
+ lanternScene=null;nearObject=null;
+ const b=document.getElementById('lq-mine-lantern-action');if(b)b.hidden=true;
+}
+function installLantern(s){
+ if(lanternScene===s&&lantern?.active)return;
+ clearLantern();if(!s?.add||s.area?.id!==AREA||s.inside)return;
+ lanternScene=s;
+ // This is scenery only: no collision or changed navigation graph.
+ const pos={x:24.5*T,y:60.55*T};
+ const halo=s.add.circle(0,-6,21,0xffcf7d,.12).setBlendMode?.('ADD');
+ const g=s.add.graphics();g.fillStyle(0x302b34).fillRect(-8,5,16,5);
+ g.fillStyle(0x816b50).fillRect(-6,-11,12,18);
+ g.fillStyle(0xe6b46e).fillRect(-4,-9,8,14);g.fillStyle(0xffe6a2).fillRect(-2,-8,4,12);
+ g.fillStyle(0x42343b).fillRect(-8,-12,16,3);g.fillStyle(0xc7a16d).fillRect(-5,-16,10,4);
+ const sparkle=s.add.text(0,-33,'✦',{fontSize:'12px',color:'#ffe4ac',backgroundColor:'#151c2b99',padding:{x:3,y:2}}).setOrigin(.5);
+ lantern=s.add.container(pos.x,pos.y,[halo,g,sparkle]).setDepth(14);
+ s.areaObjs?.push(lantern); // Phaser area lifecycle remains authoritative.
+ lanternTween=s.tweens.add({targets:halo,alpha:{from:.08,to:.35},scale:{from:.92,to:1.25},duration:1400,yoyo:true,repeat:-1});
+ // Real discoverable historical route notice at station forecourt, drawn in the
+ // existing Phaser world as a decorative overlay. It never changes collision.
+ const notice=s.add.graphics();
+ notice.fillStyle(0x453c33).fillRect(-21,-19,42,30).fillRect(-17,9,5,15).fillRect(12,9,5,15);
+ notice.fillStyle(0xd1bd90).fillRect(-18,-17,36,24);
+ notice.fillStyle(0x987f60).fillRect(-14,-12,28,2).fillRect(-14,-6,22,2).fillRect(-14,1,29,2);
+ notice.fillStyle(0x745c55).fillRect(8,-14,6,6);
+ notice.fillStyle(0xd1bd90).fillRect(10,-12,2,2);
+ const boardLabel=s.add.text(0,-34,'✉',{fontSize:'12px',color:'#f0cf89',backgroundColor:'#131b28b9',padding:{x:4,y:2}}).setOrigin(.5);
+ board=s.add.container(21.5*T,51.5*T,[notice,boardLabel]).setDepth(12.5);
+ s.areaObjs?.push(board);
+}
+function near(s){
+ if(!s||s.area?.id!==AREA||s.inside||s.switching||active||visible(modal)||!read(KEY))return null;
+ if(s.chat?.isOpen||s.journal?.isOpen||s.settings?.isOpen||s.helper?.isOpen||s.quests?.isOpen)return null;
+ const x=s.player?.x||0,y=s.player?.y||0;
+ const dist=(tx,ty)=>Math.hypot(x-tx*T,y-ty*T);
+ if(dist(24.5,60.55)<100)return 'lantern';
+ if(dist(21.5,51.5)<112)return 'board';
+ return null;
+}
+function inspectNearest(){
+ const s=sc();if(!s||!nearObject)return;
+ if(nearObject==='board')showBoard();else showChoice();
+}
+function showBoard(){
+ const s=sc();const first=window.LQStory?.mark?.('mine-route-board-crest','Huy hiệu tại bảng tuyến đường cổ',
+ 'The railway notice shows an old Oriaris crest. The route record may hold the missing link.',
+ 'Bảng tuyến đường cũ có huy hiệu Oriaris. Hồ sơ đường tàu có thể giữ manh mối còn thiếu.',AREA,'Khảo sát bảng thông báo tại sân ga Minerals Town');
+ showModal('<h2>✧ THE OLD ROUTE BOARD</h2><p><strong>"An old line once carried letters and supplies beyond the hills."</strong></p><p><em>"Một tuyến đường cũ từng chuyển thư và vật tư qua những ngọn đồi."</em></p><p>Trên bảng xuất hiện một huy hiệu Oriaris mờ. Đây là manh mối cho <strong>The Forgotten Route</strong>. Hãy tiếp tục hỏi người dân và xem hồ sơ tại ga.</p><button class="close-option" data-close>Đóng · Tiếp tục khám phá</button>');
+ if(first)s?.quests?.toast?.(['✉ Đã lưu manh mối: Huy hiệu tuyến đường cổ']);
+}
+function showChoice(){
+ const saved=read(LANTERN_KEY);
+ if(saved){showModal('<h2>✦ THE LITTLE LANTERN</h2><p>"The lantern is still warm."</p><p><em>"Ngọn đèn vẫn còn ấm."</em></p><div class="choice-result">'+(saved==='share'?'Some lights are meant to be shared.':'A promise lives as long as someone remembers it.')+'</div><p>Đây là kỷ vật của Elias và gia đình ông. Bạn có thể quay lại thăm nó bất cứ khi nào.</p><button class="close-option" data-close>Đóng</button>');return;}
+ showModal('<h2>✦ THE LITTLE LANTERN</h2><p><em>"The lantern is still warm."</em> — Ngọn đèn vẫn còn ấm.</p><p>Bạn muốn làm gì với chiếc đèn Elias để lại bên sân ga?</p><div class="choice-options"><button data-mine-choice="share">Để chiếc đèn lại cho những người cần ánh sáng.<br><small>Leave it here for anyone who needs the light.</small></button><button data-mine-choice="care">Giúp Tomas chăm sóc chiếc đèn mỗi lần trở lại nhà ga.<br><small>Promise to help care for the lantern.</small></button></div><button class="close-option" data-close>Quyết định sau</button>');
+}
+function showModal(html){
+ if(!modal){modal=document.createElement('div');modal.id='lq-mine-choice';modal.hidden=true;modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.addEventListener('click',e=>{if(e.target===modal||e.target.closest?.('[data-close]'))closeChoice();const b=e.target.closest?.('[data-mine-choice]');if(b)choose(b.dataset.mineChoice);});document.body.appendChild(modal);}
+ modal.innerHTML='<div class="choice-card">'+html+'</div>';modal.hidden=false;
+ const kb=sc()?.input?.keyboard;if(kb&&!modal._kb){modal._kb=kb;modal._prev=kb.enabled;kb.enabled=false;try{kb.resetKeys()}catch{}}
+}
+function closeChoice(){if(!modal)return;modal.hidden=true;if(modal._kb){modal._kb.enabled=modal._prev;modal._kb=null}}
+function choose(c){if(!['share','care'].includes(c))return;write(LANTERN_KEY,c);
+ window.LQStory?.mark?.('elias-lantern','Chiếc đèn của Elias',
+ 'Elias left a lantern at the station. His family kept the promise of remembering him.',
+ 'Chiếc đèn mỏ của Elias nhắc rằng ký ức và tình yêu thương có thể được gìn giữ qua nhiều thế hệ.',AREA,'Tương tác kỷ vật trong nhà ga');
+ showModal('<h2>✦ A PROMISE REMEMBERED</h2><div class="choice-result">'+(c==='share'?'Some lights are meant to be shared.':'A promise lives as long as someone remembers it.')+'</div><p>'+(c==='share'?'Có những ánh sáng sinh ra để được sẻ chia.':'Một lời hứa vẫn sống khi còn có người ghi nhớ.')+'</p><p>Lựa chọn đã được ghi vào nhật ký riêng, không làm khóa nhiệm vụ hoặc ảnh hưởng phần thưởng.</p><button class="close-option" data-close>Quay lại Minerals Town</button>');
+}
+function tick(){
+ const s=sc();const isMine=s?.area?.id===AREA&&!s.inside;
+ document.body.classList.toggle('lq-mine-area',!!isMine);
+ if(s!==lanternScene||!isMine){if(lantern)clearLantern();}
+ if(!isMine){lastScene=s;return;}
+ if(read(KEY)&&!lantern)installLantern(s);
+ nearObject=near(s);
+ const b=document.getElementById('lq-mine-lantern-action');
+ if(b){b.hidden=!nearObject;b.textContent=nearObject==='lantern'?'✦ E · Chiếc đèn của Elias':'✉ E · Bảng tuyến đường cũ';}
+ if(!active&&!read(KEY)&&ready(s)){
+  // Only first arrival starts the film. Wait for map transition and game title to settle.
+  if(lastScene!==s){lastScene=s;return;}
+  play(false);
+ }
+ lastScene=s;
+}
+function init(){if(booted)return;booted=true;initUI();watcher=setInterval(tick,650);tick();}
+window.LQMineIntro=Object.freeze({version:'50.0',isPlaying:(s)=>!!active&&(!s||active.scene===s),play:()=>play(false),replay:()=>play(true),skip:()=>finish(true),status:()=>({seen:read(KEY),choice:read(LANTERN_KEY),playing:!!active,beat:active?.sceneIndex??null}),inspect:inspectNearest});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+
+</script>
+
+<!-- LifeQuest V51: new optional world content, isolated from the original core. -->
+<script>
+/* LIFEQUEST AI V51 — Living Worlds, safe additive expansion.
+ * New opt-in exploration, per-region interactive activities, visible state changes,
+ * NPC conversations remembered as counts (never raw conversation content),
+ * basic stuck recovery, and map-safe world markers.
+ * Does NOT replace the original Phaser scene, quest rewards, NPC art, or routes.
+ */
+(() => {
+'use strict';
+if (window.LQ51) return;
+const VER='51.0.1', STORAGE='lifequest_v51_living_worlds_v1', TILE=32;
+const $=id=>document.getElementById(id);
+const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const scene=()=>window.__lifequestGetScene?.()||null;
+const NOW=()=>new Date().toISOString();
+const REGIONS={
+ 'english-town':{name:'English Town',tag:'A1–A2',mood:'Thành phố thức dậy',events:['Đèn quảng trường còn sáng','Cư dân bắt đầu ngày mới','Giờ sinh hoạt tại thư viện','Quảng trường lên đèn'],accent:'#91d9fa'},
+ 'mining-town':{name:'Minerals Town',tag:'A2',mood:'Những ký ức bên đường ray',events:['Đèn xưởng đêm vẫn sáng','Thợ mỏ đi vào ca sáng','Giờ kiểm tra chuyến hàng','Nhà ga chuẩn bị đón khách'],accent:'#f6ce92'},
+ 'english-town-past':{name:'Oriaris · 70 Years Ago',tag:'A2–B1',mood:'Làng của những lá thư',events:['Làng xưa còn yên giấc','Chuẩn bị thư sáng','Đường làng nhộn nhịp','Gia đình sum họp'],accent:'#efcf9e'},
+ 'oriaris-trail-1':{name:'North Trail I',tag:'A2',mood:'Con đường qua suối',events:['Rừng còn tĩnh lặng','Nắng xuyên tán lá','Người đưa thư nghỉ chân','Đom đóm đầu tối'],accent:'#bbdbac'},
+ 'oriaris-trail-2':{name:'North Trail II',tag:'A2',mood:'Dấu chân lịch sử',events:['Dòng suối êm','Sương trên lối mòn','Khám phá dấu tích','Rừng chuyển sang tối'],accent:'#b8d99e'},
+ 'oriaris-trail-3':{name:'North Trail III',tag:'A2',mood:'Khu rừng bị lãng quên',events:['Đêm rừng trầm lắng','Lối mòn đón nắng','Tiếng gió trên tán cây','Ánh sáng cuối ngày'],accent:'#b6e4c5'},
+ 'oriaris-camp':{name:'Oriaris Camp',tag:'A2–B1',mood:'Ngọn lửa cuối hành trình',events:['Trại yên tĩnh','Chuẩn bị thư từ','Các nhà thám hiểm kể chuyện','Đêm của những lời hứa'],accent:'#f3c78c'},
+ 'art-district':{name:'Art District',tag:'B1',mood:'Nghệ thuật từ nhiều góc nhìn',events:['Các xưởng chuẩn bị','Nghệ sĩ dựng tác phẩm','Sắc màu trên phố','Đèn phòng tranh bật sáng'],accent:'#efa5d0'},
+ 'tech-co':{name:'Tech-Co',tag:'B1',mood:'Một ngày làm việc',events:['Hệ thống chạy tự động','Buổi họp bắt đầu','Giờ giải quyết sự cố','Văn phòng tổng kết'],accent:'#7cdeed'},
+ 'old-oriaris':{name:'Old Oriaris',tag:'B1–B2',mood:'Kinh đô còn ghi nhớ',events:['Đèn cổng hoàng cung','Học viện mở cửa','Sân khấu và nghi lễ','Tháp chuông lên đèn'],accent:'#f1d193'},
+ 'wish-valley':{name:'Wish Valley',tag:'B2',mood:'Sự sống của Thác Mẹ',events:['Tiếng thác vang trong đêm','Người Maorai hái quả','Sinh vật tìm nơi nghỉ','Trò chuyện bên dòng Navae'],accent:'#a8edb7'},
+ 'vocalt-greedy-land':{name:'Vocalt · Greedy Land',tag:'B2–C1',mood:'Thị trấn của những giao dịch',events:['Các cửa hiệu đóng cửa','Thương nhân mở gian hàng','Khách đến từ nhiều vùng','Phiên chợ chiều rộn ràng'],accent:'#f0c787'}
+};
+function q(prompt, options, correct, explain){return {prompt,options,correct,explain};}
+const ACTIVITIES=[
+ {id:'et-board',area:'english-town',title:'Bảng cộng đồng',type:'quiz',anchor:'spawn',dx:4,dy:2,icon:'?',desc:'Giúp một người khách tìm thư viện bằng câu hỏi tiếng Anh.',tasks:[q('Bạn muốn hỏi đường đến thư viện. Câu nào lịch sự và rõ nghĩa?', ['Where the library?', 'Excuse me, where is the library?', 'You library now.'],1,'Hỏi đường lịch sự bằng “Excuse me, where is...?”')],clue:'Một ghi chú ở thư viện nhắc đến con dấu Oriaris.'},
+ {id:'et-archive',area:'english-town',title:'Hồ sơ thư viện',type:'sequence',anchor:'spawn',dx:9,dy:4,icon:'L',desc:'Tra cứu địa chỉ lá thư: hỏi thủ thư, đọc hồ sơ, đối chiếu dấu niêm phong.',tasks:[q('Bước 1: Để tìm một hồ sơ cũ, bạn nên làm gì?', ['Ask the librarian for help.', 'Hide the letter.', 'Leave the library.'],0,'Trước tiên hãy hỏi người phụ trách thư viện.'),q('Bước 2: Câu nào yêu cầu đọc đúng tài liệu?', ['May I see the old map, please?', 'I take everything.', 'The map is blue.'],0,'“May I see...?” là lời đề nghị lịch sự.')],clue:'Tài liệu cũ đã được đối chiếu với bản đồ hành trình.'},
+ {id:'mine-train',area:'mining-town',title:'Lịch trình nhà ga',type:'quiz',at:[35,52],icon:'T',desc:'Đọc dữ liệu chuyến tàu và xác định đúng giờ xuất phát.',tasks:[q('Bảng ghi “Train 12 — departure 09:30”. Câu nào đúng?', ['The train leaves at half past nine.', 'The train leaves at midnight.', 'The train arrives at half past ten.'],0,'09:30 = half past nine. Departure có nghĩa là giờ khởi hành.'),q('Một bưu kiện thiếu thông tin nơi nhận. Bạn hỏi gì?', ['Where should we send this package?', 'This package is yesterday.', 'Package no question.'],0,'Hỏi nơi nhận để kiểm chứng tuyến đường.')],clue:'Hồ sơ ga cho biết một tuyến thư từng đi qua đồi Oriaris.'},
+ {id:'mine-memory',area:'mining-town',title:'Kỷ vật của thị trấn',type:'quiz',at:[38,62],icon:'M',desc:'Khám phá cuộc sống thợ mỏ và cách người dân lưu giữ ký ức.',tasks:[q('Bạn muốn hỏi về một kỷ vật. Câu nào phù hợp?', ['Who did this lantern belong to?', 'Lantern what doing?', 'Where is my money?'],0,'“Belong to” dùng khi hỏi vật đó từng thuộc về ai.')],clue:'Người dân vẫn gìn giữ kỷ vật của những thế hệ trước. Đây là nội dung bổ sung, không thay intro Elias.'},
+ {id:'past-post',area:'english-town-past',title:'Bàn phân loại thư',type:'sequence',anchor:'spawn',dx:5,dy:3,icon:'P',desc:'Xác minh địa chỉ và sắp xếp thư trước khi giao.',tasks:[q('Câu nào diễn tả hành động đã hoàn thành hôm qua?', ['I deliver it tomorrow.', 'I delivered the letter yesterday.', 'I am delivering now.'],1,'Past simple “delivered” dùng với “yesterday”.'),q('Người nhận không có ở nhà. Bạn nên làm gì?', ['Confirm the address and return later.', 'Throw the letter away.', 'Say nothing and leave it outside.'],0,'Đưa thư cần kiểm chứng người nhận và đảm bảo thư được trao đúng nơi.')],clue:'Một lá thư trong sổ giao nhận vẫn chưa tìm thấy người nhận.'},
+ {id:'trail-one',area:'oriaris-trail-1',title:'Tấm biển gần cầu',type:'quiz',anchor:'spawn',dx:4,dy:2,icon:'1',desc:'Đọc biển chỉ đường trước khi qua suối.',tasks:[q('Biển ghi “Cross the wooden bridge, then turn left”. Bạn làm gì?', ['Cross the bridge and turn left.', 'Go back and turn right.', 'Wait at the market.'],0,'“Then” xác định hành động tiếp theo.')],clue:'Biển chỉ đường xác nhận một trong các tuyến vận chuyển thư.'},
+ {id:'trail-two',area:'oriaris-trail-2',title:'Dấu tích đường cũ',type:'quiz',anchor:'spawn',dx:3,dy:3,icon:'2',desc:'So sánh những vết mốc đường trong quá khứ.',tasks:[q('“The old path was here.” Câu này nói về điều gì?', ['A present plan.', 'A past location.', 'A future meeting.'],1,'“Was” chỉ trạng thái trong quá khứ.')],clue:'Đường cũ có dấu mốc khớp với bản ghi ở ga.'},
+ {id:'trail-three',area:'oriaris-trail-3',title:'Sổ quan sát rừng',type:'quiz',anchor:'spawn',dx:4,dy:2,icon:'3',desc:'Ghi chép dấu hiệu tự nhiên dọc tuyến hành trình.',tasks:[q('“The tree stood beside the path.” “Beside” nghĩa là gì?', ['Đối diện', 'Bên cạnh', 'Phía dưới'],1,'Beside = bên cạnh.')],clue:'Một thân cây cổ đã làm dấu chỉ đường cho người đưa thư.'},
+ {id:'past-camp',area:'oriaris-camp',title:'Bản đồ bên lửa trại',type:'sequence',anchor:'spawn',dx:4,dy:3,icon:'C',desc:'Tổng hợp ba dấu tích trước khi tiếp tục hành trình.',tasks:[q('Điều nào nên làm khi kết hợp manh mối?', ['Check the dates and places.', 'Guess without checking.', 'Ignore the letters.'],0,'Đối chiếu thời gian và địa điểm là bước hợp lý.'),q('Câu nào diễn tả một việc đã xảy ra?', ['We found the old route.', 'We will found a route.', 'We finds a route.'],0,'“Found” là quá khứ của “find”.')],clue:'Các dấu mốc trên đường được nối thành một tuyến giao thư.'},
+ {id:'art-mural',area:'art-district',title:'Tường tranh của cộng đồng',type:'mural',anchor:'spawn',dx:5,dy:3,icon:'A',desc:'Tạo một tác phẩm pixel-art với bảng màu của riêng bạn.',clue:'Tác phẩm của bạn trở thành một dấu ấn mới tại Art District.'},
+ {id:'art-council',area:'art-district',title:'Hội đồng bảy nghệ sĩ',type:'quiz',anchor:'spawn',dx:10,dy:4,icon:'7',desc:'Lắng nghe quan điểm khác nhau để đưa ra một đề xuất.',tasks:[q('Noor muốn thêm màu xanh, Ivo muốn có thêm khoảng trống. Bạn phản hồi thế nào?', ['I agree with both ideas. We should balance colour and space.', 'Only my idea matters.', 'Your ideas are bad.'],0,'Luyện nêu ý kiến và tìm sự đồng thuận.')],clue:'Bảy góc nhìn có thể tạo ra một tác phẩm chung.'},
+ {id:'tech-report',area:'tech-co',title:'Bàn hỗ trợ kỹ thuật',type:'write',at:[27,16],icon:'B',desc:'Viết một báo cáo sự cố ngắn bằng tiếng Anh.',placeholder:'First, I opened the login page. Then I pressed the button. We should check it, please.',validation:[{re:/\b(first|firstly)\b/i,fail:'Cần có First / Firstly để bắt đầu quy trình.'},{re:/\b(then|next|after that)\b/i,fail:'Cần có Then / Next để mô tả bước tiếp theo.'},{re:/\b(should|please|could)\b/i,fail:'Cần đề xuất lịch sự với should / please / could.'}],clue:'Nhóm hỗ trợ phát hiện một bảng tuyến đường còn thiếu dữ liệu.'},
+ {id:'tech-route',area:'tech-co',title:'Bảng tuyến đường số',type:'sequence',at:[27,25],icon:'D',desc:'So sánh dữ liệu hiện đại với hồ sơ ga và tư liệu cũ.',tasks:[q('Một tuyến đường không xuất hiện trên màn hình. Nên làm gì đầu tiên?', ['Compare it with verified records.', 'Delete all the data.', 'Ignore the error.'],0,'Kiểm chứng bằng hồ sơ là bước điều tra hợp lý.'),q('Bạn muốn lên lịch họp. Câu nào lịch sự?', ['Could we meet at three to review the route?', 'Meet now, no.', 'Why is map?'],0,'“Could we meet...?” phù hợp môi trường công việc.')],clue:'Bản đồ số xác nhận từng tồn tại một lối đi cũ.'},
+ {id:'royal-bell',area:'old-oriaris',title:'Tháp chuông ký ức',type:'sequence',at:[44,35],icon:'B',desc:'Ghép hai sự kiện trong quá khứ bằng while và when.',tasks:[q('Câu nào dùng quá khứ tiếp diễn đúng?', ['The bells were ringing when Tom arrived.', 'The bells ringing when Tom arrived.', 'The bells is ringing when Tom arrived.'],0,'“Were ringing” diễn tả hành động đang diễn ra khi Tom đến.'),q('Hai hành động cùng diễn ra. Câu nào hợp lý?', ['While the guests were dancing, the musicians were playing.', 'While guests dance yesterday, musicians playing.', 'When guests tomorrow, music played.'],0,'“While” nối hai hành động song song trong quá khứ.')],clue:'Tháp chuông kết nối một khoảnh khắc quá khứ với tài liệu hiện tại.'},
+ {id:'royal-register',area:'old-oriaris',title:'Sảnh tư liệu hoàng gia',type:'quiz',at:[57,39],icon:'R',desc:'Khám phá bản ghi cũ và tìm hiểu những nhân chứng lịch sử.',tasks:[q('Bạn muốn hỏi người quản lý tư liệu về sự kiện. Câu nào phù hợp?', ['What was happening when the guests arrived?', 'What happened tomorrow?', 'Where you is born?'],0,'Dùng “What was happening when...?” để hỏi sự kiện đang diễn ra.')],clue:'Một tài liệu ghi lại thời điểm đoàn khách đến cung điện.'},
+ {id:'wish-garden',area:'wish-valley',title:'Vườn phục hồi Vaela',type:'restore',at:[21,31],icon:'+',desc:'Giúp chăm sóc một khu vườn của cộng đồng Maorai.',tasks:[q('Cây cần được chăm sóc đúng cách. Nên làm gì?', ['Learn what the plant needs.', 'Take everything from the forest.', 'Block the river.'],0,'Quan sát và tìm hiểu nhu cầu của cây là bước đầu hợp lý.'),q('Bạn khuyên một người bảo vệ dòng suối như thế nào?', ['If I were you, I would keep the river clean.', 'I if was you keeping river.', 'River should I no.'],0,'Luyện dùng câu giả định để đưa lời khuyên.')],clue:'Khu vườn được chăm sóc và trở nên xanh hơn.'},
+ {id:'wish-wildlife',area:'wish-valley',title:'Sổ tay sinh vật',type:'quiz',at:[70,31],icon:'W',desc:'Quan sát hệ sinh thái và học cách mô tả thiên nhiên bằng tiếng Anh.',tasks:[q('Một con vẹt nghỉ trên cành cây. Câu nào đúng?', ['The parrot is resting on a branch.', 'Parrot rest in the sky yesterday.', 'The parrot were a trees.'],0,'“Is resting on...” mô tả điều đang xảy ra.')],clue:'Bạn đã lưu một ghi chép về sinh vật của Wish Valley.'},
+ {id:'vocalt-market',area:'vocalt-greedy-land',title:'Quầy thương lượng',type:'negotiation',at:[40,25],icon:'$',desc:'Đàm phán công bằng và giải thích giá trị thật của món đồ.',tasks:[q('Một thương nhân đưa mức giá cao. Bạn nói thế nào?', ['Could you explain why it costs so much?', 'You must give it to me.', 'Price stupid.'],0,'Hỏi lý do một cách lịch sự.'),q('Món đồ có giá trị tình cảm. Bạn nên nói gì?', ['Its story matters more than its market price.', 'Only money is important.', 'Nobody cares about it.'],0,'Phân biệt giá trị tình cảm và giá thị trường.'),q('Bạn đề xuất cách giải quyết nào?', ['Could we help return it to its family?', 'Hide it forever.', 'Never ask anyone.'],0,'Một đề nghị thiện chí là cách kết thúc cuộc thương lượng.')],clue:'Mọi người hiểu rằng giá trị của lá thư không chỉ nằm ở tiền.'},
+ {id:'vocalt-ledger',area:'vocalt-greedy-land',title:'Sổ cái của thương hội',type:'quiz',at:[70,15],icon:'G',desc:'Đọc chứng từ thương mại và tìm dấu vết một vật lưu niệm.',tasks:[q('“The item had been sold before the letter arrived.” Đây là thì gì?', ['Past perfect', 'Present simple', 'Future continuous'],0,'“Had been sold” là past perfect passive.'),q('Câu nào đưa ra quan điểm có lý do?', ['In my opinion, the letter should return to its family.', 'Letter money good.', 'I no opinion here.'],0,'Nêu quan điểm và lý do phù hợp với nhiệm vụ.')],clue:'Sổ thương hội cho biết một kỷ vật có thể thuộc về gia đình Oriaris.'}
+];
+const byId=Object.fromEntries(ACTIVITIES.map(a=>[a.id,a]));
+const PALETTES=[['#f1bf72','#e77d6b','#5f8bb1','#324962'],['#a6e2c0','#72ba9d','#f3d59b','#477d70'],['#f3acc9','#bd81bd','#8c94c5','#3d507f'],['#e1bd84','#cc8967','#858d9c','#3f566f']];
+const patterns=[
+[0,0,0,3,3,0,0,0,0,0,3,1,1,3,0,0,0,3,1,2,2,1,3,0,3,1,2,2,2,2,1,3,3,1,2,2,2,2,1,3,0,3,1,2,2,1,3,0,0,0,3,1,1,3,0,0,0,0,0,3,3,0,0,0],
+[3,3,3,3,3,3,3,3,3,0,0,3,3,0,0,3,3,0,1,1,1,1,0,3,3,0,1,2,2,1,0,3,3,0,1,2,2,1,0,3,3,0,1,1,1,1,0,3,3,0,0,3,3,0,0,3,3,3,3,3,3,3,3,3]
+];
+let data;try{data=JSON.parse(localStorage.getItem(STORAGE)||'null')}catch{}
+if(!data||data.version!==1||typeof data!=='object'||Array.isArray(data))data={version:1,done:{},stage:{},wall:{},npc:{},history:[],settings:{motion:true},pins:{}};
+for(const k of ['done','stage','wall','npc','pins'])if(!data[k]||typeof data[k]!=='object')data[k]={};
+if(!Array.isArray(data.history))data.history=[];
+if(!data.settings||typeof data.settings!=='object')data.settings={motion:true};
+function save(){try{localStorage.setItem(STORAGE,JSON.stringify(data))}catch(e){console.warn('LQ51 save unavailable',e)}}
+function history(type,desc){data.history.unshift({type,desc,when:NOW()});data.history=data.history.slice(0,65);save()}
+let root,dialog,promptBtn,openBtn,content,tab='area',active=null,focus=null,worldScene=null,worldArea='',sceneObjects=[],toastTimer=0,keyboardBefore=null;
+const anchorCache = new WeakMap();
+function playingFilm(sc){return document.body.classList.contains('lq-mine-playing')||window.LQMineIntro?.isPlaying?.(sc)||window.LQOrigins?.isPlaying?.(sc)||window.LQPast?.isFilming?.()||window.LQArtDistrict?.isFilming?.()||window.LQIntro?.isPlaying?.()||false}
+function busy(sc){if(!sc?.player||sc.switching||sc.sleeping||sc.inside||playingFilm(sc))return true;
+  if(sc.chat?.isOpen||sc.journal?.isOpen||sc.settings?.isOpen||sc.quests?.isOpen||sc.helper?.isOpen||sc.briefing?.isOpen||window.LQCareerWorlds?.isDialogOpen?.())return true;
+  if(document.querySelector('#ll-panel:not([hidden]),#v10-panel:not([hidden]),#rpg-panel:not([hidden]),#l11-shell:not([hidden]),#lq-mine-choice:not([hidden])'))return true;
+  return false;}
+function niceTime(sc){const t=Number(sc?.store?.game?.minutes??720)%1440;return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`}
+function phase(sc){const t=Number(sc?.store?.game?.minutes??720)%1440;return t<360||t>=1260?0:t<660?1:t<1020?2:3}
+function toast(msg){const e=$('lq51-toast');if(!e)return;e.textContent=msg;e.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{e.hidden=true},3300)}
+function anchor(sc,a){
+ const tile=sc?.area?.spawn||{x:Math.floor((sc?.area?.w||30)/2),y:Math.floor((sc?.area?.h||30)/2)};
+ if(sc){let cache=anchorCache.get(sc);if(!cache){cache=new Map();anchorCache.set(sc,cache)}
+   const key=`${sc.area?.id}:${a.id}`;if(cache.has(key))return cache.get(key);
+   const x=a.at?.[0]??((tile.x||10)+(a.dx||0)),y=a.at?.[1]??((tile.y||10)+(a.dy||0));
+   const point=safeTile(sc,x,y);cache.set(key,point);return point;
+ }
+ const x=a.at?.[0]??((tile.x||10)+(a.dx||0)),y=a.at?.[1]??((tile.y||10)+(a.dy||0));return safeTile(sc,x,y);
+}
+function safeTile(sc,tx,ty){if(!sc?.area)return {x:tx+.5,y:ty+.5};const ar=sc.area;
+ const good=(x,y)=>x>=2&&y>=2&&x<ar.w-2&&y<ar.h-2&&!ar.isTileBlocked?.(x,y)&&!ar.warpAt?.(x,y);
+ const bx=Math.max(2,Math.min(ar.w-3,Math.floor(tx))),by=Math.max(2,Math.min(ar.h-3,Math.floor(ty)));
+ for(let r=0;r<12;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+  if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+  const x=bx+dx,y=by+dy;if(good(x,y))return {x:x+.5,y:y+.5};
+ }
+ return {x:bx+.5,y:by+.5};}
+function spots(sc){return ACTIVITIES.filter(a=>a.area===sc?.area?.id)}
+function near(sc){if(busy(sc)||!dialog?.hidden)return null;let closest=null,dist=Infinity;
+ for(const a of spots(sc)){const p=anchor(sc,a),d=Math.hypot(sc.player.x-p.x*TILE,sc.player.y-p.y*TILE);
+  if(d<91&&d<dist){dist=d;closest=a;}}
+ return closest;}
+function renderArt(stored){const palette=PALETTES[stored?.palette??0]||PALETTES[0],shape=patterns[stored?.pattern??0]||patterns[0];return `<div class="lq51-art" role="img" aria-label="Tranh pixel-art"><div class="lq51-pixels">${shape.map(v=>`<i style="background:${palette[v]}"></i>`).join('')}</div><span>${safe(stored?.name||'A NEW MEMORY')}</span></div>`}
+function markScene(sc){if(!sc?.add)return;const id=sc.area?.id;if(!REGIONS[id])return;
+ for(const a of spots(sc)){
+  const p=anchor(sc,a),isDone=!!data.done[a.id],x=p.x*TILE,y=p.y*TILE;
+  const g=sc.add.graphics();g.fillStyle(0x071d2d,.60).fillRoundedRect(-13,-9,26,24,4);g.lineStyle(2,isDone?0x8de6b9:0xf5d28a,.96).strokeRoundedRect(-13,-9,26,24,4);
+  g.fillStyle(isDone?0x6ac4a2:0xf0c879).fillRect(-8,-4,16,13);g.fillStyle(0x233b4a).fillRect(-6,-2,12,9);
+  const glyph=sc.add.text(0,1,isDone?'✓':a.icon,{fontFamily:'monospace',fontStyle:'bold',fontSize:'13px',color:isDone?'#a3f7c4':'#ffe2a4'}).setOrigin(.5);
+  const plate=sc.add.container(x,y-15,[g,glyph]).setDepth(12.65);
+  if(typeof plate.setAlpha==='function')plate.setAlpha(.96);
+  if(!data.settings.motion){}else if(sc.tweens){const tw=sc.tweens.add({targets:plate,y:y-18,duration:1600,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});plate.once('destroy',()=>tw?.remove?.());}
+  sc.areaObjs?.push(plate);sceneObjects.push(plate);
+  if(isDone&&a.id==='wish-garden'){
+   const grass=sc.add.graphics({x,y:y+13});grass.fillStyle(0x337e51).fillRect(-16,1,32,6);grass.fillStyle(0x82d49a).fillRect(-7,-9,5,12).fillRect(4,-12,5,15);grass.fillStyle(0xe5b88b).fillRect(-10,-13,11,4).fillRect(3,-16,10,4);
+   grass.setDepth(12.3);sc.areaObjs?.push(grass);sceneObjects.push(grass);
+  }
+  if(isDone&&a.id==='art-mural'){
+   const art=sc.add.graphics({x:x+30,y:y-14});const palette=PALETTES[data.wall['art-mural']?.palette??0];const pixels=patterns[data.wall['art-mural']?.pattern??0];
+   pixels.forEach((v,i)=>{art.fillStyle(parseInt(palette[v].slice(1),16)).fillRect((i%8)*3,Math.floor(i/8)*3,3,3)});art.setDepth(12.4);sc.areaObjs?.push(art);sceneObjects.push(art);
+  }
+ }
+}
+function rebuildVisuals(sc){if(!sc?.area||busy(sc))return;for(const o of sceneObjects){try{o?.destroy?.()}catch{}}sceneObjects=[];markScene(sc);}
+function open(tabName='area',target=null){if(!dialog)return;const sc=scene();if(playingFilm(sc))return;
+ if(target&&byId[target.id]){active=target.id;tab='activity';}else tab=tabName;
+ dialog.hidden=false;root.classList.add('lq51-is-open');
+ const kb=sc?.input?.keyboard;if(kb&&keyboardBefore===null){keyboardBefore={kb,was:kb.enabled};try{kb.enabled=false;kb.resetKeys?.()}catch{}}
+ draw();$('lq51-close')?.focus();}
+function close(){if(!dialog)return;dialog.hidden=true;root.classList.remove('lq51-is-open');
+ if(keyboardBefore){try{keyboardBefore.kb.enabled=keyboardBefore.was;keyboardBefore.kb.resetKeys?.()}catch{}keyboardBefore=null}}
+function complete(a){if(data.done[a.id])return;data.done[a.id]={when:NOW(),map:a.area};history('milestone',`Hoàn tất: ${a.title}`);save();
+ const en=REGIONS[a.area];window.LQStory?.mark?.(`v51-${a.id}`,a.title, a.clue||`Completed the ${a.title} activity.`,a.clue||`Đã hoàn thành ${a.title}.`, a.area,`V51 Living Worlds · ${en?.name||a.area}`);
+ if(a.id==='art-mural'&&!data.wall[a.id])data.wall[a.id]={palette:0,pattern:0,name:'OUR SHARED CANVAS'};
+ try{rebuildVisuals(scene())}catch(e){console.warn('V51 decoration refresh',e)}
+ toast(`✓ ${a.title} · Ký ức đã được lưu`);
+}
+function activity(a){const index=Number(data.stage[a.id]||0),done=!!data.done[a.id];let body=`<div class="lq51-desc">${safe(a.desc)}</div>`;
+ if(a.type==='mural'){
+  const picked=data.wall[a.id]||{palette:0,pattern:0,name:'OUR SHARED CANVAS'};
+  body+=renderArt(picked)+`<div class="lq51-label">Chọn bảng màu</div><div class="lq51-colorchoices">${PALETTES.map((p,i)=>`<button type="button" data-action="palette" data-val="${i}" class="${picked.palette===i?'selected':''}"><span style="background:linear-gradient(90deg,${p.join(',')})"></span>Bộ ${i+1}</button>`).join('')}</div><div class="lq51-label">Chọn bố cục</div><div class="lq51-actions"><button data-action="pattern" data-val="0" class="${picked.pattern===0?'selected':''}">✦ Ký ức</button><button data-action="pattern" data-val="1" class="${picked.pattern===1?'selected':''}">◇ Cửa sổ</button></div>${done?'<p class="lq51-success">Tác phẩm đang được trưng bày trong Art District.</p>':'<button class="lq51-primary" data-action="finish-art">Hoàn thiện và trưng bày tác phẩm</button>'}`;
+ } else if(a.type==='write'){
+  body+=done?`<p class="lq51-success">✓ Báo cáo đã được nộp và lưu vào nhật ký.</p>`:`<p class="lq51-small">Viết ít nhất 30 ký tự. Bộ kiểm tra này dùng từ khóa và cấu trúc câu, không phải AI.</p><label for="lq51-writing">Báo cáo bằng tiếng Anh</label><textarea id="lq51-writing" rows="5" placeholder="${safe(a.placeholder)}"></textarea><button class="lq51-primary" data-action="submit-write">Kiểm tra báo cáo</button>`;
+ } else if(done){body+='<div class="lq51-success">✓ Hoàn tất · Bạn có thể trở lại tương tác và xem manh mối.</div>';
+ } else {
+  const task=a.tasks?.[Math.min(index,(a.tasks?.length||1)-1)];if(task){body+=`<div class="lq51-step">Bước ${index+1}/${a.tasks.length}</div><h3>${safe(task.prompt)}</h3><div class="lq51-answers">${task.options.map((t,i)=>`<button type="button" data-action="answer" data-val="${i}"><span>${String.fromCharCode(65+i)}</span> ${safe(t)}</button>`).join('')}</div>`;}
+ }
+ body+=`<p class="lq51-note">${done?'Đã lưu vào World Memories và The Lost Letters.':'Hoạt động này là nhiệm vụ bổ sung. Không khóa map hoặc thay đổi phần thưởng của nhiệm vụ gốc.'}</p>`;
+ return `<div class="lq51-back"><button data-action="back">← Về khu vực</button><span>${safe(REGIONS[a.area]?.name||a.area)}</span></div><h2>${safe(a.title)}</h2>${body}<div id="lq51-feedback" aria-live="polite"></div>`;
+}
+function sceneRegion(){return scene()?.area?.id||'english-town'}
+function renderArea(){const sc=scene(),id=sceneRegion(),r=REGIONS[id],current=spots(sc),done=current.filter(a=>data.done[a.id]).length;
+ if(!r)return `<h2>Khu vực chưa hỗ trợ</h2><p>Khu vực này vẫn dùng toàn bộ nhiệm vụ gốc. Hãy chọn bản đồ từ menu trò chơi.</p>`;
+ const event=r.events[phase(sc)]||r.events[0],day=sc?.store?.game?.day||1;
+ return `<div class="lq51-hero"><small>${safe(r.tag)} · ${safe(niceTime(sc))} · Ngày ${safe(day)}</small><h2>${safe(r.name)}</h2><p>${safe(r.mood)}</p><div class="lq51-pill">◉ ${safe(event)}</div></div><div class="lq51-sectionhead"><h3>Khám phá trong vùng</h3><span>${done}/${current.length} đã hoàn thành</span></div><div class="lq51-grid">${current.map(a=>`<article class="lq51-card"><div class="lq51-card-top"><span class="lq51-glyph">${safe(a.icon)}</span><span class="${data.done[a.id]?'lq51-done':''}">${data.done[a.id]?'✓ Đã hoàn thành':'Chưa khám phá'}</span></div><strong>${safe(a.title)}</strong><p>${safe(a.desc)}</p><div class="lq51-actions"><button data-action="activity" data-id="${safe(a.id)}">${data.done[a.id]?'Xem lại':'Khám phá'}</button><button data-action="pin" data-id="${safe(a.id)}">${focus===a.id?'Bỏ ghim':'Ghim vị trí'}</button></div></article>`).join('')}</div><div class="lq51-advice">Đi tới dấu hiệu có chữ cái trong thế giới và nhấn <b>F</b>, hoặc dùng thẻ hoạt động để tìm hiểu trước. Hoàn thành nhiệm vụ không yêu cầu di chuyển qua các vật cản.</div>`;
+}
+function renderJourney(){let finished=Object.keys(data.done).length;
+ return `<div class="lq51-hero"><small>WORLD MEMORIES</small><h2>Thế giới ghi nhớ hành trình</h2><p>${finished}/${ACTIVITIES.length} hoạt động bổ sung đã hoàn thành</p></div><div class="lq51-regions">${Object.entries(REGIONS).map(([id,r])=>{const arr=ACTIVITIES.filter(a=>a.area===id);const count=arr.filter(a=>data.done[a.id]).length;return `<div class="lq51-region"><b>${safe(r.name)}</b><span>${count}/${arr.length}</span><div class="lq51-meter"><i style="width:${arr.length?count/arr.length*100:0}%"></i></div></div>`}).join('')}</div><h3>Nhật ký gần đây</h3>${data.history.length?data.history.slice(0,18).map(x=>`<p class="lq51-timeline">${safe(x.desc)} <small>${safe(new Date(x.when).toLocaleString('vi-VN'))}</small></p>`).join(''):'<p>Hãy hoàn thành một hoạt động để bắt đầu nhật ký.</p>'}<button data-action="story">✉ Mở The Lost Letters</button>`;
+}
+function renderNPC(){let arr=Object.entries(data.npc).sort((a,b)=>(b[1].when||'').localeCompare(a[1].when||''));
+ return `<h2>NPC Memory</h2><p class="lq51-muted">Hệ thống ghi nhận số lần bạn đã trò chuyện với NPC trong từng map, không lưu nội dung hội thoại cá nhân.</p>${arr.length?arr.slice(0,35).map(([k,v])=>`<article class="lq51-npc"><div><strong>${safe(v.name)}</strong><small>${safe(REGIONS[v.area]?.name||v.area)}</small></div><span>${Number(v.count)||0} lần</span></article>`).join(''):'<p>Chưa có NPC nào được ghi nhận. Hãy bắt đầu nói chuyện với nhân vật trong game.</p>'}`;
+}
+function status(){const s=scene();const p=s?.player;return {area:s?.area?.id||null,inside:!!s?.inside,player:p?{x:Math.round(p.x),y:Math.round(p.y)}:null,blocked:!!(p&&s?.blocked?.(p.x,p.y)),switching:!!s?.switching,fps:Math.round(s?.game?.loop?.actualFps||0),ready:!!s?.area,films:playingFilm(s),markers:spots(s).length};}
+function renderDebug(){const t=status();return `<h2>Chẩn đoán & khôi phục</h2><p class="lq51-muted">Các chức năng bên dưới không thay đổi bản đồ, mở khóa hay tiến độ chính của V50.</p><div class="lq51-debug"><div>Map ID</div><b>${safe(t.area||'Chưa vào game')}</b><div>Vị trí nhân vật</div><b>${t.player?safe(`${t.player.x}, ${t.player.y}`):'Chưa sẵn sàng'}</b><div>Va chạm hiện tại</div><b>${t.blocked?'⚠ Đang bị chặn':'✓ Không bị chặn'}</b><div>FPS tham khảo</div><b>${t.fps||'—'}</b><div>Đang trong nhà</div><b>${t.inside?'Có':'Không'}</b><div>Chuyển vùng</div><b>${t.switching?'Đang thực hiện':'Bình thường'}</b></div><div class="lq51-actions"><button class="lq51-primary" data-action="unstick">Kiểm tra / thoát kẹt</button><button data-action="lowpower">${data.settings.motion?'Giảm chuyển động V51':'Bật lại chuyển động V51'}</button><button data-action="export">Xuất bản sao V51</button></div><p class="lq51-note">Nút thoát kẹt chỉ can thiệp nếu nhân vật thật sự đứng trong ô va chạm. Nếu ở trong nhà, đang chiếu phim hoặc chuyển map, thao tác bị từ chối để tránh lỗi lưu vị trí.</p><h3>Khả năng tương thích</h3><p>Phaser scene: ${!!window.__lifequestGetScene?'Có':'Chưa khởi tạo'} · Map registry: ${!!window.LQWorldMaps?'Có':'Chưa khởi tạo'} · The Lost Letters: ${!!window.LQStory?'Có':'Chưa khởi tạo'} · Intro V50: ${!!window.LQMineIntro?'Có':'Chưa khởi tạo'}</p>`;
+}
+function draw(){if(!content)return;
+ const sc=scene(),r=REGIONS[sc?.area?.id];$('lq51-context').textContent=`${r?.name||'Living Worlds'} · ${r?.tag||'RPG'}`;
+ const a=byId[active];content.innerHTML=tab==='area'?renderArea():tab==='activity'&&a?activity(a):tab==='journey'?renderJourney():tab==='npc'?renderNPC():renderDebug();
+ document.querySelectorAll('[data-lq51-tab]').forEach(x=>x.classList.toggle('selected',x.dataset.lq51Tab===tab));
+}
+function answer(i){const a=byId[active],n=Number(data.stage[a?.id]||0),t=a?.tasks?.[n];if(!t)return;
+ const note=$('lq51-feedback');if(i!==t.correct){if(note){note.className='lq51-error';note.textContent='Chưa đúng. Hãy xem kỹ tình huống và thử lại.';}return;}
+ data.stage[a.id]=n+1;save();if(n+1>=a.tasks.length){complete(a);draw();}else{draw();const next=$('lq51-feedback');if(next){next.className='lq51-success';next.textContent=t.explain;}}
+}
+function changeArt(prop,value){const a=byId[active];if(!a||a.type!=='mural')return;
+ const prev=data.wall[a.id]||{palette:0,pattern:0,name:'OUR SHARED CANVAS'};
+ if(prop==='palette'&&value>=0&&value<PALETTES.length)prev.palette=value;
+ if(prop==='pattern'&&value>=0&&value<patterns.length)prev.pattern=value;
+ data.wall[a.id]=prev;save();draw();}
+function submitWrite(){const a=byId[active],el=$('lq51-writing'),text=el?.value?.trim()||'',feedback=$('lq51-feedback');if(!a||a.type!=='write'||data.done[a.id])return;
+ if(text.length<30){feedback.className='lq51-error';feedback.textContent='Bài viết cần ít nhất 30 ký tự.';return;}
+ const issue=a.validation.find(c=>!c.re.test(text));if(issue){feedback.className='lq51-error';feedback.textContent=issue.fail;return;}
+ complete(a);draw();}
+function recover(){const s=scene(),p=s?.player;if(!s?.area||!p){toast('Cần vào game trước khi kiểm tra vị trí.');return;}
+ if(s.inside||s.switching||playingFilm(s)||s.chat?.isOpen){toast('Không thể khôi phục khi đang trong nhà, hội thoại hoặc cinematic.');return;}
+ if(!s.blocked?.(p.x,p.y)){toast('✓ Vị trí hiện tại không nằm trong vật cản.');return;}
+ try{s.unstick?.();if(s.blocked(p.x,p.y)){
+  let px=Math.floor(p.x/TILE),py=Math.floor(p.y/TILE),found=false;
+  for(let r=1;r<Math.max(s.area.w,s.area.h)&&!found;r++)for(let dy=-r;dy<=r&&!found;dy++)for(let dx=-r;dx<=r&&!found;dx++){
+   if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;const x=px+dx,y=py+dy;
+   if(x<1||y<1||x>=s.area.w-1||y>=s.area.h-1||s.area.isTileBlocked(x,y)||s.area.warpAt?.(x,y))continue;
+   const xx=(x+.5)*TILE,yy=(y+.5)*TILE;
+   if(!s.blocked(xx,yy)){p.setPosition(xx,yy);found=true;}}
+  }
+  if(!s.blocked(p.x,p.y)){s.store?.save?.();history('recovery','Khôi phục nhân vật từ vị trí bị chặn.');toast('✓ Đã chuyển đến vị trí an toàn.');}
+  else toast('Không tìm được vị trí an toàn. Hãy mở menu bản đồ để chuyển vùng.');
+ }catch(e){console.warn('LQ51 recovery',e);toast('Không thể kiểm tra vị trí trong trạng thái hiện tại.');}
+ draw();}
+function exportData(){const text=JSON.stringify({name:'LifeQuest V51 Living Worlds',version:1,exportedAt:NOW(),data},null,2);const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='LifeQuest_V51_Living_Worlds_Backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+function clickAction(action,target){switch(action){
+ case 'back':tab='area';active=null;draw();break;
+ case 'activity':active=target.dataset.id;tab='activity';draw();break;
+ case 'pin':focus=focus===target.dataset.id?null:target.dataset.id;draw();toast(focus?'Đã ghim vị trí. Hãy theo dõi khoảng cách trên HUD.':'Đã bỏ ghim.');break;
+ case 'answer':answer(Number(target.dataset.val));break;
+ case 'palette':changeArt('palette',Number(target.dataset.val));break;
+ case 'pattern':changeArt('pattern',Number(target.dataset.val));break;
+ case 'finish-art':{const a=byId[active];if(a&&!data.done[a.id])complete(a);draw();break;}
+ case 'submit-write':submitWrite();break;
+ case 'unstick':recover();break;
+ case 'lowpower':data.settings.motion=!data.settings.motion;save();rebuildVisuals(scene());draw();break;
+ case 'story':close();window.LQStory?.open?.();break;
+ case 'export':exportData();break;
+ }}
+function onNpc(id,text,area){if(!REGIONS[area]||!id||!String(text||'').trim())return;
+ const k=`${area}:${id}`,p=data.npc[k]||{name:id,area,count:0};p.count=Math.min(999,(p.count||0)+1);p.when=NOW();data.npc[k]=p;
+ if(p.count===1)history('npc',`Làm quen với ${id} tại ${REGIONS[area].name}`);else save();}
+function bridge(){const a=window.LQStory;if(a&&typeof a.onNpc==='function'&&!a.onNpc.__lq51){const prior=a.onNpc;a.onNpc=function(id,text,area){onNpc(id,text,area);return prior.apply(this,arguments)};a.onNpc.__lq51=true;}}
+function checkScene(){const s=scene(),id=s?.area?.id;
+ if(s&&s.area&&(s!==worldScene||id!==worldArea)){
+  worldScene=s;worldArea=id||'';sceneObjects=[];try{markScene(s)}catch(e){console.warn('LQ51 markers',e)}
+  // Gentle automatic spawn repair after scene transitions. Never changes walkable positions.
+  const rememberedArea=id;
+  setTimeout(()=>{try{
+    if(scene()!==s||s.area?.id!==rememberedArea||s.switching||s.inside||playingFilm(s))return;
+    if(s.player&&s.blocked?.(s.player.x,s.player.y)){
+      s.unstick?.();if(!s.blocked(s.player.x,s.player.y)){
+        s.store?.save?.();history('recovery',`Tự sửa điểm xuất hiện bị chặn ở ${REGIONS[id]?.name||id}`);
+      }
+    }
+  }catch(e){console.warn('LQ51 spawn inspection',e)}},1200);
+ }
+ const compatible=!!REGIONS[id],blocked=playingFilm(s);
+ if(openBtn){openBtn.hidden=!compatible||blocked;}if(promptBtn){const closest=compatible?near(s):null;promptBtn.hidden=!closest||blocked;promptBtn.textContent=closest?`✦ F · ${closest.title}`:'';promptBtn.dataset.spot=closest?.id||'';}
+ const pin=$('lq51-direction');if(pin){const a=byId[focus];if(!a||a.area!==id||!s?.player||s.inside){pin.hidden=true;}else{const p=anchor(s,a);const dx=p.x*TILE-s.player.x,dy=p.y*TILE-s.player.y,d=Math.hypot(dx,dy);const dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'Đông':'Tây'):(dy>0?'Nam':'Bắc');pin.hidden=false;pin.textContent=`◎ ${a.title} · ${Math.round(d/TILE)} ô · ${dir}`;}}
+ if(dialog&&!dialog.hidden){const lab=$('lq51-context');if(lab&&id&&rLabel(id)!==lab.dataset.lastArea){lab.dataset.lastArea=rLabel(id);draw();}}
+ bridge();}
+function rLabel(id){return id||''}
+function init(){if($('lq51-open'))return;
+ root=document.createElement('div');root.id='lq51-root';root.innerHTML=`<button id="lq51-open" type="button" aria-label="Mở Living Worlds">✦ Living Worlds <small>V51</small></button><button id="lq51-prompt" type="button" hidden></button><div id="lq51-direction" hidden></div><div id="lq51-toast" hidden role="status"></div><section id="lq51-dialog" role="dialog" aria-modal="true" aria-label="Living Worlds" hidden><div class="lq51-panel"><header class="lq51-header"><div><small>WORLD EXPANSION · VERSION 51</small><h2>✦ Living Worlds</h2><span id="lq51-context">LifeQuest AI</span></div><button id="lq51-close" type="button" aria-label="Đóng">✕</button></header><nav class="lq51-tabs"><button data-lq51-tab="area">Khu vực</button><button data-lq51-tab="journey">Hành trình</button><button data-lq51-tab="npc">NPC Memory</button><button data-lq51-tab="debug">Sửa lỗi</button></nav><div id="lq51-content"></div><footer>Phím <b>F</b>: tương tác V51 · <b>Esc</b>: đóng · Nhiệm vụ cốt truyện và nghệ thuật gốc được giữ nguyên</footer></div></section>`;
+ document.body.appendChild(root);openBtn=$('lq51-open');promptBtn=$('lq51-prompt');dialog=$('lq51-dialog');content=$('lq51-content');
+ openBtn.addEventListener('click',()=>open('area'));
+ promptBtn.addEventListener('click',()=>{const a=byId[promptBtn.dataset.spot];if(a)open('activity',a)});
+ $('lq51-close').addEventListener('click',close);
+ dialog.addEventListener('click',e=>{if(e.target===dialog)close();const b=e.target.closest?.('[data-lq51-tab]');if(b){tab=b.dataset.lq51Tab;active=null;draw();}const x=e.target.closest?.('[data-action]');if(x)clickAction(x.dataset.action,x)});
+ document.addEventListener('keydown',e=>{
+  if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||'')||document.activeElement?.isContentEditable)return;
+  if(e.key==='Escape'&&!dialog.hidden){e.preventDefault();e.stopImmediatePropagation();close();return;}
+  if((e.key==='f'||e.key==='F')&&dialog.hidden){const a=near(scene());if(a){e.preventDefault();e.stopImmediatePropagation();open('activity',a);}}
+ },true);
+ setInterval(checkScene,420);bridge();checkScene();
+}
+window.LQ51=Object.freeze({version:VER,regions:REGIONS,activities:ACTIVITIES.map(a=>({id:a.id,area:a.area,title:a.title,type:a.type})),open,close,status,refresh:checkScene,completeCount:()=>Object.keys(data.done).length,state:()=>JSON.parse(JSON.stringify(data)),recover});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+
+</script>
+
+<!-- V52 gameplay runtime -->
+<script>
+/* LIFEQUEST AI V52 · THE LIVING WORLD ENGINE
+   Additive gameplay on V51: real world props, timed gatherings, NPC choices,
+   collision-aware movement, interactive interiors, animal life and persistent changes.
+   All ambient people use original LifeQuest sprites; original maps are untouched.
+*/
+(()=>{'use strict';
+if(window.LQ52)return;
+const VERSION='52.1', KEY='lifequest_v52_world_state_v1', T=32;
+const $=id=>document.getElementById(id), clean=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MAPS={
+ 'english-town':{name:'English Town',project:'Quảng trường tri thức',props:[['notice','Bảng tình nguyện','board',3,2],['library','Hộp thư thư viện','letter',7,3]],animals:['cat','bird'],event:'Phiên đọc sách ở quảng trường'},
+ 'mining-town':{name:'Minerals Town',project:'Thắp sáng đường ga',props:[['platform','Bảng chuyến tàu','station',3,2],['workshop','Máy đánh bóng tinh thể','machine',7,3]],animals:['bat','cat'],event:'Ngày hội thợ mỏ & triển lãm đá'},
+ 'english-town-past':{name:'Oriaris 70 năm trước',project:'Tuyến thư của làng',props:[['letters','Túi thư của Tom Brown','letter',3,2],['well','Giếng làng','well',7,3]],animals:['bird','rabbit'],event:'Buổi hội làng xưa'},
+ 'oriaris-trail-1':{name:'North Trail I',project:'Phục hồi biển chỉ đường',props:[['sign','Biển đường qua cầu','sign',3,2],['bridge','Trụ cầu cũ','bridge',7,3]],animals:['rabbit','bird'],event:'Đoàn đưa thư qua suối'},
+ 'oriaris-trail-2':{name:'North Trail II',project:'Tuyến đường tìm lại',props:[['marker','Cột mốc trên đường','sign',3,2],['plant','Bụi cây ven suối','garden',7,3]],animals:['rabbit','cat'],event:'Đoàn khảo sát đường mòn'},
+ 'oriaris-trail-3':{name:'North Trail III',project:'Lối mòn được bảo vệ',props:[['tree','Cây cổ thụ','tree',3,2],['journal','Sổ ghi chép rừng','letter',7,3]],animals:['bird','rabbit'],event:'Ngày quan sát thiên nhiên'},
+ 'oriaris-camp':{name:'Oriaris Camp',project:'Trại lửa đoàn kết',props:[['campfire','Bếp lửa trại','fire',3,2],['map','Bàn bản đồ','desk',7,3]],animals:['bird','rabbit'],event:'Chuyện kể bên lửa trại'},
+ 'art-district':{name:'Art District',project:'Góc triển lãm cộng đồng',props:[['palette','Bàn vẽ ngoài trời','paint',3,2],['gallery','Giá tranh cộng đồng','frame',7,3]],animals:['cat','bird'],event:'Buổi biểu diễn nghệ thuật'},
+ 'tech-co':{name:'Tech-Co',project:'Trung tâm dữ liệu phục hồi',props:[['terminal','Bàn điều khiển đô thị','computer',3,2],['signal','Trạm năng lượng sạch','machine',7,3]],animals:['bird','cat'],event:'Ngày công nghệ mở'},
+ 'old-oriaris':{name:'Old Oriaris',project:'Tháp chuông ký ức',props:[['archive','Bảng lưu trữ hoàng gia','letter',3,2],['bell','Cơ cấu tháp chuông','bell',7,3]],animals:['bird','cat'],event:'Lễ hội âm nhạc hoàng gia'},
+ 'wish-valley':{name:'Wish Valley',project:'Khu vườn dưới Thác Mẹ',props:[['sapling','Mầm cây Maorai','garden',3,2],['altar','Đài nước Aylara','water',7,3]],animals:['parrot','wildcat','spotted'],event:'Ngày hội tri ân Thác Mẹ'},
+ 'vocalt-greedy-land':{name:'Vocalt Greedy Land',project:'Chợ thương nhân đáng tin cậy',props:[['bazaar','Sạp trao đổi','shop',3,2],['ledger','Sổ giao dịch','ledger',7,3]],animals:['cat','bird'],event:'Phiên chợ thương nhân bốn phương'}
+};
+const SPECIES={
+ cat:{name:'Mèo phố',body:0xc4a28a,light:0xefcfaa,accent:0x6b544c,sound:380},
+ wildcat:{name:'Mèo rừng',body:0x967554,light:0xe4b781,accent:0x45342c,sound:290},
+ spotted:{name:'Chó đốm Maorai',body:0x987f55,light:0xe4c59a,accent:0x4d3b34,sound:310},
+ parrot:{name:'Vẹt thung lũng',body:0x5aad7b,light:0xeec76b,accent:0x367f97,sound:760},
+ bird:{name:'Chim sẻ',body:0x8c6a57,light:0xd6b197,accent:0x4f413a,sound:700},
+ rabbit:{name:'Thỏ rừng',body:0xaaa5a1,light:0xf3e7db,accent:0x6e6a69,sound:550},
+ bat:{name:'Dơi núi',body:0x68576c,light:0xa48ab9,accent:0x332a42,sound:830}
+};
+let state;try{state=JSON.parse(localStorage.getItem(KEY)||'null')}catch{}
+if(!state||state.v!==1||typeof state!=='object')state={v:1,actions:{},projects:{},npcChoices:{},interior:{},observations:{},inventory:{books:0,samples:0,refined:0,meals:0},history:[],settings:{sound:true,ambient:true,lowMotion:false}};
+for(const k of ['actions','projects','npcChoices','interior','observations'])if(!state[k]||typeof state[k]!=='object')state[k]={};
+if(!Array.isArray(state.history))state.history=[];
+if(!state.inventory||typeof state.inventory!=='object')state.inventory={books:0,samples:0,refined:0,meals:0};
+if(!state.settings)state.settings={sound:true,ambient:true,lowMotion:false};
+const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('[V52] save unavailable',e)}};
+function record(label){state.history.unshift({label,at:new Date().toISOString()});state.history=state.history.slice(0,100);store();}
+const scene=()=>window.__lifequestGetScene?.(), goodScene=sc=>!!(sc?.area?.id&&MAPS[sc.area.id]&&sc.player&&sc.add),
+ phase=sc=>{const m=Number(sc?.store?.game?.minutes??720)%1440;return m>=21*60||m<6*60?'night':m<11*60?'morning':m<16*60?'day':'evening'},
+ weather=()=>/rain|mưa/i.test($('v8-weather-condition')?.textContent||'')?'rain':/mist|sương/i.test($('v8-weather-condition')?.textContent||'')?'mist':'clear';
+let active=null,root,dialog,body,prompt,chip,selected=null,keyboardSave=null,lastArea='',frameNo=0;
+const busy=sc=>sc?.sleeping||sc?.switching||document.body.classList.contains('lq-mine-playing')||
+ window.LQMineIntro?.isPlaying?.(sc)||window.LQOrigins?.isPlaying?.(sc)||window.LQPast?.isFilming?.()||window.LQCareerWorlds?.isDialogOpen?.()||
+ sc?.chat?.isOpen||sc?.journal?.isOpen||sc?.settings?.isOpen||sc?.quests?.isOpen||sc?.helper?.isOpen||sc?.briefing?.isOpen||
+ !!document.querySelector('#lq51-dialog:not([hidden]),#ll-panel:not([hidden]),#l11-shell:not([hidden]),#rpg-panel:not([hidden]),#v10-panel:not([hidden])');
+function notify(msg){const t=$('lq52-toast');if(!t)return;t.textContent=msg;t.hidden=false;clearTimeout(notify.timer);notify.timer=setTimeout(()=>t.hidden=true,3200);}
+function sound(note=440){if(!state.settings.sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const ctx=window.__lq52audio||(window.__lq52audio=new C());if(ctx.state==='suspended')ctx.resume();const o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=note;g.gain.setValueAtTime(.0001,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.024,ctx.currentTime+.025);g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.15);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.16)}catch{}}
+function openTile(sc,tx,ty){if(!goodScene(sc))return false;const a=sc.area;
+ if(tx<2||ty<2||tx>=a.w-2||ty>=a.h-2||a.isTileBlocked?.(tx,ty)||a.warpAt?.(tx,ty))return false;
+ return !sc.blocked?.((tx+.5)*T,(ty+.5)*T);
+}
+function safeTile(sc,tx,ty,max=18){
+ for(let r=0;r<=max;r++)for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){
+  if(Math.max(Math.abs(x),Math.abs(y))!==r)continue;
+  const px=Math.floor(tx)+x,py=Math.floor(ty)+y;
+  if(openTile(sc,px,py))return {tx:px,ty:py,x:(px+.5)*T,y:(py+.5)*T};
+ }
+ return null;
+}
+// Four-way shortest path on the same blocked() grid as player movement.
+// FIFO BFS with capped work avoids per-frame heap sort cost on large 88x60 regions.
+function route(sc,start,end,limit=3200){if(!goodScene(sc)||!start||!end)return [];
+ const sx=Math.floor(start.x/T),sy=Math.floor(start.y/T),ex=Math.floor(end.x/T),ey=Math.floor(end.y/T);
+ if(!openTile(sc,ex,ey))return [];if(sx===ex&&sy===ey)return [{x:end.x,y:end.y}];
+ const w=sc.area.w,key=(x,y)=>y*w+x,origin=key(sx,sy),goal=key(ex,ey);
+ const queue=[origin],back=new Map([[origin,-1]]);let head=0,step=0;
+ while(head<queue.length&&step++<limit){const k=queue[head++];if(k===goal){const nodes=[];let p=k;while(p!==origin&&nodes.length<140){nodes.push({x:((p%w)+.5)*T,y:(Math.floor(p/w)+.5)*T});p=back.get(p);if(p===undefined)return []}return nodes.reverse()}
+  const x=k%w,y=Math.floor(k/w);
+  for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,kk=key(nx,ny);if(back.has(kk)||!openTile(sc,nx,ny))continue;back.set(kk,k);queue.push(kk)}
+ }
+ return [];
+}
+function propPosition(sc,index){const spawn=sc.area.spawn||{x:Math.floor(sc.area.w/2),y:Math.floor(sc.area.h/2)};
+ const shift=[[3,2],[7,4],[5,8],[9,8]][index%4];let p=safeTile(sc,spawn.x+shift[0],spawn.y+shift[1],12);
+ // Avoid a marker on unreachable side of a river, building or wall.
+ if(p&&route(sc,{x:(spawn.x+.5)*T,y:(spawn.y+.5)*T},p,2500).length===0){p=safeTile(sc,spawn.x+2+index,spawn.y+1,5)||p}
+ return p;
+}
+function gfxProp(sc,p,kind,complete=false){const g=sc.add.graphics({x:p.x,y:p.y});const base=complete?0x8cdbb3:0xe7ba7d;
+ g.fillStyle(0x071d2c,.65).fillRect(-16,6,32,6);g.lineStyle(1,0x12283c,.9);
+ const box=(x,y,w,h,c)=>g.fillStyle(c).fillRect(x,y,w,h);
+ if(kind==='garden'||kind==='tree'){box(-11,2,22,7,0x456e4a);for(let i=0;i<4+(complete?4:0);i++){const x=-10+i*3,y=-5-(i%3)*2;box(x, y,2,11,0x569c61);box(x-2,y,5,4,i%2?0xffd08a:0x91d9b0)}if(kind==='tree'){box(-3,-15,7,15,0x765944);box(-15,-28,28,13,0x43896b);box(-11,-33,20,9,0x76b786)}}
+ else if(kind==='fire'){box(-12,2,24,5,0x725447);box(-6,-9,12,15,0xeaa858);box(-3,-15,6,10,0xffdf85)}
+ else if(kind==='water'){box(-13,2,26,5,0x639e9b);box(-9,-3,18,6,0x7ecce3);box(-3,-16,6,13,0xa2d9e4)}
+ else if(kind==='machine'||kind==='computer'){box(-15,-19,30,25,0x415d6c);box(-11,-15,22,15,0x68b4ba);box(-8,-12,16,4,base);box(-4,6,8,7,0x7898a4);box(10,-6,3,3,complete?0x90f0b7:0xe4b461)}
+ else if(kind==='shop'){box(-16,-12,32,6,0xd78467);box(-12,-6,24,13,0xa78660);box(-7,-3,5,5,base);box(4,-3,5,5,0x8cc7ac)}
+ else if(kind==='bell'){box(-13,-8,26,15,0x526775);box(-8,-26,16,20,0xdbb879);box(-3,-6,6,5,0x9b824e)}
+ else if(kind==='paint'||kind==='frame'){box(-15,-18,30,24,0x97755a);box(-12,-15,24,18,0xebe3d0);box(-10,-13,9,8,0xe58d97);box(1,-13,9,8,0x74b5af);box(-3,-1,9,3,0xe4bf7c)}
+ else if(kind==='station'){box(-16,-18,32,24,0x52647f);box(-12,-14,24,14,0x1f3349);box(-9,-10,18,3,0x91d6c7);box(-9,-4,13,2,base)}
+ else {box(-14,-15,28,22,kind==='letter'?0x926b57:0x6b7f8c);box(-10,-12,20,14,0xd8c9a5);box(-8,-8,16,2,0x997e64);box(-8,-3,11,2,base)}
+ g.setDepth(12.3);return g;
+}
+function applyProject(sc,area= sc.area.id){if(!state.projects[area]||active?.projectDrawn)return;
+ const b=propPosition(sc,2);if(!b)return;const g=sc.add.graphics({x:b.x,y:b.y});
+ g.fillStyle(0x275949,.9).fillRect(-19,5,38,10);g.fillStyle(0xf3d18e).fillRect(-14,-16,28,22);
+ g.fillStyle(0x498977).fillRect(-11,-13,22,16);for(let j=0;j<4;j++){g.fillStyle(j%2?0xd4a762:0xb8e8c6).fillRect(-9+j*5,-10,4,10)}
+ g.lineStyle(1,0xf6d69e).strokeRect(-14,-16,28,22);g.setDepth(12.05);active.objs.push(g);
+ const label=sc.add.text(b.x,b.y-22,'✦ '+MAPS[area].project,{fontFamily:'monospace',fontSize:'10px',color:'#b6f9d2',backgroundColor:'#17362bcc',padding:{x:4,y:3}}).setOrigin(.5).setDepth(12.5);
+ active.objs.push(label);active.projectDrawn=true;
+}
+function clearActive(){if(!active)return;for(const obj of [...active.objs,...active.eventObjs])try{obj?.destroy?.()}catch{};active=null;}
+function addProp(sc,id,index){const meta=MAPS[sc.area.id],def=meta.props[index];const [pId,title,kind]=def,pos=propPosition(sc,index);if(!pos)return;
+ const complete=!!state.actions[sc.area.id+':'+pId];const gr=gfxProp(sc,pos,kind,complete);
+ const label=sc.add.text(pos.x,pos.y-37,(complete?'✓ ':'◆ ')+title,{fontFamily:'monospace',fontSize:'10px',color:complete?'#a7efc5':'#ffe5b5',backgroundColor:'#152b3acc',padding:{x:3,y:3}}).setOrigin(.5).setDepth(12.6);
+ const hit=sc.add.rectangle(pos.x,pos.y-8,34,42,0xffffff,0).setDepth(12.65).setInteractive({useHandCursor:true});
+ hit.on('pointerdown',()=>{if(Math.hypot(sc.player.x-pos.x,sc.player.y-pos.y)<110)openProp(sc,{id:pId,title,kind,pos});else notify('Hãy đến gần vật thể rồi nhấn R hoặc E.')});
+ active.objs.push(gr,label,hit);active.props.push({id:pId,title,kind,pos,objects:[gr,label,hit],graphic:gr,label});
+}
+function eventKey(sc){const p=phase(sc);return `${sc.area.id}:${sc.store?.game?.day||1}:${p}`;}
+function eventActive(sc){const m=Number(sc.store?.game?.minutes??720);return m>=8*60&&m<20*60;}
+function drawEvent(sc){for(const o of active.eventObjs)try{o.destroy()}catch{}active.eventObjs=[];active.event=eventKey(sc);active.eventName='';
+ if(!state.settings.ambient||!eventActive(sc))return;
+ const p=propPosition(sc,3)||propPosition(sc,2);if(!p)return;
+ const type=((Number(sc.store?.game?.day||1)+Object.keys(MAPS).indexOf(sc.area.id))%3);
+ const name=type===0?'Lễ hội địa phương':type===1?'Cuộc gặp gỡ du khách':MAPS[sc.area.id].event;
+ const g=sc.add.graphics({x:p.x,y:p.y});g.fillStyle(0x526d78).fillRect(-25,-6,50,17);g.fillStyle(type===0?0xe1a477:type===1?0x9ec5ad:0xa2a6d6).fillRect(-28,-18,56,10);
+ for(let x=-23;x<25;x+=10){g.fillStyle(x%20?0xf2d79a:0x6da5ad).fillRect(x,-18,7,10)}g.setDepth(9.3);active.eventObjs.push(g);
+ const label=sc.add.text(p.x,p.y-33,'♫ '+name,{fontFamily:'monospace',fontSize:'10px',color:'#ffdfa3',backgroundColor:'#18364acc',padding:{x:4,y:3}}).setOrigin(.5).setDepth(10.4);
+ active.eventObjs.push(label);
+ // Visitors use actual existing LifeQuest NPC sprites so their proportions/pixel grid stay identical.
+ const defs=(sc.npcs||[]).filter(n=>sc.textures?.exists?.('ch_'+n.def.id+'_down_0')).slice(0,3);
+ for(let i=0;i<Math.min(2,defs.length);i++){
+  const n=defs[i],dest=safeTile(sc,p.tx+i*3-2,p.ty+3,4);if(!dest)continue;
+  const sp=sc.add.image(dest.x,dest.y,'ch_'+n.def.id+'_down_0').setOrigin(.5,.82).setDepth(9.4);
+  const tag=sc.add.text(dest.x,dest.y-31,'Khách '+(i+1),{fontFamily:'monospace',fontSize:'9px',color:'#f5dfb9',backgroundColor:'#243648bb'}).setOrigin(.5).setDepth(10);
+  active.eventObjs.push(sp,tag);active.visitors.push({sprite:sp,label:tag,base:dest,walk:[],phase:i,source:n.def.id});
+ }
+ active.eventName=name;
+}
+function attach(sc){if(!goodScene(sc)||sc.inside)return;if(active?.sc===sc&&active.area===sc.area.id)return;
+ // Repair only invalid arrivals. Do not touch any valid world position or locked gate.
+ try{if(sc.player&&sc.area){let tx=Math.floor(sc.player.x/T),ty=Math.floor(sc.player.y/T);if(sc.blocked?.(sc.player.x,sc.player.y)||sc.area.warpAt?.(tx,ty)){const old={x:sc.player.x,y:sc.player.y};sc.unstick?.();if(sc.area.warpAt?.(Math.floor(sc.player.x/T),Math.floor(sc.player.y/T))||sc.blocked?.(sc.player.x,sc.player.y)){const p=safeTile(sc,tx,ty,7);if(p)sc.player.setPosition(p.x,p.y)}if(old.x!==sc.player.x||old.y!==sc.player.y){sc.store?.save?.();record('Đã sửa điểm đến an toàn tại '+sc.area.id)}}}}catch(e){console.warn('[V52] landing validation',e)}
+ clearActive();active={sc,area:sc.area.id,objs:[],eventObjs:[],props:[],visitors:[],animals:[],event:'',lastTick:0,lastAnimal:0,eventName:'',projectDrawn:false};
+ MAPS[sc.area.id].props.forEach((_,i)=>addProp(sc,sc.area.id,i));applyProject(sc);
+ const types=MAPS[sc.area.id].animals;
+ types.forEach((type,i)=>{const spawn=sc.area.spawn||{x:10,y:10};const p=safeTile(sc,spawn.x+10+i*4,spawn.y+7+(i%2)*5,15);if(!p)return;
+  const gfx=sc.add.graphics({x:p.x,y:p.y}).setDepth(9.15);active.objs.push(gfx);
+  const obj={type,gfx,x:p.x,y:p.y,base:p,goal:null,path:[],dir:1,energy:70+15*i,phase:0,behavior:'forage',targetAt:0,observed:0};active.animals.push(obj);
+  const hit=sc.add.rectangle(p.x,p.y-8,33,34,0xffffff,0).setDepth(9.6).setInteractive({useHandCursor:true});hit.on('pointerdown',()=>{
+    if(Math.hypot(sc.player.x-obj.x,sc.player.y-obj.y)>105)notify('Hãy đến gần con vật để quan sát.');else animalInteract(sc,obj);
+  });obj.hit=hit;active.objs.push(hit);
+ });
+ drawEvent(sc);lastArea=sc.area.id;
+}
+function drawAnimal(a,dt){const spec=SPECIES[a.type],g=a.gfx;if(!g?.active)return;g.clear();const x=0,y=0;
+ const b=spec.body,l=spec.light,c=spec.accent,step=(Math.floor(a.phase)%2);
+ if(a.type==='bird'||a.type==='parrot'||a.type==='bat'){
+  g.fillStyle(c).fillRect(-13,-8+(step?2:0),10,5);g.fillRect(3,-8+(step?2:0),10,5);
+  g.fillStyle(b).fillRect(-7,-10,14,12);g.fillStyle(l).fillRect(-5,-8,8,5);g.fillStyle(0xffdd82).fillRect(6,-4,5,3);g.fillStyle(0x172c38).fillRect(2,-7,2,2);
+ }else{
+  g.fillStyle(b).fillRect(-11,-7,21,12);g.fillStyle(l).fillRect(-9,-6,9,5);g.fillStyle(c).fillRect(8,-4,6,4);g.fillRect(-9,-11,5,6);g.fillRect(1,-11,5,6);
+  if(a.type==='spotted'){g.fillStyle(c).fillRect(-4,-5,3,4);g.fillRect(4,0,3,3)}
+  g.fillStyle(c).fillRect(-8,5,5,4+(step?1:0));g.fillRect(4,5,5,4+(step?0:1));g.fillStyle(0x1a2831).fillRect(6,-3,2,2);
+ }
+ if(a.behavior==='sleep'){g.fillStyle(0xaee0ed).fillRect(10,-20,3,3);g.fillRect(14,-25,2,2)}
+ g.x=Math.round(a.x);g.y=Math.round(a.y);
+ if(a.hit){a.hit.x=a.x;a.hit.y=a.y-8}
+}
+function animateAnimals(sc,dt){if(!active||sc.inside||sc.switching)return;
+ const rainy=weather()==='rain',night=phase(sc)==='night',now=performance.now();
+ for(const a of active.animals){a.phase+=dt/320;
+  if(now>a.targetAt){a.behavior=night&&a.type!=='bat'?'sleep':rainy?'shelter':Math.hypot(sc.player.x-a.x,sc.player.y-a.y)<75?'curious':'forage';
+   a.targetAt=now+3500+Math.random()*4500;const move=a.behavior==='sleep'?0:a.behavior==='curious'?2:a.behavior==='shelter'?3:5;
+   const start={x:a.x,y:a.y};const dest=move?safeTile(sc,Math.floor(a.base.x/T)+(Math.random()-.5)*move*2,Math.floor(a.base.y/T)+(Math.random()-.5)*move*2,5):null;
+   a.path=dest?route(sc,start,dest,700):[];
+  }
+  if(a.path.length){const t=a.path[0],dx=t.x-a.x,dy=t.y-a.y,d=Math.hypot(dx,dy),step=Math.min(d,Math.max(0,dt)*.021);
+   if(d<2)a.path.shift();else if(step>0){const x=a.x+dx/d*step,y=a.y+dy/d*step;if(!sc.blocked?.(x,y)){a.x=x;a.y=y}else a.path=[];}}
+  drawAnimal(a,dt);
+ }
+}
+function animateVisitors(sc,dt){if(!active?.visitors?.length||sc.inside)return;const now=performance.now();for(const v of active.visitors){
+ if(!v.sprite.active)continue;if(!v.walk.length&&(v.next||0)<now){v.next=now+4600+Math.random()*2600;const dest=safeTile(sc,v.base.tx+(Math.random()-.5)*5,v.base.ty+(Math.random()-.5)*4,4);if(dest)v.walk=route(sc,{x:v.sprite.x,y:v.sprite.y},dest,500)}
+ if(v.walk.length){const pt=v.walk[0],dx=pt.x-v.sprite.x,dy=pt.y-v.sprite.y,d=Math.hypot(dx,dy),step=dt*.022;
+ if(d<step+1){v.sprite.setPosition(pt.x,pt.y);v.walk.shift()}else if(d){const nx=v.sprite.x+dx/d*step,ny=v.sprite.y+dy/d*step;if(!sc.blocked?.(nx,ny))v.sprite.setPosition(nx,ny);else v.walk=[]}}
+ const t=`ch_${v.source}_${v.walk.length?'down_1':'down_0'}`;if(sc.textures?.exists?.(t)&&v.sprite.texture.key!==t)v.sprite.setTexture(t);
+ v.label.setPosition(v.sprite.x,v.sprite.y-30);
+ }}
+function reactNpcs(sc){if(!active||sc.inside)return;const ev=eventActive(sc)&&phase(sc)!=='night',rain=weather()==='rain';let talked=0;
+ for(const n of sc.npcs||[]){if(n.inside||!n.sprite?.visible||n.slot?.kind==='sleep')continue;
+  const relation=state.npcChoices[`${sc.area.id}:${n.def.id}`],friend=Number(relation?.trust||0);
+  if(rain&&n.path?.length===0&&n.slot?.kind!=='work'){n.idleTimer=Math.max(n.idleTimer||0,10);continue}
+  if(!ev||!friend||n.path?.length||talked>=2||!active.visitors.length)continue;
+  const p=active.visitors[0].base;if(Math.hypot(n.sprite.x-p.x,n.sprite.y-p.y)>210)continue;
+  if(performance.now()-(n.lq52GreetAt||0)<30000)continue;
+  const dest=safeTile(sc,p.tx+1+talked,p.ty+3,2);if(!dest)continue;
+  const path=route(sc,{x:n.sprite.x,y:n.sprite.y},dest,700);if(path.length&&path.length<13){n.path=path;n.lq52GreetAt=performance.now();talked++}
+ }
+}
+function guardNpc(sc,n,old,dt){if(!goodScene(sc)||sc.inside||n.inside||!n.sprite?.visible||!n.path)return;
+ const now=performance.now();if(sc.blocked?.(n.sprite.x,n.sprite.y)){
+  if(!sc.blocked?.(old.x,old.y))n.sprite.setPosition(old.x,old.y);
+  n.lq52Stuck=(n.lq52Stuck||0)+Math.max(0,dt||17);if(n.lq52Stuck>380){
+   const target=n.path[n.path.length-1],dest=target&&safeTile(sc,Math.floor(target.x/T),Math.floor(target.y/T),2);
+   n.path=dest?route(sc,{x:n.sprite.x,y:n.sprite.y},dest,2800):[];
+   n.lq52Stuck=0;n.lq52Reroute=(n.lq52Reroute||0)+1;
+  }
+ }else{n.lq52Stuck=0;if(n.path.length>1&&now-(n.lq52Checked||0)>4000){n.lq52Checked=now;
+   const next=n.path[0];if(next&&sc.blocked?.(next.x,next.y)){const target=n.path[n.path.length-1];n.path=route(sc,{x:n.sprite.x,y:n.sprite.y},target,2000)}}}
+}
+function update(sc,delta){if(!goodScene(sc)){if(active&&active.sc===sc)clearActive();return}if(sc.inside){if(active?.sc!==sc||active.area!==sc.area.id)clearActive();return}if(!active||active.sc!==sc||active.area!==sc.area.id)attach(sc);
+ if(!active||sc.switching)return;const dt=Math.min(80,Math.max(0,delta||16));
+ if(active.event!==eventKey(sc)){active.visitors=[];drawEvent(sc);if(eventActive(sc))notify('🎪 '+active.eventName+' đang diễn ra ở '+MAPS[sc.area.id].name)}
+ if(!state.settings.lowMotion&&state.settings.ambient&&!busy(sc)){animateAnimals(sc,dt);animateVisitors(sc,dt)}
+ else if(active.animals.length&&++frameNo%10===0)active.animals.forEach(a=>drawAnimal(a,dt));
+ if(performance.now()-active.lastTick>12000){active.lastTick=performance.now();reactNpcs(sc)}
+ if(frameNo++%8===0)updatePrompt(sc);
+}
+function closest(sc){if(!goodScene(sc)||busy(sc)||!dialog?.hidden)return null;
+ if(sc.inside){const n=indoorNearest(sc);return n?{kind:'interior',item:n.item,dist:n.dist,title:n.title}:null;}
+ let best=null,dist=Infinity;for(const p of active?.props||[]){const d=Math.hypot(sc.player.x-p.pos.x,sc.player.y-p.pos.y);if(d<105&&d<dist){dist=d;best={kind:'prop',prop:p,dist:d,title:p.title}}}
+ for(const a of active?.animals||[]){const d=Math.hypot(sc.player.x-a.x,sc.player.y-a.y);if(d<65&&d<dist){dist=d;best={kind:'animal',animal:a,dist:d,title:SPECIES[a.type].name}}}
+ return best;
+}
+function updatePrompt(sc){if(!prompt||!chip)return;const visible=goodScene(sc)&&!busy(sc);chip.hidden=!visible&&!sc?.inside;
+ if(!visible){prompt.hidden=true;return}const p=closest(sc);
+ prompt.hidden=!p;prompt.textContent=p?`R · ${p.title}`:'';
+ chip.textContent=active&&eventActive(sc)?`🌍 V52 · ${active.eventName||'Living World'}`:`🌍 V52 · ${MAPS[sc.area.id].name}`;
+}
+function useNearest(sc){if(!sc||!dialog?.hidden)return false;const target=closest(sc);if(!target)return false;
+ if(target.kind==='animal')animalInteract(sc,target.animal);
+ if(target.kind==='prop')openProp(sc,target.prop);
+ if(target.kind==='interior')interiorInteract(sc,target.item);
+ return true;
+}
+function rememberNpc(sc,npc,decision){if(!npc?.def||!sc.area)return;
+ const key=`${sc.area.id}:${npc.def.id}`,a=state.npcChoices[key]||{trust:0,choices:[],lastDay:0};
+ if(a.lastDay===sc.store.game.day&&a.choices.includes(decision)){notify('Nhân vật nhớ lời bạn đã nói hôm nay.');return}
+ if(!a.choices.includes(decision))a.choices.push(decision);a.trust=Math.min(6,a.trust+1);a.lastDay=sc.store.game.day;state.npcChoices[key]=a;record(`${npc.def.name||npc.def.id} nhớ lựa chọn: ${decision==='help'?'Giúp cộng đồng':'Hỏi về cuộc sống'}`);
+ if(decision==='help'){npc.idleTimer=1;notify('♥ '+(npc.def.name||npc.def.id)+' tin tưởng bạn hơn.')}else notify('📜 Một câu chuyện mới đã được ghi vào ký ức NPC.');
+ sound(440+a.trust*30);drawMenu();
+}
+function npcInteract(sc,npc){if(!npc?.def)return;selected={kind:'npc',id:npc.def.id};const key=`${sc.area.id}:${npc.def.id}`,recorded=state.npcChoices[key]||{trust:0,choices:[]};
+ showDialog('♥ '+(npc.def.name||npc.def.id),`NPC đang ${npc.slot?.label||'sinh hoạt tại '+MAPS[sc.area.id].name}. Độ thân thiết V52: ${recorded.trust||0}/6. Họ ghi nhớ những lựa chọn của bạn.`,[
+ {title:'I can help our community.',action:'npc:help'},
+ {title:'Could you tell me about your day?',action:'npc:story'},
+ {title:'Trở lại bản đồ',action:'close'}]);
+}
+function animalInteract(sc,a){if(!a)return;const id=`${sc.area.id}:${a.type}`,v=state.observations[id]||0;state.observations[id]=v+1;
+ a.behavior='curious';a.targetAt=performance.now()+4500;a.path=[];
+ if(!v)record('Quan sát '+SPECIES[a.type].name+' tại '+MAPS[sc.area.id].name);else store();sound(SPECIES[a.type].sound);
+ selected={kind:'animal',id};showDialog('🐾 '+SPECIES[a.type].name,`Hành vi: ${a.behavior==='curious'?'tiến lại quan sát':a.behavior}. Đã quan sát ${v+1} lần. ${weather()==='rain'?'Trời mưa, động vật có thể tìm chỗ trú.':'Động vật tìm kiếm thức ăn và nghỉ ngơi theo thời gian trong game.'}`,[{title:'Tiếp tục quan sát',action:'animal:observe'},{title:'Trở lại',action:'close'}]);
+}
+function onAction(sc,prop){const key=`${sc.area.id}:${prop.id}`;if(!state.actions[key]){
+  state.actions[key]={day:sc.store?.game?.day||1,when:new Date().toISOString()};record('Đã tương tác: '+prop.title+' ('+MAPS[sc.area.id].name+')');
+ }else store();
+ const ids=MAPS[sc.area.id].props.map(d=>sc.area.id+':'+d[0]);if(!state.projects[sc.area.id]&&ids.every(id=>state.actions[id])){
+  state.projects[sc.area.id]={day:sc.store?.game?.day||1,when:new Date().toISOString()};record('Hoàn thiện công trình: '+MAPS[sc.area.id].project);
+  sound(620);notify('✦ '+MAPS[sc.area.id].project+' đã xuất hiện trên bản đồ!');
+ }
+ if(active?.sc===sc){const old=new Set(active.props.flatMap(p=>p.objects||[]));for(const o of old)try{o.destroy()}catch{};active.objs=active.objs.filter(o=>!old.has(o));active.props=[];
+ MAPS[sc.area.id].props.forEach((_,i)=>addProp(sc,sc.area.id,i));applyProject(sc);
+ }
+ store();
+}
+const descriptions={
+ board:['Bảng cộng đồng cập nhật danh sách những người cần hỗ trợ.','A volunteer can help the town today.'],
+ letter:['Bạn so sánh nội dung lá thư và tên người nhận, rồi lưu kết quả vào sổ.','I checked the name and the delivery route.'],
+ station:['Bảng giờ tàu cho biết các chuyến hàng và điểm đến của thị trấn.','The train leaves at half past nine.'],
+ machine:['Bạn khởi động máy, kiểm tra đèn tín hiệu và hoàn thành một lượt vận hành.','First I checked the machine. Then it started.'],
+ garden:['Bạn chăm sóc đất và tưới cây. Khu vực sẽ phát triển sau khi hoàn thành dự án.','If I were you, I would protect these plants.'],
+ water:['Bạn quan sát nguồn nước và ghi lại tình trạng dòng chảy.','We should keep the river clean.'],
+ shop:['Bạn kiểm tra quầy và danh sách hàng trước khi giao dịch.','Could you tell me the price, please?'],
+ ledger:['Bạn đối chiếu hai ghi chép để đảm bảo giao dịch minh bạch.','We should check the receipt.'],
+ paint:['Bạn chuẩn bị bảng màu và cùng mọi người sáng tạo.','I prefer blue because it feels peaceful.'],
+ frame:['Bạn sắp xếp tác phẩm trước khi trưng bày.','This painting tells a story.'],
+ desk:['Bạn xếp lại bản đồ và hoàn thành một trang ghi chép.','We found the old route.'],
+ sign:['Bạn chỉnh lại tấm biển chỉ đường cho người đến sau.','Go across the bridge and turn left.'],
+ bridge:['Bạn kiểm tra trụ cầu và ghi lại tuyến qua suối.','The bridge leads to the old path.'],
+ well:['Bạn múc nước và giúp người dân trong làng.','Could I have some water, please?'],
+ tree:['Bạn quan sát cây cổ thụ và đánh dấu tọa độ trong sổ.','The tree stands beside the path.'],
+ fire:['Bạn giữ lửa trại và chuẩn bị buổi kể chuyện.','We met the travellers last night.'],
+ bell:['Bạn kiểm tra cơ cấu chuông và ghi lại thời điểm phát tiếng chuông.','The bells were ringing when they arrived.'],
+ computer:['Bạn đối chiếu dữ liệu trên thiết bị điều khiển của thành phố.','Could we meet to review the data?']
+};
+function openProp(sc,prop){if(!sc?.area||!MAPS[sc.area.id])return;const [vi,en]=descriptions[prop.kind]||descriptions.board;
+ selected={kind:'prop',id:prop.id,area:sc.area.id};const done=!!state.actions[sc.area.id+':'+prop.id];
+ showDialog('◆ '+prop.title,`${vi}\n\nEnglish practice: “${en}”\n${done?'✓ Bạn đã tương tác với vật này trước đây.':'Hoàn thành thao tác để thế giới thay đổi.'}`,[
+  {title:done?'Kiểm tra lại':'Thực hiện thao tác',action:'prop:complete'},
+  ...(prop.kind==='shop'?[{title:'Mở cửa hàng V10',action:'prop:shop'}]:[]),
+  {title:'Đóng',action:'close'}]);
+}
+function indoorNearest(sc){const inside=sc?.inside;if(!inside?.spec?.items||!sc.player)return null;
+ // The interior renderer uses a fixed room origin shared with its original code.
+ const roomX=160,roomY=128; // replaced below using the actual original constants if supplied from DOM? derive from map sprite.
+ const image=inside.objs?.find(o=>o.texture&&o.texture.key?.startsWith('int_v7_'));
+ const X=image?.x??roomX,Y=image?.y??roomY,unit=T*inside.k;
+ let best=null,dist=Infinity;for(const item of inside.spec.items){if(!item.k||['partition','rug','plant','wall','door','stairs','portal'].includes(item.k))continue;
+  const x=X+(item.x+(item.w||1)/2)*unit,y=Y+(item.y+(item.h||1)/2)*unit,d=Math.hypot(sc.player.x-x,sc.player.y-y);
+  if(d<unit*2.5&&d<dist){dist=d;best={item,dist:d,title:interiorTitle(item.k)};}}
+ return best;
+}
+function interiorTitle(k){const names={bed:'Giường nghỉ',desk:'Bàn làm việc',table:'Bàn sinh hoạt',counter:'Quầy giao dịch',shelf:'Tủ sách',crate:'Thùng đồ',rack:'Kệ dụng cụ',board:'Bảng ghi chú',stove:'Bếp',forge:'Lò rèn',anvil:'Đe kim loại',crystal:'Tinh thể',glasscase:'Tủ trưng bày',minecart:'Xe chở quặng',menu:'Bảng thực đơn',cabinet:'Tủ chứa đồ',computer:'Máy tính',terminal:'Thiết bị công nghệ'};return names[k]||'Vật thể: '+k;}
+function interiorInteract(sc,item){if(!item||!sc?.inside)return false;
+ const key=`${sc.area.id}:${sc.inside.b.name}:${sc.inside.floor||0}:${item.k}:${item.x},${item.y}`;
+ selected={kind:'interior',id:key,item};
+ const seen=state.interior[key]?.count||0,name=interiorTitle(item.k);
+ let desc=`${sc.inside.b.name} · tầng ${(sc.inside.floor||0)+1}. Đồ vật được đặt trong nội thất thật. Đã tương tác ${seen} lần.`;
+ if(item.k==='bed')desc+=' Nghỉ ngơi ngắn sẽ làm thời gian trong game trôi qua 30 phút (khác với chức năng ngủ qua đêm bằng E).';
+ else if(['counter','glasscase','menu'].includes(item.k))desc+=' Bạn có thể mở hệ thống mua bán gốc nếu cửa hàng có hỗ trợ.';
+ else if(['forge','anvil','orePile','orepile','crystal','minecart','computer','terminal'].includes(item.k))desc+=' Bạn có thể thu thập mẫu, vận hành thiết bị hoặc điền nhật ký kiểm tra bằng tiếng Anh.';
+ else desc+=' Tương tác sẽ để lại ghi chú hoặc vật phẩm được lưu và đánh dấu lên món đồ trong phòng.';
+ showDialog('▣ '+name,desc,[
+ {title:item.k==='bed'?'Nghỉ 30 phút':`Sử dụng / khám phá ${name.toLowerCase()}`,action:'interior:use'},
+ ...(['counter','glasscase','menu'].includes(item.k)?[{title:'Xem cửa hàng V10',action:'interior:shop'}]:[]),
+ {title:'Quay lại',action:'close'}]);
+ if(['desk','board','computer','terminal'].includes(item.k)){const t=document.createElement('textarea');t.id='lq52-english-sentence';t.rows=3;t.placeholder=item.k==='board'?'We should check the records before making a decision.':'First, I checked the details. Then, I wrote a short report.';t.setAttribute('aria-label','Viết một câu tiếng Anh để hoàn thành');document.getElementById('lq52-description').after(t)}
+ return true;
+}
+function finishInterior(){const sc=scene(),key=selected?.id,item=selected?.item;if(!key||!item||!sc?.inside)return false;
+ const kind=item.k,old=state.interior[key]||{count:0};
+ const writing=['desk','board','computer','terminal'].includes(kind),storage=['shelf','crate','cabinet','rack','glasscase','bookcase','drawer'].includes(kind),
+ machine=['forge','anvil','crystal','orePile','orepile','minecart','machine'].includes(kind),food=['stove','oven','table','counter','cakecase'].includes(kind);
+ if(writing){const val=String($('lq52-english-sentence')?.value||'').trim();const words=val.match(/[A-Za-z]+/g)||[];
+  if(words.length<5){notify('Hãy viết ít nhất 5 từ tiếng Anh để hoàn thành công việc.');return false;}}
+ const it={...old,count:(old.count||0)+1,day:sc.store.game.day};state.interior[key]=it;
+ let result='';
+ if(kind==='bed'){
+  const m=Number(sc.store.game.minutes||720);if(m+30>=1440){sc.store.game.minutes=(m+30)%1440;sc.newDay?.()}else sc.store.game.minutes=m+30;
+  try{sc.updateSchedules?.()}catch{};sc.store.save?.();result='Nghỉ 30 phút; NPC đổi ca theo đồng hồ';
+ }else if(storage){if(it.co

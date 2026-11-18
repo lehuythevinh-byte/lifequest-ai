@@ -1,0 +1,2304 @@
+      ['We shared our rice with the neighbours.', 'Chúng tôi đã chia gạo cho hàng xóm.'],
+      ['Lord Gusest sent us bread yesterday.', 'Hôm qua Lãnh chúa Gusest đã gửi bánh mì cho chúng tôi.'],
+      ['The children planted rice with us all morning.', 'Bọn trẻ đã cấy lúa cùng chúng tôi cả buổi sáng.'],
+    ],
+    kid: [
+      ['I saw a knight yesterday!', 'Hôm qua cháu đã thấy một kỵ sĩ!'],
+      ['We planted rice with Mother this morning.', 'Sáng nay bọn cháu đã cấy lúa cùng mẹ.'],
+      ['We played by the well before the war.', 'Trước chiến tranh bọn cháu đã chơi bên giếng.'],
+      ['Mother told me a story last night.', 'Tối qua mẹ đã kể chuyện cho cháu nghe.'],
+    ],
+    mother: [['My son went to the wall. I waited for him every day.', 'Con trai tôi đã ra bức tường. Ngày nào tôi cũng đợi nó.']],
+    peace: [
+      ['The war ended! We were so happy.', 'Chiến tranh đã kết thúc! Chúng tôi đã rất vui.'],
+      ['The colours came back on the Day of Glory.', 'Màu sắc đã trở lại vào Ngày Vinh Quang.'],
+    ],
+    motherPeace: [['My son came home with the flag. I cried all day.', 'Con trai tôi đã về nhà với lá cờ. Tôi đã khóc cả ngày.']],
+    gusest: [
+      ['I sent bread and rice to every family this week.', 'Tuần này ta đã gửi bánh mì và gạo cho mọi gia đình.'],
+      ['Yesterday I wrote a letter to our knights in the north.', 'Hôm qua ta đã viết thư cho các kỵ sĩ của chúng ta ở phương bắc.'],
+    ],
+    gusestPeace: [['Our knights came home. I was so proud of this village.', 'Các kỵ sĩ của chúng ta đã trở về. Ta đã rất tự hào về ngôi làng này.']],
+    soldierPeace: [
+      ['I ran all the way home with the flag!', 'Tôi đã chạy một mạch về nhà với lá cờ!'],
+      ['My mother waited for me every day. I missed her so much.', 'Mẹ tôi đã đợi tôi mỗi ngày. Tôi đã nhớ mẹ rất nhiều.'],
+    ],
+  };
+  const isKid = (k) => k === 'girl' || k === 'boy' || k === 'kid';
+  function folkLook(v, r) {
+    const pick2 = (arr) => arr[Math.floor(r() * arr.length)];
+    const female = v.kind === 'woman' || v.kind === 'girl' || !!v.dress;
+    // Always draw the random picks (even when overridden) so the other villagers keep the same looks.
+    const skin = pick2(OLD_SKIN);
+    const hair = pick2(OLD_HAIR);
+    const outfit = female ? pick2(GOWN) : pick2(TUNIC);
+    const pants = pick2(BREECHES);
+    return {
+      gender: female ? 'female' : 'male',
+      skin: v.skin != null ? v.skin : skin,
+      hair: v.hair != null ? v.hair : hair,
+      style: v.style || 'short',
+      eye: 0x3a2a1e,
+      outfit: v.outfit != null ? v.outfit : outfit,
+      pants: v.pants != null ? v.pants : pants,
+      hat: null,
+      dress: female,
+    };
+  }
+  // Plate armour (no helmet) for Lord Gusest. The game's character art has no armour, so we draw him with marker colours
+  // and repaint every frame: magenta top -> steel (same light and shade), green legs -> dark steel greaves,
+  // a gold crest on the chest, and from behind a red cloak over the back.
+  const ARMOR_DIRS = ['down', 'up', 'side', 'uside', 'dside'];
+  function armorize(sc, key, inPlace) {
+    const out = inPlace ? key : `${key}_armor`;
+    for (const dir of ARMOR_DIRS) {
+      for (let f = 0; f < 3; f++) {
+        const src = `ch_${key}_${dir}_${f}`;
+        const dst = `ch_${out}_${dir}_${f}`;
+        if (!sc.textures.exists(src) || (!inPlace && sc.textures.exists(dst))) continue;
+        const img = sc.textures.get(src).getSourceImage();
+        const cv = document.createElement('canvas');
+        cv.width = img.width;
+        cv.height = img.height;
+        const cx = cv.getContext('2d');
+        cx.drawImage(img, 0, 0);
+        const id = cx.getImageData(0, 0, cv.width, cv.height);
+        const px = id.data;
+        let x0 = 1e9;
+        let x1 = -1;
+        let y0 = 1e9;
+        let y1 = -1;
+        const back = dir === 'up';
+        for (let k = 0; k < px.length; k += 4) {
+          const R = px[k];
+          const G = px[k + 1];
+          const B = px[k + 2];
+          if (!px[k + 3]) continue;
+          const top = R > G + 60 && B > G + 60; // magenta marker (any shade)
+          const leg = G > R + 60 && G > B + 60; // green marker
+          if (!top && !leg) continue;
+          const l = (top ? (R + B) / 2 : G) / 255; // keep the shading of the original
+          if (top && back) {
+            // the cloak, seen from behind
+            px[k] = 60 + l * 90;
+            px[k + 1] = 22 + l * 26;
+            px[k + 2] = 24 + l * 26;
+          } else if (top) {
+            // darker steel than white cloth, so it still reads as metal under the sepia filter of the village
+            px[k] = 58 + l * 78;
+            px[k + 1] = 64 + l * 82;
+            px[k + 2] = 78 + l * 92;
+          } else {
+            px[k] = 46 + l * 60;
+            px[k + 1] = 50 + l * 62;
+            px[k + 2] = 60 + l * 68;
+          }
+          if (top) {
+            const x = (k / 4) % cv.width;
+            const y = Math.floor(k / 4 / cv.width);
+            x0 = Math.min(x0, x);
+            x1 = Math.max(x1, x);
+            y0 = Math.min(y0, y);
+            y1 = Math.max(y1, y);
+          }
+        }
+        cx.putImageData(id, 0, 0);
+        if (x1 >= 0) {
+          const w = x1 - x0 + 1;
+          if (!back) {
+            // the red cloak shows behind the arms, from the shoulders down to the knees
+            cx.fillStyle = '#7d2e2e';
+            cx.fillRect(x0 - 1, y0 + 1, 1, y1 - y0 + 4);
+            cx.fillRect(x1 + 1, y0 + 1, 1, y1 - y0 + 4);
+            // plate lines across the breastplate (lames), and a bright rim on top
+            cx.fillStyle = '#2b3038';
+            for (let y = y0 + 4; y < y1; y += 3) cx.fillRect(x0 + 1, y, w - 2, 1);
+            cx.fillStyle = '#e6ebf2';
+            cx.fillRect(x0 + 1, y0 + 1, w - 2, 1);
+          }
+          // pauldrons: round steel plates a little wider than the shoulders
+          cx.fillStyle = '#8d96a3';
+          cx.fillRect(x0 - 1, y0, 3, 3);
+          cx.fillRect(x1 - 1, y0, 3, 3);
+          cx.fillStyle = '#dfe5ec';
+          cx.fillRect(x0 - 1, y0, 3, 1);
+          cx.fillRect(x1 - 1, y0, 3, 1);
+          cx.fillStyle = '#2b3038';
+          cx.fillRect(x0 - 1, y0 + 3, 3, 1);
+          cx.fillRect(x1 - 1, y0 + 3, 3, 1);
+          const mx = Math.round((x0 + x1) / 2);
+          if (dir === 'down' || dir === 'dside') {
+            // the Oriaris crest: a little gold shield with a brown tower
+            cx.fillStyle = '#e0b440';
+            cx.fillRect(mx - 1, y0 + 2, 3, 3);
+            cx.fillRect(mx, y0 + 5, 1, 1);
+            cx.fillStyle = '#6b4a2a';
+            cx.fillRect(mx, y0 + 3, 1, 2);
+          } else if (back) {
+            // the cloak hangs down over the legs
+            cx.fillStyle = '#5c2224';
+            cx.fillRect(x0, y1 + 1, x1 - x0 + 1, 4);
+            cx.fillStyle = '#7d2e2e';
+            cx.fillRect(x0 + 1, y1 + 1, x1 - x0 - 1, 3);
+          }
+        }
+        if (inPlace) sc.textures.remove(src);
+        sc.textures.addCanvas(dst, cv);
+      }
+    }
+    return out;
+  }
+  // Lord Gusest is a chat NPC (game/02 + Nr.gusest in game/10, drawn in marker colours): put his armour on once.
+  function armorNpc(sc) {
+    const n = (sc.npcs || []).find((x) => x.def && x.def.id === 'gusest');
+    if (!n || !sc.textures.exists('ch_gusest_down_0')) return;
+    if (sc.textures.get('ch_gusest_down_0').__lqArmor) return;
+    try {
+      armorize(sc, 'gusest', true);
+      sc.textures.get('ch_gusest_down_0').__lqArmor = true;
+      n.sprite.setTexture(n.sprite.texture.key);
+    } catch (e) {
+      console.warn('Gusest armour failed', e);
+    }
+  }
+  function makeFolk(sc) {
+    const C = window.LQCharacter;
+    if (!C || !C.ensure) return [];
+    const r = rnd(1970);
+    const pad = C.pad || 0;
+    const oy = (35 + pad) / (38 + pad); // origin at the feet, so a smaller person still stands on the ground
+    return FOLK.map((v, i) => {
+      let key = C.ensure(sc, folkLook(v, r));
+      if (v.armor) {
+        try {
+          key = armorize(sc, key);
+        } catch (e) {
+          console.warn('armour failed', e);
+        }
+      }
+      const start = v.home || (v.path && v.path[0]) || FOLK[v.follow].home;
+      const p = {
+        v, i, key,
+        x: start[0] * T, y: start[1] * T, tx: start[0] * T, ty: start[1] * T,
+        dir: v.still || 'down', flip: false, walking: false, anim: r() * 1, t: r() * 2,
+        leg: 0, it: null, chaser: false, freeze: 0, said: false, bubble: null,
+      };
+      p.img = sc.add.image(p.x, p.y + FEET, `ch_${key}_down_0`).setOrigin(0.5, oy).setScale(HEIGHT[v.kind] || 1);
+      return p;
+    });
+  }
+  function faceTo(p, dx, dy) {
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    if (ax < 0.01 && ay < 0.01) return;
+    if (ay < ax * 0.4) {
+      p.dir = 'side';
+      p.flip = dx < 0;
+    } else if (ax < ay * 0.4) p.dir = dy < 0 ? 'up' : 'down';
+    else {
+      p.dir = dy < 0 ? 'uside' : 'dside';
+      p.flip = dx < 0;
+    }
+  }
+  function folkSpot(st, home) {
+    for (let k = 0; k < 30; k++) {
+      const ang = st.r() * Math.PI * 2;
+      const d = Math.sqrt(st.r()) * home[2] * T;
+      const x = home[0] * T + Math.cos(ang) * d;
+      const y = home[1] * T + Math.sin(ang) * d;
+      if (st.free(x, y)) return { x, y };
+    }
+    return { x: home[0] * T, y: home[1] * T };
+  }
+  // Move p toward (tx, ty). Returns true when it got there (or is stuck).
+  function folkStep(st, p, sp, px, py) {
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= sp) {
+      p.x = p.tx;
+      p.y = p.ty;
+      return true;
+    }
+    const nx = p.x + (dx / d) * sp;
+    const ny = p.y + (dy / d) * sp;
+    faceTo(p, dx, dy);
+    if (Math.hypot(nx - px, ny - py) < 14) return false; // never walk through the player: wait
+    if (!st.free(nx, ny)) return true;
+    p.x = nx;
+    p.y = ny;
+    p.walking = true;
+    return false;
+  }
+  // ---- the working day: children worked too in those days ---------------------------------------------------------------
+  // Village clock (game minutes): 05:30–11:30 and 13:00–17:30 planting rice in the south paddies, back in the village at
+  // noon and in the evening, and from 19:30 home: they walk to their own door and go inside (hidden) until morning.
+  // They go out through the south gate and along the dike, so the routes never cross the wall.
+  const HUB = [18.5, 30.5]; // just inside the south gate
+  const DOOR_Y = 28.8; // in front of the cottage doors
+  function workMode(min) {
+    const m = ((min % 1440) + 1440) % 1440;
+    if (m < 330 || m >= 1170) return 'home';
+    if (m < 690 || (m >= 780 && m < 1050)) return 'field';
+    return 'village';
+  }
+  function workBase(v) {
+    if (v.home) return v.home;
+    if (v.path) return v.path[0];
+    return FOLK[v.follow].home;
+  }
+  function workRoute(p, from, to) {
+    const [door, sx, sy] = p.v.work;
+    const base = workBase(p.v);
+    const low = (y) => y > 26.5; // south of the cottages: go along the lane behind them
+    const out = [];
+    if (from === 'field') out.push([sx, 41.5], [18.5, 41.5], [18.5, 33], HUB);
+    else if (from === 'home') out.push([door + 0.5, 30.5], HUB);
+    else out.push(low(p.y / T) ? [p.x / T, 30.5] : [18.5, 20.5], HUB);
+    if (to === 'field') out.push([18.5, 33], [18.5, 41.5], [sx, 41.5], [sx, sy]);
+    else if (to === 'home') out.push([door + 0.5, 30.5], [door + 0.5, DOOR_Y]);
+    else out.push(low(base[1]) ? [base[0], 30.5] : [18.5, 20.5], [base[0], base[1]]);
+    return out;
+  }
+  // Like folkStep, but on a planned route (gates, dikes): no wall check. Still never walks through the player.
+  function workStep(p, sp, px, py) {
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= sp) {
+      p.x = p.tx;
+      p.y = p.ty;
+      return true;
+    }
+    faceTo(p, dx, dy);
+    const nx = p.x + (dx / d) * sp;
+    const ny = p.y + (dy / d) * sp;
+    if (Math.hypot(nx - px, ny - py) < 14) return false;
+    p.x = nx;
+    p.y = ny;
+    p.walking = true;
+    return false;
+  }
+  // Returns true when the schedule moved this villager (their usual village life is skipped this frame).
+  function workTick(sc, p, dt, px, py) {
+    const v = p.v;
+    if (!v.work) return false;
+    const g = sc.store && sc.store.game;
+    const want = workMode(g && typeof g.minutes === 'number' ? g.minutes : 480);
+    const [door, sx, sy] = v.work;
+    if (!p.mode) {
+      // First frame in the village: put them where the clock says, without walking there.
+      p.mode = want;
+      if (want === 'field') {
+        p.x = p.tx = sx * T;
+        p.y = p.ty = sy * T;
+      } else if (want === 'home') {
+        p.x = p.tx = (door + 0.5) * T;
+        p.y = p.ty = DOOR_Y * T;
+        p.gone = true;
+      }
+    }
+    if (!p.route && p.mode !== want) {
+      p.route = workRoute(p, p.mode, want);
+      p.goal = want;
+      p.gone = false; // morning: they come out of their door
+      p.chaser = false;
+    }
+    p.away = !!p.route || p.mode !== 'village';
+    if (p.route) {
+      const pt = p.route[0];
+      p.tx = pt[0] * T;
+      p.ty = pt[1] * T;
+      if (workStep(p, (WALK[v.kind] || 32) * dt, px, py)) {
+        p.route.shift();
+        if (!p.route.length) {
+          p.route = null;
+          p.mode = p.goal;
+          if (p.mode === 'home') p.gone = true;
+          if (p.mode === 'village') {
+            p.away = false;
+            p.leg = 0;
+            p.t = 0;
+          }
+        }
+      }
+      return true;
+    }
+    if (p.mode === 'home') return true;
+    if (p.mode === 'field') {
+      // Planting: step slowly along the row, bending down again and again to push the seedlings in.
+      p.plant = (p.plant || 0) + dt;
+      p.x = sx * T + Math.sin(p.plant * 0.25 + p.i) * 0.9 * T;
+      p.y = sy * T;
+      p.dir = 'down';
+      p.planting = true;
+      return true;
+    }
+    return false;
+  }
+
+  function folkTick(st, sc, dt) {
+    const px = sc.player.x;
+    const py = sc.player.y;
+    const folk = st.folk;
+    const taggers = folk.filter((p) => p.v.play === 'tag' && !p.away);
+    if (taggers.length && !taggers.some((p) => p.chaser)) taggers[0].chaser = true;
+    for (const p of folk) {
+      const v = p.v;
+      p.walking = false;
+      p.planting = false;
+      if (v.after) {
+        // Only home after the Day of Glory (the young soldier).
+        const d = data();
+        p.gone = !(d && d.done);
+        if (p.gone) continue;
+      }
+      p.t -= dt;
+      p.freeze = Math.max(0, p.freeze - dt);
+      if (p.gone && p.mode === 'home' && workMode(sc.store.game.minutes) === 'home') continue;
+      const dp = Math.hypot(p.x - px, p.y - py);
+      // Grown-ups stop and look at the player who comes close; children keep playing.
+      if (!isKid(v.kind) && dp < 48) {
+        faceTo(p, px - p.x, py - p.y);
+        continue;
+      }
+      if (workTick(sc, p, dt, px, py)) continue;
+      if (v.play === 'tag') {
+        const home = v.home;
+        const sp = TAG_RUN * dt;
+        if (p.freeze > 0) continue;
+        if (p.chaser) {
+          // Run after the nearest other child; touching them makes them "it".
+          let best = null;
+          let bd = 1e9;
+          for (const o of taggers) {
+            if (o === p || o.freeze > 0) continue;
+            const d = Math.hypot(o.x - p.x, o.y - p.y);
+            if (d < bd) {
+              bd = d;
+              best = o;
+            }
+          }
+          if (!best) continue;
+          if (bd < 11) {
+            p.chaser = false;
+            best.chaser = true;
+            best.freeze = 1.1; // the new "it" counts a little before running
+            p.freeze = 0.4;
+            continue;
+          }
+          p.tx = best.x;
+          p.ty = best.y;
+          folkStep(st, p, sp * 0.92, px, py);
+        } else {
+          const ch = taggers.find((o) => o.chaser);
+          const dc = ch ? Math.hypot(ch.x - p.x, ch.y - p.y) : 1e9;
+          if (ch && dc < 56 && ch.freeze <= 0) {
+            // Run away from "it", but stay in the square.
+            let tx = p.x + ((p.x - ch.x) / Math.max(1, dc)) * 40;
+            let ty = p.y + ((p.y - ch.y) / Math.max(1, dc)) * 40;
+            if (Math.hypot(tx - home[0] * T, ty - home[1] * T) > home[2] * T || !st.free(tx, ty)) {
+              const s = folkSpot(st, home);
+              tx = s.x;
+              ty = s.y;
+            }
+            if (p.t <= 0 || Math.hypot(p.tx - p.x, p.ty - p.y) < 4) {
+              p.tx = tx;
+              p.ty = ty;
+              p.t = 0.6;
+            }
+            folkStep(st, p, sp, px, py);
+          } else {
+            if (p.t <= 0 || Math.hypot(p.tx - p.x, p.ty - p.y) < 3) {
+              const s = folkSpot(st, home);
+              p.tx = s.x;
+              p.ty = s.y;
+              p.t = 1 + st.r() * 1.5;
+            }
+            folkStep(st, p, sp * 0.55, px, py);
+          }
+        }
+        continue;
+      }
+      const sp = (WALK[v.kind] || 32) * dt;
+      if (v.follow != null) {
+        // A little one next to her mother: a step behind and to the side.
+        const m = folk[v.follow];
+        p.tx = m.x + 10;
+        p.ty = m.y + 6;
+        if (Math.hypot(p.tx - p.x, p.ty - p.y) > 6) folkStep(st, p, sp * 1.3, px, py);
+        else faceTo(p, m.x - p.x, m.y - p.y);
+        continue;
+      }
+      if (v.path) {
+        if (p.leg == null) p.leg = 0;
+        if (p.t > 0) continue; // a short pause at each point
+        const pt = v.path[p.leg];
+        p.tx = pt[0] * T;
+        p.ty = pt[1] * T;
+        if (folkStep(st, p, sp, px, py)) {
+          p.leg = (p.leg + 1) % v.path.length;
+          p.t = 0.6 + st.r() * 1.8;
+        }
+        continue;
+      }
+      if (v.still) {
+        // Stands at the spot (comes back to it if it was pushed away) and looks the same way.
+        p.tx = v.home[0] * T;
+        p.ty = v.home[1] * T;
+        if (Math.hypot(p.tx - p.x, p.ty - p.y) > 2) folkStep(st, p, sp, px, py);
+        else p.dir = v.still;
+        continue;
+      }
+      // Wander around home, with pauses.
+      if (p.t > 0 && Math.hypot(p.tx - p.x, p.ty - p.y) < 1) continue;
+      if (p.t <= 0 && Math.hypot(p.tx - p.x, p.ty - p.y) < 1) {
+        const s = folkSpot(st, v.home);
+        p.tx = s.x;
+        p.ty = s.y;
+        p.t = 8;
+      }
+      if (folkStep(st, p, sp, px, py)) p.t = 1.5 + st.r() * 4;
+    }
+  }
+  // Depth: in front of / behind the player, and behind a house or tree when standing north of its base.
+  function folkDepth(sc, p) {
+    let dep = (p.y < sc.player.y ? PLAYER_DEPTH - 0.1 : PLAYER_DEPTH + 0.1) + p.y * 1e-5;
+    const tall = sc.__lqPastTall && sc.__lqPastTall.items;
+    if (tall) {
+      for (const it of tall) {
+        const im = it.img;
+        if (p.x < im.x || p.x > im.x + im.width || p.y + FEET < im.y || p.y > it.base + 24) continue;
+        if (p.y < it.base) dep = Math.min(dep, im.depth - 0.05);
+        else dep = Math.max(dep, im.depth + 0.05);
+      }
+    }
+    return dep;
+  }
+  function folkSay(sc, st, p) {
+    const d = data();
+    const peace = !!(d && d.done);
+    const v = p.v;
+    const set = v.say
+      ? (peace && SAY[v.say + 'Peace']) || SAY[v.say]
+      : v.mother
+        ? peace
+          ? SAY.motherPeace
+          : SAY.mother
+        : peace
+          ? SAY.peace
+          : SAY[isKid(v.kind) ? 'kid' : v.kind];
+    const line = set[(p.i + (st.talks = (st.talks || 0) + 1)) % set.length];
+    if (p.bubble) p.bubble.destroy();
+    p.bubble = sc.add
+      .text(p.x, p.y - 30, `${v.name ? v.name + ': ' : ''}${line[0]}\n${line[1]}`.normalize('NFC'), {
+        // not Georgia: it has no Vietnamese tone marks, the browser then stacks them apart ("chiê ́n")
+        fontFamily: "'Segoe UI', Arial, sans-serif",
+        fontSize: '10px',
+        color: '#2a241d',
+        align: 'center',
+        backgroundColor: '#f3ead8',
+        padding: { x: 6, y: 4 },
+        wordWrap: { width: 190 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(PLAYER_DEPTH + 2)
+      .setResolution(2);
+    p.bubbleT = 4.5;
+  }
+  function folkUpdate(sc, delta) {
+    let st = sc.__lqPastFolk;
+    const kill = () => {
+      if (!st) return;
+      st.folk.forEach((p) => {
+        p.img.destroy();
+        if (p.bubble) p.bubble.destroy();
+      });
+      sc.__lqPastFolk = null;
+    };
+    if (!here(sc) || sc.switching || !sc.player) return kill();
+    if (!st || st.area !== sc.area) {
+      kill();
+      const a = sc.area;
+      st = sc.__lqPastFolk = { area: a, folk: [], r: rnd(29), free: (x, y) => !a.isTileBlocked(Math.floor(x / T), Math.floor(y / T)) };
+      try {
+        st.folk = makeFolk(sc);
+      } catch (e) {
+        console.warn('past villagers failed', e);
+      }
+    }
+    const hide = !!sc.inside || filming;
+    const dt = Math.min(0.05, (delta || 16) / 1000);
+    if (!hide) folkTick(st, sc, dt);
+    for (const p of st.folk) {
+      p.img.setVisible(!hide && !p.gone);
+      if (hide || p.gone) {
+        if (p.bubble) p.bubble.setVisible(false);
+        continue;
+      }
+      // Planting rice: bend down and up (origin is at the feet, so they stay on the ground).
+      const h = HEIGHT[p.v.kind] || 1;
+      p.img.setScale(h, p.planting ? h * (0.9 + 0.06 * Math.sin(p.plant * 2.4 + p.i)) : h);
+      // Walk frames: 1 and 2 while moving (children step faster), 0 when standing.
+      p.anim += dt * (p.walking ? (isKid(p.v.kind) ? 9 : 6) : 0);
+      const frame = p.walking ? 1 + (Math.floor(p.anim) % 2) : 0;
+      const tex = `ch_${p.key}_${p.dir}_${frame}`;
+      if (p.img.texture.key !== tex) p.img.setTexture(tex);
+      p.img.setFlipX(p.flip && p.dir !== 'down' && p.dir !== 'up');
+      p.img.setPosition(p.x, p.y + FEET);
+      p.img.setDepth(folkDepth(sc, p));
+      // Talk once each time the player comes close (and stays a moment).
+      const dp = Math.hypot(p.x - sc.player.x, p.y - sc.player.y);
+      if (dp < 48) {
+        p.near = (p.near || 0) + dt;
+        if (!p.said && p.near > 0.5) {
+          p.said = true;
+          folkSay(sc, st, p);
+        }
+      } else if (dp > 70) {
+        p.said = false;
+        p.near = 0;
+      }
+      if (p.bubble) {
+        p.bubbleT -= dt;
+        if (p.bubbleT <= 0) {
+          p.bubble.destroy();
+          p.bubble = null;
+        } else p.bubble.setVisible(true).setPosition(p.x, p.y + FEET - 38 * (HEIGHT[p.v.kind] || 1)).setAlpha(Math.min(1, p.bubbleT * 2));
+      }
+    }
+  }
+  // Children (and the player) scare the hens.
+  function scarers(sc) {
+    const out = [{ x: sc.player.x, y: sc.player.y }];
+    const st = sc.__lqPastFolk;
+    if (st) st.folk.forEach((p) => isKid(p.v.kind) && p.walking && out.push({ x: p.x, y: p.y }));
+    return out;
+  }
+
+  // ---- runtime ----------------------------------------------------------------------------------------------------------
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const toast = (title, sub, hint) => {
+    try {
+      window.LQAchievements && window.LQAchievements.toast && window.LQAchievements.toast(title, sub, hint);
+    } catch (e) {}
+  };
+  function data() {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') g.ach = { steps: {}, done: {} };
+    if (!g.ach.past || typeof g.ach.past !== 'object') g.ach.past = { visits: 0, read: {} };
+    if (!g.ach.past.read) g.ach.past.read = {};
+    return g.ach.past;
+  }
+  const save = () => {
+    try {
+      const sc = getScene();
+      sc && sc.store && sc.store.save();
+    } catch (e) {}
+  };
+  const here = (sc) => !!(sc && sc.area && sc.area.id === ID);
+  // The village, or the North Trail / North Camp (js/front.js): same time period, same pale filter, same calendar.
+  const inPast = (sc) => here(sc) || !!(sc && sc.area && window.LQFront && window.LQFront.ids.includes(sc.area.id));
+
+  // Pale colours while the player is in the past.
+  // The game canvas and the minimap (and any other small canvas the HUD draws), not the cutscene canvases.
+  let filtered = false;
+  const PALE = 'grayscale(.62) sepia(.32) saturate(.9) contrast(1.02) brightness(1.03)';
+  function applyFilter(sc, seconds) {
+    const cv = sc && sc.game && sc.game.canvas;
+    if (!cv) return;
+    const want = inPast(sc) && !colorBack;
+    if (want === filtered) return;
+    filtered = want;
+    document.querySelectorAll('canvas').forEach((c) => {
+      if (c.closest('#lq-oldmap, #lq-intro, #lq-shrine')) return;
+      c.style.transition = `filter ${seconds || 1.2}s ease`;
+      c.style.filter = want ? PALE : '';
+    });
+  }
+  let colorBack = false;
+  // Colours back (Day 14 ending, and every visit after the chapter is done). `seconds`: how slowly they come back.
+  function setColor(on, seconds) {
+    colorBack = !!on;
+    const sc = getScene();
+    if (!sc) return;
+    filtered = !(inPast(sc) && !colorBack);
+    applyFilter(sc, seconds);
+  }
+
+  // Signs: walking up to one shows its text (again after you walk away).
+  // Inside a room the same works with NOTES (room tiles are scaled by ins.k, like fingers.js / tenshadows.js).
+  let near = null;
+  function nearestText(sc) {
+    const ins = sc.inside;
+    if (!ins) return SIGNS.find((s) => Math.hypot(sc.player.x - (s.x * 32 + 16), sc.player.y - (s.y * 32 + 16)) < READ_RADIUS);
+    if (ins.floor !== 0 || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    return NOTES.find((n) => {
+      if (n.room !== ins.b.name) return false;
+      const x = ins.objs[0].x + (n.x + 0.5) * unit;
+      const y = ins.objs[0].y + (n.y + 0.5) * unit;
+      return Math.hypot(sc.player.x - x, sc.player.y - y) < 1.9 * unit;
+    });
+  }
+  function checkSigns(sc) {
+    if (!here(sc) || filming || !sc.player) {
+      near = null;
+      return;
+    }
+    const s = nearestText(sc);
+    if (!s) {
+      near = null;
+      return;
+    }
+    if (near === s.id) return;
+    near = s.id;
+    const d = data();
+    if (d && !d.read[s.id]) {
+      d.read[s.id] = Date.now();
+      save();
+    }
+    const n = d ? [...SIGNS, ...NOTES].filter((x) => d.read[x.id]).length : 0;
+    toast(s.title, s.en, `${s.vi} · ${n}/${ALL_READ()}`);
+  }
+
+  // ---- lead-in film (in the real map) ----------------------------------------------------------------------------------
+  const CSS = `
+body.lq-filming>:not(#lq-past):not(:has(canvas)){visibility:hidden!important}
+body.lq-filming>:has(canvas) :not(canvas){visibility:hidden}
+body.lq-filming canvas:not(.lq-main){visibility:hidden!important}
+body.lq-filming canvas.lq-main{visibility:visible!important}
+#lq-past{position:fixed;inset:0;z-index:10040;pointer-events:none;font-family:system-ui,'Segoe UI',sans-serif}
+#lq-past .lb{position:absolute;left:0;right:0;height:10vh;background:#000;transition:transform .8s ease}
+#lq-past .lb.t{top:0}#lq-past .lb.b{bottom:0}
+#lq-past.out .lb.t{transform:translateY(-100%)}#lq-past.out .lb.b{transform:translateY(100%)}
+#lq-past .cap{position:absolute;left:50%;bottom:calc(10vh + 12px);transform:translateX(-50%);width:min(760px,calc(100vw - 32px));box-sizing:border-box;background:#1c1c1ce8;border:2px solid #b9b2a4;border-radius:14px;padding:12px 18px;color:#f2f2f2;opacity:0;transition:opacity .35s;pointer-events:auto;cursor:pointer}
+#lq-past .cap.show{opacity:1}
+#lq-past .who{font:800 12px system-ui,sans-serif;color:#e0c27a;letter-spacing:.04em;margin-bottom:3px}
+#lq-past .en{margin:0;font:600 clamp(16px,2.4vw,20px)/1.4 Georgia,'Times New Roman',serif}
+#lq-past .vi{margin:5px 0 0;font:14px/1.4 system-ui,sans-serif;color:#b8b8b8}
+#lq-past .hint{font-size:11px;color:#8d8d8d;text-align:right;margin-top:4px}
+#lq-past .skip{position:absolute;top:calc(10vh + 10px);right:14px;background:#0009;color:#fff;border:1px solid #ffffff55;border-radius:999px;padding:7px 14px;font:700 13px system-ui,sans-serif;cursor:pointer;pointer-events:auto}
+#lq-past .card{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;color:#eee;text-shadow:0 2px 12px #000;opacity:0;transition:opacity .8s;white-space:nowrap;padding:30px 60px;background:radial-gradient(closest-side,#000a,#0000)}
+#lq-past .card.show{opacity:1}
+#lq-past .card small{display:block;font:700 13px system-ui,sans-serif;letter-spacing:.35em;color:#d6d0c4;text-transform:uppercase}
+#lq-past .card b{display:block;font:800 clamp(28px,5.5vw,48px)/1.1 Georgia,'Times New Roman',serif;margin:6px 0}
+#lq-past .card span{font:600 14px system-ui,sans-serif;color:#cfcfcf}
+`;
+  // who: '' = narrator. cam: tile to look at. act: what happens in the scene at this line.
+  const FILM = [
+    { cam: [27, 15], zoom: 1, en: 'The village of Oriaris. The colors were pale, and the days were hard.', vi: 'Làng Oriaris. Màu sắc nhợt nhạt, và những ngày tháng thật vất vả.', act: 'crowd' },
+    { cam: [30, 9], zoom: 1.35, who: 'Lord Gusest', en: 'People of Oriaris! This war will pass. Peace will come back.', vi: 'Hỡi người dân Oriaris! Cuộc chiến này rồi sẽ qua. Hòa bình sẽ trở lại.', act: 'gusest' },
+    { cam: [30, 9], zoom: 1.35, who: 'Lord Gusest', en: 'Our knights are brave. They will win!', vi: 'Các kỵ sĩ của chúng ta rất dũng cảm. Họ sẽ chiến thắng!' },
+    { cam: [28, 12], zoom: 1.15, en: 'The people cheered. For a moment, nobody was afraid.', vi: 'Dân làng reo hò. Trong khoảnh khắc ấy, không ai còn sợ hãi.', act: 'cheer' },
+    { cam: [28, 18], zoom: 1, en: 'Lord Gusest left, but he sent food to every family.', vi: 'Lãnh chúa Gusest rời đi, nhưng ngài đã gửi lương thực cho từng gia đình.', act: 'leave' },
+    { cam: null, zoom: 1, en: 'Now the village waits. Live here, day by day, until the war is over.', vi: 'Giờ đây cả làng chờ đợi. Hãy sống ở đây, từng ngày một, cho đến khi chiến tranh kết thúc.', act: 'end' },
+  ];
+  let filming = false;
+  function drawPerson(g, x, y, cloth, hair, cape) {
+    g.fillStyle(0x000000, 0.25).fillEllipse(x, y + 13, 14, 5);
+    if (cape) g.fillStyle(cape, 1).fillRect(x - 7, y - 4, 14, 17);
+    g.fillStyle(cloth, 1).fillRect(x - 5, y - 4, 10, 14);
+    g.fillStyle(0x3b3127, 1).fillRect(x - 4, y + 10, 3, 4).fillRect(x + 1, y + 10, 3, 4);
+    g.fillStyle(0xe2c4a4, 1).fillCircle(x, y - 9, 5);
+    g.fillStyle(hair, 1).fillRect(x - 5, y - 15, 10, 4);
+  }
+  // ---- film player (shared by the lead-in and the Day 14 ending) ------------------------------------------------------
+  // opts: { card: {small, big, sub}, lines: [{cam, zoom, who, en, vi, act}], setup(sc, actors) -> {tick(time), act(name)} }
+  function ensureCss() {
+    if (document.getElementById('lq-past-css')) return;
+    const st = document.createElement('style');
+    st.id = 'lq-past-css';
+    st.textContent = CSS + DAY_CSS;
+    document.head.appendChild(st);
+  }
+  function runFilm(opts) {
+    const sc = getScene();
+    if (!sc || !here(sc) || filming) return Promise.resolve(false);
+    filming = true;
+    ensureCss();
+    closeDayCard();
+    return new Promise((resolve) => {
+      const cam = sc.cameras.main;
+      const zoom0 = cam.zoom;
+      const kb = sc.input && sc.input.keyboard;
+      if (kb) {
+        kb.enabled = false;
+        try {
+          kb.resetKeys();
+        } catch (e) {}
+      }
+      cam.stopFollow();
+      const actors = sc.add.graphics().setDepth(9.6);
+      const scene = opts.setup ? opts.setup(sc, actors) : {};
+      const tick = (time) => {
+        actors.clear();
+        if (scene.tick) scene.tick(time);
+      };
+      sc.events.on('update', tick);
+      const lines = opts.lines;
+      const root = document.createElement('div');
+      root.id = 'lq-past';
+      root.innerHTML =
+        '<div class="lb t"></div><div class="lb b"></div>' +
+        `<div class="card"><small>${opts.card.small}</small><b>${opts.card.big}</b><span>${opts.card.sub}</span></div>` +
+        '<div class="cap"><div class="who"></div><p class="en"></p><p class="vi"></p><div class="hint">Click / Space ▶</div></div>' +
+        '<button class="skip" type="button">Skip ⏭</button>';
+      document.body.appendChild(root);
+      if (sc.game && sc.game.canvas) sc.game.canvas.classList.add('lq-main');
+      document.body.classList.add('lq-filming');
+      const card = root.querySelector('.card');
+      const cap = root.querySelector('.cap');
+      const who = root.querySelector('.who');
+      const en = root.querySelector('.en');
+      const vi = root.querySelector('.vi');
+      let i = -1;
+      let typing = 0;
+      let full = '';
+      let ended = false;
+      const look = (shot, ms) => {
+        if (shot.cam) cam.pan(shot.cam[0] * 32 + 16, shot.cam[1] * 32 + 16, ms, 'Sine.easeInOut', true);
+        else cam.pan(sc.player.x, sc.player.y, ms, 'Sine.easeInOut', true);
+        cam.zoomTo(zoom0 * (shot.zoom || 1), ms, 'Sine.easeInOut', true);
+      };
+      const show = () => {
+        const s = lines[i];
+        look(s, i === 0 ? 1 : 1400);
+        if (s.act && scene.act) scene.act(s.act);
+        who.textContent = s.who || '';
+        who.style.display = s.who ? '' : 'none';
+        vi.textContent = s.vi;
+        full = s.en;
+        en.textContent = '';
+        clearInterval(typing);
+        let n = 0;
+        typing = setInterval(() => {
+          n += 1;
+          en.textContent = full.slice(0, n);
+          if (n >= full.length) clearInterval(typing);
+        }, 28);
+      };
+      const next = () => {
+        if (ended) return;
+        if (i >= 0 && en.textContent.length < full.length) {
+          clearInterval(typing);
+          en.textContent = full;
+          return;
+        }
+        i += 1;
+        if (i >= lines.length) return finish();
+        show();
+      };
+      const finish = () => {
+        if (ended) return;
+        ended = true;
+        clearInterval(typing);
+        window.removeEventListener('keydown', onKey, true);
+        // Skipping still runs every remaining action once (e.g. the colours come back), so the story state is right.
+        if (scene.act) for (let k = i + 1; k < lines.length; k++) if (lines[k].act) scene.act(lines[k].act, true);
+        root.classList.add('out');
+        document.body.classList.remove('lq-filming');
+        cap.classList.remove('show');
+        card.classList.remove('show');
+        sc.events.off('update', tick);
+        actors.destroy();
+        cam.zoomTo(zoom0, 600, 'Sine.easeInOut', true);
+        cam.startFollow(sc.player, true, 0.1, 0.1);
+        if (kb) kb.enabled = true;
+        setTimeout(() => {
+          root.remove();
+          filming = false;
+          resolve(true);
+        }, 850);
+      };
+      const onKey = (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          next();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          finish();
+        }
+      };
+      window.addEventListener('keydown', onKey, true);
+      cap.addEventListener('click', next);
+      root.querySelector('.skip').addEventListener('click', finish);
+      const first = lines[0].cam || [sc.player.x / 32, sc.player.y / 32];
+      cam.centerOn(first[0] * 32 + 16, first[1] * 32 + 16);
+      if (scene.act && lines[0].act) scene.act(lines[0].act);
+      card.classList.add('show');
+      setTimeout(() => {
+        if (ended) return;
+        card.classList.remove('show');
+        cap.classList.add('show');
+        next();
+      }, 2600);
+    });
+  }
+
+  // ---- lead-in film --------------------------------------------------------------------------------------------------
+  function play() {
+    return runFilm({
+      card: { small: 'Chapter 2', big: '70 Years Ago', sub: 'Chương 2 · 70 năm trước' },
+      lines: FILM,
+      setup(sc, actors) {
+        const RC = rnd(42);
+        const crowd = [];
+        for (let i = 0; i < 16; i++)
+          crowd.push({
+            x: (22.5 + (i % 8) * 1.25 + RC() * 0.5) * 32,
+            y: (11.6 + Math.floor(i / 8) * 1.3 + RC() * 0.4) * 32,
+            c: [0x7a6a58, 0x6b7280, 0x8a7a5a, 0x5d6b5a][i % 4],
+            h: [0x3b2a1e, 0x6b5a45, 0x2a2a2a, 0x8a7a6a][(i * 3) % 4],
+          });
+        const gus = { x: 30.5 * 32, y: 8.1 * 32, on: false, away: 0, t0: 0 };
+        let cheer = 0;
+        let showCrowd = false;
+        return {
+          tick(time) {
+            if (showCrowd)
+              crowd.forEach((p, i) => drawPerson(actors, p.x, p.y - (cheer ? Math.abs(Math.sin(time * 0.012 + i)) * 5 : 0), p.c, p.h));
+            if (gus.t0) gus.away = Math.min(1, (performance.now() - gus.t0) / 1600);
+            if (gus.on && gus.away < 1) {
+              const gy = gus.y - gus.away * 64;
+              drawPerson(actors, gus.x, gy, 0x2f3540, 0x4a2e1c, 0x7d2e2e); // dark brown hair: Gusest was only 20
+              crest(actors, gus.x, gy - 1, 0.9);
+            }
+          },
+          act(a, skipping) {
+            if (a === 'crowd') showCrowd = true;
+            if (a === 'gusest') gus.on = true;
+            if (a === 'cheer') cheer = 1;
+            if (a === 'leave') {
+              cheer = 0;
+              gus.t0 = performance.now();
+              if (!skipping) toast('🍞 Food for every family', 'Bread and rice', 'Bánh mì và gạo cho mọi nhà');
+            }
+            if (a === 'end') showCrowd = false;
+          },
+        };
+      },
+    }).then((ran) => {
+      if (!ran) return;
+      startChapter();
+      const t = todayTask();
+      toast('📜 Day 1 / 14', t ? 'Follow the golden light: ' + t.where + '.' : 'Oriaris Village', 'Mỗi ngày đi tới ánh sáng vàng, đọc chuyện hôm nay, rồi về ngủ ở Brown Family Home.');
+    });
+  }
+
+  // ---- the fourteen days -------------------------------------------------------------------------------------------
+  // Each day (1–13): a golden light appears somewhere; there the player reads what happened that day (past tense),
+  // learns its past verbs and answers one question. Then they sleep in the Brown Family Home (bed, E) to start the
+  // next day. Waking up on day 14 plays the ending (the young soldier runs in with the flag, the colours come back).
+  // opts[0] is the right answer (the card shuffles them).
+  const DAYS = [
+    { at: [25, 17], where: 'the village well', en: 'On the first day, the women carried water from the well to every house.', vi: 'Ngày đầu tiên, các bà các chị gánh nước từ giếng về từng nhà.', verbs: [['carried', 'carry']], q: 'Where did the water come from?', opts: ['the well', 'the river', 'the lake'] },
+    { at: [45, 17], where: 'the east rice fields', en: 'On day two, the children helped in the rice fields. They worked until noon.', vi: 'Ngày thứ hai, bọn trẻ ra đồng giúp cấy lúa. Chúng làm đến trưa.', verbs: [['helped', 'help'], ['worked', 'work']], q: 'When did the children stop working?', opts: ['at noon', 'at night', 'early in the morning'] },
+    { at: [18, 29], where: 'the south gate', en: 'On day three, the men repaired the south wall. They carried big stones all day.', vi: 'Ngày thứ ba, đàn ông sửa bức tường phía nam. Họ khiêng đá lớn cả ngày.', verbs: [['repaired', 'repair'], ['carried', 'carry']], q: 'What did the men repair?', opts: ['the south wall', 'the well', 'the hall'] },
+    { at: [8, 8], where: 'the granary', en: "On day four, Lord Gusest's soldiers brought rice to the granary.", vi: 'Ngày thứ tư, lính của Lãnh chúa Gusest chở gạo đến kho thóc.', verbs: [['brought', 'bring']], q: 'What did the soldiers bring?', opts: ['rice', 'bread', 'water'] },
+    { at: [45, 11], where: 'the east gate', en: 'On day five, a guard saw smoke in the north. Everyone was afraid.', vi: 'Ngày thứ năm, một lính gác thấy khói ở phía bắc. Ai cũng sợ hãi.', verbs: [['saw', 'see'], ['was', 'be']], q: 'What did the guard see?', opts: ['smoke', 'a bird', 'a horse'] },
+    { at: [29, 17], where: 'the market stall', en: 'On day six, the baker made bread for everyone. Nobody paid for it.', vi: 'Ngày thứ sáu, bác thợ bánh làm bánh mì cho mọi người. Không ai phải trả tiền.', verbs: [['made', 'make'], ['paid', 'pay']], q: 'Who made the bread?', opts: ['the baker', 'the farmer', 'the guard'] },
+    { at: [30, 8], where: 'Oriaris Hall', en: 'On day seven, a messenger came with a letter. The knights were still fighting.', vi: 'Ngày thứ bảy, một người đưa tin mang thư đến. Các kỵ sĩ vẫn đang chiến đấu.', verbs: [['came', 'come'], ['were', 'be']], q: 'What did the messenger bring?', opts: ['a letter', 'a flag', 'some food'] },
+    { at: [18, 41], where: 'the south rice fields', en: 'On day eight, it rained all day. The rice fields were full of water.', vi: 'Ngày thứ tám, trời mưa suốt cả ngày. Ruộng lúa ngập đầy nước.', verbs: [['rained', 'rain'], ['were', 'be']], q: 'What was the weather like?', opts: ['rainy', 'sunny', 'snowy'] },
+    { at: [31, 18], where: 'the market', en: 'On day nine, the market had only potatoes. People shared them.', vi: 'Ngày thứ chín, chợ chỉ còn khoai tây. Mọi người chia nhau ăn.', verbs: [['had', 'have'], ['shared', 'share']], q: 'What did the market have?', opts: ['only potatoes', 'a lot of fish', 'only rice'] },
+    { at: [7, 22], where: 'the hen house', en: 'On day ten, a little girl found three eggs and gave them to the guards.', vi: 'Ngày thứ mười, một cô bé tìm được ba quả trứng và đem cho lính gác.', verbs: [['found', 'find'], ['gave', 'give']], q: 'How many eggs did she find?', opts: ['three', 'two', 'ten'] },
+    { at: [17, 29], where: 'the south watchtower', en: 'On day eleven, the guards lit more torches. The night was long and cold.', vi: 'Ngày thứ mười một, lính gác thắp thêm đuốc. Đêm dài và lạnh.', verbs: [['lit', 'light'], ['was', 'be']], q: 'What did the guards light?', opts: ['torches', 'candles', 'the houses'] },
+    { at: [25, 29], where: 'the Brown Family Home', en: 'On day twelve, Mrs. Brown waited at the door all evening. Her son did not come.', vi: 'Ngày thứ mười hai, bà Brown đứng đợi ở cửa suốt buổi tối. Con trai bà không về.', verbs: [['waited', 'wait'], ['did not come', 'not come']], q: 'Who waited at the door?', opts: ['Mrs. Brown', 'Lord Gusest', 'the baker'] },
+    { at: [31, 8], where: 'Oriaris Hall', en: 'On day thirteen, everyone went to Oriaris Hall and prayed for peace.', vi: 'Ngày thứ mười ba, mọi người đến Oriaris Hall và cầu nguyện cho hòa bình.', verbs: [['went', 'go'], ['prayed', 'pray']], q: 'Where did everyone go?', opts: ['Oriaris Hall', 'the rice fields', 'the well'] },
+  ];
+  const LAST_DAY = 14;
+
+  function chapter() {
+    const d = data();
+    return d && d.ch ? d.ch : null;
+  }
+  function startChapter() {
+    const d = data();
+    if (!d || d.ch || d.done) return;
+    d.ch = { day: 1, ok: {}, started: Date.now() };
+    save();
+  }
+  function todayTask() {
+    const d = data();
+    const ch = d && d.ch;
+    if (!ch || d.done || ch.day >= LAST_DAY) return null;
+    return Object.assign({ day: ch.day }, DAYS[ch.day - 1]);
+  }
+  // The golden-light reading card of the day.
+  const cardDone = () => {
+    const ch = chapter();
+    return !!(ch && ch.ok[ch.day]);
+  };
+  // The whole day: the reading card and the letters of the messenger (js/front.js).
+  const todayDone = () => cardDone() && (!window.LQFront || window.LQFront.dayDone());
+
+  const DAY_CSS = `
+#lq-day-hud{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9040;background:#1d1a14ee;border:2px solid #c9a24a;border-radius:999px;padding:7px 16px;color:#f4ecd6;font:650 13px/1.3 system-ui,'Segoe UI',sans-serif;box-shadow:0 6px 18px #0008;max-width:calc(100vw - 32px);text-align:center;pointer-events:none}
+#lq-day-hud[hidden]{display:none}
+#lq-day-hud b{color:#f3c14b}
+#lq-day{position:fixed;inset:0;z-index:10030;display:grid;place-items:center;background:#0007;font-family:system-ui,'Segoe UI',sans-serif}
+#lq-day .box{width:min(560px,calc(100vw - 32px));box-sizing:border-box;background:linear-gradient(170deg,#2a251c,#1b1813);border:2px solid #c9a24a;border-radius:16px;padding:16px 18px 14px;color:#f4ecd6;box-shadow:0 14px 40px #000b}
+#lq-day .tag{font:800 12px system-ui,sans-serif;letter-spacing:.08em;color:#e0c27a;text-transform:uppercase}
+#lq-day .en{margin:8px 0 4px;font:600 19px/1.45 Georgia,'Times New Roman',serif}
+#lq-day .en b{color:#f3c14b;font-weight:800}
+#lq-day .vi{margin:0 0 10px;font:14px/1.4 system-ui,sans-serif;color:#bfb6a0}
+#lq-day .verbs{font:13px/1.5 system-ui,sans-serif;background:#ffffff0d;border-radius:10px;padding:7px 10px;margin-bottom:12px}
+#lq-day .verbs span{display:inline-block;margin-right:12px;white-space:nowrap}
+#lq-day .verbs b{color:#f3c14b}
+#lq-day .q{font:700 15px system-ui,sans-serif;margin-bottom:8px}
+#lq-day .opts{display:grid;gap:7px}
+#lq-day .opts button{background:#3a3226;color:#f4ecd6;border:1px solid #6b5a3a;border-radius:10px;padding:9px 12px;font:600 15px system-ui,sans-serif;text-align:left;cursor:pointer}
+#lq-day .opts button:hover{border-color:#e0c27a}
+#lq-day .opts button.no{border-color:#b5523b;background:#4a2a22;animation:lqShake .3s}
+#lq-day .opts button.yes{border-color:#7fae5a;background:#2f4126}
+@keyframes lqShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#lq-day .fb{min-height:20px;margin-top:9px;font:600 14px/1.4 system-ui,sans-serif}
+#lq-day .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+#lq-day .row button{background:#c9a24a;color:#1d1a14;border:0;border-radius:8px;padding:7px 14px;font:800 14px system-ui,sans-serif;cursor:pointer}
+#lq-day .row button.later{background:none;color:#bfb6a0;text-decoration:underline;font-weight:600}
+`;
+  const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  // Bold the day's past verbs inside the sentence.
+  function markVerbs(text, verbs) {
+    let html = escHtml(text);
+    verbs.forEach(([past]) => {
+      html = html.replace(new RegExp('\\b(' + past.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b', 'g'), '<b>$1</b>');
+    });
+    return html;
+  }
+  let dayCard = null;
+  function closeDayCard() {
+    if (!dayCard) return;
+    dayCard.remove();
+    dayCard = null;
+    const sc = getScene();
+    const kb = sc && sc.input && sc.input.keyboard;
+    if (kb) kb.enabled = true;
+  }
+  function openDayCard(t) {
+    if (dayCard || filming) return;
+    ensureCss();
+    const sc = getScene();
+    const kb = sc && sc.input && sc.input.keyboard;
+    if (kb) {
+      kb.enabled = false;
+      try {
+        kb.resetKeys();
+      } catch (e) {}
+    }
+    const opts = t.opts.map((o, i) => ({ o, right: i === 0 })).sort(() => Math.random() - 0.5);
+    const root = document.createElement('div');
+    root.id = 'lq-day';
+    root.innerHTML =
+      `<div class="box" role="dialog" aria-label="Day ${t.day}"><div class="tag">📜 Day ${t.day} / ${LAST_DAY} · ${escHtml(t.where)}</div>` +
+      `<p class="en">${markVerbs(t.en, t.verbs)}</p><p class="vi">${escHtml(t.vi)}</p>` +
+      `<div class="verbs">📘 Past tense: ${t.verbs.map(([p, b]) => `<span><b>${escHtml(p)}</b> ← ${escHtml(b)}</span>`).join('')}</div>` +
+      `<div class="q">❓ ${escHtml(t.q)}</div><div class="opts">${opts.map((x, i) => `<button type="button" data-i="${i}">${escHtml(x.o)}</button>`).join('')}</div>` +
+      '<div class="fb"></div><div class="row"><button type="button" class="later">Later</button></div></div>';
+    document.body.appendChild(root);
+    dayCard = root;
+    const fb = root.querySelector('.fb');
+    const row = root.querySelector('.row');
+    root.querySelector('.later').onclick = closeDayCard;
+    root.querySelectorAll('.opts button').forEach((btn) => {
+      btn.onclick = () => {
+        const x = opts[Number(btn.dataset.i)];
+        if (!x.right) {
+          btn.classList.remove('no');
+          void btn.offsetWidth;
+          btn.classList.add('no');
+          fb.textContent = '✗ Not quite. Read the sentence again. · Đọc lại câu chuyện nhé.';
+          fb.style.color = '#f0a08a';
+          return;
+        }
+        btn.classList.add('yes');
+        root.querySelectorAll('.opts button').forEach((b) => (b.disabled = true));
+        const ch = chapter();
+        if (ch && !ch.ok[t.day]) {
+          ch.ok[t.day] = Date.now();
+          save();
+        }
+        fb.innerHTML = `✓ Correct! Day ${t.day} is done. Now go to the <b>Brown Family Home</b> and sleep (bed, E). <br><span style="color:#bfb6a0">Đúng rồi! Về Brown Family Home và ngủ (đến giường, nhấn E).</span>`;
+        fb.style.color = '#b8e08f';
+        row.innerHTML = '<button type="button">OK ✓</button>';
+        row.querySelector('button').onclick = closeDayCard;
+      };
+    });
+  }
+
+  // HUD line + golden light for today's place.
+  let hud = null;
+  function updateHud(sc) {
+    if (!hud) {
+      ensureCss();
+      hud = document.createElement('div');
+      hud.id = 'lq-day-hud';
+      document.body.appendChild(hud);
+    }
+    const d = inPast(sc) && data();
+    const ch = d && d.ch;
+    // also hidden while chatting (Lord Gusest, Tom Brown): it would cover the chat's input box
+    if (!ch || d.done || filming || ch.day >= LAST_DAY || (sc.chat && sc.chat.isOpen)) {
+      hud.hidden = true;
+      return;
+    }
+    const t = todayTask();
+    hud.hidden = false;
+    const mail = window.LQFront && window.LQFront.hud();
+    const parts = [];
+    if (!cardDone()) parts.push(`Today: go to <b>${escHtml(t.where)}</b> (golden light)`);
+    if (mail) parts.push(mail);
+    hud.innerHTML = todayDone()
+      ? `📜 Day <b>${ch.day}</b> / ${LAST_DAY} · 🛏 Done! Sleep in the <b>Brown Family Home</b> (bed, E)`
+      : `📜 Day <b>${ch.day}</b> / ${LAST_DAY} · ${parts.join('<br>')}`;
+  }
+  let nearDay = false;
+  function drawDayLight(sc, time) {
+    const st = sc.__lqPastDay;
+    if (!st) return;
+    st.g.clear();
+    if (!here(sc) || sc.inside || filming || !sc.player) return;
+    const t = todayTask();
+    if (!t || cardDone()) return;
+    const cx = t.at[0] * 32 + 16;
+    const cy = t.at[1] * 32 + 16;
+    const p = 0.5 + 0.5 * Math.sin(time * 0.004);
+    for (let i = 0; i < 6; i++) st.g.fillStyle(0xffd27a, 0.05 + p * 0.03).fillCircle(cx, cy, 30 - i * 4);
+    st.g.lineStyle(2, 0xffe6a8, 0.5 + p * 0.4).strokeEllipse(cx, cy + 8, 30 + p * 8, 10 + p * 3);
+    const by = cy - 26 - p * 5;
+    st.g.fillStyle(0xffe08a, 1).fillTriangle(cx - 6, by, cx + 6, by, cx, by + 9);
+    st.g.fillStyle(0xfff4d6, 1).fillCircle(cx, by - 4, 5);
+    const close = Math.hypot(sc.player.x - cx, sc.player.y - cy) < 34;
+    if (close && !nearDay) openDayCard(t);
+    nearDay = close;
+  }
+  function attachDay(sc) {
+    if (sc.__lqPastDay) return;
+    sc.__lqPastDay = { g: sc.add.graphics().setDepth(8.7) };
+    sc.events.on('update', (time) => drawDayLight(sc, time));
+    sc.events.once('shutdown', () => (sc.__lqPastDay = null));
+  }
+
+  // Bed in the Brown Family Home (game: bedNear / trySleep hooks in 10-core-characters-and-scene.js).
+  const canSleepIn = (name) => here(getScene()) && name === 'Brown Family Home';
+  function sleep(sc) {
+    if (!here(sc)) return false;
+    const d = data();
+    if (!d) return false;
+    if (d.done) {
+      toast('😴 A quiet night', 'The war is over.', 'Chiến tranh đã kết thúc. Ngủ ngon!');
+      return true;
+    }
+    startChapter();
+    const t = todayTask();
+    if (t && !cardDone()) {
+      toast('😴 Not yet', `First, go to ${t.where} (golden light).`, 'Hãy làm việc của hôm nay trước đã.');
+      return true;
+    }
+    if (t && !todayDone()) {
+      toast('😴 Not yet', "First, deliver today's letters (see the bar at the bottom).", 'Hãy giao hết thư của hôm nay trước đã.');
+      return true;
+    }
+    sc.sleeping = true;
+    save();
+    const cam = sc.cameras.main;
+    // Force the fade (another fade, e.g. from entering the house, may still be running and would block it), and
+    // finish the night on a timer too, so the player can never get stuck "sleeping".
+    let night = false;
+    const morning = () => {
+      if (night) return;
+      night = true;
+      const ch = d.ch;
+      ch.day = Math.min(LAST_DAY, ch.day + 1);
+      // The village's own calendar: no sc.newDay() here (it would add a day and the daily pay in the present).
+      sc.store.game.minutes = 420;
+      const ending = ch.day >= LAST_DAY;
+      if (ending && sc.inside) {
+        try {
+          sc.leaveBuilding();
+        } catch (e) {}
+      }
+      if (ending) sc.player.setPosition(22 * 32 + 16, 21 * 32 + 16);
+      save();
+      cam.fadeIn(900, 0, 0, 0);
+      sc.sleeping = false;
+      if (ending) setTimeout(playEnding, 1100);
+      else {
+        const nt = todayTask();
+        toast(`☀ Day ${ch.day} / ${LAST_DAY}`, nt ? `Today: go to ${nt.where}.` : '', 'Một ngày mới ở làng Oriaris.');
+      }
+    };
+    cam.once('camerafadeoutcomplete', morning);
+    cam.fade(900, 0, 0, 0, true);
+    setTimeout(morning, 1100);
+    return true;
+  }
+
+  // ---- Day 14: the ending ------------------------------------------------------------------------------------------
+  const ENDING = [
+    { cam: [18, 40], zoom: 1.1, en: 'On the fourteenth day, early in the morning, someone ran up the south road.', vi: 'Ngày thứ mười bốn, vào sáng sớm, có người chạy lên con đường phía nam.', act: 'run' },
+    { cam: [18, 27], zoom: 1.2, who: 'Young soldier', en: 'We won! The war is over! Peace is back!', vi: 'Chúng ta thắng rồi! Chiến tranh kết thúc! Hòa bình đã trở lại!' },
+    { cam: [21, 21], zoom: 1.15, en: 'He carried the victory flag. His name was Brown, the father of Mayor Brown.', vi: 'Anh mang theo lá cờ chiến thắng. Tên anh là Brown, cha của Thị trưởng Brown.', act: 'crowd' },
+    { cam: [22, 20], zoom: 1.15, en: 'Everybody cheered. His mother cried and hugged her son.', vi: 'Mọi người reo hò. Mẹ anh bật khóc và ôm chầm lấy con trai.', act: 'cheer' },
+    { cam: [24, 17], zoom: 1, en: 'From that day, March 29th was the Day of Glory.', vi: 'Từ hôm đó, ngày 29 tháng 3 trở thành Ngày Vinh Quang.', act: 'color' },
+    { cam: [24, 17], zoom: 1, en: 'The colors came back to the village, and peace came back too.', vi: 'Màu sắc trở lại với ngôi làng, và hòa bình cũng trở lại.' },
+    { cam: null, zoom: 1, who: 'Ms. Green', en: 'And that, dear, is the story of the Wall of Oriaris.', vi: 'Và đó, cháu yêu, là câu chuyện về Bức tường Oriaris.', act: 'end' },
+  ];
+  function drawSoldier(g, x, y, flagWave) {
+    drawPerson(g, x, y, 0x5c5246, 0x3b2a1e);
+    g.fillStyle(0x8e9294, 1).fillEllipse(x, y - 13, 13, 7);
+    g.fillStyle(0xaeb2b4, 1).fillRect(x - 7, y - 11, 14, 2);
+    g.fillStyle(0x4b3a26, 1).fillRect(x + 6, y - 34, 2, 44);
+    const w = Math.sin(flagWave) * 2;
+    g.fillStyle(0x9a2f2f, 1).fillTriangle(x + 8, y - 34, x + 30, y - 30 + w, x + 8, y - 20);
+    g.fillStyle(0x7d2e2e, 1).fillTriangle(x + 8, y - 26, x + 30, y - 30 + w, x + 8, y - 20);
+    crest(g, x + 15, y - 28, 0.8);
+  }
+  function playEnding() {
+    return runFilm({
+      card: { small: 'Day 14', big: 'The Day of Glory', sub: 'Ngày 14 · Ngày Vinh Quang' },
+      lines: ENDING,
+      setup(sc, actors) {
+        const RC = rnd(99);
+        const crowd = [];
+        for (let i = 0; i < 18; i++) {
+          const ang = (i / 18) * Math.PI * 2;
+          crowd.push({ x: (21 + Math.cos(ang) * 3.2) * 32, y: (20.5 + Math.sin(ang) * 1.8) * 32, c: [0x7a6a58, 0x6b7280, 0x8a7a5a, 0x5d6b5a][i % 4], h: [0x3b2a1e, 0x6b5a45, 0x2a2a2a, 0x8a7a6a][(i * 3) % 4], d: RC() });
+        }
+        const sol = { x: 18.5 * 32, y: 46 * 32, tx: 21 * 32, ty: 20.5 * 32, t0: 0 };
+        let showCrowd = false;
+        let cheer = 0;
+        return {
+          tick(time) {
+            if (showCrowd) crowd.forEach((p, i) => drawPerson(actors, p.x, p.y - (cheer ? Math.abs(Math.sin(time * 0.012 + i)) * 5 : 0), p.c, p.h));
+            if (sol.t0) {
+              const k = Math.min(1, (performance.now() - sol.t0) / 5200);
+              // up the south road, then across to the middle of the crowd
+              const yRoad = sol.y + (27 * 32 - sol.y) * Math.min(1, k / 0.75);
+              const x = k < 0.75 ? sol.x : sol.x + (sol.tx - sol.x) * ((k - 0.75) / 0.25);
+              const y = k < 0.75 ? yRoad : 27 * 32 + (sol.ty - 27 * 32) * ((k - 0.75) / 0.25);
+              const bob = k < 1 ? Math.abs(Math.sin(time * 0.02)) * 3 : cheer ? Math.abs(Math.sin(time * 0.012)) * 5 : 0;
+              drawSoldier(actors, x, y - bob, time * 0.01);
+              if (cheer && k >= 1) drawPerson(actors, x - 18, y, 0x6b5a6a, 0x8a8a8a);
+            }
+          },
+          act(a) {
+            if (a === 'run') sol.t0 = performance.now();
+            if (a === 'crowd') showCrowd = true;
+            if (a === 'cheer') cheer = 1;
+            if (a === 'color') {
+              setColor(true, 3.5);
+              const d = data();
+              if (d && !d.done) {
+                d.done = Date.now();
+                save();
+              }
+            }
+            if (a === 'end') showCrowd = false;
+          },
+        };
+      },
+    }).then(() => finishChapter());
+  }
+  function finishChapter() {
+    const sc = getScene();
+    const d = data();
+    if (d && !d.rewarded) {
+      d.done = d.done || Date.now();
+      d.rewarded = Date.now();
+      if (sc && sc.store && sc.store.game) sc.store.game.money = (Number(sc.store.game.money) || 0) + 100;
+      save();
+      toast('🏆 Chapter 2 complete!', 'The Wall of Oriaris · +$100', 'Hoàn thành Chương 2! Về hiện tại và hỏi Mr. Brown về cha của ông.');
+    }
+    setTimeout(() => {
+      const s = getScene();
+      if (s && here(s) && s.switchArea) s.switchArea('english-town', { x: 8, y: 23 }, 'Back to today · Ask Mr. Brown about his father');
+    }, 3500);
+  }
+  const isDone = () => {
+    const d = data();
+    return !!(d && d.done);
+  };
+
+  // ---- the village's own calendar ---------------------------------------------------------------------------------------
+  // Time in the present stands still while the player is in the past: the present day and clock are kept on the way in
+  // (d.present) and given back on the way out. The village counts its own days (ch.day, only by sleeping in the Brown
+  // Family Home) and keeps its own clock (d.clock). Day 1 = March 16 … Day 14 = March 29, the Day of Glory.
+  const FIRST_DATE = 15;
+  function patchNewDay(sc) {
+    if (sc.__lqPastNewDay || typeof sc.newDay !== 'function') return;
+    sc.__lqPastNewDay = true;
+    const orig = sc.newDay;
+    // Midnight in the village must not start a new day (and pay the daily money) in the present. Also not in the frame
+    // right after leaving, before calendarSync has given the present day back (d.present still set).
+    sc.newDay = function () {
+      const g = this.store && this.store.game;
+      if (inPast(this) || (g && g.ach && g.ach.past && g.ach.past.present)) return;
+      return orig.apply(this, arguments);
+    };
+  }
+  function calendarSync(sc) {
+    const g = sc.store && sc.store.game;
+    if (!g) return;
+    patchNewDay(sc);
+    if (inPast(sc)) {
+      if (sc.switching) return;
+      const d = data();
+      if (!d) return;
+      if (!d.present) {
+        d.present = { day: g.day || 1, minutes: g.minutes || 0 };
+        g.minutes = typeof d.clock === 'number' ? d.clock : 480;
+        save();
+      }
+      d.clock = g.minutes;
+    } else {
+      const d = g.ach && g.ach.past;
+      if (!d || !d.present) return;
+      g.day = d.present.day;
+      g.minutes = d.present.minutes;
+      d.present = null;
+      save();
+    }
+  }
+  function pastDate() {
+    const d = data();
+    if (d && d.done) return `March ${FIRST_DATE + LAST_DAY} · Day of Glory`;
+    const day = (d && d.ch && d.ch.day) || 1;
+    return `Day ${day}/${LAST_DAY} · March ${FIRST_DATE + day}`;
+  }
+  // For the game's HUDs: "Day N" in the present, the village date in the past.
+  function dayLabel(day) {
+    return inPast(getScene()) ? pastDate() : `Day ${day || 1}`;
+  }
+
+  // Go to the village (from the Ms. Green prelude, Ms. Green later, or ?past=1).
+  function enter(opts) {
+    const o = Object.assign({ film: true }, opts || {});
+    const sc = getScene();
+    if (!sc || !sc.switchArea) return false;
+    if (here(sc)) {
+      if (o.film) play();
+      return true;
+    }
+    const d = data();
+    if (d) {
+      d.visits = (d.visits || 0) + 1;
+      d.pendingFilm = !!o.film;
+      save();
+    }
+    sc.switchArea(ID, SPAWN, 'Chapter 2 · 70 Years Ago');
+    return true;
+  }
+
+  setInterval(() => {
+    const sc = getScene();
+    if (!sc || !sc.area) return;
+    // Check the tall sprites every frame (so they appear/disappear together with the area), hooked once per scene.
+    if (!sc.__lqPastHook && sc.events) {
+      sc.__lqPastHook = true;
+      sc.events.on('update', (time, delta) => {
+        calendarSync(sc);
+        if (here(sc)) armorNpc(sc);
+        syncTall(sc);
+        folkUpdate(sc, delta);
+        hensUpdate(sc, delta);
+      });
+    }
+    if (sc.add && sc.events && sc.player) attachDay(sc);
+    const d = here(sc) && data();
+    // After the chapter the village keeps its colours.
+    if (d && d.done && !colorBack) setColor(true);
+    applyFilter(sc);
+    checkSigns(sc);
+    updateHud(sc);
+    if (d && d.pendingFilm && !sc.switching) {
+      d.pendingFilm = false;
+      save();
+      setTimeout(play, 700);
+    } else if (d && !d.ch && !d.done && !d.pendingFilm && !filming && !sc.switching) startChapter();
+  }, 300);
+
+  const m = /[?&]past=(\d)\b/.exec(location.search);
+  if (m) {
+    const wait = setInterval(() => {
+      const sc = getScene();
+      if (sc && sc.player && sc.switchArea) {
+        clearInterval(wait);
+        setTimeout(() => enter({ film: m[1] !== '2' }), 900);
+      }
+    }, 500);
+  }
+
+  window.LQPast = {
+    id: ID,
+    area,
+    rooms: ROOMS,
+    notes: NOTES,
+    signs: SIGNS,
+    paint,
+    enter,
+    play,
+    isHere: () => here(getScene()),
+    isFilming: () => filming,
+    read: () => {
+      const d = data();
+      return d ? [...SIGNS, ...NOTES].filter((s) => d.read[s.id]).map((s) => s.id) : [];
+    },
+    setColor,
+    // Chapter 2 days (bed hooks in 10-core-characters-and-scene.js)
+    canSleepIn,
+    sleep,
+    isDone,
+    days: DAYS,
+    // Own calendar (used by the HUDs in 10, 16 and 19)
+    dayLabel,
+    pastDate,
+    // Testing the working day: LQPast.workers() lists where the children and mothers are; LQPast.setTime(6.5) = 06:30.
+    workers() {
+      const sc = getScene();
+      const st = sc && sc.__lqPastFolk;
+      return st ? st.folk.filter((p) => p.v.work).map((p) => ({ i: p.i, kind: p.v.kind, mode: p.mode, going: p.route ? p.goal : null, gone: !!p.gone, x: +(p.x / T).toFixed(1), y: +(p.y / T).toFixed(1) })) : null;
+    },
+    setTime(h) {
+      const sc = getScene();
+      if (sc && sc.store && sc.store.game) sc.store.game.minutes = Math.round(h * 60);
+    },
+    status() {
+      const d = data();
+      return d ? { day: d.ch ? d.ch.day : 0, todayDone: todayDone(), done: !!d.done, answered: d.ch ? Object.keys(d.ch.ok).length : 0 } : null;
+    },
+    playEnding,
+    // Testing: LQPast.setDay(13) jumps to a day (the task of that day still has to be answered).
+    setDay(n) {
+      const d = data();
+      if (!d) return;
+      startChapter();
+      d.ch.day = Math.max(1, Math.min(LAST_DAY - 1, n | 0));
+      save();
+    },
+    // Testing: start the chapter over (grey again, day 1).
+    reset() {
+      const d = data();
+      if (!d) return;
+      d.ch = null;
+      d.done = 0;
+      d.rewarded = 0;
+      save();
+      startChapter();
+      setColor(false);
+    },
+  };
+})();
+
+</script>
+    <!-- V24 · Old Oriaris Royal Island architectural rebuild; other worlds unchanged -->
+<script>
+
+/* LIFEQUEST AI V17 · Career Worlds - four individually designed playable Phaser maps.
+   Map 5 Tech-Co B1; Map 6 Old Oriaris B1-B2; Map 7 Wish Valley B2; Map 8 Vocalt, Greedy Land C1. */
+(function () {
+  'use strict';
+  const T = 32, W = 56, H = 34;
+  const ORDER = ['tech-co', 'old-oriaris', 'wish-valley', 'vocalt-greedy-land'];
+  const COLORS = {
+    'tech-co': { ground:0x8ac7c4,grass:0x76b4a5, path:0xc8dbdc, trim:0x7da8b3, dot:0x5c9f99, roof:0x295e8c, wall:0xe5f3ef, light:0x83e5f9, gold:0xf0c972 },
+    'old-oriaris': {ground:0xbca681,grass:0x8d9976,path:0xe6d1aa,trim:0xa18569,dot:0x806849,roof:0x885542,wall:0xf0dfbd,light:0xeccf89,gold:0xf6d18c},
+    'wish-valley': {ground:0x497d5d,grass:0x376d4c,path:0xc2a775,trim:0x58764b,dot:0x254d43,roof:0x927047,wall:0xb8a677,light:0xb7f6dc,gold:0xf7d87a},
+    'vocalt-greedy-land': {ground:0x9a818e,grass:0x7d737a,path:0xe1c8a1,trim:0xb49376,dot:0xb48d53,roof:0x673a64,wall:0xe7d5c9,light:0xffd782,gold:0xf6c95d}
+  };
+  const SPECS = {
+    'tech-co': {name:'5 · Tech-Co — Workplace English (B1)', level:'B1', title:'TECH-CO', subtitle:'Workplace English · Meetings · Bug reports · Emails', accent:'#80e5ef', start:{x:2,y:17}, landmarks:[[27,10,'INNOVATION NEXUS'],[27,26,'CO-WORK GARDEN']], buildings:[
+      {name:'TECH-CO HEADQUARTERS',x:6,y:4,w:15,h:8,door:13},{name:'MEETING STUDIO',x:35,y:4,w:15,h:8,door:42},{name:'HELP DESK',x:6,y:24,w:14,h:7,door:13},{name:'MAIL & PROJECTS',x:36,y:24,w:14,h:7,door:42}]},
+    'old-oriaris': {name:'6 · Old Oriaris — Royal Capital (B1–B2)',level:'B1–B2',title:'OLD ORIARIS · ROYAL CAPITAL',subtitle:'Royal Capital Reborn · Past Continuous · While & When',accent:'#e7c681',start:{x:44,y:54},landmarks:[[44,20,'CROWN PALACE · IMPERIAL TERRACE'],[44,55,'THE SOVEREIGN GATE'],[44,32,'GRAND FOUNTAIN COURT']], buildings:[
+      {name:'CROWN PALACE',x:28,y:6,w:32,h:13,door:44},
+      {name:'GRAND OPERA',x:8,y:25,w:17,h:11,door:16},
+      {name:'ROYAL ACADEMY',x:63,y:25,w:17,h:11,door:71},
+      {name:'GALLERY OF DYNASTIES',x:63,y:43,w:17,h:11,door:71},
+      {name:'HOUSE OF AURELIA',x:8,y:8,w:15,h:9,door:15},
+      {name:'HOUSE OF VALMONT',x:65,y:8,w:15,h:9,door:72},
+      {name:'HOUSE OF SERAPHINE',x:7,y:43,w:16,h:10,door:15},
+      {name:'HOUSE OF CORVEN',x:25,y:44,w:10,h:10,door:29}]},
+
+    'wish-valley': {name:'7 · Wish Valley — Heart of the Living World (B2)',level:'B2',title:'WISH VALLEY · AYLARA',subtitle:'Aylara Mother Falls · Navae River · Maorai · B2 Wishes',accent:'#b4f6c9',start:{x:29,y:51},landmarks:[[44,9,'AYLARA · MOTHER FALLS'],[21,27,'VAELA VILLAGE'],[69,25,'TRUNG TÂM TINH THẦN MAORAI'],[29,52,'STORMFALL · SKYFINCH-01'],[45,35,'NAVAE RIVER'],[69,46,'TALORI CANOPY'],[79,55,'MOONVEIL LAGOON']],buildings:[
+      {name:'THE ELDER’S CANOPY',x:9,y:9,w:13,h:9,door:15},
+      {name:'COUNCIL ROOT HALL',x:22,y:19,w:15,h:10,door:29},
+      {name:'WILDFRUIT MARKET',x:8,y:33,w:13,h:9,door:14},
+      {name:'ROOT HOME · VAELA',x:24,y:37,w:11,h:8,door:29},
+      {name:'EXPLORER OUTPOST',x:66,y:34,w:12,h:9,door:72},
+      {name:'ROOT HOME · TALORI',x:67,y:10,w:11,h:8,door:72}]},
+    'vocalt-greedy-land': {name:'8 · Vocalt — The City of Endless Commerce (C1)',level:'C1',title:'VOCALT · GREEDY LAND',subtitle:'Living Citizens Market · Street Stalls & Luxury Arcade',accent:'#f4dcad',start:{x:2,y:24},
+      // Four distinct socioeconomic districts; no castle wall or Golden Gate.
+      landmarks:[[40,9,'THE GRAND EXCHANGE'],[71,9,'VOCALT LEDGER SPIRE'],[12,14,'SAPPHIRE ARCADE'],[11,25,'RIBBON BAZAAR'],[39,36,'COMMON MARKET · OPEN STALLS'],[68,38,'CARAVAN QUARTER']],
+      buildings:[
+      // NORTH: luxury precinct, wide frontage + arcades + grand exchange
+      {name:'BRAM · ROYAL METALWORKS',kind:'metal',x:3,y:2,w:13,h:10,door:10,zone:'luxury'},
+      {name:'SERENA · SAPPHIRE JEWELS',kind:'jewelry',x:20,y:2,w:7,h:10,door:23,zone:'luxury'},
+      {name:'THE GRAND EXCHANGE',kind:'exchange',x:28,y:2,w:26,h:10,door:41,zone:'luxury'},
+      {name:'CHRONOS · FINE CLOCKS',kind:'clock',x:55,y:2,w:7,h:10,door:58,zone:'luxury'},
+      {name:'LORD VOCALT · LEDGER SPIRE',kind:'spire',x:66,y:2,w:12,h:10,door:72,zone:'luxury'},
+      // MID: high-volume street shopping with textiles, makers, guides and books
+      {name:'ELIRA · RIBBON & REED',kind:'fabric',x:3,y:16,w:13,h:7,door:10,zone:'bazaar'},
+      {name:'COPPERWHEEL WORKSHOP',kind:'artisan',x:20,y:16,w:14,h:7,door:27,zone:'bazaar'},
+      {name:'IVO · LEDGERS & MAPS',kind:'book',x:45,y:16,w:16,h:7,door:53,zone:'bazaar'},
+      {name:'CLOTH MARKET HOUSE',kind:'fabric',x:66,y:16,w:12,h:7,door:72,zone:'bazaar'},
+      // SOUTH: dense market with small detached canvas stalls; these are lived-in houses behind them.
+      {name:'HEARTH FAMILY HOME',kind:'townhome',x:3,y:27,w:9,h:5,door:7,zone:'residential'},
+      {name:'OAK & WILLOW HOME',kind:'townhome',x:13,y:27,w:7,h:5,door:16,zone:'residential'},
+      {name:'CLOVER FAMILY HOME',kind:'townhome',x:21,y:27,w:10,h:5,door:26,zone:'residential'},
+      {name:'GARDEN COURT HOME',kind:'townhome',x:32,y:27,w:7,h:5,door:35,zone:'residential'},
+      {name:'SAFFI FAMILY HOME',kind:'townhome',x:45,y:27,w:10,h:5,door:50,zone:'residential'},
+      {name:'SPICE LANE HOME',kind:'townhome',x:56,y:27,w:7,h:5,door:59,zone:'residential'},
+      {name:'MARTA FAMILY HOME',kind:'townhome',x:65,y:27,w:8,h:5,door:69,zone:'residential'},
+      {name:'NARROW COURT HOME',kind:'townhome',x:74,y:27,w:4,h:5,door:76,zone:'residential'},
+      // LOWER: working trade city / logistics / small taverns
+      {name:'ALBA · STREET KITCHEN',kind:'food',x:3,y:41,w:13,h:6,door:10,zone:'caravan'},
+      {name:'TERRACOTTA POTTERY',kind:'artisan',x:20,y:41,w:14,h:6,door:27,zone:'caravan'},
+      {name:'TOBIN · CARAVAN DEPOT',kind:'warehouse',x:45,y:41,w:16,h:6,door:53,zone:'caravan'},
+      {name:'COIN & CLOVE TAVERN',kind:'food',x:66,y:41,w:12,h:6,door:72,zone:'caravan'}]}
+  };
+  const ASSIGNMENTS = {
+    'tech-co': [
+      {id:'priya',name:'Priya',x:22,y:14,role:'Meeting Coordinator',color:0x3d729f,prompt:'The login page is broken! Arrange a meeting and explain the problem with a reason.',hint:'Could we meet at three? The problem is the login page because the button fails.',checks:[[/\b(meet|meeting|free|available)\b/i,'Suggest a meeting time (meet / free).'],[/\b(login|log in|page|button|problem|issue)\b/i,'Describe the login-page problem.'],[/\b(because|since|fails?|broken|doesn.t work|cannot|can.t)\b/i,'Explain why something is wrong.']]},
+      {id:'jonah',name:'Jonah',x:33,y:14,role:'Support Engineer',color:0x557a7f,prompt:'Describe the error step by step, then make a polite recommendation.',hint:'First I open the page. Then I press the button. We should check it, please.',checks:[[/\b(first|firstly)\b/i,'Start with First.'],[/\b(then|next|after that|second)\b/i,'Explain the next step.'],[/\b(should|please|could)\b/i,'Add a polite recommendation.']]},
+      {id:'erin',name:'Erin',x:27,y:22,role:'Project Manager',color:0x896d99,prompt:'Write a short work email: action requested, deadline, and a question.',hint:'Please check the login page. The deadline is tomorrow. Could you call me?',checks:[[/\b(please|could you|can you|should)\b/i,'Make a polite request.'],[/\b(deadline|tomorrow|by (monday|tuesday|wednesday|thursday|friday|saturday|sunday|noon|tonight|\d)|before)\b/i,'Add a deadline.'],[/\?|\b(could you|would you|can you|what time|when can)\b/i,'Include one question.']]}
+    ],
+    'old-oriaris': [
+      {id:'hugo',name:'Hugo',x:43,y:23,role:'Royal Steward',color:0x567284,prompt:'Tell me what the royal family was doing when the palace bells rang. Use the past continuous and when.',hint:'The king was giving a speech when the palace bells rang.',checks:[[/\b(was|were)\s+\w+ing\b/i,'Use was/were + -ing.'],[/\bwhen\b/i,'Add when.'],[/\b(king|queen|speech|bell|palace|royal|court|guest|ceremony|rang)\b/i,'Mention a royal event or ceremony.']]},
+      {id:'lila',name:'Lila',x:61,y:39,role:'Royal Historian',color:0x866ba4,prompt:'Describe two actions happening at the same time during a royal celebration, using while and past continuous.',hint:'While the guests were dancing, the musicians were playing.',checks:[[/\bwhile\b/i,'Connect the two actions with while.'],[/\b(was|were)\s+\w+ing\b/i,'Describe the first action in progress.'],[/\b(was|were)\s+\w+ing\b[\s\S]*\b(was|were)\s+\w+ing\b/i,'Use past continuous for both simultaneous actions.']]},
+      {id:'sami',name:'Sami',x:26,y:39,role:'Royal Event Coordinator',color:0xa9754f,prompt:'What were you doing when the royal guests arrived at the opera?',hint:'I was preparing the hall when the royal guests arrived.',checks:[[/\b(was|were)\s+\w+ing\b/i,'Use was/were + -ing.'],[/\bwhen\b/i,'Use when for the interruption.'],[/\b(royal|guests?|arrived|opera|event|hall|music|ceremony|preparing)\b/i,'Mention the royal celebration.']]}
+    ],
+
+    'wish-valley': [
+      {id:'anya',name:'Anya',x:19,y:31,role:'Maorai Storykeeper',color:0x9e7bb5,prompt:'What do you wish for? What would that choice cost you?',hint:'I wish I could stay. If I stayed, it would cost me the new job.',checks:[[/\bi\s+wish\b/i,'Begin with I wish.'],[/\b(if|would|could|were)\b/i,'Use a hypothetical choice.'],[/\b(cost|lose|give up|because|sacrifice|miss)\b/i,'Explain the trade-off.']]},
+      {id:'theo',name:'Theo',x:65,y:32,role:'Explorer of Talori',color:0x547e82,prompt:'I must choose: leave for my studies or stay with family. Give advice with a reason.',hint:'If I were you, I would stay because your family is here.',checks:[[/\bif\s+i\s+were\s+you\b/i,'Use If I were you.'],[/\b(would|should)\b/i,'Give your recommendation using would / should.'],[/\b(because|since|as)\b/i,'Explain your reason.']]},
+      {id:'nia',name:'Nia',x:25,y:46,role:'Maorai Nature Guide',color:0x8b6e9f,prompt:'How do you feel about your journey? Tell me why; include both confidence and uncertainty.',hint:'I feel proud because I finished the road, but I am unsure.',checks:[[/\b(feel|feeling)\b/i,'Name your feeling.'],[/\b(because|since)\b/i,'Explain the reason.'],[/\b(proud|unsure|uncertain|nervous|confident|worried|happy|afraid|if)\b/i,'Use an emotion or uncertainty word.']]}
+    ],
+    'vocalt-greedy-land': [
+      {id:'cass',name:'Cass',x:22,y:24,role:'Rare Lamp Dealer',color:0xac7967,prompt:'Lord Vocalt has collected the last lamp, and had bought it before everyone knew. Use BOTH perfect tenses.',hint:'I have never seen a lamp like that. He had already bought it.',checks:[[/\b(have|has)\s+(never\s+|already\s+|just\s+)?(seen|collected|sold|bought|found|become|learned|been|had)\b/i,'Use have/has + past participle.'],[/\bhad\s+(already\s+|never\s+)?(bought|sold|hidden|decided|collected|seen|found|been|placed)\b/i,'Use had + past participle.'],[/\b(lamp|vocalt|collection|bought|sold|seen)\b/i,'Mention the rare lamp.']]},
+      {id:'rhee',name:'Rhee',x:54,y:25,role:'Luxury Merchant',color:0x89665f,prompt:'He has sold many rare things, but had hidden his finest item before dawn. Use both perfect tenses.',hint:'He has sold many things, but he had already hidden the best one. I have found only stories.',checks:[[/\b(have|has)\s+(never\s+|already\s+|just\s+)?(seen|collected|sold|bought|found|become|learned|been|had)\b/i,'Use a present perfect form.'],[/\bhad\s+(already\s+|never\s+)?(bought|sold|hidden|decided|collected|seen|found|been|placed)\b/i,'Use a past perfect form.'],[/\b(sold|hidden|rare|things?|dawn|merchant|best|treasure)\b/i,'Refer to the merchant story.']]},
+      {id:'maren',name:'Maren',x:40,y:18,role:'Salon Curator',color:0x8d6c98,prompt:'Explain what you have learned, and what you had decided before entering the salon.',hint:'I have learned the two perfect tenses. I had decided to refuse the lamp before I entered.',checks:[[/\b(have|has)\s+(never\s+|already\s+|just\s+)?(seen|collected|sold|bought|found|become|learned|been|had)\b/i,'Use present perfect for your learning.'],[/\bhad\s+(already\s+|never\s+)?(bought|sold|hidden|decided|collected|seen|found|been|placed)\b/i,'Use past perfect for the earlier decision.'],[/\b(before|already|salon|entered|lamp|learned|refuse)\b/i,'Explain the order of events.']]}
+    ]
+  };
+  // All eight outdoor maps are open from the start. Quests still earn their normal rewards.
+  const requirements = Object.freeze({});
+  function palette(id){return COLORS[id]||COLORS['tech-co'];}
+  function col(g,c,x,y,w,h,a=1){g.fillStyle(c,a).fillRect(x,y,w,h);}
+  function ellipse(g,c,x,y,w,h,a=1){g.fillStyle(c,a).fillEllipse(x,y,w,h);}
+  function stroke(g,c,x,y,w,h,alpha=1){g.lineStyle(2,c,alpha).strokeRect(x,y,w,h);}
+  function rnd(seed){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return (seed>>>0)/4294967296;};}
+  function sign(g,cx,cy,label,dark=0x25334c){
+    const w=Math.max(72,label.length*6+20); col(g,dark,cx-w/2,cy,w,18);stroke(g,0xe5d5a3,cx-w/2,cy,w,18); g.fillStyle(0xf5e8c9,1);
+    // Lettering uses Phaser Text in scene overlays to stay crisp and readable.
+  }
+  // V18 · Tech-Co Neo-Garden Campus. Rendered entirely into the existing cached
+  // world texture; no changes to tile geometry, NPC coordinates or collisions.
+  function tBox(g,x,y,w,h,fill,edge=0x27495e){
+    col(g,edge,x,y,w,h);col(g,fill,x+3,y+3,w-6,h-6);
+  }
+  function tLine(g,color,x1,y1,x2,y2,width=2,opacity=1){
+    g.lineStyle(width,color,opacity);g.lineBetween(x1,y1,x2,y2);
+  }
+  function tTree(g,x,y,variant=0){
+    const greens=[0x305e55,0x3f7864,0x578e73,0x76ad83];
+    ellipse(g,0x254a46,x+5,y+21,58,18,.22);
+    col(g,0x735e4d,x-5,y-5,10,26);
+    col(g,0xaa8b62,x-2,y-4,3,17,.65);
+    const nodes=[[-18,-18,37,27,1],[15,-19,38,28,2],[-5,-29,41,27,3],[-17,-5,30,23,2],[12,-4,32,21,1]];
+    for(let i=0;i<nodes.length;i++){
+      const [dx,dy,w,h,k]=nodes[i];
+      ellipse(g,greens[(k+variant)%greens.length],x+dx,y+dy,w,h,.96);
+    }
+    col(g,0xb9e3aa,x-18,y-34,12,4,.65);
+    col(g,0xa2d9a5,x+9,y-28,7,3,.7);
+  }
+  function tPlanter(g,x,y,w=92){
+    ellipse(g,0x254c54,x+w/2,y+17,w+8,17,.20);
+    col(g,0x536d68,x,y+7,w,17);col(g,0x87a39c,x+3,y+8,w-6,5);
+    col(g,0x3b7b61,x+6,y+2,w-12,11);
+    for(let i=0;i<Math.max(3,Math.floor(w/14));i++){
+      let xx=x+9+i*13, yy=y+2+(i%3)*3;
+      ellipse(g,[0xeedc9c,0xe9a7ab,0xcfc0f0][i%3],xx,yy,7,7,.95);
+      col(g,0xfaf4de,xx-1,yy-1,2,2,.88);
+    }
+  }
+  function tBench(g,x,y){
+    ellipse(g,0x28545b,x+22,y+18,64,17,.2);
+    for(let j=0;j<2;j++){
+      col(g,0x4a6576,x+5,y+3+j*8,35,5);
+      col(g,0xc1a87d,x+7,y+3+j*8,31,2,.94);
+    }
+    col(g,0x455766,x+7,y+15,5,7);col(g,0x455766,x+35,y+15,5,7);
+  }
+  function tPocketGarden(g,x,y,mode=0){
+    // Four small sustainable garden pockets give the outer campus identity.
+    ellipse(g,0x28574e,x+5,y+12,108,78,.16);
+    col(g,0x477c70,x-46,y-30,96,69);
+    col(g,0xa5c4a6,x-42,y-26,88,61);
+    col(g,0x508b70,x-37,y-23,78,54);
+    for(let k=0;k<11;k++){
+      const xx=x-30+(k%4)*20+(k%2)*5;
+      const yy=y-13+Math.floor(k/4)*16;
+      ellipse(g,[0xe9b1b5,0xeccf94,0xcbd7e9][(k+mode)%3],xx,yy,7,6,.92);
+      col(g,0xf8f5dc,xx-1,yy-1,2,2,.84);
+    }
+    if(mode%2===0)tBench(g,x-20,y+18);
+    else{
+      col(g,0xcbd9cc,x-21,y+8,43,7);
+      col(g,0x416e75,x-18,y+10,37,3);
+    }
+  }
+  function tLamp(g,x,y){
+    ellipse(g,0x8cccb9,x,y+9,33,9,.13);
+    col(g,0x506b76,x-3,y-17,6,30);
+    col(g,0xb0cccf,x-5,y-18,10,3);
+    col(g,0xf5d99c,x-8,y-26,16,8,.98);
+    col(g,0xfff4ce,x-4,y-25,8,3,.92);
+  }
+  function tCorner(g,c,x,y){col(g,c,x,y,10,4);col(g,c,x,y,4,10);}
+  // V20 · TECH-CO NEON CIRCUIT DISTRICT
+  // Pure painter utilities: no new colliders, no interactive hit boxes, no external assets.
+  // These are static pixels cached in the existing area texture.
+  function tcCircuit(g,x,y,mirror=1,seed=0){
+    const cyan=0x67eff0,magenta=0xd48dff;
+    const lines=[[0,0,54,0],[54,0,54,22],[54,22,88,22],[88,22,88,34]];
+    for(const [a,b,c,d] of lines){
+      tLine(g,0x18374d,x+a*mirror+2,y+b+2,x+c*mirror+2,y+d+2,6,.55);
+      tLine(g,seed%2?magenta:cyan,x+a*mirror,y+b,x+c*mirror,y+d,2,.65);
+    }
+    for(const [a,b] of [[0,0],[54,22],[88,34]]){
+      ellipse(g,0x142f49,x+a*mirror,y+b,14,10,.95);
+      ellipse(g,seed%2?0xebbcff:0x9dfbf3,x+a*mirror,y+b,6,5,.94);
+    }
+  }
+  function tcPad(g,x,y,w=72,c=0x75dfe3){
+    col(g,0x1a354d,x,y,w,34,.96);
+    col(g,0x46697a,x+3,y+3,w-6,28);
+    col(g,0x83afba,x+5,y+5,w-10,24,.42);
+    for(const dx of [7,w-12]){
+      col(g,c,x+dx,y+6,5,3,.9);
+      col(g,c,x+dx,y+25,5,3,.9);
+    }
+    for(let i=0;i<5;i++)col(g,i%2?0x6bb6c2:0xa7d7d1,x+12+i*(w-26)/5,y+17,7,2,.72);
+  }
+  function tcSolar(g,x,y,w,h,variant=0){
+    col(g,0x182e47,x-5,y-5,w+10,h+10,.92);
+    col(g,0x37637b,x,y,w,h);
+    const cw=(w-10)/4,ch=(h-10)/3;
+    for(let yy=0;yy<3;yy++)for(let xx=0;xx<4;xx++){
+      const px=x+5+xx*cw,py=y+5+yy*ch;
+      col(g,(xx+yy+variant)%3===0?0x398fb4:0x244f7a,px,py,cw-3,ch-3);
+      col(g,0x7ae5f0,px+1,py+1,cw-5,2,.68);
+      col(g,0xb3faff,px+2,py+4,2,Math.max(2,ch-9),.43);
+    }
+  }
+  function tcTerminal(g,x,y,variant=0){
+    // Floor-mounted cyber kiosks are painted as decals, never registered as obstacles.
+    ellipse(g,0x0e2440,x+4,y+20,74,24,.35);
+    col(g,0x28475e,x-20,y+8,44,13);
+    col(g,0x81e0dd,x-16,y+10,36,3,.92);
+    col(g,0x1d3752,x-17,y-39,35,47,.97);
+    col(g,variant?0x7855ac:0x267f97,x-14,y-35,29,38,.94);
+    col(g,0xb3faff,x-11,y-32,23,3,.84);
+    for(let i=0;i<4;i++){
+      col(g,[0x79f0db,0xdba5ff,0xffd17b][(i+variant)%3],x-10,y-23+i*7,8+(i%2)*8,3,.91);
+      col(g,0xbbf5fb,x+6,y-23+i*7,5,2,.7);
+    }
+    col(g,0xc3f6ec,x-6,y+13,15,2,.96);
+  }
+  function tcGardenArray(g,x,y,w,h){
+    col(g,0x1d4759,x,y,w,h);
+    col(g,0x4f999b,x+4,y+4,w-8,h-8);
+    for(let i=0;i<Math.floor(w/27);i++){
+      const xx=x+8+i*27;
+      col(g,0x1f5967,xx,y+10,21,h-20);
+      col(g,0x79dfb2,xx+3,y+12,15,h-24,.75);
+      for(let k=0;k<3;k++){
+        col(g,0x1b725e,xx+4,y+14+k*7,13,3,.85);
+        col(g,0xc3ffda,xx+7,y+16+k*7,4,2,.7);
+      }
+    }
+    col(g,0xc9f6e4,x+4,y+3,w-8,2,.6);
+  }
+  function tcBioTree(g,x,y,v=0){
+    // Biotech trees with data-lit stems: greenery with an intentional future style.
+    const hi=[0x8df8d7,0xa4e7fc,0xd2b1ff][v%3],leaf=[0x2e7768,0x287f8f,0x6678a5][v%3];
+    ellipse(g,0x18374b,x+4,y+10,51,14,.29);
+    col(g,0x234e5c,x-5,y-23,11,39);
+    col(g,0x67bec0,x-2,y-18,3,30,.87);
+    col(g,0xe3f5dd,x-3,y-9,6,3,.78);
+    for(const [dx,dy,w,h] of [[-17,-23,28,21],[14,-26,29,22],[-1,-37,32,22]]){
+      ellipse(g,leaf,x+dx,y+dy,w,h,.93);
+      ellipse(g,hi,x+dx-5,y+dy-4,Math.max(6,w*.37),Math.max(4,h*.25),.6);
+      col(g,0xd9f8e3,x+dx-2,y+dy+3,4,2,.67);
+    }
+    col(g,0x2b4e66,x-19,y+16,39,4);
+    for(let i=0;i<4;i++)col(g,hi,x-15+i*10,y+17,4,2,.87);
+  }
+  function tcChargingDock(g,x,y,v=0){
+    ellipse(g,0x17334e,x,y+8,68,17,.3);
+    col(g,0x274765,x-27,y-12,55,25,.94);
+    col(g,0x558b97,x-23,y-9,47,20,.97);
+    col(g,0x93f9ed,x-18,y-7,35,3,.9);
+    col(g,0x1d5572,x-14,y-2,29,8);
+    for(let i=0;i<3;i++)col(g,(i+v)%3===0?0xffc4a0:0x9cf4ee,x-10+i*11,y,7,4,.84);
+    col(g,0x1c3e55,x-22,y+13,45,4);
+  }
+  function tcBus(g,x,y,accent=0x76f4f1){
+    // Decorative self-driving mobility pod; always outside NPC and door collision logic.
+    ellipse(g,0x0d2947,x,y+9,71,15,.22);
+    col(g,0x183b58,x-28,y-8,57,18);
+    col(g,0xc5e8eb,x-23,y-12,47,16);
+    col(g,0x3d83a8,x-16,y-10,31,9);
+    col(g,0xa3f7fa,x-13,y-9,8,6,.92);
+    col(g,0x91d2ff,x+3,y-9,9,6,.84);
+    col(g,accent,x-23,y+5,47,3);
+    col(g,0xffffff,x-24,y+2,7,3,.87);
+    col(g,0xffbb8b,x+19,y+2,7,3,.82);
+    for(const dx of [-19,19])ellipse(g,0x31516f,x+dx,y+11,15,6,.75);
+  }
+  function techFutureGround(g){
+    // Architectural cyber lanes and smart glass sidewalks. Draw before buildings
+    // so entrance and NPC foregrounds retain their visual priority.
+    const ww=W*T,hh=H*T;
+    // V20 signature: a graphite-maglev avenue instead of an empty pale road.
+    // Visual markings only. This must never change the 56x34 walkability graph.
+    col(g,0x1c3d5a,0,16.04*T,ww,2.93*T,.91);
+    col(g,0x264e69,0,16.25*T,ww,2.51*T,.89);
+    col(g,0x193854,0,17.21*T,ww,.56*T,.95);
+    col(g,0x6bdeeb,0,16.11*T,ww,3,.84);
+    col(g,0xd9afff,0,18.83*T,ww,3,.76);
+    for(let tx=0;tx<W;tx++){
+      const xx=tx*T;
+      col(g,tx%4===0?0xf9ce9a:0x83dff5,xx+4,17.46*T,19,3,.58);
+      if(tx%2===0){
+        col(g,0x4a8da1,xx+2,16.48*T,26,2,.49);
+        col(g,0x8af4e2,xx+9,18.42*T,14,2,.55);
+      }
+    }
+    // The cross-avenue is tiled rather than rendered as a featureless stripe.
+    col(g,0x24536d,26.17*T,0,3.8*T,hh,.76);
+    col(g,0x347086,26.5*T,0,3.13*T,hh,.77);
+    for(let ty=0;ty<H;ty++){
+      const yy=ty*T;
+      col(g,0x5edbe9,26.18*T,yy+3,3,23,.5);
+      col(g,0xcbb0ff,29.87*T,yy+5,3,21,.48);
+      if(ty%2===0)col(g,0x8de6dc,27.44*T,yy+11,35,2,.28);
+    }
+
+    for(let xx=0;xx<ww;xx+=32){
+      col(g,0x0d3248,xx,15.52*T,29,2,.33);
+      col(g,0x78f7eb,xx+5,15.54*T,17,2,.75);
+      col(g,0x17374e,xx,19.28*T,29,3,.4);
+      col(g,xx%128===0?0xd5a7ff:0x6be2f5,xx+7,19.31*T,13,2,.73);
+      if(xx%(T*3)===0){
+        col(g,0x24465d,xx+4,17.7*T,23,3,.49);
+        col(g,0x82f3f5,xx+9,17.7*T,12,2,.66);
+      }
+    }
+    for(let yy=0;yy<hh;yy+=32){
+      col(g,0x15465b,26.06*T,yy+4,3,25,.58);
+      col(g,0x78eae9,26.1*T,yy+7,2,12,.66);
+      col(g,0x193e57,30.02*T,yy+3,3,25,.55);
+      col(g,yy%96<32?0xd7aeff:0x82e1ea,30.07*T,yy+9,2,9,.66);
+    }
+    // Circuitboard plaza engraving and circuitry branching into forecourts.
+    for(const [x,y,m,k] of [[20.7,13.3,-1,0],[34.4,13.3,1,1],[20.6,21,-1,1],[34.4,21,1,0]])
+      tcCircuit(g,x*T,y*T,m,k);
+    for(const [x,y,k] of [[7,13.1,0],[18,13.1,1],[37,13.1,2],[47,13.1,0],[8,22,1],[18,22,2],[38,22,0],[47,22,1]])
+      tcPad(g,x*T,y*T,72,[0x6bf5ec,0xe2a4fc,0xffd58f][k]);
+    // Carefully clustered biotech trees and delivery docks bring human scale to
+    // the campus without crossing any building door, spawn tile or mission pad.
+    for(const [x,y,v] of [
+      [4.1,3.65,0],[22.3,3.2,1],[33.1,3.2,2],[52.1,3.65,1],
+      [4.2,11.5,2],[51.9,11.6,0],[4.1,21.05,0],[51.85,21.05,1],
+      [4.3,31.4,1],[22.1,31.3,0],[33.1,31.3,2],[51.9,31.4,2]
+    ])tcBioTree(g,x*T,y*T,v);
+    for(const [x,y,v] of [[21.45,5.5,0],[34.0,5.5,1],[21.45,29.2,2],[34.2,29.2,0]])
+      tcChargingDock(g,x*T,y*T,v);
+    // Thin perimeter light rails: safe painted markings (not physical walls).
+    for(const y of [2.7,32.5]){
+      col(g,0x163849,2*T,y*T,52*T,9,.88);
+      col(g,0x6ff7eb,2*T,y*T,52*T,2,.83);
+      for(let x=2;x<54;x++)if(x%4===0)col(g,0xce99ff,x*T,y*T+3,15,3,.94);
+    }
+    // Clustered flower gardens around terminals keep the campus human and lively.
+    for(const [x,y,w] of [[2.3,6.1,79],[51,6.1,78],[2.2,26.2,74],[51.1,26.4,76]]){
+      tcGardenArray(g,x*T,y*T,w,62);
+    }
+    // Warp portals visually say "this way to the next world" without new colliders.
+    for(const [xx,sign] of [[0.95,1],[55.05,-1]]){
+      const x=xx*T,y=17.5*T;
+      col(g,0x132c49,x-18,y-52,36,103,.44);
+      for(let i=0;i<7;i++){
+        const yy=y-43+i*14;
+        col(g,i%2?0xb8a2ff:0x78f5e6,x+sign*7-4,yy,7,5,.77);
+      }
+      col(g,0x9deeff,x-14,y-52,27,3,.78);
+      col(g,0xf8c995,x-14,y+48,27,3,.74);
+    }
+    // Deliberately nonblocking circuit medallions on three mission gathering pads.
+    for(const [x,y,i] of [[22.2,13.85,0],[33,13.85,1],[32,23.7,2]]){
+      let px=x*T,py=y*T;
+      ellipse(g,0x18364f,px,py,39,15,.5);
+      ellipse(g,[0x7cf8e4,0x92d6ff,0xe0b4ff][i],px,py,27,9,.55);
+      col(g,0xeafafa,px-8,py-1,16,2,.78);
+    }
+    // Decorative sidewalks for a polished city footprint, no invisible blockers.
+    for(const x of [3.3,52.2])for(const y of [13.1,21.8]){
+      tcTerminal(g,x*T,y*T,(x+y)|0);
+    }
+  }
+  function techFutureBuilding(g,b,index){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,d=(b.door+.5)*T;
+    const top=y+18,cy=y+h-32;
+    const accent=[0x76f9f1,0xbca3ff,0x95ebf7,0xffc38e][index];
+    // Bright perimeter / stepped metalwork gives each silhouette stronger materiality.
+    col(g,0x0d2a48,x+13,y+4,w-26,6,.82);
+    col(g,accent,x+18,y+5,w-36,3,.92);
+    col(g,0x102f49,x+9,y+Math.floor(h*.61)-13,w-18,5,.94);
+    col(g,accent,x+19,y+Math.floor(h*.61)-11,w-38,2,.72);
+    for(const side of [-1,1]){
+      const xx=side<0?x+13:x+w-23;
+      col(g,0x163d58,xx,y+18,10,Math.floor(h*.61)-31,.9);
+      for(let i=0;i<5;i++)col(g,accent,xx+3,y+26+i*22,4,7,.72);
+    }
+    // Lit storefront display next to the exact door coordinate. No collision edits.
+    const sx=d+((index%2)?-78:44);
+    col(g,0x234258,sx,cy-11,39,28);
+    col(g,0x13556c,sx+3,cy-8,33,22);
+    for(let i=0;i<3;i++){
+      col(g,[accent,0xc7f7ff,0xf6d39b][i],sx+7,cy-4+i*6,10+i*5,2,.89);
+    }
+    col(g,0xaccfdb,sx+4,cy+14,31,2,.86);
+    // Animated scan-lines are on the dynamic layer; fixed header and pinstripes are cached.
+    for(let j=0;j<7;j++){
+      const xx=x+35+j*(w-70)/7;
+      col(g,accent,xx,y+Math.floor(h*.61)+9,13,2,j%2?.46:.82);
+    }
+    // Air-duct highlights add colored underglow and depth to the building base.
+    for(let k=0;k<7;k++){
+      const px=x+21+k*(w-50)/7;
+      col(g,k%3===0?0xdcabff:accent,px,y+h-7,13,2,.72);
+    }
+
+    if(index===0){
+      // HQ: solar roof and transparent datacenter bridge.
+      tcSolar(g,x+29,top+2,110,78,0);
+      tcSolar(g,x+w-145,top+2,108,78,1);
+      col(g,0x172d4b,x+w*.39,y+38,w*.22,12);
+      col(g,0xa5f4f5,x+w*.41,y+40,w*.18,6,.86);
+      for(let i=0;i<5;i++)col(g,0xe3c6ff,x+w*.44+i*13,y+53,5,2,.9);
+    }else if(index===1){
+      // Meeting Studio: glass skylight, slim holographic conference modules.
+      for(let k=0;k<5;k++){
+        const xx=x+63+k*64;
+        col(g,0x1b476c,xx,y+65,44,24);
+        col(g,0xa8ecff,xx+3,y+68,38,3,.78);
+        for(let j=0;j<3;j++)col(g,j===k%3?0xe4c5ff:0x74d8eb,xx+5+j*12,y+78,8,5,.88);
+      }
+      col(g,0xe9f9f4,x+w/2-42,y+28,84,3,.83);
+    }else if(index===2){
+      // Support Hub: visible server heat sinks, radio sensors and service panels.
+      for(let k=0;k<4;k++){
+        const xx=x+37+k*92;
+        col(g,0x152c45,xx,y+Math.floor(h*.61)-47,53,24);
+        col(g,0x75e0e7,xx+4,y+Math.floor(h*.61)-44,45,4,.83);
+        for(let j=0;j<5;j++)col(g,0x6babc1,xx+6+j*9,y+Math.floor(h*.61)-34,5,8,.78);
+      }
+      for(let k=0;k<3;k++){
+        const xx=x+w*.3+k*58;
+        col(g,0xc4e8dd,xx,y+22,3,15,.86);
+        ellipse(g,0xf6cb93,xx+1,y+19,7,5,.9);
+      }
+    }else{
+      // Creative hub: luminous collaborative desk panels plus lush modular greenhouse.
+      tcGardenArray(g,x+22,y+Math.floor(h*.61)-44,130,33);
+      for(let k=0;k<3;k++){
+        const xx=x+178+k*64;
+        col(g,0x214f70,xx,y+37,47,52,.92);
+        col(g,0x76cbea,xx+4,y+41,39,38,.9);
+        col(g,0xe0f9f5,xx+7,y+44,32,3,.8);
+        col(g,0xbdf5e4,xx+9,y+60+k%2*6,26,2,.8);
+      }
+    }
+    // Pixel edge glow along each entry, without a large halo covering the NPC.
+    col(g,accent,d-16,y+h-60,3,48,.68);
+    col(g,accent,d+13,y+h-60,3,48,.68);
+    col(g,0xd4fff5,d-25,y+h-78,50,2,.83);
+  }
+  function techFutureNexus(g){
+    const x=27.5*T,y=9.7*T;
+    // Vertical reactor shield: 200-pixel wings with violet/blue pixel glass.
+    for(const side of [-1,1]){
+      const xx=x+side*66;
+      col(g,0x183c5b,xx-19,y-114,38,101,.94);
+      col(g,0x367e9d,xx-15,y-108,30,92,.92);
+      for(let j=0;j<6;j++){
+        col(g,j%2===0?0xbdaaff:0x92f4f2,xx-11,y-103+j*15,22,6,.82);
+        col(g,0x144b70,xx-8,y-101+j*15,16,3,.9);
+      }
+      col(g,0xf0d2fd,xx-20,y-116,40,4,.83);
+      col(g,0x67edf2,xx-23,y-17,46,6,.85);
+    }
+    // Orbiting-energy apparatus designed as part of the static landmark silhouette.
+    for(const radius of [56,74,92]){
+      g.lineStyle(3,radius===92?0xbcafff:0x76e9eb,.68);
+      g.strokeEllipse(x,y-57,radius*2,radius*.64);
+    }
+    for(let i=0;i<16;i++){
+      const a=i*Math.PI*2/16;
+      const xx=x+91*Math.cos(a),yy=y-58+29*Math.sin(a);
+      col(g,i%3===0?0xe3b4ff:0xa6e7f3,xx-3,yy-2,6,4,.82);
+    }
+    // Scalloped base and ion conduits give the tower a unique landmark silhouette.
+    for(let j=0;j<13;j++){
+      const xx=x-108+j*18;
+      col(g,j%3===0?0x9ce8f5:0x33637f,xx,y+33,15,7,.88);
+      col(g,j%4===0?0xe4b6ff:0x77dad3,xx+4,y+41,7,3,.75);
+    }
+    // Nexus core, extra parallax ridges and floating energy bridges.
+    for(const side of [-1,1]){
+      const xx=x+side*95;
+      col(g,0x163b56,xx-13,y-20,26,35);
+      col(g,0x4ca7b9,xx-9,y-17,18,27);
+      col(g,0xb6faff,xx-5,y-14,10,3,.87);
+      col(g,0xdaafff,xx-4,y-4,8,11,.8);
+      col(g,0x78eddf,xx-13,y+13,26,3);
+    }
+    col(g,0xe4c3ff,x-20,y-119,40,3,.77);
+    col(g,0xa0faf0,x-9,y-138,18,4,.78);
+    for(let j=0;j<5;j++){
+      const xx=x-39+j*20;
+      col(g,j%2?0x8cecf1:0xc7aaff,xx,y+38,10,3,.9);
+    }
+  }
+  function techFutureGarden(g){
+    const x=27.5*T,y=27.7*T;
+    // Eco-tech garden with modular digital displays while retaining trees and flowers.
+    for(const side of [-1,1]){
+      const xx=x+side*124;
+      col(g,0x284a62,xx-11,y-47,22,72);
+      col(g,0x6fd5d8,xx-8,y-44,16,66,.93);
+      for(let j=0;j<5;j++)col(g,j%2?0xe1f1dc:0x98edcb,xx-6,y-40+j*12,12,4,.85);
+      col(g,0xc1a2ff,xx-12,y+26,24,5,.82);
+    }
+    for(let i=0;i<12;i++){
+      const a=i*Math.PI/6;
+      const xx=x+Math.cos(a)*102,yy=y+Math.sin(a)*40;
+      ellipse(g,0xcaf9dd,xx,yy,6,4,.82);
+      col(g,0x297761,xx-1,yy-2,2,2);
+    }
+    for(const dx of [-88,76]){
+      col(g,0x123c53,x+dx,y-49,33,17);
+      col(g,0x69d6cf,x+dx+3,y-46,27,11);
+      col(g,0xd9f7e0,x+dx+7,y-43,16,2,.92);
+      col(g,0xc6a8ff,x+dx+7,y-39,10,2,.78);
+    }
+  }
+  // Dynamic cyber city lights — one existing Graphics object, throttled with the
+  // old effects ticker; no per-frame DOM creation, textures, listeners or timers.
+  function techFuturePulse(g,time){
+    const sec=time/1000,fast=sec*1.4,done=state(),minutes=Number(game()?.minutes??480);
+    const night=minutes<360||minutes>1110,bright=night?1:.7;
+    // Smart guidance lanes: precisely bounded moving luminous packets.
+    for(let i=0;i<23;i++){
+      const x=((i*93+time*.065)%(W*T));
+      col(g,i%4===0?0xd5adff:0xb8f9ff,x,15.55*T,12,2,.34*bright);
+      col(g,i%3===0?0xffc98c:0x6cf4e5,W*T-x-14,19.29*T,10,3,.28*bright);
+    }
+    for(let i=0;i<12;i++){
+      const yy=(i*115+time*.045)%(H*T);
+      col(g,0x9ef5ed,26.09*T,yy,2,12,.4*bright);
+      col(g,0xdab0ff,30.04*T,H*T-yy-14,2,11,.36*bright);
+    }
+    // Express pod stays on the entirely ornamental north and south overhead rails.
+    const range=50*T;
+    const px=3*T+((time*.045)%range);
+    tcBus(g,px,2.57*T+Math.sin(sec*1.6)*2,0x72f5f3);
+    tcBus(g,53*T-((time*.028)%range),32.36*T+Math.sin(sec*1.4+2)*2,0xd2a6ff);
+    // Three service drones loop locally on rooftops / above plaza, not blocking movement.
+    for(let i=0;i<3;i++){
+      const a=sec*(.35+i*.05)+i*2.1;
+      const cx=[12.8,42.7,27.5][i]*T,cy=[3.05,3.0,12.15][i]*T;
+      const xx=cx+Math.cos(a)*[78,65,73][i],yy=cy+Math.sin(a*1.4)*[15,11,26][i];
+      ellipse(g,0x1d4261,xx,yy+8,29,9,.18);
+      col(g,0x284967,xx-10,yy-3,21,9);
+      col(g,i===1?0xbba9ff:0x72f2f0,xx-6,yy-6,13,5,.9);
+      for(const side of [-1,1]){
+        col(g,0xd7f9ed,xx+side*14-5,yy-2,10,2,.78);
+        col(g,0x79dcfa,xx+side*13-1,yy+3,4,2,.82);
+      }
+    }
+    // 4 animated roof hologram monitors: flowing UI elements, not flat random sparks.
+    for(const [i,b] of SPECS['tech-co'].buildings.entries()){
+      const bx=b.x*T,by=b.y*T,w=b.w*T,roof=Math.floor(b.h*T*.61);
+      const y=by+roof-24;
+      const x=bx+((time*.02+i*83)%(w-67))+25;
+      col(g,[0x9afaff,0xc9b0ff,0xa3e6fc,0xffd49d][i],x,y,16,2,.37*bright);
+      for(let p=0;p<4;p++){
+        const xx=bx+48+p*(w-96)/4;
+        ellipse(g,p===i?0xffd99f:0x72f2e8,xx,by+11,5,4,.43*bright);
+      }
+      const status=!!done['tech-co:'+['priya','jonah','erin'][i%3]];
+      col(g,status?0x9df8d5:0xb7cdff,bx+w*.5-20,by+roof-36,40,2,(.25+.2*Math.sin(fast+i))*bright);
+    }
+    // Four holographic terminal displays on the public promenade.
+    for(const [i,x,y] of [[0,3.3,13.1],[1,52.2,13.1],[2,3.3,21.8],[3,52.2,21.8]]){
+      const px=x*T,py=y*T,scan=(time*.028+i*13)%31;
+      col(g,i%2?0xd6b7ff:0x97f9ef,px-13,py-32+scan,27,2,.38*bright);
+      col(g,0xccf5fa,px-10+Math.sin(sec+i)*3,py-26,14,2,.55*bright);
+    }
+    // Progress-sensitive nexus orbital ring, with a crisp moving energy node.
+    const x=27.5*T,y=9.7*T;
+    for(let ring=0;ring<2;ring++){
+      const r=59+ring*18,phase=sec*(ring?-.55:.73);
+      for(let j=0;j<8;j++){
+        const a=phase+j*Math.PI/4;
+        const xx=x+Math.cos(a)*r,yy=y-57+Math.sin(a)*r*.32;
+        ellipse(g,ring?0xd6b4ff:0x9dfcf1,xx,yy,7,4,.4*bright);
+      }
+    }
+    for(const [i,id] of ['priya','jonah','erin'].entries()){
+      if(!done['tech-co:'+id])continue;
+      const xx=x-32+i*27;
+      ellipse(g,0xa8ffd9,xx,y+28,21+Math.sin(fast+i)*4,11,.24*bright);
+    }
+    // Water garden becomes a living energy fountain, still readable in daylight.
+    const fx=27.5*T,fy=27.7*T;
+    ellipse(g,0xb6ffff,fx,fy-21+Math.sin(sec*2)*3,6,10,.45*bright);
+    for(let i=0;i<6;i++){
+      const a=sec*.35+i*Math.PI/3;
+      const xx=fx+Math.cos(a)*80,yy=fy+Math.sin(a)*30;
+      col(g,i%2?0x97ffcf:0xd5b3ff,xx,yy,4,2,.45*bright);
+    }
+  }
+
+  function techBuilding(g,b,index){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T, d=(b.door+.5)*T;
+    const roofH = Math.floor(h*.61);
+    const schemes=[
+      {roof:0x265574,shade:0x193b57,hi:0x5393ae,wall:0xe0ede8,frame:0x506d80,glass:0x77c3d6},
+      {roof:0x82bac4,shade:0x446f85,hi:0xc0e9df,wall:0xf0f0dd,frame:0x5d818e,glass:0x7fdae2},
+      {roof:0x29475e,shade:0x182f43,hi:0x5a8291,wall:0xdce5e3,frame:0x4a6473,glass:0x62b8c8},
+      {roof:0x46796b,shade:0x294f54,hi:0x8aaf93,wall:0xeee5d3,frame:0x8d8070,glass:0x91c9bd}
+    ];
+    const q=schemes[index];
+    // A consistent three-tier façade: shadow, solid wall, authored roof silhouette.
+    ellipse(g,0x1c3d49,x+w/2+12,y+h+9,w+24,32,.22);
+    col(g,q.frame,x+5,y+roofH-2,w-10,h-roofH+1);
+    col(g,q.wall,x+10,y+roofH+6,w-20,h-roofH-14);
+    col(g,0x45606b,x+1,y+roofH,w-2,13,.58);
+    col(g,q.shade,x+6,y+10,w-12,roofH-1);
+    col(g,q.roof,x+12,y+6,w-24,roofH-5);
+    col(g,q.hi,x+17,y+9,w-34,6,.78);
+    col(g,0x142c3f,x+9,y+roofH-9,w-18,12,.78);
+    col(g,0xe3f0de,x+15,y+roofH-11,w-30,3,.52);
+    // Regular pilasters and glass windows are on the wall, not on the roof.
+    const wy=y+roofH+21;
+    for(let i=0;i<7;i++){
+      const xx=x+32+i*(w-64)/6;
+      if(Math.abs(xx-d)<40)continue;
+      tBox(g,xx-12,wy,25,44,q.glass,q.shade);
+      col(g,0xcdf3e9,xx-8,wy+5,6,12,.60);
+      col(g,q.frame,xx-1,wy+4,2,34);
+      col(g,0x6c8b8b,xx-15,wy+44,31,5,.90);
+    }
+    // Door is always in the exact, existing tile position.
+    col(g,0x334c5d,d-23,y+h-65,46,62);
+    col(g,0xa7c5bd,d-19,y+h-60,38,57);
+    col(g,0x326b80,d-17,y+h-57,34,52);
+    col(g,0x8fd8d5,d-13,y+h-54,12,34,.90);
+    col(g,0x6fb6c1,d+3,y+h-54,9,34,.87);
+    col(g,0x264b67,d-1,y+h-54,3,51);
+    col(g,0xffe4a1,d+11,y+h-27,4,4);
+    col(g,0x4c6b73,d-29,y+h-5,58,6);
+    col(g,0xd9e4db,d-25,y+h-4,50,2,.80);
+    // Bespoke roofs, each fundamentally different: glass atrium, pavilion,
+    // service hub, warm creative studio.
+    if(index===0){
+      // Headquarters: deep blue steel lattice and striking central glass atrium.
+      for(let k=0;k<5;k++){
+        const xx=x+27+k*(w-54)/4;
+        col(g,0x16374c,xx,y+17,7,roofH-28,.90);
+        col(g,0x6cb5c4,xx+1,y+19,2,roofH-34,.85);
+      }
+      tBox(g,x+w*.26,y+35,w*.48,roofH-62,0x5eaabf,0x153a58);
+      for(let k=0;k<6;k++){
+        let xx=x+w*.28+k*(w*.44)/6;
+        col(g,k%2?0x80d3d9:0x4b94ae,xx,y+43,w*.44/6-3,roofH-79,.96);
+      }
+      col(g,0xeffff8,x+w*.30,y+47,w*.40,5,.45);
+      col(g,0x193e59,x+24,y+roofH-35,79,10,.90);
+      for(let i=0;i<3;i++) col(g,0xd9eadd,x+34+i*21,y+roofH-34,14,7,.85);
+    }else if(index===1){
+      // Meeting Studio: pale ceramic stepped roof and long glazed skylights.
+      col(g,0xc8e4df,x+25,y+25,w-50,roofH-52);
+      col(g,0x709eae,x+36,y+34,w-72,roofH-72);
+      for(let k=0;k<4;k++){
+        let yy=y+39+k*(roofH-80)/3;
+        col(g,0x477e9b,x+48,yy,w-96,11,.96);
+        col(g,0x9fe1e2,x+49,yy+2,w-98,3,.78);
+      }
+      for(let i=0;i<4;i++){
+        col(g,0xf1eade,x+25+i*(w-50)/4,y+16,8,roofH-25,.77);
+      }
+      col(g,0x4a8193,x+w/2-44,y+22,88,7);
+      col(g,0xd9e7e1,x+w/2-29,y+23,58,3,.94);
+    }else if(index===2){
+      // Help Desk: graphite service roof, three cooling cells and code panels.
+      for(let i=0;i<5;i++){
+        const xx=x+23+i*(w-46)/5;
+        col(g,0x182e40,xx,y+17,8,roofH-28,.88);
+        col(g,0x7395a0,xx+1,y+19,2,roofH-32,.56);
+      }
+      for(let i=0;i<3;i++){
+        const xx=x+75+i*(w-150)/2;
+        tBox(g,xx-37,y+36,74,62,0x496d7b,0x142f43);
+        ellipse(g,0x183c50,xx,y+67,42,42,1);
+        ellipse(g,0x93c4be,xx,y+67,27,27,.92);
+        col(g,0x28536c,xx-4,y+52,8,30);
+        col(g,0x28536c,xx-15,y+63,30,8);
+      }
+      for(let i=0;i<4;i++) col(g,0x8ce9cb,x+29+i*22,y+roofH-27,12,4,.82);
+    }else{
+      // Mail & Projects: timber-and-green roof with solar bands and mail icon.
+      for(let i=0;i<4;i++){
+        const xx=x+29+i*(w-58)/4;
+        col(g,0x234b56,xx,y+23,43,roofH-47);
+        for(let k=0;k<4;k++) col(g,0x5d9eb3,xx+5,y+29+k*19,33,13,.95);
+      }
+      col(g,0xd4d0af,x+w*.36,y+33,w*.27,58,.92);
+      col(g,0x2e6c75,x+w*.36+8,y+43,w*.27-16,34);
+      col(g,0xeff4d8,x+w*.36+10,y+45,w*.27-20,5);
+      col(g,0xc6d9cf,x+w*.46,y+65,w*.08,4);
+      for(let k=0;k<7;k++) col(g,0x90b397,x+20+k*55,y+roofH-21,24,4,.76);
+    }
+    // Carefully drawn entrance awnings, small planted accents outside walls.
+    col(g,q.shade,d-34,y+h-76,68,10);
+    col(g,q.hi,d-31,y+h-74,62,5);
+    col(g,0xfaf5dd,d-22,y+h-70,44,2,.68);
+    if(index===3){col(g,0xc4a17e,d+48,y+h-63,38,43);col(g,0xe7cba1,d+52,y+h-53,30,3);}
+    techFutureBuilding(g,b,index);
+  }
+  function techNexus(g){
+    const x=27.5*T,y=9.7*T;
+    // Four concentric mosaic rings; the tower rises within the square plaza.
+    ellipse(g,0x2b6578,x+3,y+18,194,80,.20);
+    col(g,0x578a95,x-79,y+5,158,38);
+    col(g,0xd5dbd1,x-72,y+10,144,25);
+    for(let k=0;k<7;k++){
+      let xx=x-67+k*21;
+      col(g,k%2?0xa5cac6:0x7fb2b9,xx,y+13,15,5,.86);
+    }
+    col(g,0x376f81,x-50,y-3,100,34);
+    col(g,0x9ed1c5,x-45,y+1,90,21);
+    col(g,0x25516a,x-33,y-108,66,116);
+    col(g,0x397e95,x-25,y-102,50,110);
+    col(g,0x79c7d0,x-15,y-98,19,100,.93);
+    col(g,0xb4f0de,x-13,y-97,6,86,.76);
+    col(g,0x1c4d6e,x+11,y-91,11,87);
+    for(let k=0;k<5;k++){
+      const yy=y-87+k*19;
+      col(g,0xd3f4ea,x-20,yy,38,4,.82);
+      col(g,0x2b768e,x-26,yy+5,51,4,.62);
+    }
+    // Faceted, teal beacon at the top; no strobe or full-screen flash.
+    g.fillStyle(0x28556e,1).fillTriangle(x-27,y-112,x,y-154,x+27,y-112);
+    g.fillStyle(0x7ed4cb,1).fillTriangle(x-20,y-115,x,y-145,x,y-111);
+    g.fillStyle(0xa9ead9,1).fillTriangle(x,y-145,x+20,y-115,x,y-111);
+    col(g,0xf7e4a2,x-3,y-150,6,9,.93);
+    // Physical progress indicator housing: LED status is driven by quest saves.
+    for(let k=0;k<3;k++){
+      let xx=x-32+k*27;
+      col(g,0x23445f,xx-8,y+23,18,11);
+      col(g,0x627986,xx-5,y+25,12,6,.9);
+    }
+    // V19 sculpted architectural fins, roof lights, tiled inlay and glass rails.
+    for(const side of [-1,1]){
+      const edge=x+side*43;
+      col(g,0x2b6477,edge-5,y-47,10,49);
+      col(g,0x7caeb6,edge-3,y-43,6,40);
+      col(g,0x9be8df,edge-1,y-39,2,26,.72);
+      for(let k=0;k<5;k++)col(g,0xc2ddd1,edge+side*7,y-39+k*10,10,3,.75);
+      col(g,0x2e586d,edge-13,y+5,26,5);
+      ellipse(g,0xace9d9,edge,y-50,13,8,.86);
+    }
+    for(let k=0;k<8;k++){
+      const xx=x-69+k*20;
+      col(g,k%2?0x86b9b5:0xabcac5,xx,y+15,15,4,.68);
+      col(g,0xe4f0e3,xx+2,y+16,6,1,.60);
+    }
+    techFutureNexus(g);
+  }
+  function techGarden(g){
+    const x=27.5*T,y=27.7*T;
+    ellipse(g,0x2c5b5b,x,y+12,295,130,.16);
+    col(g,0x67998a,x-131,y-59,262,110);
+    col(g,0xb5c5aa,x-123,y-53,246,98);
+    col(g,0x42765e,x-113,y-46,226,84);
+    col(g,0x75b18c,x-99,y-35,198,60);
+    // Cross-axis paved walk retains the central traversal.
+    col(g,0xc9d5cd,x-18,y-53,36,104);
+    col(g,0xdbe2d9,x-12,y-51,24,100);
+    col(g,0xb1c5b7,x-123,y-6,246,22);
+    col(g,0xe4e2ce,x-121,y-1,242,12);
+    for(let side of [-1,1]){
+      tPlanter(g,x+side*68-44,y-34,88);
+      tBench(g,x+side*81-26,y+16);
+    }
+    for(let k=0;k<16;k++){
+      let a=k*Math.PI*2/16;
+      let xx=x+Math.cos(a)*100, yy=y+Math.sin(a)*33;
+      ellipse(g,k%3===0?0xedc5ae:k%3===1?0xc7d9a9:0xc1c7e8,xx,yy,7,6,.92);
+    }
+    col(g,0x578c83,x-18,y-18,36,36,.95);
+    col(g,0xb2d5c6,x-12,y-12,24,24,.94);
+    col(g,0x6a9dab,x-7,y-7,14,14,.9);
+    col(g,0xe8f3d8,x-3,y-4,6,4,.77);
+    // V19: concentric fountain paving, pixel water jets, wood-and-steel benches.
+    for(const rr of [64,49,34]){
+      g.lineStyle(2,rr===64?0x3b756d:0xd1e6d9,.66);
+      g.strokeEllipse(x,y,rr*2,rr*.65);
+    }
+    for(const off of [-18,0,18]){
+      col(g,0xeff6df,x+off-1,y-30+(Math.abs(off)/3),3,8,.8);
+      ellipse(g,0xb8efea,x+off,y-32+(Math.abs(off)/3),7,4,.85);
+    }
+    for(const dx of [-115,115]){
+      col(g,0x315f63,x+dx-9,y+35,18,4);
+      col(g,0xd6cfaa,x+dx-12,y+29,24,6);
+      col(g,0x466c6d,x+dx-10,y+25,3,11);
+      col(g,0x466c6d,x+dx+8,y+25,3,11);
+    }
+    techFutureGarden(g);
+  }
+  function techGround(g,a){
+    const ww=W*T,hh=H*T,R=rnd(521802);
+    col(g,0x478a91,0,0,ww,hh);
+    // Authored grass patches: clustered pixels, not a dense random spray.
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const xx=x*T,yy=y*T;
+      col(g,(x*3+y*7)%11<5?0x79c5ac:0x378e8b,xx,yy,T,T,.25);
+      if((x*7+y*13)%7===0){
+        col(g,0x4e927e,xx+7,yy+11,6,2,.42);
+        col(g,0xb8d8b5,xx+17,yy+24,9,3,.55);
+      }
+    }
+    for(let k=0;k<420;k++){
+      const x=R()*ww,y=R()*hh;
+      if((x>5*T&&x<51*T)&&(y>4*T&&y<31*T))continue;
+      col(g,k%3?0x427f72:0xe6d69c,x,y,3+R()*4,2+R()*3,.25);
+    }
+    // Raised walkways of the original 56x34 traversal graph remain visible.
+    col(g,0x487f82,0,15.4*T,ww,4.2*T);
+    col(g,0x649fae,0,15.6*T,ww,3.8*T);
+    col(g,0x9dc8c7,0,15.9*T,ww,3.3*T);
+    col(g,0x4c878c,25.7*T,0,4.8*T,hh);
+    col(g,0x649aa8,25.9*T,0,4.4*T,hh);
+    col(g,0xa4ccc8,26.1*T,0,4*T,hh);
+    // Main plaza plus four building forecourts.
+    const pavements=[[21,11.6,14,12.3],[6,12,15,3],[35,12,15,3],[6,20.6,15,3.4],[35,20.6,15,3.4]];
+    for(const [x,y,w,h] of pavements){
+      col(g,0x639c98,x*T,y*T,w*T,h*T);
+      col(g,0x9cc7c6,x*T+7,y*T+7,w*T-14,h*T-14);
+      for(let ty=Math.ceil(y);ty<y+h;ty++)for(let tx=Math.ceil(x);tx<x+w;tx++){
+        const xx=tx*T,yy=ty*T;
+        if(xx<(x*T+7)||yy<(y*T+7)||xx>(x+w)*T-28||yy>(y+h)*T-28)continue;
+        tLine(g,0x90b9b2,xx+2,yy+30,xx+29,yy+30,1,.31);
+        tLine(g,0xffffff,xx+3,yy+3,xx+24,yy+3,1,.20);
+        if((tx+ty)%3===0)col(g,0x85aaa8,xx+7,yy+8,5,3,.22);
+      }
+    }
+    // Discrete curb and stepping-stone rhythm along the main road.
+    for(let x=0;x<W;x++){
+      let xx=x*T;
+      col(g,0x78a9a9,xx+2,15.5*T,26,3,.65);
+      col(g,0xf9f4df,xx+8,19.3*T,16,2,.72);
+      if(x%3===0)col(g,0xffffff,xx+12,17.3*T,12,3,.28);
+    }
+    for(let y=1;y<H-1;y++){
+      if(y>=16&&y<=19)continue;
+      col(g,0xffffff,26.12*T,y*T+13,3,12,.28);
+      col(g,0x619995,30*T-1,y*T+16,3,11,.32);
+    }
+    // Embedded circuit motif: the engraving belongs to the ground, not a blocking prop.
+    for(let sign of [-1,1]){
+      let xx=27.5*T+sign*138;
+      tLine(g,0x72b7ae,xx,13.1*T,xx,15.1*T,3,.6);
+      tLine(g,0x72b7ae,xx,13.1*T,xx-sign*45,13.1*T,3,.6);
+      ellipse(g,0xc4ead7,xx-sign*45,13.1*T,11,11,.76);
+      tLine(g,0x72b7ae,xx,21.2*T,xx,23.5*T,3,.6);
+      ellipse(g,0xd2ece0,xx,23.4*T,10,10,.68);
+    }
+    techFutureGround(g);
+    // Non-blocking perimeter landscaping and roof-side paths.
+    for(const [x,y,v] of [[2,3,0],[53,3,1],[2,29,2],[53,30,1],[3,10,3],[53,11,2],[3,23,1],[52,24,3]]){
+      tTree(g,x*T,y*T,v);
+    }
+    for(const [x,y,w] of [[6,13.8,108],[14,13.8,96],[36,13.8,98],[45,13.8,90],[6,22.5,105],[14,22.5,94],[36,22.5,95],[45,22.5,104]]){
+      tPlanter(g,x*T,y*T,w);
+    }
+    for(const [x,y] of [[20.4,12.2],[34.5,12.2],[20,22.7],[34.6,22.7],[23.1,14.8],[32,14.8]])tLamp(g,x*T,y*T);
+    for(const [x,y] of [[7,12.4],[38,12.4],[9,22],[38,22]])tBench(g,x*T,y*T);
+    // Small authored green pockets fill the perimeter without blocking paths.
+    for(const [x,y,k] of [[3.5,7,0],[52.3,7.2,1],[3.5,25.7,2],[52.3,26.1,3]]){
+      tPocketGarden(g,x*T,y*T,k);
+    }
+    // Two quiet pedestrian crossings visually connect the office courts.
+    for(const bx of [19.1,35.1]){
+      for(let k=0;k<4;k++){
+        const xx=(bx+k*.42)*T;
+        col(g,0xf9f2df,xx,16.35*T,10,2.45*T,.56);
+        col(g,0xaacac7,xx+1,16.38*T,2,2.39*T,.31);
+      }
+    }
+    a.buildings.forEach((b,i)=>techBuilding(g,b,i));
+    techNexus(g);
+    techGarden(g);
+    // Contextual platforms behind each teacher, without interactive blockers.
+    function workPad(x,y,kind){
+      const xx=x*T,yy=y*T;
+      col(g,0x476e73,xx-42,yy-12,84,44,.82);
+      col(g,0xbdd8cc,xx-39,yy-9,78,38,.96);
+      for(let i=0;i<3;i++)col(g,0x80aaa7,xx-31+i*22,yy+18,16,3,.7);
+      if(kind==='meeting'){
+        col(g,0x2c5971,xx-29,yy-7,58,18);
+        col(g,0xe1cb8c,xx-23,yy-3,46,4,.91);
+        for(let i=0;i<3;i++)col(g,0xa6e4d9,xx-18+i*16,yy+3,10,4,.8);
+      }else if(kind==='issue'){
+        col(g,0x2a4d65,xx-29,yy-8,58,21);
+        for(let i=0;i<3;i++)col(g,[0xe5ac87,0xe8d898,0x93dcc2][i],xx-23+i*17,yy-1,11,6,.91);
+      }else{
+        col(g,0x284f5e,xx-27,yy-9,54,20);
+        col(g,0xe5e6d6,xx-20,yy-5,40,12);
+        col(g,0x78b5b7,xx-15,yy,29,2);
+      }
+    }
+    workPad(22.2,12.7,'meeting');
+    workPad(33,12.7,'issue');
+    workPad(32,22.7,'mail');
+    // Company gateway and wayfinder at the east border, staying off warp tiles.
+    col(g,0x325f72,51.3*T,13.5*T,90,16);
+    col(g,0x97cdbd,51.4*T,13.58*T,84,5,.92);
+    tLine(g,0xe2e5ca,51.5*T,13.95*T,51.5*T,15*T,2,.84);
+  }
+
+  /* V21 ROYAL CAPITAL: self-contained graphics, neither reuse nor recolor other maps. */
+  const RC={ivory:0xf1dfbb,gold:0xdab766,burgundy:0x813e50,blue:0x405f7d,
+    stone:0xc1ad90,ink:0x56465a,deep:0x29374d,green:0x567052,water:0x739bb5};
+  const rRect=(g,c,x,y,w,h,a=1)=>{if(w>0&&h>0){g.fillStyle(c,a);g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}};
+  const rOval=(g,c,x,y,w,h,a=1)=>{g.fillStyle(c,a);g.fillEllipse(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+  const rLine=(g,c,ax,ay,bx,by,w=2,a=1)=>{g.lineStyle(w,c,a);g.lineBetween(ax,ay,bx,by);};
+  function royalFlower(g,x,y,i=0){
+    rRect(g,0x456348,x-1,y-3,2,9);const c=[0xe9a3b1,0xf2d590,0xb3a8d6,0xf8ece1][i%4];
+    rOval(g,c,x,y-5,8,5,.95);rRect(g,0xffe6a8,x-1,y-6,2,2);
+  }
+  function royalHedge(g,x,y,w,h=12){
+    rRect(g,0x334e40,x+3,y+4,w-6,h,0.4);rRect(g,0x405d43,x,y,w,h);
+    rRect(g,0x73966b,x+2,y+1,w-5,Math.max(3,h/2));
+    for(let a=5;a<w-5;a+=11)rRect(g,0xa6bc83,x+a,y+2,5,2,.73);
+  }
+  function royalTree(g,x,y,scale=1){
+  
