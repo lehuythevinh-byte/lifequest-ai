@@ -1,5 +1,5 @@
 'use strict';
-// LifeQuest V75 — server-side Gemini relay. Never send GEMINI_API_KEY to the browser.
+// LifeQuest V76 — server-side Gemini relay. Never send GEMINI_API_KEY to the browser.
 // Node.js built-ins only; no packages or build tooling required.
 const http = require('node:http');
 const fs = require('node:fs');
@@ -20,9 +20,18 @@ for (const [start,end,replacement] of changes.sort((a,b) => b[0]-a[0])) {
   lines.splice(start,end-start,...replacement);
   upper = start;
 }
+const v75Game = Buffer.from(lines.join('\n'),'utf8');
+if (hash(v75Game) !== 'cfca725459d8ae14b7a78314c47ccd4c2eebf1c487e366a9e535ed3fb400692a') throw new Error('V75 source integrity mismatch');
+const v76Changes = JSON.parse(fs.readFileSync(path.join(__dirname, '../../v76/patch.json'),'utf8'));
+upper = lines.length;
+for (const [start,end,replacement] of v76Changes.sort((a,b) => b[0]-a[0])) {
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end < start || end > upper || !Array.isArray(replacement) || replacement.some(s => typeof s !== 'string')) throw new Error('Invalid V76 release patch');
+  lines.splice(start,end-start,...replacement);
+  upper = start;
+}
 const game = Buffer.from(lines.join('\n'),'utf8');
 const gameHash = hash(game);
-if (gameHash !== 'cfca725459d8ae14b7a78314c47ccd4c2eebf1c487e366a9e535ed3fb400692a') throw new Error('V75 source integrity mismatch');
+if (gameHash !== '7f7f7020db710be3606bcb52836e234872eea47da8a853a5ed9302e423502cbb') throw new Error('V76 source integrity mismatch');
 const ownOrigin = (process.env.RENDER_EXTERNAL_URL || 'https://lifequest-ai-v70-gemini.onrender.com').replace(/\/$/, '');
 
 const PORT = Number(process.env.PORT || 10000);
@@ -143,12 +152,12 @@ http.createServer(async (req, res) => {
   try {
     // Opening the service URL in a browser should take players to the game.
     if (['/','/index.html'].includes(req.url.split('?')[0]) && ['GET', 'HEAD'].includes(req.method)) {
-      res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Content-Length':game.length, 'Cache-Control':'no-cache', 'X-Content-Type-Options':'nosniff', 'X-LifeQuest-Release':'V75-Context-Aware-NPC' });
+      res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Content-Length':game.length, 'Cache-Control':'no-cache', 'X-Content-Type-Options':'nosniff', 'X-LifeQuest-Release':'V76-Natural-Subtext-Dialogue' });
       res.end(req.method === 'HEAD' ? undefined : game);
       return;
     }
     if (req.url === '/health') {
-      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', release:'V75-Context-Aware-NPC', sha256:gameHash, configured: !!GEMINI_API_KEY });
+      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', release:'V76-Natural-Subtext-Dialogue', sha256:gameHash, configured: !!GEMINI_API_KEY });
       return;
     }
     if (req.url !== '/api/gemini') {
