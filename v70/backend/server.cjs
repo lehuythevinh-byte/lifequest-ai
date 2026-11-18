@@ -2,6 +2,16 @@
 // LifeQuest V70 — server-side Gemini relay. Never send GEMINI_API_KEY to the browser.
 // Node.js built-ins only; no packages or build tooling required.
 const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const partsDir = path.join(__dirname,'../dream-gate/parts');
+const names = fs.readdirSync(partsDir).filter(n => /^p\d{3}\.txt$/.test(n)).sort();
+if (names.length !== 53) throw new Error('Incomplete Dream Gate release');
+const game = Buffer.concat(names.map(n => fs.readFileSync(path.join(partsDir,n))));
+const gameHash = crypto.createHash('sha256').update(game).digest('hex');
+if (gameHash !== 'e38d3cc79dcab29f526ff1f22ae196623cd4c9d9814bb9d691a5ad0067267a5a') throw new Error('Dream Gate source integrity mismatch');
+const ownOrigin = (process.env.RENDER_EXTERNAL_URL || 'https://lifequest-ai-v70-gemini.onrender.com').replace(/\/$/, '');
 
 const PORT = Number(process.env.PORT || 10000);
 const ORIGIN = (process.env.ALLOWED_ORIGIN || 'https://lifequest-ai-v70-apikey.onrender.com').replace(/\/$/, '');
@@ -29,8 +39,8 @@ function respond(res, code, json) {
 
 function allowCors(req, res) {
   const origin = req.headers.origin;
-  if (origin !== ORIGIN) return false;
-  res.setHeader('Access-Control-Allow-Origin', ORIGIN);
+  if (origin !== ORIGIN && origin !== ownOrigin) return false;
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Access-Control-Max-Age', '600');
@@ -120,13 +130,13 @@ function checkLimits(req) {
 http.createServer(async (req, res) => {
   try {
     // Opening the service URL in a browser should take players to the game.
-    if (req.url === '/' && ['GET', 'HEAD'].includes(req.method)) {
-      res.writeHead(302, { Location: ORIGIN + '/', 'Cache-Control': 'no-store' });
-      res.end();
+    if (['/','/index.html'].includes(req.url.split('?')[0]) && ['GET', 'HEAD'].includes(req.method)) {
+      res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Content-Length':game.length, 'Cache-Control':'no-cache', 'X-Content-Type-Options':'nosniff', 'X-LifeQuest-Release':'V70-Dream-Gate' });
+      res.end(req.method === 'HEAD' ? undefined : game);
       return;
     }
     if (req.url === '/health') {
-      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', configured: !!GEMINI_API_KEY });
+      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', release:'V70-Dream-Gate', sha256:gameHash, configured: !!GEMINI_API_KEY });
       return;
     }
     if (req.url !== '/api/gemini') {

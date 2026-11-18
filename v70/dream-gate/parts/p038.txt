@@ -1,0 +1,2084 @@
+    : l
+                      ? ((m = this.pick(o, `personal:${l}`, a.personal?.[l] ?? qn(e.id, l))),
+                        (o.idle = 0))
+                      : i && !(d && i !== `howAreYou`)
+                        ? ((m = this.pick(o, i, a.lines[i])),
+                          i === `insult`
+                            ? (h = -5)
+                            : (i === `compliment` || i === `thanks`) && (h = 2),
+                          i !== `greet` && (o.idle = 0))
+                        : d
+                          ? ((m = this.pick(o, `feel:${d}`, g?.empathy?.[d] ?? Zn[d] ?? Zn.upset)),
+                            (o.idle = 0))
+                          : Xn.test(c)
+                            ? ((m = this.pick(o, `happy`, g?.happy ?? Qn)), (h = 1), (o.idle = 0))
+                            : f.length
+                              ? ((m = this.pick(o, `newfact`, g?.newFact ?? $n).replace(
+                                  `{f}`,
+                                  f[0],
+                                )),
+                                (o.idle = 0))
+                              : ir.test(c) || c.includes(`?`)
+                                ? ((m =
+                                    this.pick(o, `notsure`, g?.notSure ?? er) +
+                                    ` ` +
+                                    this.pick(o, `followup`, g?.followUp ?? or)),
+                                  o.idle++)
+                                : (o.idle++,
+                                  (m = this.pick(o, `fallback`, a.fallback)),
+                                  s.facts.length &&
+                                    Math.random() < 0.35 &&
+                                    (m =
+                                      `By the way, I remember that you ${s.facts[Math.floor(Math.random() * s.facts.length)]}. ` +
+                                      m)),
+                  !r && o.idle >= 2 && ((m += ` ` + this.pick(o, `hint`, a.hints)), (o.idle = 0)));
+              }
+              i.stranger === `new` &&
+                a.stranger &&
+                !o.remarked &&
+                ((m = `${a.stranger.remark} ${m}`), (o.remarked = !0));
+              const { fixed, explanation } = sentenceTutor.correct(n);
+              const changed = fixed !== n;
+              let correction = changed ? `Better: ${fixed}` : ``;
+              if (!changed && n.trim().split(/\s+/).length >= 6 && Math.random() < 0.3) {
+                correction = this.pick(o, `praise`, g?.praise ?? tr);
+              }
+              return { reply: l(m), correction, vietnameseTip: changed ? explanation : ``, goalDone: d, affinityDelta: h };
+            }
+          };
+var ur = class {
+            model;
+            baseUrl;
+            label;
+            constructor(e = `llama3.2:3b`, t = `http://localhost:11434`) {
+              ((this.model = e), (this.baseUrl = t), (this.label = `Ollama (${e})`));
+            }
+            static async isAvailable(e = `http://localhost:11434`) {
+              try {
+                return (await fetch(`${e}/api/tags`, { signal: AbortSignal.timeout(1500) })).ok;
+              } catch {
+                return !1;
+              }
+            }
+            async chat(e, t) {
+              let n = await fetch(`${this.baseUrl}/api/chat`, {
+                method: `POST`,
+                headers: { 'Content-Type': `application/json` },
+                body: JSON.stringify({
+                  model: this.model,
+                  messages: e,
+                  stream: !1,
+                  ...(t ? { format: `json` } : {}),
+                  options: { temperature: 0.8 },
+                }),
+              });
+              if (!n.ok) throw Error(`Ollama error ${n.status}`);
+              return (await n.json()).message.content;
+            }
+            async respond(e, t, n, r, i) {
+              let a = [
+                {
+                  role: `system`,
+                  content:
+                    Tt(e, r, i) +
+                    `
+Reply ONLY with JSON: {"reply": string, "correction": string, "vietnameseTip": string, "goalDone": boolean, "remember": string, "affinityDelta": number}`,
+                },
+                ...t
+                  .slice(-16)
+                  .map((e) => ({
+                    role: e.role === `user` ? `user` : `assistant`,
+                    content: e.text,
+                  })),
+                { role: `user`, content: n },
+              ];
+              return jt(await this.chat(a, !0), r);
+            }
+            async summarize(e, t, n, r) {
+              let { system: i, user: a } = Et(e, t, n, r);
+              return (
+                await this.chat(
+                  [
+                    { role: `system`, content: i },
+                    { role: `user`, content: a },
+                  ],
+                  !1,
+                )
+              ).trim();
+            }
+            async check(e) {
+              return Ot(
+                await this.chat(
+                  [
+                    {
+                      role: `system`,
+                      content:
+                        Dt +
+                        `
+Reply ONLY with JSON: {"ok": boolean, "fixed": string, "tip": string}`,
+                    },
+                    { role: `user`, content: e },
+                  ],
+                  !0,
+                ),
+              );
+            }
+            async greet(e, t) {
+              return (
+                await this.chat(
+                  [
+                    {
+                      role: `system`,
+                      content: `${Tt(e, t.memory.goalDone, t)}\n\nThe player has just walked up to you. Greet them in character in ONE or TWO short sentences. Output ONLY the greeting text.`,
+                    },
+                    { role: `user`, content: `*The player walks up to you.*` },
+                  ],
+                  !1,
+                )
+              )
+                .trim()
+                .replace(/^["“]|["”]$/g, ``)
+                .slice(0, 300);
+            }
+            async explain(e) {
+              return At(
+                await this.chat(
+                  [
+                    {
+                      role: `system`,
+                      content:
+                        kt +
+                        `
+Reply ONLY with JSON: {"term": string, "meaning": string, "vi": string, "example": string, "notes": string}`,
+                    },
+                    { role: `user`, content: e },
+                  ],
+                  !0,
+                ),
+              );
+            }
+          };
+var dr = class {
+            primary;
+            fallback;
+            constructor(e, t) {
+              ((this.primary = e), (this.fallback = t));
+            }
+            get label() {
+              return this.primary.label;
+            }
+            // Rate-limit cool-down: after a 429 every Gemini call is skipped until this time (ms), so the free quota
+            // is not burnt on requests that would fail anyway. NPCs answer offline meanwhile.
+            coolUntil = 0;
+            coolSecondsLeft() {
+              return Math.max(0, Math.ceil((this.coolUntil - Date.now()) / 1e3));
+            }
+            noteError(err) {
+              if (err && err.status === 429) {
+                let secs = Math.min(120, Math.max(20, err.retryAfterSec || 30));
+                this.coolUntil = Date.now() + secs * 1e3;
+              }
+            }
+            // Only network problems, timeouts and server errors (5xx) are worth one more try. A 429, a bad key or a
+            // blocked request fails again straight away and only costs another request.
+            isRetryable(err) {
+              let s = err && err.status;
+              return !s || s >= 500;
+            }
+            async offlineWithNotice(e, t, n, r, i, notice) {
+              let o = await this.fallback.respond(e, t, n, r, i);
+              try {
+                o && typeof o == `object` && (o.notice = notice + (o.notice ? ` | ${o.notice}` : ``));
+              } catch {}
+              return o;
+            }
+            restingNotice() {
+              return `The AI is resting for about ${this.coolSecondsLeft()}s (free Gemini limit reached), so this reply is offline. You can keep chatting.`;
+            }
+            async respond(e, t, n, r, i) {
+              if (this.coolSecondsLeft() > 0) return this.offlineWithNotice(e, t, n, r, i, this.restingNotice());
+              try {
+                return await this.primary.respond(e, t, n, r, i);
+              } catch (first) {
+                let err = first;
+                if (this.isRetryable(first)) {
+                  try {
+                    await new Promise((e) => setTimeout(e, 500));
+                    return await this.primary.respond(e, t, n, r, i);
+                  } catch (second) {
+                    err = second;
+                  }
+                }
+                console.error(`[LIFEQUEST] Gemini error:`, err);
+                this.noteError(err);
+                let notice =
+                  err && err.status === 429
+                    ? this.restingNotice()
+                    : `Gemini error: ${(err && err.message) || err}. Open Settings > Test to check your key.`;
+                return this.offlineWithNotice(e, t, n, r, i, notice);
+              }
+            }
+            async greet(e, t) {
+              if (!this.primary.greet || this.coolSecondsLeft() > 0) return ``;
+              try {
+                return await this.primary.greet(e, t);
+              } catch (err) {
+                this.noteError(err);
+                throw err;
+              }
+            }
+            async summarize(e, t, n, r) {
+              if (!this.primary.summarize || this.coolSecondsLeft() > 0) return ``;
+              try {
+                return await this.primary.summarize(e, t, n, r);
+              } catch (err) {
+                this.noteError(err);
+                throw err;
+              }
+            }
+            async check(e) {
+              try {
+                if (this.primary.check) return await this.primary.check(e);
+              } catch {}
+              return this.fallback.check(e);
+            }
+            explain(e) {
+              return this.primary.explain(e);
+            }
+          };
+        async function fr() {
+          return window.LQGemini.proxyAvailable();
+        }
+        async function pr(e = vt()) {
+          return e.geminiKey
+            ? new dr(new Rt(e.geminiKey, e.geminiModel), new lr())
+            : (await fr())
+              ? new dr(new Rt(``, e.geminiModel, !0), new lr())
+              : [`localhost`, `127.0.0.1`, ``].includes(location.hostname) &&
+                  (await ur.isAvailable())
+                ? new dr(new ur(), new lr())
+                : new lr();
+        }
+        var mr = new Set([
+            `paint`,
+            `clock`,
+            `board`,
+            `screen`,
+            `menu`,
+            `poster`,
+            `cross`,
+            `flag`,
+            `mirror`,
+            `glass`,
+            `pigeon`,
+          ]);
+var hr = new Set([`rug`, `mat`]);
+var gr = (e) => !mr.has(e.k) && !hr.has(e.k);
+var Q = (e, t, n, r = 1, i = 1, a) => ({ k: e, x: t, y: n, w: r, h: i, c: a });
+var _r = {
+            'Sunny Cafe': {
+              w: 14,
+              h: 10,
+              floor: `wood`,
+              f1: 13213802,
+              f2: 12555616,
+              wall: 15915448,
+              items: [
+                Q(`menu`, 2, 0, 4, 2),
+                Q(`clock`, 11, 0, 2, 2),
+                Q(`counter`, 1, 3, 7, 1, 9067056),
+                Q(`cakecase`, 8, 3, 3, 1),
+                Q(`plant`, 12, 2),
+                Q(`rug`, 4, 7, 6, 2, 12866122),
+                Q(`table`, 2, 5, 2, 1, 16049360),
+                Q(`chair`, 2, 6),
+                Q(`chair`, 3, 6),
+                Q(`table`, 6, 5, 2, 1, 16049360),
+                Q(`chair`, 6, 6),
+                Q(`chair`, 7, 6),
+                Q(`table`, 10, 5, 2, 1, 16049360),
+                Q(`chair`, 10, 6),
+                Q(`chair`, 11, 6),
+              ],
+              spots: { barista: [3, 2] },
+              guests: [
+                [5, 4],
+                [9, 4],
+              ],
+            },
+            'Post Office': {
+              w: 12,
+              h: 9,
+              floor: `tile`,
+              f1: 14209728,
+              f2: 13617332,
+              wall: 14674162,
+              items: [
+                Q(`pigeon`, 2, 0, 8, 2),
+                Q(`clock`, 10, 0, 2, 2),
+                Q(`desk`, 3, 2, 2, 1, 6965802),
+                Q(`desk`, 7, 2, 2, 1, 6965802),
+                Q(`crate`, 10, 2),
+                Q(`plant`, 1, 2),
+                Q(`counter`, 2, 4, 8, 1, 8018490),
+                Q(`rug`, 4, 6, 4, 2, 12859962),
+                Q(`pew`, 1, 6, 3, 1, 4876976),
+                Q(`crate`, 9, 6),
+                Q(`crate`, 10, 6),
+                Q(`crate`, 10, 7),
+              ],
+              spots: { postman: [5, 3] },
+              guests: [[5, 5]],
+            },
+            'Town Hall': {
+              w: 15,
+              h: 10,
+              floor: `carpet`,
+              f1: 9058874,
+              f2: 8007728,
+              wall: 15261904,
+              items: [
+                Q(`flag`, 2, 0, 2, 2, 12859962),
+                Q(`paint`, 5, 0, 2, 2, 6982344),
+                Q(`paint`, 8, 0, 2, 2, 9091178),
+                Q(`flag`, 11, 0, 2, 2, 4874936),
+                Q(`shelf`, 1, 2, 3, 1),
+                Q(`rug`, 6, 4, 3, 6, 2767482),
+                Q(`desk`, 6, 3, 3, 1, 4861984),
+                Q(`chair`, 3, 6),
+                Q(`chair`, 5, 6),
+                Q(`chair`, 9, 6),
+                Q(`chair`, 11, 6),
+                Q(`chair`, 3, 7),
+                Q(`chair`, 5, 7),
+                Q(`chair`, 9, 7),
+                Q(`chair`, 11, 7),
+                Q(`plant`, 1, 8),
+                Q(`plant`, 13, 8),
+              ],
+              spots: { mayor: [7, 2] },
+              guests: [
+                [7, 5],
+                [4, 4],
+              ],
+            },
+            Bank: {
+              w: 13,
+              h: 9,
+              floor: `tile`,
+              f1: 15000808,
+              f2: 13684952,
+              wall: 13620962,
+              items: [
+                Q(`paint`, 2, 0, 2, 2, 14200880),
+                Q(`paint`, 9, 0, 2, 2, 14200880),
+                Q(`vault`, 5, 2, 3, 2),
+                Q(`plant`, 1, 2),
+                Q(`plant`, 11, 2),
+                Q(`desk`, 1, 3, 2, 1, 6056838),
+                Q(`desk`, 10, 3, 2, 1, 6056838),
+                Q(`counter`, 1, 5, 4, 1, 12095546),
+                Q(`counter`, 8, 5, 4, 1, 12095546),
+                Q(`rug`, 5, 6, 3, 2, 2767466),
+                Q(`chair`, 2, 7),
+                Q(`chair`, 3, 7),
+                Q(`chair`, 9, 7),
+                Q(`chair`, 10, 7),
+              ],
+              spots: { banker: [3, 4] },
+              guests: [[6, 4]],
+            },
+            Library: {
+              w: 15,
+              h: 10,
+              floor: `wood`,
+              f1: 10122312,
+              f2: 9333312,
+              wall: 14207144,
+              items: [
+                Q(`paint`, 2, 0, 2, 2, 9071178),
+                Q(`clock`, 7, 0, 2, 2),
+                Q(`paint`, 11, 0, 2, 2, 4881002),
+                Q(`shelf`, 1, 2, 4, 1),
+                Q(`shelf`, 6, 2, 3, 1),
+                Q(`shelf`, 10, 2, 4, 1),
+                Q(`shelf`, 1, 4, 3, 1),
+                Q(`shelf`, 11, 4, 3, 1),
+                Q(`counter`, 6, 4, 3, 1, 6964520),
+                Q(`rug`, 6, 6, 3, 2, 4168296),
+                Q(`table`, 4, 6, 2, 1, 11569752),
+                Q(`chair`, 4, 7),
+                Q(`chair`, 5, 7),
+                Q(`table`, 9, 6, 2, 1, 11569752),
+                Q(`chair`, 9, 7),
+                Q(`chair`, 10, 7),
+              ],
+              spots: { librarian: [7, 3], teacher: [7, 6] },
+              guests: [[3, 6]],
+            },
+            Gym: {
+              w: 12,
+              h: 9,
+              floor: `tile`,
+              f1: 3817290,
+              f2: 3422532,
+              wall: 12634328,
+              items: [
+                Q(`mirror`, 2, 0, 8, 2),
+                Q(`treadmill`, 1, 3, 1, 2),
+                Q(`treadmill`, 3, 3, 1, 2),
+                Q(`treadmill`, 5, 3, 1, 2),
+                Q(`weights`, 8, 3, 2, 1),
+                Q(`weights`, 8, 5, 2, 1),
+                Q(`goods`, 10, 2, 2, 1, 8026762),
+                Q(`mat`, 1, 6, 2, 1, 8018632),
+                Q(`mat`, 4, 6, 2, 1, 3842256),
+                Q(`plant`, 11, 7),
+              ],
+              spots: { firefighter: [7, 6] },
+              guests: [[8, 7]],
+            },
+            Market: {
+              w: 13,
+              h: 9,
+              floor: `tile`,
+              f1: 15134688,
+              f2: 14017485,
+              wall: 15266008,
+              items: [
+                Q(`poster`, 5, 0, 3, 2),
+                Q(`goods`, 1, 2, 4, 1, 13650490),
+                Q(`goods`, 6, 2, 3, 1, 15253552),
+                Q(`goods`, 10, 2, 2, 1, 4892746),
+                Q(`crate`, 12, 2),
+                Q(`crate`, 5, 4),
+                Q(`crate`, 6, 4),
+                Q(`crate`, 7, 4),
+                Q(`goods`, 1, 5, 3, 1, 3842256),
+                Q(`goods`, 9, 5, 3, 1, 14715450),
+                Q(`counter`, 1, 7, 3, 1, 4892746),
+              ],
+              spots: { chef: [6, 6] },
+              guests: [[8, 7]],
+            },
+            'Corner Shop': {
+              w: 15,
+              h: 10,
+              floor: `wood`,
+              f1: 14268808,
+              f2: 13610620,
+              wall: 14676208,
+              items: [
+                Q(`clock`, 6, 0, 2, 2),
+                Q(`poster`, 10, 0, 3, 2),
+                Q(`goods`, 1, 2, 5, 1, 3842256),
+                Q(`goods`, 8, 2, 6, 1, 9067176),
+                Q(`counter`, 9, 4, 5, 1, 3119784),
+                Q(`goods`, 1, 4, 3, 1, 14715450),
+                Q(`wardrobe`, 6, 4, 1, 2, 13146682),
+                Q(`table`, 2, 6, 2, 1, 11569752),
+                Q(`crate`, 4, 6),
+                Q(`rug`, 8, 7, 4, 2, 3119784),
+                Q(`plant`, 13, 7),
+              ],
+              spots: { shopkeeper: [11, 3] },
+              guests: [
+                [5, 5],
+                [10, 6],
+              ],
+            },
+            Restaurant: {
+              w: 14,
+              h: 10,
+              floor: `checker`,
+              f1: 15786184,
+              f2: 13127738,
+              wall: 15782064,
+              items: [
+                Q(`menu`, 1, 0, 4, 2),
+                Q(`paint`, 7, 0, 2, 2, 13140026),
+                Q(`stove`, 10, 2),
+                Q(`stove`, 11, 2),
+                Q(`fridge`, 12, 2, 1, 2),
+                Q(`counter`, 9, 4, 4, 1, 11580604),
+                Q(`table`, 1, 3, 2, 1, 16052456),
+                Q(`chair`, 1, 4),
+                Q(`chair`, 2, 4),
+                Q(`table`, 4, 3, 2, 1, 16052456),
+                Q(`chair`, 4, 4),
+                Q(`chair`, 5, 4),
+                Q(`table`, 1, 6, 2, 1, 16052456),
+                Q(`chair`, 1, 7),
+                Q(`chair`, 2, 7),
+                Q(`table`, 4, 6, 2, 1, 16052456),
+                Q(`chair`, 4, 7),
+                Q(`chair`, 5, 7),
+                Q(`table`, 9, 6, 2, 1, 16052456),
+                Q(`chair`, 9, 7),
+                Q(`chair`, 10, 7),
+                Q(`plant`, 12, 7),
+              ],
+              spots: { chef: [10, 3] },
+              guests: [
+                [7, 5],
+                [8, 3],
+              ],
+            },
+            "Lily's House": {
+              w: 10,
+              h: 8,
+              floor: `wood`,
+              f1: 14465418,
+              f2: 13807230,
+              wall: 16241884,
+              items: [
+                Q(`paint`, 5, 0, 2, 2, 15769776),
+                Q(`bed`, 1, 2, 2, 2, 14708874),
+                Q(`wardrobe`, 3, 2, 1, 2),
+                Q(`stove`, 6, 2),
+                Q(`sink`, 7, 2),
+                Q(`fridge`, 8, 2, 1, 2),
+                Q(`table`, 6, 4, 2, 1, 16049360),
+                Q(`chair`, 6, 5),
+                Q(`chair`, 7, 5),
+                Q(`rug`, 1, 5, 3, 2, 15769776),
+                Q(`plant`, 9, 5),
+              ],
+              spots: { barista: [4, 4] },
+              guests: [[4, 4]],
+            },
+            "Ms. Green's House": {
+              w: 10,
+              h: 8,
+              floor: `wood`,
+              f1: 11569752,
+              f2: 10911566,
+              wall: 14674132,
+              items: [
+                Q(`clock`, 3, 0, 2, 2),
+                Q(`shelf`, 1, 2, 3, 1),
+                Q(`shelf`, 5, 2, 3, 1),
+                Q(`bed`, 8, 2, 2, 2, 5218138),
+                Q(`desk`, 1, 4, 2, 1, 6964520),
+                Q(`chair`, 1, 5),
+                Q(`rug`, 4, 5, 4, 2, 4161354),
+                Q(`sofa`, 5, 4, 2, 1, 5214042),
+                Q(`table`, 5, 5, 2, 1, 14207144),
+                Q(`plant`, 9, 5),
+              ],
+              spots: { librarian: [3, 6] },
+              guests: [[3, 6]],
+            },
+            "Mr. Brown's House": {
+              w: 10,
+              h: 8,
+              floor: `wood`,
+              f1: 8018488,
+              f2: 7360815,
+              wall: 14207920,
+              items: [
+                Q(`paint`, 1, 0, 2, 2, 6982344),
+                Q(`clock`, 4, 0, 2, 2),
+                Q(`flag`, 7, 0, 2, 2, 4874936),
+                Q(`shelf`, 1, 2, 2, 1),
+                Q(`fireplace`, 4, 2, 2, 1),
+                Q(`shelf`, 7, 2, 2, 1),
+                Q(`plant`, 9, 2),
+                Q(`desk`, 1, 4, 3, 1, 4861984),
+                Q(`chair`, 2, 5),
+                Q(`sofa`, 6, 5, 3, 1, 3820170),
+                Q(`table`, 7, 4),
+                Q(`rug`, 3, 6, 4, 2, 3820170),
+              ],
+              spots: { mayor: [4, 4] },
+              guests: [[4, 4]],
+            },
+            "Hero's Home": {
+              w: 10,
+              h: 8,
+              floor: `wood`,
+              f1: 14203018,
+              f2: 13545088,
+              wall: 13952248,
+              items: [
+                Q(`paint`, 4, 0, 2, 2, 6982344),
+                Q(`clock`, 7, 0, 2, 2),
+                Q(`bed`, 1, 2, 2, 2, 3842303),
+                Q(`wardrobe`, 3, 2, 1, 2),
+                Q(`desk`, 6, 2, 2, 1, 6964520),
+                Q(`chair`, 6, 3),
+                Q(`tv`, 8, 2),
+                Q(`rug`, 2, 5, 3, 2, 3842303),
+                Q(`sofa`, 6, 4, 3, 1, 3828408),
+                Q(`plant`, 9, 5),
+              ],
+              spots: {},
+              guests: [[4, 4]],
+            },
+            "Tom's House": {
+              w: 10,
+              h: 8,
+              floor: `wood`,
+              f1: 13608040,
+              f2: 12884574,
+              wall: 15786160,
+              items: [
+                Q(`poster`, 3, 0, 2, 2),
+                Q(`crate`, 1, 2),
+                Q(`crate`, 2, 2),
+                Q(`crate`, 1, 3),
+                Q(`tv`, 4, 2),
+                Q(`bed`, 7, 2, 2, 2, 13146682),
+                Q(`sofa`, 3, 4, 3, 1, 13134378),
+                Q(`rug`, 3, 5, 3, 2, 14721104),
+                Q(`table`, 7, 5, 2, 1, 16049360),
+                Q(`chair`, 7, 6),
+                Q(`chair`, 8, 6),
+              ],
+              spots: { shopkeeper: [5, 6] },
+              guests: [[5, 6]],
+            },
+            "Mia's House": {
+              w: 10,
+              h: 8,
+              floor: `wood`,
+              f1: 14731424,
+              f2: 14072978,
+              wall: 15257844,
+              items: [
+                Q(`poster`, 3, 0, 2, 2),
+                Q(`poster`, 6, 0, 2, 2),
+                Q(`bed`, 1, 2, 2, 2, 11563232),
+                Q(`crate`, 4, 2, 1, 1, 14703242),
+                Q(`crate`, 5, 2, 1, 1, 4890848),
+                Q(`desk`, 7, 2, 2, 1, 14725328),
+                Q(`chair`, 7, 3),
+                Q(`rug`, 2, 4, 5, 3, 16031936),
+                Q(`table`, 7, 5, 2, 1, 16048368),
+                Q(`chair`, 7, 6),
+                Q(`chair`, 8, 6),
+                Q(`plant`, 9, 4),
+              ],
+              spots: { kid: [4, 5] },
+              guests: [[4, 5]],
+            },
+            Hospital: {
+              w: 16,
+              h: 11,
+              floor: `tile`,
+              f1: 15660280,
+              f2: 14543088,
+              wall: 15134964,
+              items: [
+                Q(`poster`, 1, 0, 2, 2),
+                Q(`cross`, 7, 0, 2, 2, 14694970),
+                Q(`poster`, 12, 0, 2, 2),
+                Q(`hospbed`, 1, 2, 2, 2),
+                Q(`hospbed`, 4, 2, 2, 2),
+                Q(`hospbed`, 7, 2, 2, 2),
+                Q(`medcab`, 10, 2, 2, 1),
+                Q(`medcab`, 13, 2, 2, 1),
+                Q(`counter`, 10, 5, 5, 1, 14543088),
+                Q(`rug`, 6, 6, 4, 3, 11194600),
+                Q(`pew`, 1, 6, 4, 1, 4885208),
+                Q(`pew`, 1, 8, 4, 1, 4885208),
+                Q(`plant`, 14, 8),
+              ],
+              spots: { doctor: [12, 4] },
+              guests: [[8, 5]],
+            },
+            'Fire Station': {
+              w: 16,
+              h: 10,
+              floor: `stone`,
+              f1: 10133160,
+              f2: 9343644,
+              wall: 15259848,
+              items: [
+                Q(`flag`, 2, 0, 2, 2, 13119536),
+                Q(`poster`, 11, 0, 2, 2),
+                Q(`firetruck`, 1, 3, 6, 3),
+                Q(`locker`, 9, 2, 4, 1, 13119536),
+                Q(`goods`, 13, 2, 2, 1, 13119536),
+                Q(`table`, 10, 5, 3, 1, 8015920),
+                Q(`chair`, 10, 6),
+                Q(`chair`, 11, 6),
+                Q(`chair`, 12, 6),
+              ],
+              spots: { firefighter: [10, 4] },
+              guests: [[8, 5]],
+            },
+            School: {
+              w: 20,
+              h: 12,
+              floor: `wood`,
+              f1: 14071424,
+              f2: 13412468,
+              wall: 15326648,
+              items: [
+                Q(`clock`, 2, 0, 2, 2),
+                Q(`board`, 6, 0, 8, 2),
+                Q(`flag`, 16, 0, 2, 2, 4874936),
+                Q(`locker`, 1, 2, 4, 1, 5929648),
+                Q(`locker`, 15, 2, 4, 1, 5929648),
+                Q(`desk`, 9, 3, 3, 1, 9067056),
+                ...[5, 7].flatMap((e) => [2, 4, 6, 13, 15, 17].map((t) => Q(`schooldesk`, t, e))),
+                Q(`shelf`, 1, 9, 3, 1),
+                Q(`shelf`, 16, 9, 3, 1),
+              ],
+              spots: { teacher: [10, 2], kid: [8, 6] },
+              guests: [[11, 6]],
+            },
+            Apartments: {
+              w: 12,
+              h: 9,
+              floor: `tile`,
+              f1: 14208440,
+              f2: 13615786,
+              wall: 15325632,
+              items: [
+                Q(`pigeon`, 2, 0, 5, 2),
+                Q(`clock`, 8, 0, 2, 2),
+                Q(`stairs`, 1, 2, 2, 2),
+                Q(`counter`, 7, 3, 4, 1, 8018586),
+                Q(`plant`, 10, 2),
+                Q(`rug`, 1, 6, 5, 2, 11573968),
+                Q(`sofa`, 2, 5, 3, 1, 8018586),
+                Q(`table`, 3, 6),
+                Q(`plant`, 10, 6),
+              ],
+              spots: {},
+              guests: [
+                [4, 4],
+                [8, 6],
+                [6, 5],
+              ],
+            },
+            Hotel: {
+              w: 14,
+              h: 10,
+              floor: `carpet`,
+              f1: 8007482,
+              f2: 7350836,
+              wall: 15787216,
+              items: [
+                Q(`paint`, 1, 0, 3, 2, 6982344),
+                Q(`paint`, 5, 0, 2, 2, 13140026),
+                Q(`pigeon`, 8, 0, 4, 2),
+                Q(`plant`, 5, 2),
+                Q(`counter`, 8, 3, 4, 1, 12095546),
+                Q(`plant`, 12, 2),
+                Q(`rug`, 4, 4, 5, 3, 14200928),
+                Q(`sofa`, 1, 3, 3, 1, 2787994),
+                Q(`table`, 1, 4, 2, 1, 14207144),
+                Q(`sofa`, 1, 6, 3, 1, 2787994),
+                Q(`piano`, 10, 6, 3, 2),
+              ],
+              spots: { hotelclerk: [9, 2] },
+              guests: [
+                [6, 5],
+                [9, 5],
+              ],
+            },
+            'Police Station': {
+              w: 14,
+              h: 10,
+              floor: `stone`,
+              f1: 11581124,
+              f2: 10923452,
+              wall: 13620966,
+              items: [
+                Q(`poster`, 2, 0, 4, 2),
+                Q(`flag`, 8, 0, 2, 2, 2771624),
+                Q(`desk`, 5, 3, 4, 1, 4872842),
+                Q(`cell`, 10, 2, 4, 4),
+                Q(`desk`, 1, 3, 3, 1, 6969930),
+                Q(`chair`, 2, 4),
+                Q(`pew`, 1, 7, 3, 1, 4872842),
+                Q(`plant`, 12, 7),
+              ],
+              spots: { police: [6, 2] },
+              guests: [[7, 5]],
+            },
+            Cinema: {
+              w: 17,
+              h: 11,
+              floor: `carpet`,
+              f1: 5904944,
+              f2: 5248552,
+              wall: 2760758,
+              items: [
+                Q(`poster`, 1, 0, 2, 2),
+                Q(`screen`, 4, 0, 9, 2),
+                Q(`poster`, 14, 0, 2, 2),
+                Q(`rug`, 7, 3, 3, 6, 9054810),
+                Q(`seat`, 3, 4, 4, 1),
+                Q(`seat`, 10, 4, 4, 1),
+                Q(`seat`, 3, 5, 4, 1),
+                Q(`seat`, 10, 5, 4, 1),
+                Q(`seat`, 3, 6, 4, 1),
+                Q(`seat`, 10, 6, 4, 1),
+                Q(`counter`, 12, 9, 4, 1, 10496570),
+                Q(`plant`, 1, 9),
+              ],
+              spots: { cinema: [13, 8], hotelclerk: [8, 8] },
+              guests: [[5, 8]],
+            },
+            Church: {
+              w: 12,
+              h: 12,
+              floor: `stone`,
+              f1: 14209216,
+              f2: 13551284,
+              wall: 15262936,
+              items: [
+                Q(`glass`, 1, 0, 2, 2),
+                Q(`cross`, 5, 0, 2, 2),
+                Q(`glass`, 9, 0, 2, 2),
+                Q(`altar`, 4, 2, 4, 1),
+                Q(`plant`, 1, 2),
+                Q(`plant`, 10, 2),
+                Q(`rug`, 5, 3, 2, 8, 10496570),
+                Q(`pew`, 1, 5, 4, 1),
+                Q(`pew`, 7, 5, 4, 1),
+                Q(`pew`, 1, 7, 4, 1),
+                Q(`pew`, 7, 7, 4, 1),
+                Q(`pew`, 1, 9, 4, 1),
+                Q(`pew`, 7, 9, 4, 1),
+              ],
+              spots: { priest: [6, 3] },
+              guests: [[6, 4]],
+            },
+          };
+
+/* V69: Register twenty real enterable interior floorplans, not static mock buildings. */
+(function(){
+  const V = [
+    ['Neon Symphony Hall','symphony',0xffb668],['Skybridge Gallery','skybridge',0xaab6ff],
+    ['Aurora Rooftop Club','rooftop',0x89ecf0],['Mirror Dance Academy','academy',0xf6b1dc],
+    ['Graffiti Tower','graffiti',0xf9b06a],['Light Lab Studio','lightlab',0x85bdff],
+    ['Hologram Theater','hologram',0xc1a4fc],['Costume Studio','costume',0xffab9b],
+    ['Vinyl Social House','vinyl',0xf7cd89],['Art Hostel','hostel',0xb6e6aa],
+    ['Cinema Wall','cinema',0xffa7bf],['Kite Roof Plaza','kite',0x8dd4ce],
+    ['Artist Market Arcade','market',0xe9b8f2],['Midnight Snack Alley','snack',0xffbd81],
+    ['Rhythm Workshop','rhythm',0xe7acfa],['Sound Garden','garden',0xa3ecb3],
+    ['Sculpture Garden','sculpture',0xc0e1ff],['Beat Bridge','bridge',0xfea4cd],
+    ['Mini Ferris Neon','wheel',0xffda89],['Lantern Courtyard','lantern',0xa4e5ce],
+  ];
+  for(const [name,kind,color] of V){
+    const hasStage=/symphony|hologram|rooftop|academy|rhythm|lightlab|bridge|wheel|cinema/.test(kind);
+    const isCreative=/graffiti|costume|market|sculpture|skybridge|lantern/.test(kind);
+    const isSocial=/vinyl|hostel|snack|garden|kite/.test(kind);
+    const items=[];
+    items.push(Q('screen',4,0,8,2),Q('poster',1,0,2,2),Q('poster',13,0,2,2));
+    if(hasStage){
+      items.push(Q('rug',4,2,8,4,0x525e83),Q('screen',5,1,6,1),Q('counter',1,2,3,1,0x527295));
+      items.push(Q('seat',1,6,3,1),Q('seat',12,6,3,1),Q('plant',1,8),Q('plant',14,8));
+    }else if(isCreative){
+      items.push(Q('table',1,3,3,1),Q('table',12,3,3,1),Q('rug',4,3,8,4,color));
+      items.push(Q('desk',1,7,3,1),Q('desk',12,7,3,1),Q('plant',1,9),Q('plant',14,9));
+    }else if(isSocial){
+      items.push(Q('counter',1,2,5,1),Q('seat',1,5,3,1),Q('seat',12,5,3,1));
+      items.push(Q('table',1,7,2,1),Q('table',13,7,2,1),Q('rug',4,3,8,3,color));
+      items.push(Q('plant',1,9),Q('plant',14,9));
+    }
+    const room={w:16,h:12,floor:hasStage?'wood':kind==='garden'||kind==='sculpture'?'stone':'tile',
+      f1:hasStage?0x32354f:0x3f425d,f2:hasStage?0x414360:0x4f546e,wall:0x26334c,
+      items,spots:{},guests:[[3,9],[12,9]],__lq69Kind:kind,__lq69Color:color,
+      labels:[{x:8,y:.38,text:name},{x:8,y:3.1,text:hasStage?'DANCE • PERFORM':isCreative?'CREATE • EXPLORE':'MEET • RELAX'}]};
+    _r[name]=room;
+  }
+})();
+
+var vr = {
+            cafe: `Sunny Cafe`,
+            post: `Post Office`,
+            hall: `Town Hall`,
+            bank: `Bank`,
+            library: `Library`,
+            gym: `Gym`,
+            market: `Market`,
+            shop: `Corner Shop`,
+            restaurant: `Restaurant`,
+            hospital: `Hospital`,
+            fire: `Fire Station`,
+            school: `School`,
+            apartments: `Apartments`,
+            hotel: `Hotel`,
+            police: `Police Station`,
+            cinema: `Cinema`,
+            church: `Church`,
+            home_barista: `Lily's House`,
+            home_librarian: `Ms. Green's House`,
+            home_mayor: `Mr. Brown's House`,
+            home_shopkeeper: `Tom's House`,
+            home_kid: `Mia's House`,
+            home_doctor: `Apartments`,
+            home_teacher: `Apartments`,
+            home_chef: `Apartments`,
+            home_police: `Hotel`,
+            home_firefighter: `Hotel`,
+            home_banker: `Apartments`,
+            home_postman: `Apartments`,
+            home_clerk: `Hotel`,
+            home_priest: `Church`,
+            home_cinema: `Cinema`,
+            home_etmaster: `Apartments`,
+            home_etclerk: `Apartments`,
+            home_etporter: `Hotel`,
+          };
+var yr = 2826800;
+var br = [12597547, 3049153, 2600544, 15844367, 9323693, 15105570, 15528177, 1482885];
+var xr = (e, t) => (Math.imul(e + 7, 73856093) ^ Math.imul(t + 13, 19349663)) >>> 0;
+        function Sr(e, t) {
+          let n = Math.min(255, Math.round(((e >> 16) & 255) * t)),
+            r = Math.min(255, Math.round(((e >> 8) & 255) * t)),
+            i = Math.min(255, Math.round((e & 255) * t));
+          return (n << 16) | (r << 8) | i;
+        }
+        function $(e, t, n, r, i, a) {
+          let o = Math.min(10, Math.round(i * 0.35));
+          (e.fillStyle(Sr(a, 0.78), 1).fillRect(t, n, r, i),
+            e.fillStyle(Sr(a, 1.15), 1).fillRect(t, n, r, o),
+            e.lineStyle(1, yr, 1).strokeRect(t + 0.5, n + 0.5, r - 1, i - 1));
+        }
+        function Cr(e, t) {
+          let n = t.w * 32,
+            r = t.h * 32;
+          for (let i = 64; i < r; i += 32) {
+            let a = (i - 64) / (r - 64 || 1);
+            e.fillStyle(Sr(t.f1, 1.06 - 0.08 * a), 1).fillRect(0, i, n, 32);
+          }
+          if (t.floor === `wood`)
+            for (let i = 64, a = 0; i < r; i += 8, a++) {
+              (a % 2 && e.fillStyle(t.f2, 0.88).fillRect(0, i, n, 8),
+                e.lineStyle(1, Sr(t.f2, 0.78), 0.95).lineBetween(0, i, n, i));
+              for (let t = (a * 13) % 32; t < n; t += 32) e.lineBetween(t, i, t, i + 8);
+            }
+          else if (t.floor === `tile` || t.floor === `checker`) {
+            for (let n = 2; n < t.h; n++)
+              for (let r = 0; r < t.w; r++)
+                (r + n) % 2 && e.fillStyle(t.f2, 0.96).fillRect(r * 32, n * 32, 32, 32);
+            e.lineStyle(1, Sr(t.f1, 0.82), 0.9);
+            for (let r = 2; r <= t.h; r++) e.lineBetween(0, r * 32, n, r * 32);
+            for (let r = 0; r <= t.w; r++) e.lineBetween(r * 32, 64, r * 32, t.h * 32);
+          } else if (t.floor === `carpet`) {
+            (e.fillStyle(Sr(t.f1, 0.92), 1).fillRect(8, 72, n - 16, r - 80),
+              e.lineStyle(2, Sr(t.f2, 1.08), 1).strokeRect(8, 72, n - 16, r - 80));
+            for (let n = 2; n < t.h; n++)
+              for (let r = 0; r < t.w; r++)
+                e.fillStyle(t.f2, 0.4).fillRect(r * 32 + 14, n * 32 + 14, 3, 3);
+          } else {
+            for (let n = 2; n < t.h; n++)
+              for (let r = 0; r < t.w; r++)
+                xr(r, n) % 3 == 0 && e.fillStyle(t.f2, 0.65).fillRect(r * 32, n * 32, 32, 32);
+            e.lineStyle(1, Sr(t.f2, 0.8), 1);
+            for (let r = 2; r <= t.h; r++) e.lineBetween(0, r * 32, n, r * 32);
+            for (let n = 2; n < t.h; n++)
+              for (let r = n % 2; r <= t.w; r += 2)
+                e.lineBetween(r * 32, n * 32, r * 32, n * 32 + 32);
+          }
+          e.fillStyle(0, 0.09).fillRect(0, 64, n, 10);
+          for (let i = 96; i < r; i += 64) e.fillStyle(16777215, 0.02).fillRect(0, i, n, 1);
+        }
+        function wr(e, t) {
+          let n = t.w * 32,
+            r = t.h * 32;
+          (e.fillStyle(Sr(t.wall, 1.05), 1).fillRect(0, 0, n, 64),
+            e.fillStyle(Sr(t.wall, 0.8), 1).fillRect(0, 52, n, 12),
+            e.fillStyle(Sr(t.wall, 1.18), 1).fillRect(0, 0, n, 5),
+            e.lineStyle(1, Sr(t.wall, 0.92), 1));
+          for (let r = 1; r < t.w; r++) e.lineBetween(r * 32, 5, r * 32, 56);
+          for (let r = 18; r < n - 18; r += 64) {
+            if (
+              t.items.some((e) => mr.has(e.k) && e.x * 32 < r + 22 && e.x * 32 + e.w * 32 > r - 22)
+            )
+              continue;
+            (e.fillStyle(16777215, 0.92).fillRect(r - 12, 10, 24, 30),
+              e.fillStyle(10475760, 1).fillRect(r - 10, 12, 20, 26),
+              e.fillStyle(16777215, 0.4).fillRect(r - 8, 14, 5, 7),
+              e
+                .lineStyle(2, yr, 1)
+                .strokeRect(r - 12, 10, 24, 30)
+                .lineBetween(r, 12, r, 38)
+                .lineBetween(r - 10, 25, r + 10, 25),
+              e.fillStyle(16773570, 0.15).fillCircle(r, 46, 6));
+          }
+          (e.fillStyle(0, 0.16).fillRect(0, 64, n, 6),
+            e
+              .fillStyle(yr, 1)
+              .fillRect(0, 0, 6, r)
+              .fillRect(n - 6, 0, 6, r)
+              .fillRect(0, r - 4, n, 4));
+          e.fillStyle(Sr(t.wall, 0.68), 1).fillRect(0, 60, n, 4);
+        }
+        function Tr(e, t) {
+          let n = ((t.w >> 1) - 1) * 32,
+            r = (t.h - 1) * 32;
+          (e.fillStyle(0, 0.16).fillRect(n + 4, r + 4, 56, 26),
+            e.fillStyle(8006186, 1).fillRect(n + 3, r + 6, 58, 22),
+            e.lineStyle(2, 14729312, 1).strokeRect(n + 5, r + 8, 54, 18),
+            e.fillStyle(13625599, 1).fillRect(n, t.h * 32 - 4, 64, 4),
+            e.fillStyle(16773570, 0.18).fillRect(n + 11, r + 10, 38, 6),
+            e.fillStyle(16777215, 0.22).fillRect(n + 10, r + 13, 40, 2));
+        }
+        function Er(e, t) {
+          let n = t.x * 32,
+            r = t.y * 32,
+            i = t.w * 32,
+            a = t.h * 32,
+            o = t.c;
+          switch (t.k) {
+            case `table`:
+              $(e, n + 1, r + 4, i - 2, a - 6, o ?? 10119738);
+              break;
+            case `chair`:
+              (e.fillStyle(Sr(o ?? 11565637, 0.7), 1).fillRect(n + 7, r + 6, i - 14, 9),
+                e.fillStyle(o ?? 11565637, 1).fillRect(n + 6, r + 14, i - 12, 10),
+                e.lineStyle(1, yr, 1).strokeRect(n + 6.5, r + 14.5, i - 13, 9));
+              break;
+            case `bed`:
+            case `hospbed`: {
+              let s = t.k === `hospbed`;
+              ($(e, n + 1, r + 2, i - 2, a - 4, s ? 13621472 : 8014378),
+                e.fillStyle(16052456, 1).fillRect(n + 5, r + 9, i - 10, a - 16));
+              let c = i >= 64 ? (i - 16) / 2 : i - 12;
+              (e
+                .fillStyle(16777215, 1)
+                .fillRect(n + 6, r + 11, c, 9)
+                .strokeRect(n + 6, r + 11, c, 9),
+                i >= 64 &&
+                  e.fillRect(n + 10 + c, r + 11, c, 9).strokeRect(n + 10 + c, r + 11, c, 9),
+                e
+                  .fillStyle(o ?? (s ? 6992096 : 6982360), 1)
+                  .fillRect(n + 5, r + a * 0.5, i - 10, a * 0.5 - 8),
+                e.lineStyle(1, yr, 0.6).strokeRect(n + 5, r + a * 0.5, i - 10, a * 0.5 - 8));
+              break;
+            }
+            case `counter`:
+              ($(e, n, r + 2, i, a - 2, o ?? 9067056),
+                e.fillStyle(Sr(o ?? 9067056, 1.35), 1).fillRect(n, r + 2, i, 7),
+                e.lineStyle(1, Sr(o ?? 9067056, 0.6), 1));
+              for (let i = 1; i < t.w; i++)
+                e.lineBetween(n + i * 32, r + 12, n + i * 32, r + a - 3);
+              break;
+            case `cakecase`: {
+              ($(e, n, r + 2, i, a - 2, 15265520),
+                e.fillStyle(12576500, 0.9).fillRect(n + 3, r + 5, i - 6, 11));
+              let o = [16031928, 9067066, 16044144, 16777215];
+              for (let i = 0; i < t.w * 2; i++)
+                e.fillStyle(o[i % 4], 1).fillCircle(n + 8 + i * 14, r + 11, 4);
+              break;
+            }
+            case `shelf`:
+            case `goods`: {
+              let s = t.k === `goods`;
+              $(e, n + 1, r, i - 2, a, s ? Sr(o ?? 9071178, 0.55) : 6964520);
+              let c = t.h * 2,
+                l = (a - 6) / c;
+              for (let a = 0; a < c; a++) {
+                let c = r + 4 + a * l;
+                for (let r = n + 4, u = 0; r < n + i - 6; r += s ? 8 : 5, u++) {
+                  let n = s
+                      ? u % 3 == 0
+                        ? (o ?? 13650490)
+                        : br[xr(u, a + t.x) % br.length]
+                      : br[xr(u + t.x, a + t.y) % br.length],
+                    i = l - 3 - (xr(u, a) % 3);
+                  e.fillStyle(n, 1).fillRect(r, c + (l - 3 - i), s ? 6 : 4, i);
+                }
+                e.fillStyle(3810322, 1).fillRect(n + 3, c + l - 2, i - 6, 2);
+              }
+              break;
+            }
+            case `sofa`: {
+              let s = o ?? 11553354;
+              ($(e, n + 1, r + 2, i - 2, a - 2, s),
+                e.fillStyle(Sr(s, 0.7), 1).fillRect(n + 1, r + 2, i - 2, Math.round(a * 0.4)),
+                e
+                  .fillStyle(Sr(s, 0.9), 1)
+                  .fillRect(n + 1, r + 6, 5, a - 6)
+                  .fillRect(n + i - 6, r + 6, 5, a - 6),
+                e.lineStyle(1, Sr(s, 0.55), 1));
+              for (let i = 1; i < t.w; i++)
+                e.lineBetween(n + i * 32, r + a * 0.45, n + i * 32, r + a - 2);
+              break;
+            }
+            case `tv`:
+              ($(e, n + 4, r + 20, i - 8, 10, 6965802),
+                e
+                  .fillStyle(1381660, 1)
+                  .fillRect(n + 3, r + 4, i - 6, 17)
+                  .lineStyle(1, 5592422, 1)
+                  .strokeRect(n + 3, r + 4, i - 6, 17),
+                e
+                  .fillStyle(4881072, 0.8)
+                  .fillRect(n + 5, r + 6, i - 10, 12)
+                  .fillStyle(16777215, 0.3)
+                  .fillRect(n + 6, r + 7, 6, 4));
+              break;
+            case `rug`: {
+              let t = o ?? 11160138;
+              (e.fillStyle(t, 1).fillRect(n + 2, r + 2, i - 4, a - 4),
+                e.lineStyle(2, Sr(t, 1.35), 1).strokeRect(n + 6, r + 6, i - 12, a - 12),
+                e.fillStyle(Sr(t, 0.85), 1).fillRect(n + 10, r + 10, i - 20, a - 20),
+                e.lineStyle(1, Sr(t, 0.6), 1).strokeRect(n + 2.5, r + 2.5, i - 5, a - 5));
+              break;
+            }
+            case `plant`:
+              (e.fillStyle(0, 0.2).fillRect(n + 8, r + 27, 16, 3),
+                $(e, n + 10, r + 19, 12, 10, 10506797),
+                e
+                  .fillStyle(3115578, 1)
+                  .fillCircle(n + 16, r + 11, 9)
+                  .fillCircle(n + 9, r + 15, 6)
+                  .fillCircle(n + 23, r + 15, 6),
+                e.fillStyle(4894290, 1).fillCircle(n + 14, r + 9, 4));
+              break;
+            case `stove`:
+              $(e, n + 1, r + 2, i - 2, a - 2, 10133160);
+              for (let [t, i] of [
+                [9, 8],
+                [23, 8],
+                [9, 14],
+                [23, 14],
+              ])
+                e.fillStyle(2236968, 1).fillCircle(n + t, r + i, 4);
+              e.fillStyle(3355456, 1).fillRect(n + 6, r + 20, i - 12, 8);
+              break;
+            case `fridge`:
+              ($(e, n + 3, r + 2, i - 6, a - 2, 15265520),
+                e.lineStyle(1, yr, 1).lineBetween(n + 3, r + a * 0.38, n + i - 3, r + a * 0.38),
+                e
+                  .fillStyle(5592416, 1)
+                  .fillRect(n + i - 9, r + 10, 2, 10)
+                  .fillRect(n + i - 9, r + a * 0.38 + 5, 2, 12));
+              break;
+            case `sink`:
+              ($(e, n + 1, r + 2, i - 2, a - 2, 12106948),
+                e
+                  .fillStyle(6992096, 1)
+                  .fillRect(n + 6, r + 6, i - 12, 11)
+                  .fillStyle(8947856, 1)
+                  .fillRect(n + 14, r + 3, 4, 4));
+              break;
+            case `desk`: {
+              $(e, n + 1, r + 4, i - 2, a - 6, o ?? 8015920);
+              let t = n + i / 2 - 8;
+              (e
+                .fillStyle(2236968, 1)
+                .fillRect(t, r + 2, 16, 10)
+                .fillStyle(5939424, 1)
+                .fillRect(t + 2, r + 4, 12, 6),
+                e.fillStyle(14540253, 1).fillRect(t + 2, r + 13, 12, 3));
+              break;
+            }
+            case `piano`:
+              ($(e, n + 1, r + 2, i - 2, a - 4, 2236968),
+                e.fillStyle(16777215, 1).fillRect(n + 4, r + a * 0.5, i - 8, a * 0.3),
+                e.lineStyle(1, 2236968, 1));
+              for (let t = n + 8; t < n + i - 6; t += 4)
+                e.lineBetween(t, r + a * 0.5, t, r + a * 0.5 + a * 0.18);
+              break;
+            case `treadmill`:
+              ($(e, n + 3, r + 2, i - 6, a - 4, 2763314),
+                e.fillStyle(5592414, 1).fillRect(n + 7, r + 14, i - 14, a - 20),
+                e
+                  .fillStyle(8947856, 1)
+                  .fillRect(n + 6, r + 4, i - 12, 7)
+                  .fillStyle(14694970, 1)
+                  .fillRect(n + 10, r + 6, i - 20, 3));
+              break;
+            case `weights`:
+              ($(e, n + 3, r + 12, i - 6, 12, 3355456),
+                e.lineStyle(3, 12303300, 1).lineBetween(n + 2, r + 8, n + i - 2, r + 8));
+              for (let t of [n + 5, n + i - 5]) e.fillStyle(2236968, 1).fillCircle(t, r + 8, 6);
+              break;
+            case `mat`: {
+              let t = o ?? 8018632;
+              (e.fillStyle(t, 1).fillRect(n + 3, r + 6, i - 6, a - 12),
+                e.lineStyle(1, Sr(t, 0.6), 1).strokeRect(n + 3.5, r + 6.5, i - 7, a - 13));
+              break;
+            }
+            case `medcab`:
+              ($(e, n + 2, r, i - 4, a, 15791350),
+                e.lineStyle(1, yr, 1).lineBetween(n + i / 2, r + 10, n + i / 2, r + a - 2),
+                e
+                  .fillStyle(14694970, 1)
+                  .fillRect(n + i / 2 - 2, r + 14, 4, 12)
+                  .fillRect(n + i / 2 - 6, r + 18, 12, 4));
+              break;
+            case `wardrobe`: {
+              let t = o ?? 9067064;
+              ($(e, n + 2, r, i - 4, a, t),
+                e.lineStyle(1, Sr(t, 0.5), 1).lineBetween(n + i / 2, r + 8, n + i / 2, r + a - 3),
+                e
+                  .fillStyle(14729312, 1)
+                  .fillCircle(n + i / 2 - 4, r + a * 0.55, 2)
+                  .fillCircle(n + i / 2 + 4, r + a * 0.55, 2));
+              break;
+            }
+            case `schooldesk`:
+              (e.fillStyle(6965802, 1).fillRect(n + 9, r + 20, i - 18, 8),
+                $(e, n + 3, r + 5, i - 6, 15, 13146714),
+                e.fillStyle(16052456, 1).fillRect(n + 11, r + 7, 9, 7));
+              break;
+            case `locker`: {
+              let t = o ?? 5929648;
+              ($(e, n, r, i, a, t), e.lineStyle(1, Sr(t, 0.5), 1));
+              for (let t = n + 16; t < n + i; t += 16) e.lineBetween(t, r + 4, t, r + a - 2);
+              for (let a = n + 5; a < n + i; a += 16)
+                e.fillStyle(Sr(t, 0.5), 1)
+                  .fillRect(a, r + 14, 6, 2)
+                  .fillRect(a, r + 18, 6, 2);
+              break;
+            }
+            case `pew`: {
+              let t = o ?? 9067056;
+              ($(e, n + 1, r + 6, i - 2, a - 8, t),
+                e.fillStyle(Sr(t, 0.6), 1).fillRect(n + 1, r + 6, i - 2, 7));
+              break;
+            }
+            case `altar`:
+              ($(e, n + 4, r + 4, i - 8, a - 6, 16052448),
+                e.fillStyle(14729312, 1).fillRect(n + 4, r + 4, i - 8, 4));
+              for (let t of [n + 10, n + i - 14])
+                e.fillStyle(16774336, 1)
+                  .fillRect(t, r - 4, 4, 9)
+                  .fillStyle(16752688, 1)
+                  .fillCircle(t + 2, r - 6, 3);
+              break;
+            case `cell`:
+              (e.fillStyle(6975096, 0.45).fillRect(n, r + 6, i, a - 6),
+                $(e, n + 6, r + a - 22, 38, 18, 5593702),
+                e.lineStyle(3, 3817032, 1).strokeRect(n + 1, r + 4, i - 2, a - 6),
+                e.lineStyle(2, 11580604, 1));
+              for (let t = n + 8; t < n + i - 2; t += 8) e.lineBetween(t, r + 4, t, r + a - 2);
+              break;
+            case `vault`: {
+              $(e, n, r, i, a, 9080472);
+              let t = n + i / 2,
+                o = r + a / 2 + 2,
+                s = Math.min(i, a) * 0.36;
+              (e
+                .fillStyle(11580604, 1)
+                .fillCircle(t, o, s)
+                .lineStyle(2, yr, 1)
+                .strokeCircle(t, o, s),
+                e
+                  .fillStyle(9080472, 1)
+                  .fillCircle(t, o, s * 0.6)
+                  .strokeCircle(t, o, s * 0.6),
+                e
+                  .lineStyle(3, 14729312, 1)
+                  .lineBetween(t - s * 0.5, o, t + s * 0.5, o)
+                  .lineBetween(t, o - s * 0.5, t, o + s * 0.5));
+              break;
+            }
+            case `seat`:
+              for (let i = 0; i < t.w; i++) {
+                let t = n + i * 32;
+                ($(e, t + 3, r + 4, 26, 24, 10496570),
+                  e.fillStyle(7346728, 1).fillRect(t + 3, r + 4, 26, 9));
+              }
+              break;
+            case `firetruck`:
+              ($(e, n, r + 10, i, a - 22, 13119536),
+                $(e, n + i - 44, r + 4, 44, a - 16, 14170682),
+                e
+                  .fillStyle(10475760, 1)
+                  .fillRect(n + i - 38, r + 10, 30, 14)
+                  .lineStyle(1, yr, 1)
+                  .strokeRect(n + i - 38, r + 10, 30, 14),
+                e
+                  .lineStyle(3, 14211296, 1)
+                  .lineBetween(n + 8, r + 16, n + i - 54, r + 16)
+                  .lineBetween(n + 8, r + 24, n + i - 54, r + 24),
+                e.lineStyle(1, 14211296, 1));
+              for (let t = n + 14; t < n + i - 54; t += 10) e.lineBetween(t, r + 16, t, r + 24);
+              e.fillStyle(15909424, 1).fillRect(n, r + a - 22, i, 4);
+              for (let t of [n + 26, n + i - 30])
+                e.fillStyle(2236968, 1)
+                  .fillCircle(t, r + a - 8, 11)
+                  .fillStyle(8947856, 1)
+                  .fillCircle(t, r + a - 8, 4);
+              break;
+            case `crate`: {
+              let t = o ?? 11569232;
+              ($(e, n + 3, r + 5, i - 6, a - 7, t),
+                e
+                  .lineStyle(2, Sr(t, 0.55), 1)
+                  .lineBetween(n + 3, r + 5, n + i - 3, r + a - 2)
+                  .lineBetween(n + i - 3, r + 5, n + 3, r + a - 2));
+              break;
+            }
+            case `fireplace`:
+              ($(e, n + 2, r, i - 4, a, 9079434),
+                e.fillStyle(1381658, 1).fillRect(n + 12, r + 8, i - 24, a - 9),
+                e
+                  .fillStyle(16747040, 1)
+                  .fillTriangle(n + 18, r + a - 2, n + 24, r + 12, n + 30, r + a - 2)
+                  .fillStyle(16764992, 1)
+                  .fillTriangle(n + 22, r + a - 2, n + 26, r + 18, n + 30, r + a - 2));
+              break;
+            case `stairs`: {
+              $(e, n, r, i, a, 10123864);
+              let o = t.h * 3;
+              for (let t = 0; t < o; t++)
+                e.fillStyle(Sr(10123864, 0.7 + (t / o) * 0.5), 1).fillRect(
+                  n + 2,
+                  r + 3 + t * ((a - 6) / o),
+                  i - 4,
+                  (a - 6) / o - 1,
+                );
+              e.fillStyle(4861984, 1)
+                .fillRect(n, r, 3, a)
+                .fillRect(n + i - 3, r, 3, a);
+              break;
+            }
+            case `portal`:
+              (e.fillStyle(1778224, 1).fillRect(n, r, i, a),
+                e.fillStyle(728622, 1).fillRect(n + 6, r + 8, i - 12, a - 10));
+              for (let t = 0; t < 5; t++)
+                e.fillStyle(3721471, 0.1 + t * 0.06).fillRect(
+                  n + 8 + t * 3,
+                  r + 10 + t * 3,
+                  i - 16 - t * 6,
+                  a - 14 - t * 3,
+                );
+              (e
+                .fillStyle(16777215, 0.14)
+                .fillRect(n + 10, r + 10, 5, a - 16)
+                .fillRect(n + i / 2 + 7, r + 10, 5, a - 16),
+                e.lineStyle(2, 10479871, 0.9).lineBetween(n + i / 2, r + 8, n + i / 2, r + a - 2),
+                e.fillStyle(12580095, 1).fillRect(n + 6, r + 3, i - 12, 3),
+                e.fillStyle(3721471, 1).fillRect(n + i / 2 - 6, r + 1, 12, 2),
+                e.fillStyle(3721471, 0.7).fillRect(n + 6, r + a - 4, i - 12, 3),
+                e.lineStyle(1, yr, 1).strokeRect(n + 0.5, r + 0.5, i - 1, a - 1));
+              break;
+            case `paint`: {
+              let t = n + 6,
+                s = r + 8,
+                c = i - 12,
+                l = Math.min(a - 14, 36);
+              (e.fillStyle(8014378, 1).fillRect(t, s, c, l),
+                e.fillStyle(o ?? 6986440, 1).fillRect(t + 3, s + 3, c - 6, l - 6),
+                e
+                  .fillStyle(4892746, 1)
+                  .fillTriangle(t + 3, s + l - 3, t + c / 2, s + l / 2, t + c - 3, s + l - 3),
+                e.fillStyle(16769136, 1).fillCircle(t + c - 9, s + 9, 3));
+              break;
+            }
+            case `clock`: {
+              let t = n + i / 2,
+                a = r + 28;
+              (e
+                .fillStyle(16777215, 1)
+                .fillCircle(t, a, 12)
+                .lineStyle(2, yr, 1)
+                .strokeCircle(t, a, 12),
+                e.lineBetween(t, a, t, a - 8).lineBetween(t, a, t + 6, a + 2));
+              break;
+            }
+            case `board`:
+              (e.fillStyle(8014378, 1).fillRect(n, r + 6, i, a - 14),
+                e.fillStyle(2377530, 1).fillRect(n + 3, r + 9, i - 6, a - 20),
+                e
+                  .lineStyle(1, 15263968, 0.8)
+                  .lineBetween(n + 12, r + 20, n + i * 0.5, r + 20)
+                  .lineBetween(n + 12, r + 30, n + i * 0.4, r + 30)
+                  .lineBetween(n + i * 0.55, r + 24, n + i - 14, r + 24),
+                e.fillStyle(14211280, 1).fillRect(n + 3, r + a - 12, i - 6, 3));
+              break;
+            case `screen`:
+              (e.fillStyle(1381660, 1).fillRect(n, r + 4, i, a - 10),
+                e.fillStyle(15921898, 1).fillRect(n + 4, r + 8, i - 8, a - 18),
+                e
+                  .fillStyle(10496570, 1)
+                  .fillRect(n, r + 4, 8, a - 10)
+                  .fillRect(n + i - 8, r + 4, 8, a - 10));
+              break;
+            case `menu`:
+              (e.fillStyle(8014378, 1).fillRect(n + 4, r + 8, i - 8, a - 16),
+                e.fillStyle(2371628, 1).fillRect(n + 7, r + 11, i - 14, a - 22),
+                e.lineStyle(1, 15788240, 0.9));
+              for (let t = r + 17; t < r + a - 14; t += 8)
+                e.lineBetween(n + 12, t, n + i * 0.5, t).lineBetween(n + i - 22, t, n + i - 12, t);
+              break;
+            case `poster`: {
+              let s = n + 6,
+                c = r + 8,
+                l = i - 12,
+                u = a - 16;
+              (e
+                .fillStyle(16314584, 1)
+                .fillRect(s, c, l, u)
+                .lineStyle(1, yr, 1)
+                .strokeRect(s, c, l, u),
+                e
+                  .fillStyle(o ?? br[xr(t.x, t.y) % br.length], 1)
+                  .fillRect(s + 4, c + 4, l - 8, u * 0.5),
+                e
+                  .lineStyle(1, 5592405, 1)
+                  .lineBetween(s + 4, c + u - 10, s + l - 4, c + u - 10)
+                  .lineBetween(s + 4, c + u - 5, s + l * 0.6, c + u - 5));
+              break;
+            }
+            case `cross`: {
+              let t = n + i / 2,
+                s = r + a / 2;
+              (e
+                .fillStyle(o ?? 9067050, 1)
+                .fillRect(t - 3, s - 20, 6, 40)
+                .fillRect(t - 12, s - 10, 24, 6),
+                e.lineStyle(1, yr, 1).strokeRect(t - 2.5, s - 19.5, 5, 39));
+              break;
+            }
+            case `flag`: {
+              let t = o ?? 12859962;
+              (e.fillStyle(8018490, 1).fillRect(n + 6, r + 4, 3, a - 8),
+                e
+                  .fillStyle(t, 1)
+                  .fillRect(n + 9, r + 8, i - 16, a * 0.5)
+                  .lineStyle(1, yr, 1)
+                  .strokeRect(n + 9, r + 8, i - 16, a * 0.5),
+                e.fillStyle(16777215, 0.8).fillCircle(n + 9 + (i - 16) / 2, r + 8 + a * 0.25, 4));
+              break;
+            }
+            case `mirror`:
+              (e.fillStyle(10133160, 1).fillRect(n, r + 6, i, a - 12),
+                e.fillStyle(12576500, 1).fillRect(n + 3, r + 9, i - 6, a - 18),
+                e.lineStyle(2, 16777215, 0.6));
+              for (let t = n + 14; t < n + i - 20; t += 36)
+                e.lineBetween(t, r + a - 12, t + 16, r + 11);
+              break;
+            case `glass`: {
+              let t = [3828440, 14694970, 15909424, 3844170];
+              e.fillStyle(6974074, 1).fillRect(n + 4, r + 4, i - 8, a - 10);
+              for (let o = 0; o < 4; o++)
+                e.fillStyle(t[o], 1).fillRect(
+                  n + 7 + (o % 2) * ((i - 18) / 2 + 4),
+                  r + 7 + Math.floor(o / 2) * ((a - 20) / 2 + 3),
+                  (i - 18) / 2,
+                  (a - 20) / 2,
+                );
+              break;
+            }
+            case `pigeon`:
+              e.fillStyle(5913122, 1).fillRect(n + 2, r + 6, i - 4, a - 12);
+              for (let t = n + 5; t < n + i - 10; t += 11)
+                for (let n = r + 9; n < r + a - 14; n += 12)
+                  (e.fillStyle(2759184, 1).fillRect(t, n, 9, 9),
+                    xr(t, n) % 2 && e.fillStyle(16052448, 1).fillRect(t + 1, n + 1, 7, 4));
+          }
+        }
+
+        function __lqUpgradeInteriorSpecs() {
+          const room = (name, spec) => {
+            _r[name] = spec;
+          };
+          room(`Sunny Cafe`, {
+            w: 16,
+            h: 12,
+            floor: `wood`,
+            f1: 13213802,
+            f2: 12555616,
+            wall: 15915448,
+            items: [
+              Q(`menu`, 1, 0, 4, 2),
+              Q(`clock`, 13, 0, 2, 2),
+              Q(`counter`, 1, 3, 6, 1, 9067056),
+              Q(`cakecase`, 7, 3, 4, 1),
+              Q(`counter`, 11, 3, 3, 1, 9067056),
+              Q(`stove`, 13, 2),
+              Q(`sink`, 14, 2),
+              Q(`plant`, 12, 2),
+              Q(`shelf`, 1, 2, 4, 1),
+              Q(`goods`, 6, 2, 3, 1, 14715450),
+              Q(`rug`, 2, 7, 4, 2, 12866122),
+              Q(`table`, 2, 5, 2, 1, 16049360),
+              Q(`chair`, 2, 6),
+              Q(`chair`, 3, 6),
+              Q(`table`, 6, 5, 2, 1, 16049360),
+              Q(`chair`, 6, 6),
+              Q(`chair`, 7, 6),
+              Q(`sofa`, 10, 5, 3, 1, 9067176),
+              Q(`table`, 11, 6, 2, 1, 16049360),
+              Q(`chair`, 11, 7),
+              Q(`chair`, 12, 7),
+              Q(`rug`, 9, 8, 4, 2, 13288282),
+              Q(`plant`, 14, 8),
+            ],
+            spots: { barista: [4, 4] },
+            guests: [
+              [6, 6],
+              [10, 7],
+              [12, 5],
+            ],
+          });
+          room(`Town Hall`, {
+            w: 18,
+            h: 12,
+            floor: `carpet`,
+            f1: 9058874,
+            f2: 8007728,
+            wall: 15261904,
+            items: [
+              Q(`flag`, 2, 0, 2, 2, 12859962),
+              Q(`paint`, 6, 0, 2, 2, 6982344),
+              Q(`paint`, 10, 0, 2, 2, 9091178),
+              Q(`flag`, 14, 0, 2, 2, 4874936),
+              Q(`shelf`, 1, 2, 3, 1),
+              Q(`desk`, 7, 3, 4, 1, 4861984),
+              Q(`chair`, 8, 4),
+              Q(`chair`, 9, 4),
+              Q(`rug`, 7, 5, 4, 5, 2767482),
+              Q(`chair`, 3, 6),
+              Q(`chair`, 5, 6),
+              Q(`chair`, 12, 6),
+              Q(`chair`, 14, 6),
+              Q(`chair`, 3, 7),
+              Q(`chair`, 5, 7),
+              Q(`chair`, 12, 7),
+              Q(`chair`, 14, 7),
+              Q(`sofa`, 2, 9, 3, 1, 4885208),
+              Q(`table`, 6, 9, 2, 1, 14207144),
+              Q(`sofa`, 11, 9, 4, 1, 4885208),
+              Q(`plant`, 1, 9),
+              Q(`plant`, 16, 9),
+            ],
+            spots: { mayor: [9, 3] },
+            guests: [
+              [8, 6],
+              [12, 8],
+              [5, 8],
+            ],
+          });
+          room(`Library`, {
+            w: 18,
+            h: 12,
+            floor: `wood`,
+            f1: 10122312,
+            f2: 9333312,
+            wall: 14207144,
+            items: [
+              Q(`paint`, 2, 0, 2, 2, 9071178),
+              Q(`clock`, 8, 0, 2, 2),
+              Q(`paint`, 14, 0, 2, 2, 4881002),
+              Q(`shelf`, 1, 2, 4, 1),
+              Q(`shelf`, 6, 2, 5, 1),
+              Q(`shelf`, 12, 2, 5, 1),
+              Q(`shelf`, 1, 4, 3, 1),
+              Q(`shelf`, 14, 4, 3, 1),
+              Q(`counter`, 7, 4, 4, 1, 6964520),
+              Q(`rug`, 7, 6, 4, 3, 4168296),
+              Q(`table`, 3, 6, 2, 1, 11569752),
+              Q(`chair`, 3, 7),
+              Q(`chair`, 4, 7),
+              Q(`table`, 12, 6, 2, 1, 11569752),
+              Q(`chair`, 12, 7),
+              Q(`chair`, 13, 7),
+              Q(`sofa`, 2, 9, 3, 1, 5214042),
+              Q(`table`, 7, 9, 2, 1, 11569752),
+              Q(`sofa`, 11, 9, 4, 1, 5214042),
+              Q(`plant`, 16, 9),
+            ],
+            spots: { librarian: [9, 3], teacher: [9, 8] },
+            guests: [
+              [5, 9],
+              [13, 9],
+            ],
+          });
+          room(`Corner Shop`, {
+            w: 17,
+            h: 12,
+            floor: `wood`,
+            f1: 14268808,
+            f2: 13610620,
+            wall: 14676208,
+            items: [
+              Q(`clock`, 7, 0, 2, 2),
+              Q(`poster`, 12, 0, 3, 2),
+              Q(`goods`, 1, 2, 6, 1, 3842256),
+              Q(`goods`, 9, 2, 7, 1, 9067176),
+              Q(`counter`, 10, 4, 5, 1, 3119784),
+              Q(`goods`, 1, 4, 4, 1, 14715450),
+              Q(`wardrobe`, 7, 4, 1, 2, 13146682),
+              Q(`table`, 2, 6, 2, 1, 11569752),
+              Q(`crate`, 4, 6),
+              Q(`crate`, 5, 6),
+              Q(`goods`, 10, 6, 4, 1, 13650490),
+              Q(`rug`, 9, 8, 5, 2, 3119784),
+              Q(`sofa`, 2, 8, 3, 1, 9071162),
+              Q(`plant`, 15, 8),
+            ],
+            spots: { shopkeeper: [12, 3] },
+            guests: [
+              [6, 7],
+              [11, 8],
+              [4, 8],
+            ],
+          });
+          room(`Restaurant`, {
+            w: 17,
+            h: 12,
+            floor: `checker`,
+            f1: 15786184,
+            f2: 13127738,
+            wall: 15782064,
+            items: [
+              Q(`menu`, 1, 0, 4, 2),
+              Q(`paint`, 8, 0, 2, 2, 13140026),
+              Q(`stove`, 13, 2),
+              Q(`stove`, 14, 2),
+              Q(`fridge`, 15, 2, 1, 2),
+              Q(`counter`, 11, 4, 5, 1, 11580604),
+              Q(`sink`, 12, 2),
+              Q(`table`, 1, 3, 2, 1, 16052456),
+              Q(`chair`, 1, 4),
+              Q(`chair`, 2, 4),
+              Q(`table`, 4, 3, 2, 1, 16052456),
+              Q(`chair`, 4, 4),
+              Q(`chair`, 5, 4),
+              Q(`table`, 7, 3, 2, 1, 16052456),
+              Q(`chair`, 7, 4),
+              Q(`chair`, 8, 4),
+              Q(`table`, 1, 7, 2, 1, 16052456),
+              Q(`chair`, 1, 8),
+              Q(`chair`, 2, 8),
+              Q(`table`, 4, 7, 2, 1, 16052456),
+              Q(`chair`, 4, 8),
+              Q(`chair`, 5, 8),
+              Q(`table`, 8, 7, 2, 1, 16052456),
+              Q(`chair`, 8, 8),
+              Q(`chair`, 9, 8),
+              Q(`rug`, 11, 8, 4, 2, 12744192),
+              Q(`plant`, 15, 8),
+            ],
+            spots: { chef: [13, 4] },
+            guests: [
+              [10, 7],
+              [6, 6],
+              [3, 9],
+            ],
+          });
+          room(`Hero's Home`, {
+            w: 12,
+            h: 10,
+            floor: `wood`,
+            f1: 14203018,
+            f2: 13545088,
+            wall: 13952248,
+            items: [
+              Q(`paint`, 5, 0, 2, 2, 6982344),
+              Q(`clock`, 8, 0, 2, 2),
+              Q(`bed`, 1, 2, 2, 2, 3842303),
+              Q(`wardrobe`, 3, 2, 1, 2),
+              Q(`desk`, 7, 2, 2, 1, 6964520),
+              Q(`chair`, 7, 3),
+              Q(`tv`, 10, 2),
+              Q(`rug`, 2, 5, 4, 2, 3842303),
+              Q(`sofa`, 7, 5, 3, 1, 3828408),
+              Q(`table`, 8, 6, 2, 1, 14207144),
+              Q(`plant`, 10, 6),
+              Q(`sink`, 1, 5),
+              Q(`stove`, 1, 6),
+              Q(`fridge`, 2, 6, 1, 2),
+            ],
+            spots: {},
+            guests: [[5, 7]],
+          });
+          room(`Lily's House`, {
+            w: 12,
+            h: 10,
+            floor: `wood`,
+            f1: 14465418,
+            f2: 13807230,
+            wall: 16241884,
+            items: [
+              Q(`paint`, 6, 0, 2, 2, 15769776),
+              Q(`bed`, 1, 2, 2, 2, 14708874),
+              Q(`wardrobe`, 3, 2, 1, 2),
+              Q(`stove`, 8, 2),
+              Q(`sink`, 9, 2),
+              Q(`fridge`, 10, 2, 1, 2),
+              Q(`table`, 7, 4, 2, 1, 16049360),
+              Q(`chair`, 7, 5),
+              Q(`chair`, 8, 5),
+              Q(`sofa`, 1, 5, 3, 1, 16049360),
+              Q(`rug`, 2, 7, 5, 2, 15769776),
+              Q(`plant`, 10, 6),
+              Q(`table`, 8, 7, 2, 1, 16049360),
+              Q(`chair`, 8, 8),
+              Q(`chair`, 9, 8),
+            ],
+            spots: { barista: [5, 6] },
+            guests: [[6, 7]],
+          });
+          room(`Ms. Green's House`, {
+            w: 12,
+            h: 10,
+            floor: `wood`,
+            f1: 11569752,
+            f2: 10911566,
+            wall: 14674132,
+            items: [
+              Q(`clock`, 4, 0, 2, 2),
+              Q(`shelf`, 1, 2, 4, 1),
+              Q(`shelf`, 7, 2, 3, 1),
+              Q(`bed`, 9, 2, 2, 2, 5218138),
+              Q(`desk`, 1, 4, 2, 1, 6964520),
+              Q(`chair`, 1, 5),
+              Q(`rug`, 4, 6, 5, 2, 4161354),
+              Q(`sofa`, 6, 4, 3, 1, 5214042),
+              Q(`table`, 6, 5, 2, 1, 14207144),
+              Q(`plant`, 10, 6),
+              Q(`table`, 2, 7, 2, 1, 11569752),
+              Q(`chair`, 2, 8),
+              Q(`chair`, 3, 8),
+            ],
+            spots: { librarian: [4, 7] },
+            guests: [[7, 7]],
+          });
+          room(`Mr. Brown's House`, {
+            w: 12,
+            h: 10,
+            floor: `wood`,
+            f1: 8018488,
+            f2: 7360815,
+            wall: 14207920,
+            items: [
+              Q(`paint`, 1, 0, 2, 2, 6982344),
+              Q(`clock`, 5, 0, 2, 2),
+              Q(`flag`, 9, 0, 2, 2, 4874936),
+              Q(`shelf`, 1, 2, 2, 1),
+              Q(`fireplace`, 5, 2, 2, 1),
+              Q(`shelf`, 9, 2, 2, 1),
+              Q(`plant`, 10, 2),
+              Q(`desk`, 1, 4, 3, 1, 4861984),
+              Q(`chair`, 2, 5),
+              Q(`sofa`, 7, 5, 3, 1, 3820170),
+              Q(`table`, 7, 4),
+              Q(`rug`, 3, 7, 5, 2, 3820170),
+              Q(`table`, 9, 7, 2, 1, 14207144),
+              Q(`chair`, 9, 8),
+              Q(`chair`, 10, 8),
+            ],
+            spots: { mayor: [4, 6] },
+            guests: [[6, 7]],
+          });
+          room(`Tom's House`, {
+            w: 12,
+            h: 10,
+            floor: `wood`,
+            f1: 13608040,
+            f2: 12884574,
+            wall: 15786160,
+            items: [
+              Q(`poster`, 3, 0, 2, 2),
+              Q(`crate`, 1, 2),
+              Q(`crate`, 2, 2),
+              Q(`crate`, 1, 3),
+              Q(`tv`, 5, 2),
+              Q(`bed`, 9, 2, 2, 2, 13146682),
+              Q(`sofa`, 4, 5, 3, 1, 13134378),
+              Q(`rug`, 3, 7, 4, 2, 14721104),
+              Q(`table`, 8, 6, 2, 1, 16049360),
+              Q(`chair`, 8, 7),
+              Q(`chair`, 9, 7),
+              Q(`goods`, 8, 4, 3, 1, 13650490),
+            ],
+            spots: { shopkeeper: [5, 7] },
+            guests: [[6, 7]],
+          });
+          room(`Mia's House`, {
+            w: 12,
+            h: 10,
+            floor: `wood`,
+            f1: 14731424,
+            f2: 14072978,
+            wall: 15257844,
+            items: [
+              Q(`poster`, 3, 0, 2, 2),
+              Q(`poster`, 7, 0, 2, 2),
+              Q(`bed`, 1, 2, 2, 2, 11563232),
+              Q(`crate`, 4, 2, 1, 1, 14703242),
+              Q(`crate`, 5, 2, 1, 1, 4890848),
+              Q(`desk`, 8, 2, 2, 1, 14725328),
+              Q(`chair`, 8, 3),
+              Q(`rug`, 2, 5, 6, 3, 16031936),
+              Q(`table`, 8, 6, 2, 1, 16048368),
+              Q(`chair`, 8, 7),
+              Q(`chair`, 9, 7),
+              Q(`plant`, 10, 5),
+              Q(`sofa`, 2, 8, 3, 1, 14725328),
+            ],
+            spots: { kid: [5, 6] },
+            guests: [[6, 7]],
+          });
+          room(`Hospital`, {
+            w: 18,
+            h: 12,
+            floor: `tile`,
+            f1: 15660280,
+            f2: 14543088,
+            wall: 15134964,
+            items: [
+              Q(`poster`, 1, 0, 2, 2),
+              Q(`cross`, 8, 0, 2, 2, 14694970),
+              Q(`poster`, 14, 0, 2, 2),
+              Q(`hospbed`, 1, 2, 2, 2),
+              Q(`hospbed`, 4, 2, 2, 2),
+              Q(`hospbed`, 7, 2, 2, 2),
+              Q(`medcab`, 11, 2, 2, 1),
+              Q(`medcab`, 14, 2, 2, 1),
+              Q(`counter`, 11, 5, 5, 1, 14543088),
+              Q(`rug`, 7, 6, 4, 3, 11194600),
+              Q(`pew`, 1, 6, 4, 1, 4885208),
+              Q(`pew`, 1, 8, 4, 1, 4885208),
+              Q(`desk`, 11, 8, 3, 1, 11194600),
+              Q(`chair`, 12, 9),
+              Q(`plant`, 16, 8),
+            ],
+            spots: { doctor: [13, 4] },
+            guests: [
+              [8, 5],
+              [9, 8],
+            ],
+          });
+          room(`Hotel`, {
+            w: 16,
+            h: 12,
+            floor: `carpet`,
+            f1: 8007482,
+            f2: 7350836,
+            wall: 15787216,
+            items: [
+              Q(`paint`, 1, 0, 3, 2, 6982344),
+              Q(`paint`, 5, 0, 2, 2, 13140026),
+              Q(`pigeon`, 10, 0, 4, 2),
+              Q(`plant`, 5, 2),
+              Q(`counter`, 10, 3, 4, 1, 12095546),
+              Q(`plant`, 14, 2),
+              Q(`rug`, 5, 4, 5, 3, 14200928),
+              Q(`sofa`, 1, 3, 3, 1, 2787994),
+              Q(`table`, 1, 4, 2, 1, 14207144),
+              Q(`sofa`, 1, 7, 3, 1, 2787994),
+              Q(`piano`, 11, 7, 3, 2),
+              Q(`table`, 6, 8, 2, 1, 14207144),
+              Q(`chair`, 6, 9),
+              Q(`chair`, 7, 9),
+            ],
+            spots: { hotelclerk: [11, 3] },
+            guests: [
+              [8, 8],
+              [4, 8],
+            ],
+          });
+        }
+        __lqUpgradeInteriorSpecs();
+        // VOCALT V48: real enterable shop and residential interiors using the original
+        // doorAhead / enterBuilding / leaveBuilding engine, without modifying other maps.
+        // V48.1 — each trade uses a real custom floorplan; no books in non-book shops.
+        // Shared renderer's shelf/goods pictograms are drawn as books, so only
+        // the actual bookshop is allowed to contain those items.
+        const V481_TYPES=[
+          ['BRAM · ROYAL METALWORKS','metal'],['SERENA · SAPPHIRE JEWELS','jewelry'],
+          ['THE GRAND EXCHANGE','exchange'],['CHRONOS · FINE CLOCKS','clock'],
+          ['LORD VOCALT · LEDGER SPIRE','lord'],['ELIRA · RIBBON & REED','fabric'],
+          ['COPPERWHEEL WORKSHOP','artisan'],['IVO · LEDGERS & MAPS','book'],
+          ['CLOTH MARKET HOUSE','fabric'],['HEARTH FAMILY HOME','home'],
+          ['OAK & WILLOW HOME','home'],['CLOVER FAMILY HOME','home'],
+          ['GARDEN COURT HOME','home'],['SAFFI FAMILY HOME','home'],
+          ['SPICE LANE HOME','home'],['MARTA FAMILY HOME','home'],
+          ['NARROW COURT HOME','home'],['ALBA · STREET KITCHEN','food'],
+          ['TERRACOTTA POTTERY','pottery'],['TOBIN · CARAVAN DEPOT','warehouse'],
+          ['COIN & CLOVE TAVERN','tavern']
+        ];
+        const V481_PALETTE={
+          metal:[0xcbd1cf,0xa6acb1,0x344554], jewelry:[0xe2d8c9,0xc9bbb5,0x414560],
+          exchange:[0xe4d8bd,0xcabf9e,0x62536c], clock:[0xe5d5bb,0xc7ac90,0x5b4c43],
+          lord:[0xd6bfb3,0xb59892,0x593c50], fabric:[0xd9c4af,0xbeb3a8,0x6f5a7a],
+          artisan:[0xc8b59f,0x9f927f,0x5d5046], pottery:[0xd8c1a4,0xc2a27d,0x795546],
+          book:[0xd3c3aa,0xa9a49c,0x544a4b], home:[0xdec8ab,0xc1a17d,0x665546],
+          food:[0xe2c3a3,0xc6a582,0x6c4a3e], tavern:[0xd3b89e,0xa68d78,0x5b473f],
+          warehouse:[0xc3b9a5,0x9c9689,0x555860]
+        };
+        for(const [name,kind] of V481_TYPES){
+          const [f1,f2,wall]=V481_PALETTE[kind];
+          const objects=[];
+          const add=(...a)=>objects.push(Q(...a));
+          // (8,9) is reserved as the spawn and exit aisle; never put collision there.
+          if(kind==='metal'){
+            add('counter',2,4,4,1,0x697681);add('counter',10,4,4,1,0x697681);
+            add('table',3,6,3,1,0x85705c);add('table',11,6,3,1,0x85705c);
+            add('rug',6,6,4,2,0x96989b);
+          }else if(kind==='jewelry'){
+            add('counter',2,4,5,1,0x8e889c);add('counter',10,4,4,1,0x8e889c);
+            add('table',3,7,2,1,0xc3a477);add('table',12,7,2,1,0xc3a477);
+            add('rug',6,6,4,2,0x9386a2);add('plant',14,3);
+          }else if(kind==='clock'){
+            add('counter',2,4,5,1,0x8c7763);add('table',10,4,4,1,0x836c54);
+            add('desk',3,7,3,1,0x7e6d57);add('chair',4,8);add('rug',7,6,3,2,0xc7ae8f);
+          }else if(kind==='fabric'){
+            add('counter',2,4,5,1,0x987594);add('table',10,4,4,1,0xb58b83);
+            add('table',3,7,3,1,0x99745c);add('rug',7,6,3,2,0xb2a0bd);
+          }else if(kind==='artisan'||kind==='pottery'){
+            add('forge',2,3,2,2);add('table',6,4,4,1,0x8f6949);
+            add('counter',12,4,2,1,0x80624b);add('table',2,7,4,1,0x916e57);
+            add('rug',8,7,3,2,0xa99a81);
+          }else if(kind==='book'){
+            add('shelf',1,2,5,1);add('shelf',10,2,5,1);add('shelf',1,4,3,1);
+            add('counter',10,5,4,1,0x806951);add('table',5,7,4,1,0x99745b);
+            add('chair',6,8);add('rug',6,5,4,2,0xbca582);
+          }else if(kind==='home'){
+            add('bed',2,4,3,2);add('table',9,5,3,1,0x987459);
+            add('chair',9,6);add('chair',11,6);add('stove',13,3);
+            add('sofa',2,7,3,1,0x927861);add('rug',6,7,3,2,0xb7a38a);
+          }else if(kind==='food'||kind==='tavern'){
+            add('stove',13,3);add('cakecase',2,4,5,1);add('counter',9,4,4,1,0x9b6f4c);
+            add('table',3,7,3,1,0xa17c59);add('table',11,7,3,1,0xa17c59);
+            add('chair',4,8);add('chair',12,8);add('rug',6,6,4,2,0xb59a7c);
+          }else if(kind==='warehouse'){
+            add('counter',2,4,4,1,0x76665a);add('table',9,4,5,1,0x76665a);
+            add('table',2,7,4,1,0x8b735c);add('table',11,7,3,1,0x8b735c);
+            add('rug',6,7,4,2,0x9f9c90);
+          }else if(kind==='lord'||kind==='exchange'){
+            add('counter',2,4,5,1,0x997555);add('desk',10,4,4,1,0x795e66);
+            add('sofa',2,7,3,1,0x715267);add('sofa',11,7,3,1,0x715267);
+            add('rug',5,6,6,3,kind==='lord'?0x813d53:0xa59a83);
+          }
+          _r[name]={w:16,h:11,floor:['metal','jewelry','clock','exchange','lord'].includes(kind)?'tile':'wood',
+            f1,f2,wall,items:objects,guests:[[8,6],[10,7]],spots:{},labels:[]};
+        }
+        // V19 Tech-Co rooms: registered in the original interior engine (_r/Dr).
+        // All entrances/returns still use the original doorAhead/enterBuilding/leaveBuilding.
+        Object.assign(_r, {
+          'TECH-CO HEADQUARTERS': {
+            w:16,h:11,floor:'tile',f1:0xc9dfe0,f2:0xb5d0d4,wall:0x274b61,
+            items:[Q('glass',5,0,6,2),Q('clock',12,0,2,2),Q('plant',1,2),Q('plant',14,2),
+              Q('counter',2,3,4,1,0x46778b),Q('desk',10,3,3,1,0x4b7290),
+              Q('chair',11,4),Q('shelf',1,5,3,1),Q('poster',12,5,2,2),
+              Q('rug',5,6,6,2,0x75abb0),Q('pew',2,7,2,1,0x4b7285),Q('pew',12,7,2,1,0x4b7285)],
+            spots:{},guests:[],labels:[{x:8,y:1,text:'TECH-CO · RECEPTION'},
+              {x:3,y:5,text:'FRONT DESK'},{x:11,y:2,text:'WORKSPACE'}]
+          },
+          'MEETING STUDIO': {
+            w:16,h:11,floor:'tile',f1:0xd5e5df,f2:0xb7d2d2,wall:0x3d6882,
+            items:[Q('glass',3,0,10,2),Q('clock',13,0,2,2),Q('poster',1,2,3,2),
+              Q('plant',14,2),Q('table',5,4,6,1,0x7c9ea5),Q('chair',5,3),Q('chair',7,3),
+              Q('chair',10,3),Q('chair',5,5),Q('chair',7,5),Q('chair',10,5),
+              Q('rug',5,6,6,2,0x81adb5),Q('pew',2,7,2,1,0x6e8792)],
+            spots:{},guests:[],labels:[{x:8,y:1,text:'MEETING ROOM 01'},
+              {x:3,y:2,text:'AGENDA'},{x:12,y:2,text:'SCHEDULE'}]
+          },
+          'HELP DESK': {
+            w:16,h:11,floor:'tile',f1:0xb3cad2,f2:0x8dabbd,wall:0x263e59,
+            items:[Q('glass',5,0,6,2),Q('poster',1,2,3,2),Q('plant',14,2),
+              Q('shelf',12,2,3,1),Q('shelf',12,4,3,1),Q('shelf',12,6,3,1),
+              Q('desk',2,4,3,1,0x446682),Q('chair',3,5),Q('desk',7,4,3,1,0x446682),
+              Q('chair',8,5),Q('rug',4,7,7,2,0x5c8b9d)],
+            spots:{},guests:[],labels:[{x:8,y:1,text:'SUPPORT HUB · SYSTEM STATUS'},
+              {x:3,y:3,text:'ISSUE QUEUE'},{x:12,y:3,text:'SERVER RACKS'}]
+          },
+          'MAIL & PROJECTS': {
+            w:16,h:11,floor:'wood',f1:0xc9bda4,f2:0xada795,wall:0x416f6d,
+            items:[Q('glass',5,0,6,2),Q('poster',2,2,3,2),Q('shelf',12,2,3,1),
+              Q('plant',1,2),Q('plant',14,6),Q('counter',2,5,3,1,0x738e84),
+              Q('desk',10,4,3,1,0x6b8e8d),Q('chair',11,5),
+              Q('table',6,4,2,1,0x9c9279),Q('chair',6,5),
+              Q('rug',5,7,6,2,0x91afa2),Q('shelf',1,7,2,1)],
+            spots:{},guests:[],labels:[{x:8,y:1,text:'MAIL & PROJECTS'},
+              {x:3,y:2,text:'PROJECT BOARD'},{x:11,y:3,text:'EMAIL DESK'}]
+          }
+        });
+
+        // V24 bespoke interiors: all spaces have a 3+ tile-wide access aisle,
+        // district-specific materials and deliberate furniture placement.
+        // Uses the existing interior controller, not a second scene engine.
+        Object.assign(_r, {
+          'CROWN PALACE':{
+            w:28,h:18,floor:'checker',f1:0xf4e5c7,f2:0xd5be96,wall:0x9c7859,
+            items:[Q('paint',2,0,4,2),Q('paint',22,0,4,2),Q('glass',12,0,4,2),
+              Q('lantern',5,3),Q('lantern',22,3),Q('counter',12,3,4,1,0xb99165),
+              Q('pew',3,5,5,1,0x8b5265),Q('pew',20,5,5,1,0x8b5265),
+              Q('rug',12,5,4,11,0x913e55),
+              Q('sofa',3,9,5,1,0x8d5262),Q('sofa',20,9,5,1,0x8d5262),
+              Q('desk',3,12,5,1,0xc5a276),Q('chair',5,13),
+              Q('table',20,12,5,1,0xd2b184),Q('chair',22,13),
+              Q('plant',1,3),Q('plant',26,3),Q('plant',2,14),Q('plant',25,14)],
+            spots:{},guests:[],labels:[{x:14,y:1,text:'CROWN PALACE · HALL OF SOVEREIGNS'},
+              {x:14,y:4,text:'ROYAL THRONE'},{x:5,y:8,text:'ROYAL SALON'},{x:23,y:8,text:'PALACE LIBRARY'}]
+          },
+          'GRAND OPERA':{
+            w:26,h:17,floor:'carpet',f1:0x914d61,f2:0x71374e,wall:0xa78167,
+            items:[Q('paint',2,0,4,2),Q('paint',20,0,4,2),Q('lantern',7,2),Q('lantern',18,2),
+              Q('piano',11,2,4,2),Q('counter',7,4,12,1,0xc59c64),
+              Q('pew',3,6,5,1,0x713d51),Q('pew',18,6,5,1,0x713d51),
+              Q('pew',3,9,5,1,0x713d51),Q('pew',18,9,5,1,0x713d51),
+              Q('pew',3,12,5,1,0x713d51),Q('pew',18,12,5,1,0x713d51),
+              Q('rug',11,5,4,10,0xc69b67),Q('plant',1,5),Q('plant',24,5)],
+            spots:{},guests:[],labels:[{x:13,y:1,text:'THE GRAND OPERA · IMPERIAL BOX'},
+              {x:13,y:4,text:'ORCHESTRA STAGE'},{x:5,y:8,text:'WEST BALCONY'},{x:21,y:8,text:'EAST BALCONY'}]
+          },
+          'ROYAL ACADEMY':{
+            w:25,h:16,floor:'wood',f1:0xe0cb9e,f2:0xc3a982,wall:0x61766f,
+            items:[Q('clock',10,0,5,2),Q('paint',2,0,3,2),Q('paint',20,0,3,2),
+              Q('shelf',1,3,4,1),Q('shelf',1,6,4,1),Q('shelf',20,3,4,1),Q('shelf',20,6,4,1),
+              Q('desk',7,4,3,1,0xa88767),Q('chair',8,5),
+              Q('desk',15,4,3,1,0xa88767),Q('chair',16,5),
+              Q('rug',11,6,3,8,0xb4a384),Q('glass',10,2,5,2),
+              Q('table',7,10,3,1,0xc8ac7e),Q('table',15,10,3,1,0xc8ac7e),
+              Q('plant',2,12),Q('plant',22,12)],
+            spots:{},guests:[],labels:[{x:12,y:1,text:'ROYAL ACADEMY · GREAT LIBRARY'},
+              {x:4,y:2,text:'HISTORICAL ARCHIVES'},{x:20,y:2,text:'THE ASTRONOMERS'}]
+          },
+          'GALLERY OF DYNASTIES':{
+            w:25,h:16,floor:'checker',f1:0xf1e4d1,f2:0xcbb99a,wall:0x71808d,
+            items:[Q('paint',1,0,3,2),Q('paint',5,0,3,2),Q('paint',17,0,3,2),Q('paint',21,0,3,2),
+              Q('glass',10,2,5,2),Q('counter',2,5,4,1,0xbba17c),Q('counter',19,5,4,1,0xbba17c),
+              Q('rug',11,5,3,9,0x9b7a84),Q('pew',2,9,5,1,0x847366),
+              Q('pew',18,9,5,1,0x847366),Q('glass',2,12,3,1),Q('glass',20,12,3,1),
+              Q('plant',1,3),Q('plant',23,3)],
+            spots:{},guests:[],labels:[{x:12,y:1,text:'GALLERY OF DYNASTIES'},
+              {x:4,y:4,text:'ROYAL PORTRAITS'},{x:20,y:4,text:'THE CROWN COLLECTION'}]
+          },
+          'HOUSE OF AURELIA':{
+            w:19,h:13,floor:'wood',f1:0xf0d6ba,f2:0xd4b394,wall:0x925e6b,
+            items:[Q('paint',1,0,4,2),Q('glass',8,0,3,2),Q('paint',14,0,3,2),
+              Q('sofa',2,5,4,1,0xb57583),Q('sofa',13,5,4,1,0xb57583),
+              Q('table',8,5,3,1,0xc9a77e),Q('rug',7,6,5,4,0xd9abb1),
+              Q('piano',14,8,3,2),Q('desk',2,9,3,1,0xd1ae86),
+              Q('plant',1,3),Q('plant',17,3),Q('lantern',5,2),Q('lantern',13,2)],
+            spots:{},guests:[],labels:[{x:9,y:1,text:'AURELIA · ROSE SALON'}]
+          },
+          'HOUSE OF VALMONT':{
+            w:19,h:13,floor:'checker',f1:0xdbe1d9,f2:0xb3c5c3,wall:0x45677a,
+            items:[Q('glass',8,0,3,2),Q('paint',1,0,3,2),Q('paint',15,0,3,2),
+              Q('shelf',1,3,4,1),Q('shelf',1,6,4,1),Q('shelf',14,3,4,1),
+              Q('desk',13,6,4,1,0x6b8290),Q('chair',14,7),
+              Q('pew',2,9,4,1,0x567785),Q('table',13,9,3,1,0x9bb0b6),
+              Q('rug',7,5,5,5,0x809eae),Q('plant',17,9)],
+            spots:{},guests:[],labels:[{x:9,y:1,text:'VALMONT · BLUE LIBRARY'}]
+          },
+          'HOUSE OF SERAPHINE':{
+            w:19,h:13,floor:'wood',f1:0xead6b3,f2:0xcabb96,wall:0x7c856b,
+            items:[Q('glass',7,0,5,2),Q('paint',1,0,3,2),Q('plant',1,3),Q('plant',17,3),
+              Q('plant',3,7),Q('plant',15,7),Q('table',6,5,7,1,0xd8b992),
+              Q('chair',7,6),Q('chair',11,6),Q('rug',6,7,7,3,0x92ab91),
+              Q('shelf',14,4,3,1),Q('desk',2,9,3,1,0xc7ab8c)],
+            spots:{},guests:[],labels:[{x:9,y:1,text:'SERAPHINE · WINTER GARDEN'}]
+          },
+          'HOUSE OF CORVEN':{
+            w:19,h:13,floor:'tile',f1:0xd4d6d4,f2:0xb0babe,wall:0x535a6a,
+            items:[Q('clock',8,0,3,2),Q('paint',2,0,3,2),Q('paint',14,0,3,2),
+              Q('sofa',2,5,4,1,0x667582),Q('sofa',13,5,4,1,0x667582),
+              Q('table',8,5,3,1,0x9eaab0),Q('rug',7,6,5,4,0x8795a0),
+              Q('desk',13,9,4,1,0x6e7783),Q('shelf',2,9,4,1),
+              Q('plant',1,3),Q('plant',17,3),Q('lantern',5,3),Q('lantern',14,3)],
+            spots:{},guests:[],labels:[{x:9,y:1,text:'CORVEN · STONE DRAWING ROOM'}]
+          }
+        });
+
+        // V26 · Eight bespoke royal rooms. Existing interior engine, doors,
+        // quest IDs and save schema are unchanged. Four-tile centra

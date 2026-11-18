@@ -1,0 +1,1734 @@
+          if (!canAct()) return null;
+          if (route.kind === 'direction') {
+            route.remaining -= delta;
+            if (route.remaining <= 0) {
+              route = null;
+              notify('✅ Movement command completed.');
+              return null;
+            }
+            return { x: route.vector[0], y: route.vector[1] };
+          }
+          // Check destination NPC's *current* position (NPCs may wander over time).
+          const npc = route.npcId && scene.npcs.find((n) => n.def.id === route.npcId);
+          if (
+            npc &&
+            Math.hypot(scene.player.x - npc.sprite.x, scene.player.y - npc.sprite.y) <= 44
+          ) {
+            const label = route.label;
+            const autoTalk = route.autoTalk;
+            route = null;
+            if (autoTalk && !scene.chat.isOpen) {
+              scene.chat.open(npc.def);
+              notify(`💬 Reached ${label} and opened a conversation.`);
+            } else notify(`✅ Reached ${label}. Press E to chat.`);
+            return null;
+          }
+          while (route?.points.length) {
+            const waypoint = route.points[0];
+            const gap = Math.hypot(waypoint.x - scene.player.x, waypoint.y - scene.player.y);
+            if (gap > 5)
+              return {
+                x: (waypoint.x - scene.player.x) / gap,
+                y: (waypoint.y - scene.player.y) / gap,
+              };
+            route.points.shift();
+          }
+          if (route) {
+            const label = route.label;
+            const autoTalk = route.autoTalk;
+            const npcId = route.npcId;
+            if (npc && route.retries < 2) {
+              const points = routeToPoint(npc.sprite.x, npc.sprite.y, 2);
+              if (points) {
+                route = {
+                  kind: 'path',
+                  points,
+                  label,
+                  npcId,
+                  autoTalk,
+                  retries: route.retries + 1,
+                };
+                return null;
+              }
+            }
+            route = null;
+            notify(
+              npc
+                ? `📍 Got close to ${label}; the NPC has moved, look around.`
+                : `✅ Reached ${label}.`,
+            );
+          }
+          return null;
+        }
+
+        return {
+          attachTownScene,
+          detachTownScene,
+          updateTownAutopilot,
+          cancelTownAutopilot,
+          executeTownCommand,
+          getTownContext,
+        };
+      })();
+
+      const { getNpcSuggestions } = (() => {
+        /** Optional, context-aware English conversation starters. World graphics are untouched. */
+        const fallback = {
+          barista: [
+            'Could I have a cup of tea, please?',
+            'How much is a coffee?',
+            'What do you recommend today?',
+          ],
+          librarian: [
+            'Could you recommend a good book?',
+            'Do you have any stories for beginners?',
+            'Where can I find English books?',
+          ],
+          doctor: [
+            'I have a headache.',
+            'What should I do to feel better?',
+            'Thank you for your advice.',
+          ],
+          mayor: [
+            'I have an idea for the town.',
+            'We could build a new park.',
+            'How can I help our town?',
+          ],
+          teacher: [
+            'How can I improve my English?',
+            'Could you explain this word?',
+            'Can we practice speaking together?',
+          ],
+          shopkeeper: [
+            'How much does this cost?',
+            'Can I buy some bread, please?',
+            'Do you have a cheaper option?',
+          ],
+          kid: ['Hi! My name is Alex.', 'What do you like doing?', 'Would you like to be friends?'],
+          police: [
+            'Excuse me, where is the library?',
+            'How do I get to the hospital?',
+            'Thank you for helping me.',
+          ],
+        };
+        const defaultLines = [
+          'Hello! How is your day going?',
+          'Could you tell me more, please?',
+          'Thank you! That is very helpful.',
+        ];
+
+        async function getNpcSuggestions(npc, lastReply, level = 'A2') {
+          const local = fallback[npc.id] || defaultLines;
+          let saved = {};
+          try {
+            saved = JSON.parse(localStorage.getItem('english-town-ai') || '{}');
+          } catch {}
+          const model =
+            saved.geminiModel?.trim() || window.LIFEQUEST_AI_CONFIG?.MODEL || 'gemini-2.5-flash';
+          const prompt = `You are an English tutor. An English learner at CEFR ${level} is speaking to ${npc.name}, whose role is ${npc.persona}. Their conversation task is: ${npc.goal.text}. The NPC most recently said: ${lastReply.slice(0, 300)}. Give exactly THREE short, distinct, natural English sentences the learner could say next. Keep vocabulary level appropriate. Respond ONLY as a JSON array of three strings. No markdown.`;
+          try {
+            const body = {
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: window.LQGemini.genConfig(model, {
+                temperature: 0.5,
+                responseMimeType: 'application/json',
+                maxOutputTokens: 180,
+              }),
+            };
+            const key = String(
+              saved.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || '',
+            ).trim();
+            if (!key && !(await window.LQGemini.proxyAvailable())) return local;
+            const resp = key
+              ? await fetch(
+                  `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                    body: JSON.stringify(body),
+                    signal: AbortSignal.timeout(9000),
+                  },
+                )
+              : await fetch(window.LIFEQUEST_AI_CONFIG?.PROXY_URL || '/api/gemini', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ model, body }),
+                  signal: AbortSignal.timeout(9000),
+                });
+            if (!resp.ok) return local;
+            const data = await resp.json();
+            const text = (data.candidates?.[0]?.content?.parts || [])
+              .map((p) => p.text || '')
+              .join('')
+              .trim()
+              .replace(/^```json\s*/i, '')
+              .replace(/```$/, '');
+            const candidates = JSON.parse(text);
+            if (
+              !Array.isArray(candidates) ||
+              candidates.length !== 3 ||
+              !candidates.every((v) => typeof v === 'string' && v.length > 3 && v.length < 145)
+            )
+              return local;
+            return candidates;
+          } catch {
+            return local;
+          }
+        }
+
+        return { getNpcSuggestions };
+      })();
+
+      const { startGame, stopGame } = (() => {
+        const Y = Phaser;
+        var re = [
+            {
+              id: `barista`,
+              name: `Lily (Barista)`,
+              x: 8,
+              y: 7,
+              color: 14715482,
+              persona: `Lily is a cheerful barista at Sunny Cafe. She sells coffee, tea and cake.`,
+              goal: {
+                id: `order`,
+                deed: `ordered a drink at Sunny Cafe`,
+                text: `Order a drink at the cafe (say what you would like).`,
+                keywords: [`coffee`, `tea`, `latte`, `cake`, `juice`],
+                reward: 20,
+                rep: 2,
+              },
+              greeting: `Welcome to Sunny Cafe! What can I get for you?`,
+            },
+            {
+              id: `mayor`,
+              name: `Mr. Brown (Mayor)`,
+              x: 30,
+              y: 7,
+              color: 6978264,
+              persona: `Mr. Brown is the serious but kind mayor. He wants to improve the town and listens to citizens' ideas.`,
+              goal: {
+                id: `idea`,
+                deed: `suggested an idea to improve the town to the mayor`,
+                text: `Suggest an idea to improve the town (a park, a school, a road...).`,
+                keywords: [
+                  `park`,
+                  `school`,
+                  `road`,
+                  `bus`,
+                  `library`,
+                  `garden`,
+                  `hospital`,
+                  `bridge`,
+                ],
+                reward: 50,
+                rep: 5,
+              },
+              greeting: `Good day, citizen. How do you think we can make our town better?`,
+            },
+            {
+              id: `librarian`,
+              name: `Ms. Green (Librarian)`,
+              x: 8,
+              y: 22,
+              color: 5223290,
+              persona: `Ms. Green is a quiet, patient librarian who loves books and helps people learn English.`,
+              goal: {
+                id: `book`,
+                deed: `asked the librarian for a book recommendation`,
+                text: `Ask Ms. Green to recommend a book.`,
+                keywords: [`book`, `recommend`, `story`, `read`],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Shh... welcome to the library. Looking for something to read?`,
+            },
+            {
+              id: `shopkeeper`,
+              name: `Tom (Shopkeeper)`,
+              x: 30,
+              y: 22,
+              color: 14205258,
+              persona: `Tom runs the corner shop. He is talkative, likes to bargain, and sells food, clothes and tools.`,
+              goal: {
+                id: `buy`,
+                deed: `bought something at the Corner Shop`,
+                text: `Ask for the price of something and buy it.`,
+                keywords: [`how much`, `price`, `buy`, `cost`, `apple`, `bread`, `shirt`],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! Best prices in town. Need anything?`,
+            },
+            {
+              id: `kid`,
+              name: `Mia (Student)`,
+              x: 19,
+              y: 14,
+              color: 14183080,
+              persona: `Mia is a friendly 10-year-old student who is curious and asks lots of simple questions.`,
+              goal: {
+                id: `chat`,
+                deed: `became friends with Mia the student`,
+                text: `Introduce yourself to Mia (say your name and something about you).`,
+                keywords: [`my name`, `i am`, `i'm`, `i like`, `i live`],
+                reward: 15,
+                rep: 1,
+              },
+              greeting: `Hi! I'm Mia. Who are you?`,
+            },
+            {
+              id: `doctor`,
+              name: `Dr. Chen (Doctor)`,
+              x: 52,
+              y: 8,
+              color: 8050904,
+              persona: `Dr. Chen is the calm, caring town doctor who works at the Hospital and gives practical health advice.`,
+              goal: {
+                id: `health`,
+                deed: `told the doctor about a health problem`,
+                text: `Tell the doctor about a health problem (a headache, a cold, a stomach ache...).`,
+                keywords: [
+                  `headache`,
+                  `cold`,
+                  `fever`,
+                  `cough`,
+                  `sick`,
+                  `hurt`,
+                  `pain`,
+                  `stomach`,
+                  `tired`,
+                  `sore`,
+                ],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Hello. Please, come in. How are you feeling today?`,
+            },
+            {
+              id: `police`,
+              name: `Officer Davis (Police)`,
+              x: 24,
+              y: 41,
+              color: 2767498,
+              persona: `Officer Davis is a firm but friendly police officer who knows every street and landmark and keeps the town safe.`,
+              goal: {
+                id: `directions`,
+                deed: `asked the police officer for directions`,
+                text: `Ask the police officer how to get to a place in town (the hospital, the library...).`,
+                keywords: [
+                  `where`,
+                  `way to`,
+                  `how do i get`,
+                  `how can i get`,
+                  `direction`,
+                  `lost`,
+                  `find the`,
+                  `how to get`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Good day. Officer Davis here. Can I help you with anything?`,
+            },
+            {
+              id: `teacher`,
+              name: `Ms. Taylor (Teacher)`,
+              x: 55,
+              y: 22,
+              color: 10509e3,
+              persona: `Ms. Taylor is an enthusiastic English teacher at the school who loves languages and encourages every student.`,
+              goal: {
+                id: `study`,
+                deed: `asked the teacher for advice on learning English`,
+                text: `Ask the teacher how to learn or practice English.`,
+                keywords: [
+                  `learn`,
+                  `english`,
+                  `lesson`,
+                  `study`,
+                  `practice`,
+                  `grammar`,
+                  `class`,
+                  `teach`,
+                  `vocabulary`,
+                  `homework`,
+                ],
+                reward: 30,
+                rep: 3,
+              },
+              greeting: `Hello! I am Ms. Taylor, the English teacher. Ready to practice a little?`,
+            },
+            {
+              id: `firefighter`,
+              name: `Carlos (Firefighter)`,
+              x: 60,
+              y: 7,
+              color: 14694954,
+              persona: `Carlos is a brave, cheerful firefighter who is proud of his station and loves talking about safety.`,
+              goal: {
+                id: `safety`,
+                deed: `asked the firefighter about fire safety`,
+                text: `Ask the firefighter about fire safety or his job.`,
+                keywords: [
+                  `fire`,
+                  `safety`,
+                  `safe`,
+                  `rescue`,
+                  `truck`,
+                  `emergency`,
+                  `smoke`,
+                  `alarm`,
+                  `firefighter`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there, my friend! Welcome to the fire station!`,
+            },
+            {
+              id: `chef`,
+              name: `Marco (Chef)`,
+              x: 38,
+              y: 22,
+              color: 16052448,
+              persona: `Marco is a passionate, dramatic chef who runs the restaurant and is proud of his family recipes.`,
+              goal: {
+                id: `meal`,
+                deed: `ordered a meal at the restaurant`,
+                text: `Order a meal at the restaurant (pizza, pasta, soup...).`,
+                keywords: [
+                  `pizza`,
+                  `pasta`,
+                  `soup`,
+                  `salad`,
+                  `steak`,
+                  `rice`,
+                  `burger`,
+                  `dinner`,
+                  `lunch`,
+                  `meal`,
+                  `menu`,
+                  `order`,
+                  `hungry`,
+                  `sandwich`,
+                  `chicken`,
+                  `fish`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Ciao! Welcome to my restaurant! Are you hungry?`,
+            },
+            {
+              id: `banker`,
+              name: `Ms. Park (Banker)`,
+              x: 38,
+              y: 7,
+              color: 9082544,
+              persona: `Ms. Park is the precise, polite manager of the Bank. She explains money in simple words and loves tidy numbers.`,
+              goal: {
+                id: `save`,
+                deed: `asked the banker about saving money`,
+                text: `Ask Ms. Park about saving money or opening a bank account.`,
+                keywords: [
+                  `account`,
+                  `save`,
+                  `saving`,
+                  `deposit`,
+                  `bank`,
+                  `loan`,
+                  `money`,
+                  `savings`,
+                ],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Good day. Welcome to the bank. How may I help you?`,
+            },
+            {
+              id: `postman`,
+              name: `Sam (Postman)`,
+              x: 23,
+              y: 7,
+              color: 14178906,
+              persona: `Sam is the quick, friendly postman who knows every street in town and walks everywhere.`,
+              goal: {
+                id: `send`,
+                deed: `sent a letter at the Post Office`,
+                text: `Send a letter or a parcel (ask Sam for a stamp).`,
+                keywords: [
+                  `letter`,
+                  `stamp`,
+                  `send`,
+                  `parcel`,
+                  `package`,
+                  `mail`,
+                  `post`,
+                  `envelope`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! Sam from the post office. Need to send something?`,
+            },
+            {
+              id: `hotelclerk`,
+              name: `Sofia (Hotel Clerk)`,
+              x: 12,
+              y: 41,
+              color: 13146840,
+              persona: `Sofia is the elegant, welcoming front-desk clerk at the Hotel. She speaks three languages and loves helping travelers.`,
+              goal: {
+                id: `room`,
+                deed: `booked a room at the Hotel`,
+                text: `Book a room at the Hotel (say how many nights).`,
+                keywords: [
+                  `room`,
+                  `book`,
+                  `reserve`,
+                  `reservation`,
+                  `night`,
+                  `nights`,
+                  `stay`,
+                  `suite`,
+                ],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Welcome to the Hotel! How may I help you today?`,
+            },
+            {
+              id: `priest`,
+              name: `Father Joe (Priest)`,
+              x: 41,
+              y: 41,
+              color: 8022618,
+              persona: `Father Joe is the gentle, wise priest who looks after the old church and loves telling stories about the town.`,
+              goal: {
+                id: `history`,
+                deed: `asked Father Joe about the history of the church`,
+                text: `Ask Father Joe about the church or the history of the town.`,
+                keywords: [
+                  `church`,
+                  `history`,
+                  `old`,
+                  `bell`,
+                  `built`,
+                  `story`,
+                  `music`,
+                  `organ`,
+                  `wedding`,
+                ],
+                reward: 25,
+                rep: 3,
+              },
+              greeting: `Peace be with you, my friend. Welcome to our church.`,
+            },
+            {
+              id: `cinema`,
+              name: `Zoe (Cinema)`,
+              x: 32,
+              y: 41,
+              color: 15231664,
+              persona: `Zoe sells tickets at the Cinema. She is playful, movie-crazy and gives honest movie reviews.`,
+              goal: {
+                id: `ticket`,
+                deed: `bought a movie ticket at the Cinema`,
+                text: `Buy a movie ticket (say which movie or seat you want).`,
+                keywords: [
+                  `ticket`,
+                  `tickets`,
+                  `movie`,
+                  `film`,
+                  `popcorn`,
+                  `seat`,
+                  `show`,
+                  `watch`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey! Welcome to the Cinema! Here for a movie?`,
+            },
+            {
+              id: `foreman`,
+              name: `Jack (Foreman)`,
+              x: 11,
+              y: 26,
+              color: 15261904,
+              persona: `Jack is the gruff, fair foreman of the Great Mine in Minerals Town (MT). He is honest, says little, never flatters, cares about safety, and is deeply proud of the town and its miners.`,
+              goal: {
+                id: `job`,
+                deed: `asked the foreman for a job in the mine`,
+                text: `Ask Jack for a job in the mine.`,
+                keywords: [
+                  `a job`,
+                  `hire me`,
+                  `hiring`,
+                  `employ`,
+                  `work for you`,
+                  `work in the mine`,
+                  `work at the mine`,
+                  `need work`,
+                  `want work`,
+                  `looking for work`,
+                ],
+                reward: 30,
+                rep: 3,
+              },
+              greeting: `Hm. New face. I am Jack, the foreman. What do you want here?`,
+              plain: !0,
+            },
+            {
+              id: `miner`,
+              name: `Ben (Digger)`,
+              x: 30,
+              y: 18,
+              color: 14715434,
+              persona: `Big Ben is a huge, strong, simple miner of Minerals Town (MT). He is the digger: he swings a pickaxe at the rock face of the Great Mine and digs copper. He is honest and shy with words, speaks in very short plain sentences, and is proud of MT.`,
+              goal: {
+                id: `dig`,
+                deed: `asked Big Ben what he digs in the mine`,
+                text: `Ask Ben what he digs in the mine.`,
+                keywords: [
+                  `dig`,
+                  `digs`,
+                  `digging`,
+                  `copper`,
+                  `iron`,
+                  `coal`,
+                  `gold`,
+                  `ore`,
+                  `pickaxe`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey. I am Ben. I dig. This is MT. Best town in the world.`,
+              plain: !0,
+            },
+            {
+              id: `blaster`,
+              name: `Tomas (Blaster)`,
+              x: 22,
+              y: 18,
+              color: 13646378,
+              persona: `Tomas is the blaster of Minerals Town (MT). He breaks the hard rock with dynamite so the diggers can work. He is strong, honest and plain-spoken, a little deaf from thirty years of blasts, careful about safety, and proud that every tunnel of MT started with his charges.`,
+              goal: {
+                id: `blast`,
+                deed: `asked the blaster how he breaks the rock`,
+                text: `Ask Tomas how he breaks the hard rock (dynamite).`,
+                keywords: [
+                  `dynamite`,
+                  `blast`,
+                  `blasting`,
+                  `explosive`,
+                  `explosion`,
+                  `boom`,
+                  `powder`,
+                  `break the rock`,
+                  `break rock`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `What? Oh! Hello. I am Tomas. I make the big boom. Speak up, my ears are old.`,
+              plain: !0,
+            },
+            {
+              id: `carter`,
+              name: `Pete (Rail Driver)`,
+              x: 35,
+              y: 19,
+              color: 4876938,
+              persona: `Pete is the wagon driver of Minerals Town (MT). He hauls the ore on the rails from the Great Mine to the Rail Station. He is steady, quietly cheerful, never late, loves the rails, and is proud that everything MT digs leaves on his wagons.`,
+              goal: {
+                id: `haul`,
+                deed: `asked the rail driver where the ore goes`,
+                text: `Ask Pete where the ore goes after the mine (the wagons, the rails, the station).`,
+                keywords: [
+                  `wagon`,
+                  `wagons`,
+                  `cart`,
+                  `carts`,
+                  `train`,
+                  `rail`,
+                  `rails`,
+                  `haul`,
+                  `carry`,
+                  `load`,
+                  `station`,
+                  `ore go`,
+                  `ore goes`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello. I am Pete. I drive the ore wagons. Click-clack, always on time.`,
+              plain: !0,
+            },
+            {
+              id: `sorter`,
+              name: `Lena (Ore Sorter)`,
+              x: 41,
+              y: 19,
+              color: 6982234,
+              persona: `Lena is the ore sorter of Minerals Town (MT). She sorts the raw ore by hand: copper here, iron there, plain rock in the bin. She is small, quick and sharp-eyed, a little dry, and proud that no bad ore ever leaves MT.`,
+              goal: {
+                id: `sort`,
+                deed: `asked the ore sorter how to tell copper from plain rock`,
+                text: `Ask Lena how she tells copper from plain rock.`,
+                keywords: [
+                  `sort`,
+                  `sorting`,
+                  `tell`,
+                  `difference`,
+                  `different`,
+                  `color`,
+                  `colour`,
+                  `heavy`,
+                  `copper`,
+                  `iron`,
+                  `plain rock`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Do not touch the piles. I am Lena. I sort the ore.`,
+              plain: !0,
+            },
+            {
+              id: `timberman`,
+              name: `Gus (Tunnel Builder)`,
+              x: 38,
+              y: 18,
+              color: 9071162,
+              persona: `Gus builds the supports of the Great Mine: wood and steel beams that hold up the roof of every tunnel. He is quiet, patient and careful, slow to speak and never in a hurry, and proud that nobody has ever been hurt in one of his tunnels and of Minerals Town (MT).`,
+              goal: {
+                id: `support`,
+                deed: `asked the tunnel builder why tunnels need supports`,
+                text: `Ask Gus why a tunnel needs wood and steel supports.`,
+                keywords: [
+                  `support`,
+                  `supports`,
+                  `beam`,
+                  `beams`,
+                  `wood`,
+                  `timber`,
+                  `steel`,
+                  `roof`,
+                  `collapse`,
+                  `fall`,
+                  `hold`,
+                  `tunnel`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello. I am Gus. I hold up the roof. Slow is safe.`,
+              plain: !0,
+            },
+            {
+              id: `smith`,
+              name: `Olga (Blacksmith)`,
+              x: 21,
+              y: 26,
+              color: 4868690,
+              persona: `Olga is the broad-shouldered, practical blacksmith of Minerals Town (MT). She forges every tool the miners use, speaks plainly, gives fair prices, and is proud of her steel.`,
+              goal: {
+                id: `tool`,
+                deed: `asked the blacksmith for a tool`,
+                text: `Ask Olga for a tool (a pickaxe, a hammer, a shovel...).`,
+                keywords: [
+                  `pickaxe`,
+                  `hammer`,
+                  `tool`,
+                  `tools`,
+                  `shovel`,
+                  `axe`,
+                  `buy`,
+                  `make`,
+                  `steel`,
+                  `iron`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Mind the sparks. I am Olga. Need a tool?`,
+              plain: !0,
+            },
+            {
+              id: `gemdealer`,
+              name: `Mr. Vance (Gem Dealer)`,
+              x: 48,
+              y: 26,
+              color: 2764618,
+              persona: `Mr. Vance is the smooth, elegant gem dealer of Minerals Town. He buys rough stones from the miners and sells them polished. He flatters customers, loves beautiful things and good business, and speaks far more fancily than the plain miners.`,
+              goal: {
+                id: `gem`,
+                deed: `asked Mr. Vance for the price of a gem`,
+                text: `Ask Mr. Vance the price of a gem (a diamond, a ruby...).`,
+                keywords: [
+                  `gem`,
+                  `gems`,
+                  `diamond`,
+                  `ruby`,
+                  `emerald`,
+                  `sapphire`,
+                  `crystal`,
+                  `jewel`,
+                  `ring`,
+                  `price`,
+                  `how much`,
+                  `cost`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Welcome, welcome, my friend! Mr. Vance, at your service. Looking for something... special?`,
+            },
+            {
+              id: `medic`,
+              name: `Rita (Mine Medic)`,
+              x: 21,
+              y: 37,
+              color: 15789280,
+              persona: `Rita is the blunt, practical medic of Minerals Town (MT). She treats the miners, teaches mine safety, is patient with the hurt and impatient with the careless, and never panics.`,
+              goal: {
+                id: `safety`,
+                deed: `asked the mine medic about safety rules`,
+                text: `Ask Rita about safety in the mine (helmet, lamp, exit...).`,
+                keywords: [
+                  `safe`,
+                  `safety`,
+                  `helmet`,
+                  `danger`,
+                  `dangerous`,
+                  `light`,
+                  `lamp`,
+                  `rule`,
+                  `rules`,
+                  `careful`,
+                  `accident`,
+                  `hurt`,
+                ],
+                reward: 30,
+                rep: 3,
+              },
+              greeting: `Sit down. I am Rita. Are you hurt?`,
+              plain: !0,
+            },
+            {
+              id: `innkeeper`,
+              name: `Dora (Innkeeper)`,
+              x: 11,
+              y: 37,
+              color: 12083258,
+              persona: `Dora runs the Mining Inn in Minerals Town (MT). She is warm in a plain, motherly way, loud and practical, feeds everyone, hates waste, and is proud that nobody in MT goes hungry.`,
+              goal: {
+                id: `inn`,
+                deed: `ordered a meal or asked for a bed at the Mining Inn`,
+                text: `Order a meal or ask for a bed at the Inn.`,
+                keywords: [
+                  `room`,
+                  `bed`,
+                  `night`,
+                  `stay`,
+                  `meal`,
+                  `soup`,
+                  `stew`,
+                  `bread`,
+                  `pie`,
+                  `dinner`,
+                  `supper`,
+                  `breakfast`,
+                  `hungry`,
+                  `eat`,
+                  `food`,
+                  `order`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Come in, come in. I am Dora. You look hungry. Sit.`,
+              plain: !0,
+            },
+            {
+              id: `stationmaster`,
+              name: `Mr. Hale (Station Master)`,
+              x: 36,
+              y: 64,
+              color: 2046559,
+              persona: `Mr. Hale is the station master of Minerals Central Station in Minerals Town (MT). He is tall, calm and formal, checks his pocket watch often, loves punctuality, and is proud that every train leaves on time and that MT has the biggest station in the region.`,
+              goal: {
+                id: `platform`,
+                deed: `asked the station master about the next train`,
+                text: `Ask Mr. Hale which platform the next train leaves from.`,
+                keywords: [
+                  `platform`,
+                  `train`,
+                  `trains`,
+                  `departure`,
+                  `depart`,
+                  `leave`,
+                  `leaves`,
+                  `next train`,
+                  `schedule`,
+                  `timetable`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Good day. I am Mr. Hale, the station master. Mind the yellow line, please.`,
+              plain: !0,
+            },
+            {
+              id: `ticketclerk`,
+              name: `Nina (Ticket Clerk)`,
+              x: 17,
+              y: 58,
+              color: 2068362,
+              persona: `Nina is the ticket clerk at window one of Minerals Central Station. She is friendly, quick and polite, loves timetables and numbers, smiles at every passenger and asks "Single or return?".`,
+              goal: {
+                id: `ticket`,
+                deed: `asked the ticket clerk for a ticket`,
+                text: `Ask Nina for a ticket (say where you want to go).`,
+                keywords: [
+                  `ticket`,
+                  `tickets`,
+                  `single`,
+                  `return`,
+                  `fare`,
+                  `price`,
+                  `how much`,
+                  `travel`,
+                  `go to`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello! Welcome to Minerals Central. Where would you like to go today?`,
+            },
+            {
+              id: `porter`,
+              name: `Ollie (Porter)`,
+              x: 44,
+              y: 58,
+              color: 14254635,
+              persona: `Ollie is the porter of Minerals Central Station. He is strong and cheerful, jokes a lot, carries bags and loads parcels onto the trains, and is proud that he has never dropped a bag.`,
+              goal: {
+                id: `bag`,
+                deed: `asked the porter to carry a bag`,
+                text: `Ask Ollie to help you with your bag or parcel.`,
+                keywords: [
+                  `bag`,
+                  `bags`,
+                  `luggage`,
+                  `suitcase`,
+                  `parcel`,
+                  `parcels`,
+                  `carry`,
+                  `heavy`,
+                  `help`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! I am Ollie. Heavy bag? Give it here!`,
+            },
+            {
+              id: `etmaster`,
+              name: `Mr. Reed (Station Master)`,
+              x: 36,
+              y: 64,
+              color: 3099247,
+              persona: `Mr. Reed is the station master of English Town Central Station in English Town (ET). He is tall, calm and formal, checks his pocket watch often, loves punctuality, and is proud that every train leaves on time and that ET has the biggest station in the region.`,
+              goal: {
+                id: `et_platform`,
+                deed: `asked the station master about the next train`,
+                text: `Ask Mr. Reed which platform the next train leaves from.`,
+                keywords: [
+                  `platform`,
+                  `train`,
+                  `trains`,
+                  `departure`,
+                  `depart`,
+                  `leave`,
+                  `leaves`,
+                  `next train`,
+                  `schedule`,
+                  `timetable`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Good day. I am Mr. Reed, the station master. Mind the yellow line, please.`,
+              plain: !0,
+            },
+            {
+              id: `etclerk`,
+              name: `Emma (Ticket Clerk)`,
+              x: 17,
+              y: 58,
+              color: 3121050,
+              persona: `Emma is the ticket clerk at window one of English Town Central Station. She is friendly, quick and polite, loves timetables and numbers, smiles at every passenger and asks "Single or return?".`,
+              goal: {
+                id: `et_ticket`,
+                deed: `asked the ticket clerk for a ticket`,
+                text: `Ask Emma for a ticket (say where you want to go).`,
+                keywords: [
+                  `ticket`,
+                  `tickets`,
+                  `single`,
+                  `return`,
+                  `fare`,
+                  `price`,
+                  `how much`,
+                  `travel`,
+                  `go to`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello! Welcome to English Town Central. Where would you like to go today?`,
+            },
+            {
+              id: `etporter`,
+              name: `Leo (Porter)`,
+              x: 44,
+              y: 58,
+              color: 15307323,
+              persona: `Leo is the porter of English Town Central Station. He is strong and cheerful, jokes a lot, carries bags and loads parcels onto the trains, and is proud that he has never dropped a bag.`,
+              goal: {
+                id: `et_bag`,
+                deed: `asked the porter to carry a bag`,
+                text: `Ask Leo to help you with your bag or parcel.`,
+                keywords: [
+                  `bag`,
+                  `bags`,
+                  `luggage`,
+                  `suitcase`,
+                  `parcel`,
+                  `parcels`,
+                  `carry`,
+                  `heavy`,
+                  `help`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! I am Leo. Heavy bag? Give it here!`,
+            },
+            {
+              id: `rook`, name: `Rook (Wandering Sketcher)`, x: 25, y: 15, color: 16741717,
+              uiTheme: `rook`,
+              persona: `Rook is a quiet wandering sketch artist who visits English Town to draw forgotten corners. He carries a battered sketchbook and knows a symbol painted near an abandoned freight route. He is thoughtful, observant and speaks in short, intriguing clues. He is not part of the Art District's seven main residents; he is a guide to its hidden entrance.`,
+              goal: { id: `art_mark_rook`, deed: `asked Rook about the hidden street-art marks`, text: `Ask Rook about the strange star mark and tell him what kind of mural you would like to see.`, keywords: [`star`, `mark`, `mural`, `graffiti`, `sketch`, `wall`, `paint`], reward: 10, rep: 1 },
+              greeting: `You notice the little star in my sketchbook? It is not just decoration. Have you ever seen it painted on a wall?`,
+            },
+            {
+              id: `vex`, name: `Vex (Color Keeper)`, x: 53, y: 39, color: 3528911,
+              uiTheme: `vex`,
+              persona: `Vex is a travelling colorist who tests pigments beside the old railway embankment in Minerals Town. She is confident, quick-witted and practical. She knows an abandoned service entrance marked with an eye symbol and has heard stories about a freight tunnel leading to a hidden art neighborhood.`,
+              goal: { id: `art_mark_vex`, deed: `asked Vex about the abandoned freight tunnel`, text: `Ask Vex where the old underground freight route begins and mention the eye mark.`, keywords: [`tunnel`, `underground`, `freight`, `railway`, `hidden`, `eye`, `entrance`], reward: 10, rep: 1 },
+              greeting: `Careful with that paint tin! See the eye mark on the old concrete? It points to a place most people have forgotten.`,
+            },
+            {
+              id: `morrow`, name: `Morrow (Old Sign Painter)`, x: 24, y: 61, color: 12106410,
+              uiTheme: `morrow`,
+              persona: `Morrow is an elderly sign painter who once decorated freight crates and station walls. He is warm, patient and a little mysterious. He remembers the old freight tunnel and knows that three marks — a star, an eye and a wave — reveal its hidden door. He invites curious learners to discover the place where artists work together.`,
+              goal: { id: `art_mark_morrow`, deed: `learned the three signs from Morrow`, text: `Ask Morrow what the three marks mean and name the star, eye and wave.`, keywords: [`star`, `eye`, `wave`, `three marks`, `three signs`, `freight tunnel`, `hidden door`], reward: 10, rep: 1 },
+              greeting: `Ah, the old signs. A star, an eye and a wave. Put them together and the forgotten road will open.`,
+            },
+            {
+              id: `noor`, name: `Noor (Color Curator)`, x: 9, y: 12, color: 16732234, uiTheme: `noor`,
+              persona: `Noor is the Color Curator of Art District. She is expressive, thoughtful and notices tiny differences in hue, light and mood. She helps visitors describe artworks with precise adjectives and linking verbs.`,
+              goal: { id: `art_color_review`, deed: `described an artwork to Noor`, text: `Describe the artwork in 2–3 sentences. Use a linking verb (looks, feels or seems), at least two precise adjectives, one intensifier (very, quite or extremely), and explain your reaction with because.`, keywords: [`looks`, `feels`, `seems`, `bright`, `color`, `colour`, `beautiful`, `calm`, `because`, `vibrant`], reward: 45, rep: 4 },
+              greeting: `Welcome to the Color Wall! Look closely. What do these colors make you feel?`,
+            },
+            {
+              id: `ivo`, name: `Ivo (Street Musician)`, x: 35, y: 12, color: 3528911, uiTheme: `ivo`,
+              persona: `Ivo is an energetic street musician who performs beside a converted warehouse stage. He loves comparing instruments, rhythms and performances. He is playful, enthusiastic and encourages visitors to explain which sound is better and why.`,
+              goal: { id: `art_music_battle`, deed: `compared music performances for Ivo`, text: `Compare two performances in 2–3 sentences. Use at least one comparative (louder than / softer than / better than), one as...as structure, and a superlative to choose the winner. Add a reason with because.`, keywords: [`louder than`, `softer than`, `faster than`, `slower than`, `as loud as`, `as`, `the best`, `the most`, `better than`, `because`], reward: 45, rep: 4 },
+              greeting: `Hey! The street is our stage. Which sound wins today — the bold drums or the smooth strings?`,
+            },
+            {
+              id: `ada`, name: `Ada (Exhibition Director)`, x: 62, y: 13, color: 16753920, uiTheme: `ada`,
+              persona: `Ada directs the Open Canvas Exhibition. She is organized, decisive and fair-minded. She asks visitors to choose one artwork for the main wall and defend their decision politely.`,
+              goal: { id: `art_exhibition_choice`, deed: `defended an exhibition choice for Ada`, text: `Choose one artwork in 2–3 sentences. Use prefer or would rather, support your choice with because, make one recommendation with should, and respond to another opinion using I agree or I agree, but.`, keywords: [`prefer`, `would rather`, `because`, `i agree`, `agree but`, `should`, `best`, `choose`], reward: 50, rep: 5 },
+              greeting: `The main wall has room for only one masterpiece. Which work deserves the spotlight?`,
+            },
+            {
+              id: `kai`, name: `Kai (Mural Painter)`, x: 9, y: 34, color: 16744272, uiTheme: `kai`,
+              persona: `Kai is a bold mural painter who works in a narrow alley full of layered graffiti. He is friendly, inventive and always carries spray cans. He teaches people to explain limits and possibilities when planning a mural.`,
+              goal: { id: `art_mural_rescue`, deed: `planned a mural with Kai`, text: `Plan the mural in 2–3 sentences. Use at least two different structures from too...to, adjective + enough + to, and so...that to explain limits, possibilities and effects.`, keywords: [`too`, `enough`, `so`, `that`, `too dark`, `bright enough`, `so colorful`, `wall`, `mural`], reward: 45, rep: 4 },
+              greeting: `This wall is begging for a new story. What can we paint here — something bold, something bright?`,
+            },
+            {
+              id: `mira`, name: `Mira (Sculpture Maker)`, x: 27, y: 44, color: 8564863, uiTheme: `mira`,
+              persona: `Mira is a resourceful sculpture maker who turns discarded metal, wood and stone into public art. She is patient, inventive and believes making things by hand can change a neighborhood.`,
+              goal: { id: `art_public_sculpture`, deed: `designed a public sculpture with Mira`, text: `Describe your sculpture plan in 2–3 sentences. Use a gerund after enjoy or avoid and an infinitive after decide, want or plan. Explain which recycled materials you will use.`, keywords: [`enjoy creating`, `enjoy making`, `decide to`, `decided to`, `want to`, `plan to`, `avoid wasting`, `creating`, `building`, `sculpture`], reward: 45, rep: 4 },
+              greeting: `I make art from things other people throw away. What would you enjoy creating for this city?`,
+            },
+            {
+              id: `ren`, name: `Ren (City Photographer)`, x: 62, y: 34, color: 4306175, uiTheme: `ren`,
+              persona: `Ren is a curious street photographer who documents artists and the stories behind their work. He is observant, calm and asks visitors to connect photographs with people and objects using relative clauses.`,
+              goal: { id: `art_photo_story`, deed: `told a photo story for Ren`, text: `Tell the story behind two photographs in 2–3 sentences. Use a relative clause with who for a person and which or that for an artwork or object.`, keywords: [`who`, `which`, `that`, `artist who`, `painting which`, `camera that`, `photograph`, `photo`], reward: 45, rep: 4 },
+              greeting: `Every wall has a story. Look at these photographs — can you tell me who made the art?`,
+            },
+            {
+              id: `sol`, name: `Sol (Art Critic)`, x: 58, y: 46, color: 12482290, uiTheme: `sol`,
+              persona: `Sol writes for an independent underground art magazine. She is sharp, articulate and fair. She welcomes different opinions but expects clear reasons, contrast and logical results in a review.`,
+              goal: { id: `art_grand_review`, deed: `wrote an art review with Sol`, text: `Write a short 3-sentence art review. Include one contrast connector (although or however), one reason connector (because), and one result connector (so or therefore). Give a balanced opinion, not only a score.`, keywords: [`although`, `however`, `therefore`, `because`, `so`, `although it`, `however i`, `artwork`, `painting`, `review`], reward: 50, rep: 5 },
+              greeting: `I do not need you to call it beautiful. I need you to tell me why it matters.`,
+            },
+          ];
+var X = (e, t, n, r, i) => ({ from: e, to: t, place: n, label: r, kind: i });
+var ie = {
+            barista: [
+              X(22, 6, `home_barista`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_barista`, `having breakfast at home`, `home`),
+              X(7.5, 12.5, `cafe`, `working at Sunny Cafe`, `work`),
+              X(12.5, 13.5, `park`, `eating lunch in the park`, `lunch`),
+              X(13.5, 16.5, `cafe`, `working at Sunny Cafe`, `work`),
+              X(16.5, 17.5, `market`, `buying fresh milk and fruit at the Market`, `leisure`),
+              X(17.5, 18.5, `park`, `relaxing in the park`, `leisure`),
+              X(18.5, 22, `home_barista`, `relaxing at home`, `home`),
+            ],
+            mayor: [
+              X(22, 6, `home_mayor`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_mayor`, `reading the newspaper at home`, `home`),
+              X(7.5, 12, `hall`, `working at Town Hall`, `work`),
+              X(12, 13, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13, 16.5, `hall`, `working at Town Hall`, `work`),
+              X(16.5, 17.5, `plaza`, `talking with citizens at the plaza`, `leisure`),
+              X(17.5, 18.5, `park`, `taking a walk in the park`, `leisure`),
+              X(18.5, 22, `home_mayor`, `having dinner at home`, `home`),
+            ],
+            librarian: [
+              X(21, 6, `home_librarian`, `sleeping`, `sleep`),
+              X(6, 8.5, `home_librarian`, `drinking tea at home`, `home`),
+              X(8.5, 12.5, `library`, `working at the Library`, `work`),
+              X(12.5, 13.5, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13.5, 17.5, `library`, `working at the Library`, `work`),
+              X(17.5, 18.5, `cafe`, `drinking tea at Sunny Cafe`, `leisure`),
+              X(18.5, 21, `home_librarian`, `reading at home`, `home`),
+            ],
+            shopkeeper: [
+              X(22, 6, `home_shopkeeper`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_shopkeeper`, `having breakfast at home`, `home`),
+              X(7.5, 12.5, `shop`, `running the Corner Shop`, `work`),
+              X(12.5, 13.5, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13.5, 17.5, `shop`, `running the Corner Shop`, `work`),
+              X(17.5, 18.5, `plaza`, `chatting with neighbors at the plaza`, `leisure`),
+              X(18.5, 21, `home_shopkeeper`, `counting the day's money at home`, `home`),
+              X(21, 22, `home_shopkeeper`, `getting ready for bed`, `home`),
+            ],
+            kid: [
+              X(21, 6, `home_kid`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_kid`, `getting ready for school`, `home`),
+              X(7.5, 15, `school`, `studying at school`, `school`),
+              X(15, 17.5, `park`, `playing in the park`, `leisure`),
+              X(17.5, 18.5, `plaza`, `riding her bike at the plaza`, `leisure`),
+              X(18.5, 21, `home_kid`, `doing homework at home`, `home`),
+            ],
+            doctor: [
+              X(22, 6, `home_doctor`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_doctor`, `having breakfast at home`, `home`),
+              X(7.5, 12, `hospital`, `seeing patients at the Hospital`, `work`),
+              X(12, 13, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13, 17.5, `hospital`, `seeing patients at the Hospital`, `work`),
+              X(17.5, 18.5, `park`, `jogging in the park`, `leisure`),
+              X(18.5, 22, `home_doctor`, `relaxing at home`, `home`),
+            ],
+            police: [
+              X(22, 6, `home_police`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_police`, `having breakfast at home`, `home`),
+              X(7.5, 11.5, `police`, `doing paperwork at the Police Station`, `work`),
+              X(11.5, 12.5, `plaza`, `patrolling the plaza`, `work`),
+              X(12.5, 13.5, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13.5, 17.5, `police`, `working at the Police Station`, `work`),
+              X(17.5, 18.5, `park`, `patrolling the park`, `work`),
+              X(18.5, 22, `home_police`, `reading a detective novel at home`, `home`),
+            ],
+            teacher: [
+              X(22, 6, `home_teacher`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_teacher`, `preparing lessons at home`, `home`),
+              X(7.5, 15, `school`, `teaching at the school`, `school`),
+              X(15, 16.5, `library`, `reading at the Library`, `leisure`),
+              X(16.5, 18.5, `cafe`, `having coffee at Sunny Cafe`, `leisure`),
+              X(18.5, 22, `home_teacher`, `grading homework at home`, `home`),
+            ],
+            firefighter: [
+              X(22, 6, `home_firefighter`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_firefighter`, `having breakfast at home`, `home`),
+              X(7.5, 12, `fire`, `on duty at the Fire Station`, `work`),
+              X(12, 13, `fire`, `having lunch with the crew at the Fire Station`, `lunch`),
+              X(13, 17, `fire`, `on duty at the Fire Station`, `work`),
+              X(17, 18.5, `gym`, `working out at the Gym`, `leisure`),
+              X(18.5, 22, `home_firefighter`, `relaxing at home`, `home`),
+            ],
+            chef: [
+              X(22, 5.5, `home_chef`, `sleeping`, `sleep`),
+              X(5.5, 7.5, `market`, `buying fresh ingredients at the Market`, `leisure`),
+              X(7.5, 14.5, `restaurant`, `cooking at the restaurant`, `work`),
+              X(14.5, 15.5, `park`, `taking a break in the park`, `lunch`),
+              X(15.5, 20, `restaurant`, `cooking dinner at the restaurant`, `work`),
+              X(20, 22, `home_chef`, `relaxing at home`, `home`),
+            ],
+            banker: [
+              X(22, 6, `home_banker`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_banker`, `having breakfast at home`, `home`),
+              X(7.5, 12, `bank`, `managing the Bank`, `work`),
+              X(12, 13, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13, 17, `bank`, `helping customers at the Bank`, `work`),
+              X(17, 18.5, `park`, `walking in the park`, `leisure`),
+              X(18.5, 22, `home_banker`, `counting her coin collection at home`, `home`),
+            ],
+            postman: [
+              X(22, 6, `home_postman`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_postman`, `having breakfast at home`, `home`),
+              X(7.5, 10.5, `post`, `sorting letters at the Post Office`, `work`),
+              X(10.5, 12.5, `plaza`, `delivering letters around town`, `work`),
+              X(12.5, 13.5, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13.5, 16.5, `post`, `working at the Post Office`, `work`),
+              X(16.5, 18.5, `lake`, `fishing at the lake`, `leisure`),
+              X(18.5, 22, `home_postman`, `relaxing at home`, `home`),
+            ],
+            hotelclerk: [
+              X(23, 7, `home_clerk`, `sleeping`, `sleep`),
+              X(7, 8.5, `home_clerk`, `having breakfast at home`, `home`),
+              X(8.5, 14, `hotel`, `welcoming guests at the Hotel`, `work`),
+              X(14, 15, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(15, 18.5, `hotel`, `working at the Hotel front desk`, `work`),
+              X(18.5, 22, `cinema`, `watching a movie at the Cinema`, `leisure`),
+              X(22, 23, `home_clerk`, `getting ready for bed`, `home`),
+            ],
+            priest: [
+              X(22, 5.5, `home_priest`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `home_priest`, `baking bread at home`, `home`),
+              X(6.5, 12, `church`, `looking after the Church`, `work`),
+              X(12, 13, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13, 15.5, `church`, `playing the organ at the Church`, `work`),
+              X(15.5, 16.5, `library`, `borrowing books at the Library`, `leisure`),
+              X(16.5, 18.5, `park`, `feeding the pigeons in the park`, `leisure`),
+              X(18.5, 22, `home_priest`, `drinking tea at home`, `home`),
+            ],
+            cinema: [
+              X(0, 8, `home_cinema`, `sleeping`, `sleep`),
+              X(8, 11, `home_cinema`, `having breakfast at home`, `home`),
+              X(11, 12, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(12, 23, `cinema`, `selling tickets at the Cinema`, `work`),
+              X(23, 24, `home_cinema`, `getting ready for bed`, `home`),
+            ],
+            foreman: [
+              X(21, 5.5, `home_foreman`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `square`, `checking the morning shift in the square`, `work`),
+              X(6.5, 12, `office`, `working at the Mine Office`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 15, `office`, `doing paperwork at the Mine Office`, `work`),
+              X(15, 16.5, `mine`, `inspecting the Great Mine`, `work`),
+              X(16.5, 18.5, `square`, `talking with the miners in the square`, `leisure`),
+              X(18.5, 21, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            miner: [
+              X(20, 5, `home_miner`, `sleeping`, `sleep`),
+              X(5, 6, `inn`, `eating a big breakfast at the Mining Inn`, `home`),
+              X(6, 12, `mine`, `digging in the Great Mine`, `work`),
+              X(12, 13, `station`, `having lunch by the Rail Station`, `lunch`),
+              X(13, 17.5, `mine`, `digging in the Great Mine`, `work`),
+              X(17.5, 18.5, `smithy`, `sharpening his pickaxe at the Smithy`, `leisure`),
+              X(18.5, 20, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            blaster: [
+              X(20.5, 5, `home_blaster`, `sleeping`, `sleep`),
+              X(5, 6, `inn`, `eating breakfast at the Mining Inn`, `home`),
+              X(6, 12, `mine_west`, `setting charges at the west gate of the Great Mine`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `mine_west`, `blasting rock at the west gate of the Great Mine`, `work`),
+              X(17, 18.5, `smithy`, `talking about drill bits with Olga at the Smithy`, `leisure`),
+              X(18.5, 20.5, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            carter: [
+              X(20, 5.5, `home_cart`, `sleeping`, `sleep`),
+              X(5.5, 7, `station`, `getting the wagons ready at the Rail Station`, `work`),
+              X(7, 9, `loading`, `loading ore wagons below the Great Mine`, `work`),
+              X(9, 10, `station`, `unloading ore at the Rail Station`, `work`),
+              X(10, 12, `loading`, `loading ore wagons below the Great Mine`, `work`),
+              X(12, 13, `square`, `having lunch in the square`, `lunch`),
+              X(13, 15, `station`, `hauling ore to the Rail Station`, `work`),
+              X(15, 17.5, `loading`, `loading ore wagons below the Great Mine`, `work`),
+              X(17.5, 18.5, `station`, `cleaning the wagons at the Rail Station`, `work`),
+              X(18.5, 20, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            sorter: [
+              X(20, 5.5, `home_sorter`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `eating breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `ore_yard`, `sorting ore by the ore heap`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `ore_yard`, `sorting ore by the ore heap`, `work`),
+              X(17, 18, `gems`, `showing the best stones to Mr. Vance at the Gem Shop`, `leisure`),
+              X(18, 20, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            timberman: [
+              X(20.5, 5.5, `home_timber`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `eating breakfast at the Mining Inn`, `home`),
+              X(
+                6.5,
+                12,
+                `mine_east`,
+                `building supports at the east gate of the Great Mine`,
+                `work`,
+              ),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(
+                13,
+                16,
+                `mine_east`,
+                `checking the beams at the east gate of the Great Mine`,
+                `work`,
+              ),
+              X(16, 17.5, `office`, `drawing tunnel plans with Jack at the Mine Office`, `work`),
+              X(17.5, 18.5, `square`, `resting in the square`, `leisure`),
+              X(18.5, 20.5, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            smith: [
+              X(21, 5.5, `home_smith`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `smithy`, `forging tools at the Smithy`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `tools`, `selling tools at the Tool Shop`, `work`),
+              X(17, 18.5, `square`, `resting in the square`, `leisure`),
+              X(18.5, 21, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            gemdealer: [
+              X(22, 7, `home_gem`, `sleeping`, `sleep`),
+              X(7, 8.5, `inn`, `having a late breakfast at the Mining Inn`, `home`),
+              X(8.5, 12.5, `gems`, `selling gems at the Gem Shop`, `work`),
+              X(12.5, 13.5, `inn`, `having a long lunch at the Mining Inn`, `lunch`),
+              X(13.5, 17.5, `gems`, `polishing stones at the Gem Shop`, `work`),
+              X(17.5, 18.5, `square`, `strolling in the square`, `leisure`),
+              X(18.5, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            medic: [
+              X(21, 5.5, `home_medic`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `aid`, `working at the First-Aid Post`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `aid`, `treating miners at the First-Aid Post`, `work`),
+              X(17, 18.5, `mine`, `checking the miners at the Great Mine gate`, `work`),
+              X(18.5, 21, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            innkeeper: [
+              X(22, 5, `home_innkeeper`, `sleeping`, `sleep`),
+              X(5, 10, `inn`, `cooking and cleaning at the Mining Inn`, `work`),
+              X(10, 11, `tools`, `buying a new pot at the Tool Shop`, `leisure`),
+              X(11, 15, `inn`, `cooking lunch at the Mining Inn`, `work`),
+              X(15, 16, `square`, `taking a short walk in the square`, `leisure`),
+              X(16, 22, `inn`, `cooking supper for the miners`, `work`),
+            ],
+            stationmaster: [
+              X(22, 5.5, `home_stmaster`, `sleeping`, `sleep`),
+              X(5.5, 6, `stn_hall`, `opening the station gates`, `work`),
+              X(6, 12, `stn_platform`, `checking the trains on Platform 1`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 19, `stn_platform`, `watching the trains from Platform 1`, `work`),
+              X(19, 20, `stn_hall`, `closing the station gates`, `work`),
+              X(20, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            ticketclerk: [
+              X(22, 5.5, `home_tclerk`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 19, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(19, 20.5, `square`, `taking a walk in the square`, `leisure`),
+              X(20.5, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            porter: [
+              X(22, 5.5, `home_porter`, `sleeping`, `sleep`),
+              X(5.5, 6, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6, 12, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 18, `stn_forecourt`, `helping travellers with their bags`, `work`),
+              X(18, 20, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(20, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            etmaster: [
+              X(22, 5.5, `home_etmaster`, `sleeping`, `sleep`),
+              X(5.5, 6, `stn_hall`, `opening the station gates`, `work`),
+              X(6, 12, `stn_platform`, `checking the trains on Platform 1`, `work`),
+              X(12, 13, `hotel`, `having lunch at the Hotel`, `lunch`),
+              X(13, 19, `stn_platform`, `watching the trains from Platform 1`, `work`),
+              X(19, 20, `stn_hall`, `closing the station gates`, `work`),
+              X(20, 22, `home_etmaster`, `having supper at home`, `home`),
+            ],
+            etclerk: [
+              X(22, 5.5, `home_etclerk`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `home_etclerk`, `having breakfast at home`, `home`),
+              X(6.5, 12, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 19, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(19, 20.5, `lake`, `taking a walk by the lake`, `leisure`),
+              X(20.5, 22, `home_etclerk`, `having supper at home`, `home`),
+            ],
+            etporter: [
+              X(22, 5.5, `home_etporter`, `sleeping`, `sleep`),
+              X(5.5, 6, `home_etporter`, `having breakfast at home`, `home`),
+              X(6, 12, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 18, `stn_forecourt`, `helping travellers with their bags`, `work`),
+              X(18, 20, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(20, 22, `home_etporter`, `having supper at home`, `home`),
+            ],
+          };
+
+
+// ART DISTRICT: static daytime schedules for the three guide artists and seven residents.
+ie.rook = [X(6, 22, `plaza`, `sketching forgotten corners of English Town`, `leisure`)];
+ie.vex = [X(6, 22, `art_lane`, `testing bright pigments by the old freight shed`, `work`)];
+ie.morrow = [X(6, 22, `stn_bench`, `remembering the old freight route`, `leisure`)];
+ie.noor = [X(6, 22, `noor_front`, `curating colors at the Color Wall`, `work`)];
+ie.ivo = [X(6, 22, `ivo_front`, `performing on the warehouse stage`, `work`)];
+ie.ada = [X(6, 22, `ada_front`, `preparing the open-air exhibition`, `work`)];
+ie.kai = [X(6, 22, `kai_front`, `painting a new mural in Graffiti Alley`, `work`)];
+ie.mira = [X(6, 22, `mira_yard`, `building a sculpture from reclaimed materials`, `work`)];
+ie.ren = [X(6, 22, `ren_front`, `photographing artists along Lens Boulevard`, `work`)];
+ie.sol = [X(6, 22, `sol_front`, `editing the underground art magazine`, `work`)];
+
+
+// CHAPTER 2 (ET70, 70 years ago): the two people the player can really talk to in the past.
+// Lord Gusest stands in front of Oriaris Hall (js/past.js), Tom Brown keeps watch at the North Camp (js/front.js).
+// Both speak about events in the PAST TENSE (the topic of the chapter) and know nothing about modern times.
+re.push(
+  {
+    id: `gusest`, name: `Lord Gusest (Lord of Oriaris)`, x: 32, y: 8, color: 8203822,
+    persona: `Lord Gusest of the Oriaris family, 70 years ago, during the war with the warriors of North Ire. He is only 20 years old, but he is lord of the village of Oriaris and commander of its knights because of his great talent. He is kind, brave, calm and a little tired; he speaks with dignity but warmly, like a young leader who cares about every family. He welcomes the traveler to Oriaris and encourages them to explore the new path leading to Tech-Co, where workplace English lessons await. He loves to hear what the messenger did and saw, and he talks about recent events in the past tense (yesterday the soldiers built a fence, last week the bakers sent bread). He knows nothing about modern things (no phones, cars, computers). The listeners are students aged 11-15: never describe fighting, wounds or killing; talk about walls, night watches, bread, letters, courage and hope.`,
+    goal: { id: `gusest_report`, deed: `reported the day to Lord Gusest`, text: `Tell Lord Gusest about your day in the past tense: where you went and whom you met.`, keywords: [`delivered`, `gave`, `brought`, `took`, `met`, `visited`, `walked`, `went`, `talked`, `read`], reward: 20, rep: 2 },
+    greeting: `Ah, my messenger! Come, tell me: what did you see on the road today?`,
+  },
+  {
+    id: `tombrown`, name: `Tom Brown (Young Soldier)`, x: 35, y: 17, color: 6052422,
+    persona: `Tom Brown, a 17-year-old soldier of Oriaris at the North Camp, 70 years ago, during the war with North Ire. His mother Mary waits for him at the door of the Brown Family Home every evening. He is brave, honest and friendly, but very homesick; he keeps the night watch on the North Road. Many years later he will be the father of Mayor Brown, but he does not know that. He asks the messenger for news from home and talks about life at the camp in the past tense (last night I watched the road, yesterday we fixed the tents). He knows nothing about modern things. The listeners are students aged 11-15: never describe fighting, wounds or killing; talk about the campfire, the stars, the cold nights, letters, his mother and the promise to come home.`,
+    goal: { id: `tom_home_news`, deed: `told Tom Brown news from home`, text: `Tell Tom what his mother and the village did, in the past tense (for example: Your mother waited at the door. She sewed socks for you.)`, keywords: [`waited`, `sewed`, `cooked`, `made`, `missed`, `said`, `sent`, `wrote`, `planted`, `was`], reward: 20, rep: 2 },
+    greeting: `Hello, messenger! Did you come from Oriaris? How was my mother yesterday?`,
+  },
+);
+ie.gusest = [X(0, 24, `gusest_post`, `standing in front of Oriaris Hall`, `work`)];
+ie.tombrown = [X(0, 24, `tom_post`, `keeping watch where the North Road leaves the camp`, `work`)];
+
+        function ae(e, t) {
+          let n = t / 60,
+            r = ie[e];
+          return (
+            r.find((e) => (e.from <= e.to ? n >= e.from && n < e.to : n >= e.from || n < e.to)) ??
+            r[0]
+          );
+        }
+        function oe(e) {
+          let t = e / 60;
+          return t < 5
+            ? `night`
+            : t < 12
+              ? `morning`
+              : t < 18
+                ? `afternoon`
+                : t < 22
+                  ? `evening`
+                  : `night`;
+        }
+        function se(e) {
+          return `${Math.floor(e / 60)
+            .toString()
+            .padStart(2, `0`)}:${(e % 60).toString().padStart(2, `0`)}`;
+        }
+        function ce(e, t) {
+          return { x: e * 32 + 16, y: t * 32 + 16 };
+        }
+        function le(e) {
+          let t = e.points,
+            n = [{ x: t[0].x * 32, y: t[0].y * 32 }];
+          for (let r = 1; r < t.length - 1; r++) {
+            let i = t[r - 1],
+              a = t[r],
+              o = t[r + 1],
+              s = Math.hypot(a.x - i.x, a.y - i.y),
+              c = Math.hypot(o.x - a.x, o.y - a.y),
+              l = { x: (a.x - i.x) / s, y: (a.y - i.y) / s },
+              u = { x: (o.x - a.x) / c, y: (o.y - a.y) / c },
+              d = Math.max(-1, Math.min(1, l.x * u.x + l.y * u.y));
+            if (d > 0.99995) {
+              n.push({ x: a.x * 32, y: a.y * 32 });
+              continue;
+            }
+            let f = Math.acos(d),
+              p = Math.min(e.bend, s / 2, c / 2),
+              m = p / Math.tan(f / 2),
+              h = { x: a.x - l.x * p, y: a.y - l.y * p },
+              g = { x: a.x + u.x * p, y: a.y + u.y * p },
+              _ = u.x - l.x * d,
+              v = u.y - l.y * d,
+              y = Math.hypot(_, v),
+              b = { x: h.x + (_ / y) * m, y: h.y + (v / y) * m },
+              x = Math.atan2(h.y - b.y, h.x - b.x),
+              S = Math.atan2(g.y - b.y, g.x - b.x) - x;
+            for (; S > Math.PI;) S -= 2 * Math.PI;
+            for (; S < -Math.PI;) S += 2 * Math.PI;
+            let C = Math.max(6, Math.ceil((Math.abs(S) * m * 32) / 10));
+            for (let e = 0; e <= C; e++) {
+              let t = x + (S * e) / C;
+              n.push({ x: (b.x + Math.cos(t) * m) * 32, y: (b.y + Math.sin(t) * m) * 32 });
+            }
+          }
+          let r = t[t.length - 1];
+          return (n.push({ x: r.x * 32, y: r.y * 32 }), n);
+        }
+        /* LifeQuest AI V52.2 — precise contact collision.
+   Movement is resolved at the character's FEET, using painted silhouettes.
+   Objects above the player's head are visuals, not invisible rectangular walls. */
+var LQPrecisePhysics = (() => {
+  'use strict';
+  const T = 32, R = 4.5;
+  const polygon = (...points) => points.map(p => ({ x:p[0], y:p[1] }));
+  const rect = (x,y,w,h) => polygon([x,y],[x+w,y],[x+w,y+h],[x,y+h]);
+  const roof = (cx,top,w,h) => {
+    const sh=top+h*.74;
+    // Same top ridge, two shoulders and lower scalloped edge as wvLeafRoof().
+    return polygon([cx-w*.54,sh+9],[cx-w*.45,top+h*.37],
+      [cx-w*.20,top+h*.13],[cx,top-18],[cx+w*.27,top+h*.23],
+      [cx+w*.51,sh+7],[cx+w*.38,sh+25],[cx-w*.41,sh+25]);
+  };
+  const triangle = (cx,top,w,height) => polygon([cx,top],[cx+w/2,top+height],[cx-w/2,top+height]);
+  const wing = (x,y,w,h,off=10) => polygon([x+off,y],[x+w-off,y],[x+w,y+26],[x+w,y+h],[x,y+h],[x,y+26]);
+  function shapesForBuilding(id,b) {
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,cx=x+w*.5;
+    if(id === 'wish-valley') {
+      switch(b.name) {
+        case 'ROOT HOME · VAELA': {
+          const rc=x+w*.48;
+          return [roof(rc,y+30,w*.94,118),
+            polygon([rc-w*.39,y+113],[rc+w*.35,y+113],
+              [rc+w*.42,y+153],[rc+w*.40,y+210],
+              [rc+w*.30,y+h-22],[rc-w*.33,y+h-22],
+              [rc-w*.43,y+210],[rc-w*.42,y+151])];
+        }
+        case 'THE ELDER’S CANOPY':
+          return [roof((b.door+.5)*T,y-6,w*.86,103),
+             polygon([x+46,y+102],[x+w-45,y+101],[x+w-33,y+167],
+               [x+w-39,y+h-39],[x+39,y+h-39],[x+33,y+164])];
+        case 'COUNCIL ROOT HALL':
+          return [roof(cx,y+10,w*.71,125),roof(cx-w*.305,y+70,w*.44,94),
+             roof(cx+w*.305,y+70,w*.44,94),
+             polygon([x+34,y+132],[x+w-33,y+132],[x+w-27,y+h-35],
+               [x+27,y+h-35])];
+        case 'WILDFRUIT MARKET': {
+          const all=[];
+          for(let i=0;i<3;i++){
+            const sx=x+31+i*(w-62)/3, sw=(w-76)/3;
+            all.push(roof(sx+sw/2,y+67,sw+39,82));
+            all.push(rect(sx+3,y+h-100,sw-6,61));
+          }
+          return all;
+        }
+        case 'EXPLORER OUTPOST':
+          return [roof(x+74,y+12,145,89),roof(cx+61,y+65,w*.72,108),
+            polygon([x+49,y+119],[x+w-34,y+117],[x+w-23,y+h-48],
+              [x+w-40,y+h-26],[x+29,y+h-28])];
+        case 'ROOT HOME · TALORI': {
+          const result=[];
+          for(const [dx,dy,fw] of [[-.22,48,.46],[.23,70,.47]]){
+            const cc=cx+w*dx, ww=w*fw;
+            result.push(roof(cc,y+dy-38,ww*1.13,88));
+            result.push(rect(cc-ww*.42,y+133+dy*.33,ww*.84,82));
+          }
+          result.push(rect(x+w*.27,y+180,w*.46,28));
+          return result;
+        }
+      }
+    }
+    if(id === 'old-oriaris') {
+      if(b.name==='CROWN PALACE')return [
+        rect(x+11,y+40,w-22,h-55),rect(cx-228,y+33,456,94),
+        // The cupola is narrower than the massive palace footprint.
+        polygon([cx-81,y+11],[cx-58,y-32],[cx-12,y-80],
+          [cx+13,y-80],[cx+58,y-32],[cx+82,y+12])];
+      if(b.name==='HOUSE OF SERAPHINE') {
+        const mainW=Math.floor(w*.64),gx=x+mainW-7;
+        return [rect(x+8,y+37,mainW+9,h-48),
+          rect(gx-3,y+137,x+w-10-gx+6,h-142),
+          triangle((gx+x+w-10)/2,y+81,x+w-gx+7,61)];
+      }
+      if(b.name==='HOUSE OF CORVEN')return [
+        rect(x+9,y+89,w-25,h-102),rect(x+15,y+66,w-30,44),
+        triangle(x+w*.43,y+2,202,91),
+        triangle(x+w-54,y+1,105,38)];
+      const top=b.name==='HOUSE OF AURELIA'?y+26:b.name==='HOUSE OF VALMONT'?y+12:y+30;
+      return [wing(x+12,top,w-24,h-(top-y)-12,14)];
+    }
+    if(id==='vocalt-greedy-land'){
+      if(b.kind==='townhome')return [
+        polygon([x-3,y+50],[x+15,y+19],[x+w*.47,y+5],
+          [x+w-13,y+24],[x+w+3,y+50]),rect(x+5,y+47,w-10,h-53)];
+      if(b.kind==='spire')return [rect(x+12,y+35,w-24,h-42)];
+      if(b.kind==='exchange')return [rect(x+8,y+18,w-16,h-24)];
+      return [polygon([x-5,y+45],[x+20,y+10],[x+w-20,y+10],
+        [x+w+5,y+45]),rect(x+6,y+42,w-12,h-48)];
+    }
+    if(id==='tech-co')return [rect(x+6,y+10,w-12,h-16)];
+    // English Town, Minerals Town, Art District, Oriaris's old village.
+    // Preserve the authored facade footprint, with no full-tile padding.
+    return [rect(x+3,y+4,w-6,h-8)];
+  }
+  function bounds(poly){let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;
+    for(const p of poly){a=Math.min(a,p.x);b=Math.min(b,p.y);c=Math.max(c,p.x);d=Math.max(d,p.y)}
+    return {x:a,y:b,right:c,bottom:d};
+  }
+  function inside(poly,x,y){
+    let c=false;
+    for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+      const a=poly[i],b=poly[j];
+      if(((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x))c=!c;
+    }
+    return c;
+  }
+  function segmentDistSq(px,py,a,b){
+    const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((px-a.x)*dx+(py-a.y)*dy)/(dx*dx+dy*dy||1)));
+    const ux=px-(a.x+t*dx),uy=py-(a.y+t*dy);return ux*ux+uy*uy;
+  }
+  function hitShape(shape,x,y,r=R){
+    if(x<shape.box.x-r||x>shape.box.right+r||y<shape.box.y-r||y>shape.box.bottom+r)return false;
+    if(inside(shape.poly,x,y))return true;
+    const rr=r*r;
+    for(let i=0;i<shape.poly.length;i++){
+      if(segmentDistSq(x,y,shape.poly[i],shape.poly[(i+1)%shape.poly.length])<=rr)return true;
+    }
+    return false;
+  }
+  const wrap=poly=>({poly,box:bounds(poly)});
+  const CELL=96;let indexMetrics={buckets:0,shapes:0,lastMap:''};
+  function buildIndex(q,mapId){
+    const index=new Map();
+    const groups=[q.terrain,q.buildings,q.stalls];
+    for(const group of groups)for(const shape of group){
+      const {box}=shape;
+      const x0=Math.floor(box.x/CELL),x1=Math.floor(box.right/CELL);
+      const y0=Math.floor(box.y/CELL),y1=Math.floor(box.bottom/CELL);
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+        const k=x+','+y;let a=index.get(k);if(!a){a=[];index.set(k,a)}a.push(shape);
+      }
+    }
+    q.index=index;indexMetrics={buckets:index.size,shapes:groups.reduce((a,g)=>a+g.length,0),lastMap:mapId||indexMetrics.lastMap};
+  }
+  function candidates(q,x,y,r){
+    if(!q.index)return [...q.terrain,...q.buildings,...q.stalls];
+    const selected=new Set();
+    const x0=Math.floor((x-r)/CELL),x1=Math.floor((x+r)/CELL);
+    const y0=Math.floor((y-r)/CELL),y1=Math.floor((y+r)/CELL);
+    for(let yi=y0;yi<=y1;yi++)for(let xi=x0;xi<=x1;xi++)for(const s of q.index.get(xi+','+yi)||[])selected.add(s);
+    return selected;
+  }
+  function attachArea(area){
+    if(!area?.buildings||!area?.obstacles)return;
+    const buildings=area.buildings.flatMap(b=>shapesForBuilding(area.id,b).map(p=>Object.assign(wrap(p),{name:b.name,category:'building'})));
+    const world=area.obstacles.map(o=>Object.assign(wrap(rect(o.x*T,o.y*T,o.w*T,o.h*T)),{category:'terrain'}));
+    area.__lqPrecise={buildings,terrain:world,stalls:[]};
+    buildIndex(area.__lqPrecise,area.id);
+    // Tile navigation is rebuilt from the contact geometry. This grid is for
+    // NPC route planning only; player movement below tests polygons precisely.
+    for(let iy=0;iy<area.h;iy++)for(let ix=0;ix<area.w;ix++){
+      const px=(ix+.5)*T,py=(iy+.5)*T;
+      area.blocked[iy][ix]=world.some(s=>hitShape(s,px,py,1)) ||
+        buildings.some(s=>hitShape(s,px,py,4));
+    }
+  }
+  function installStalls(area,stalls){
+    if(!area?.__lqPrecise)return;
+    area.__lqPrecise.stalls=stalls.map(s=>{
+      const x=(s.x+.5)*T,y=(s.y+.5)*T+(s.row==='north'?11:0);
+      return Object.assign(wrap(rect(x-57,y-59,116,93)),{category:'stall',name:s.name});
+    });
+    buildIndex(area.__lqPrecise,area.id);
+    for(const s of area.__lqPrecise.stalls){
+      const x0=Math.max(0,Math.floor(s.box.x/T)),x1=Math.min(area.w-1,Math.floor(s.box.right/T));
+      const y0=Math.max(0,Math.floor(s.box.y/T)),y1=Math.min(area.h-1,Math.floor(s.box.bottom/T));
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)
+        if(hitShape(s,(x+.5)*T,(y+.5)*T,3))area.blocked[y][x]=true;
+    }
+  }
+  function contact(area,x,y,r=R){
+    const q=area?.__lqPrecise;
+    if(!q)return null;
+    let category=null;
+    for(const s of candidates(q,x,y,r)){
+      if(!hitShape(s,x,y,r))continue;
+      if(s.category==='terrain')return 'terrain';
+      if(s.category==='building')category='building';
+      else if(s.category==='stall'&&category!=='building')category='stall';
+    }
+    return category||false;
+  }
+  function playerBlocked(area,x,y){
+    if(!area||!Number.isFinite(x)||!Number.isFinite(y)||
+      x<R||y<R||x>area.w*T-R||y>area.h*T-R)return true;
+    return !!contact(area,x,y,R);
+  }
+  function debug(area,x,y){
+    const q=area?.__lqPrecise;
+    if(!q)return null;
+    return {map:area.id,worldX:x,worldY:y,category:contact(area,x,y,R)||'walkable',
+      footRadius:R,shapes:q.buildings.length,terrain:q.terrain.length,stalls:q.stalls.length};
+  }
+  return Object.freeze({version:'52.2',radius:R,shapesForBuilding,attachArea,installStalls,
+    contact,playerBlocked,debug,hitShape,rect,roof,wrap,indexStats:()=>({...indexMetrics})});
+})();
+window.LQPrecisePhysics=LQPrecisePhysics;
+
+
+/* --------------- V67 Art District addon: graphics and quest --------------- */
+/* LIFEQUEST AI V67 — ART DISTRICT: LIVING CANVAS
+   Self-contained visual and quest expansion for the V66 single-file game.
+   All new content is gated to art-district. No external assets or API keys.
+   Original playable sprites, game movement, dialogues, interiors and other worlds stay intact.
+ */
+(function(){
+'use strict';
+if(window.LQArtV67) return;
+const T=32,ID='art-district',SAVE='v67Art',PALETTE=[0xf0b8cf,0x80cccb,0xefcd87,0xa995d6,0xe89e79,0xa6b98f];
+const C={ink:0x1b2430,metal:0x455363,dark:0x343345,stone:0xb4a6a0,cream:0xeadac3,rose:0xe79cb3,teal:0x79c7c7,gold:0xe9c77c,lilac:0x9685bf,glass:0x71b5ba,brick:0x855f62};
+const $=id=>document.getElementById(id), scene=()=>window.__lifequestGetScene?.();
+const rect=(g,x,y,w,h,c,a=1)=>g.fillStyle(c,a).fillRect(x,y,Math.max(0,w),Math.max(0,h));
+const line=(g,x1,y1,x2,y2,c,a=1,w=1)=>g.lineStyle(w,c,a).lineBetween(x1,y1,x2,y2);
+const circ=(g,x,y,r,c,a=1)=>g.fillStyle(c,a).fillCircle(x,y,r);
+const tri=(g,x1,y1,x2,y2,x3,y3,c,a=1)=>g.fillStyle(c,a).fillTriangle(x1,y1,x2,y2,x3,y3);
+const safeStr=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const doors=(g,b,roof)=>{const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,d=b.door*T+16;
+ rect(g,d-17,y+h-42,34,42,0x1d2732); rect(g,d-12,y+h-37,24,37,0x4d5667);
+ rect(g,d-9,y+h-34,18,28,0x202d36);rect(g,d-7,y+h-31,14,13,0x7ea8a5,.76);
+ rect(g,d+8,y+h-22,2,2,C.gold);rect(g,d-19,y+h-4,38,4,C.cream,.7);
+ rect(g,d-22,y+h-44,44,4,C.ink);rect(g,d-21,y+h-48,42,3,C.gold,.8);
+};
+function glass(g,x,y,w,h,c){rect(g,x-3,y-3,w+6,h+6,C.ink);rect(g,x,y,w,h,c,.95);rect(g,x+3,y+3,w*.23,h*.64,0xd7faf0,.46);line(g,x+w*.5,y,x+w*.5,y+h,C.cream,.5,2);line(g,x,y+h*.55,x+w,y+h*.55,C.cream,.35,1);}
+function ornate(g,x,y,c){circ(g,x,y,10,C.ink,.9);circ(g,x,y,7,c);circ(g,x-2,y-2,2,0xfff5d9,.7);}
+function facade(g,b){if(!b||!b.name)return; const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,r=Math.round(h*.48),fy=y+r,n=b.name;
+ // Six independent silhouettes, structural and material profiles. Existing collision footprints unchanged.
+ const mats={
+  'Color Gallery':[0xd0bdaf,0x755b70,0xaec7bf],
+  'Backbeat Warehouse':[0x835a51,0x383e48,0xc38e6f],
+  'Open Canvas Gallery':[0xd3c8bd,0x5d6575,0x8ec2c5],
+  'Mural Workshop':[0xb39c91,0x555260,0xb7a5c2],
+  'Photo Lab':[0x9cacae,0x425567,0xbad7cd],
+  'Independent Studio':[0xb79a81,0x655260,0xe1c394]};
+ if(!mats[n])return;const [wall,edge,shine]=mats[n];
+ rect(g,x+5,y+8,w,h,C.ink,.22);rect(g,x,fy,w,h-r,wall);rect(g,x,fy,w,6,edge);
+ // Material-specific masonry, gently varied but not noisy.
+ for(let yy=fy+14,row=0;yy<y+h-8;yy+=17,row++){
+  for(let xx=x+9+(row%2)*13;xx<x+w-12;xx+=29)rect(g,xx,yy,22,2,edge,.17);
+ }
+ if(n==='Color Gallery'){
+  // Fan-shaped roof, staggered stained-glass atrium and small bronze pilasters.
+  rect(g,x+8,y+25,w-16,r-30,0x5a536c);rect(g,x+14,y+32,w-28,r-43,0x789f9d);
+  for(let i=0;i<11;i++){const xx=x+16+i*(w-32)/11;line(g,xx,y+32,xx+17,fy-13,0xe9dfc8,.32,2)}
+  tri(g,x+8,y+26,x+w-8,y+26,x+w*.50,y+1,0x423d53);
+  tri(g,x+31,y+25,x+w-32,y+25,x+w*.50,y+7,0xe1b8c1);
+  for(let k=0;k<4;k++){glass(g,x+22+k*73,fy+23,42,42,[0xe8b4c1,0x91c7c0,0xecc785,0xb4a4d2][k]);}
+  for(let k=0;k<5;k++){let px=x+13+k*65;rect(g,px,fy+77,5,h-r-83,edge,.7);rect(g,px-3,fy+7

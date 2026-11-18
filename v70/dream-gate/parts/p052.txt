@@ -1,0 +1,248 @@
+ather);
+    if(lastWeather && /rain|storm|mưa|mua|wet/i.test(lastWeather) && !raining) wetUntil=t+45000;
+    lastWeather=clock.weather;
+    if(raining)wetUntil=t+6000;
+    if(t>wetUntil)return;
+    const a=raining?.14:.12*cap((wetUntil-t)/45000,0,1);
+    for(const p of puddles){if(!visible(sc,p.x,p.y))continue;
+      g.fillStyle(0x9dcace,a);g.fillEllipse(p.x,p.y,p.sz*5,p.sz*2);
+      if(!prefs.quiet && Math.floor(t/480)%3===0)ring(g,p.x,p.y,p.sz*1.8,0xd8eff3,a*1.5);
+    }
+  }
+  function drawActorIntent(sc,g,t,a,stage){
+    if(!Array.isArray(sc.npcs))return;
+    let n=0;
+    for(const npc of sc.npcs){if(n>=3)break;
+      const s=npc?.sprite;if(!s?.visible||npc.inside||!visible(sc,s.x,s.y,65))continue;
+      if(dist(s.x,s.y,a.x,a.y)>145)continue;
+      const y=s.y-39+Math.sin(t*.004+n)*2;
+      box(g,s.x-9,y-7,18,13,0x1b3540,.78);
+      for(let j=0;j<3;j++)box(g,s.x-6+j*5,y-2,3,3,stage>=3?0x9ce2af:0xe1d7ae,.9);
+      n++;
+    }
+  }
+  function drawOutdoor(sc,t){
+    if(!worldGraphics||!gameReady(sc))return;
+    worldGraphics.clear();if(!prefs.enabled||sc.inside)return;
+    const cfg=SCENES[area(sc)],a=cfg?anchorFor(sc,cfg):null,clock=timeOf(sc);
+    if(a){
+      const statusNow=status(sc), rawStep=statusNow?.step||0;
+      // Daily scene choreography is visual; quest progress is stored separately.
+      const step=statusNow?.complete?3:Math.max(rawStep,clock.phase==='morning'?1:clock.phase==='day'?2:0);
+      const bx=(Number(a.b.door)+.5)*T,by=(Number(a.b.y)+Number(a.b.h)*.67)*T;
+      if(visible(sc,bx,by)){
+        drawSignature(worldGraphics,cfg,bx,by,step,t,clock,prefs.quiet);
+        if(!prefs.quiet) drawActorIntent(sc,worldGraphics,t,a,step);
+      }
+      if(prefs.focus && !statusNow?.complete && visible(sc,a.x,a.y)){
+        ring(worldGraphics,a.x,a.y,12+Math.sin(t*.003)*2,cfg.color,.45,2);
+        box(worldGraphics,a.x-11,a.y-15,22,2,cfg.color,.65);
+      }
+    }
+    drawWindows(sc,worldGraphics,t,clock);
+    if(!prefs.quiet)drawWeather(sc,worldGraphics,t,clock);
+  }
+  function drawInterior(sc,t){
+    indoorGraphics?.clear();
+    if(!indoorGraphics||!prefs.enabled||!prefs.interior||!validRoom(sc))return;
+    const clock=timeOf(sc),all=realItems(sc),d=state(sc),lim=prefs.quiet?3:5;
+    const bx=sc.inside.objs[0].x, by=sc.inside.objs[0].y,k=sc.inside.k||1;
+    // Light from actual wall band, never drawn into physical doorway.
+    const tone=clock.phase==='evening'||clock.phase==='night'?0xf6d39a:0xe1e5cb;
+    for(const i of [0,1]){
+      const x=bx+sc.inside.spec.w*T*k*(.21+i*.58),y=by+22*k;
+      box(indoorGraphics,x-7*k,y,14*k,3*k,tone,.3);
+      if(!prefs.quiet&&prefs.particles)box(indoorGraphics,x-3*k,y+7*k,6*k,2*k,tone,.1);
+    }
+    let count=0;
+    for(const obj of all){
+      if(count>=lim)break;
+      const kind=String(obj.it.k||'');
+      if(!/table|counter|desk|bed|shelf|stove|forge|machine|screen|loom|herb|plant|clock|book|cabinet|chest|piano|organ|case|furnace|lantern|fireplace|display|workbench/i.test(kind))continue;
+      if(!visible(sc,obj.x,obj.y,65))continue;
+      const on=!!d.objects[obj.key],x=obj.x,y=obj.y;
+      const c=on?0xbce8b2:0xe7c99b,alpha=on?.8:.3;
+      box(indoorGraphics,x-8*k,y-6*k,16*k,2*k,c,alpha);
+      if(on){box(indoorGraphics,x-5*k,y-11*k,10*k,3*k,c,.52);
+        if(!prefs.quiet && prefs.particles){let dx=Math.sin(t*.002+count)*2*k;box(indoorGraphics,x+dx,y-15*k,2*k,2*k,c,.65);}}
+      count++;
+    }
+  }
+  function attach(sc){
+    if(!gameReady(sc)||sc.__lq66Attached)return;
+    current=sc;
+    // One graphical layer per environment. No fake obstacles or replacement NPC sprites.
+    worldGraphics=sc.add.graphics().setDepth(7.15);
+    indoorGraphics=sc.add.graphics().setDepth(2.15);
+    worldGraphics.__lq66=true;indoorGraphics.__lq66=true;
+    const handleUpdate=(time,delta)=>{
+      if(!gameReady(sc)||sc!==scene())return;
+      const now=Number.isFinite(time)?time:performance.now();
+      if(now-lastPulse< (prefs.quiet?190:85))return;
+      const stamp=performance.now(); lastPulse=now;
+      updateLocation(sc);drawOutdoor(sc,now);drawInterior(sc,now);
+      const drawMs=performance.now()-stamp;
+      benchmark.drawMs=benchmark.drawMs*.9+drawMs*.1;benchmark.drawCount++;
+      if(root){const active=!sc.switching&&!sc.sleeping;
+        root.hidden=!active;
+        const hint=$('lq66-near');if(hint){const near=nearTarget(sc);
+          const furn=validRoom(sc)&&!!nearestItem(sc);
+          hint.hidden=!(active&&!paneOpen()&&(near||furn));
+          hint.textContent=near?'F3 · Hoạt động vùng':furn?'F3 · Nội thất':'V66';
+        }
+      }
+      if(paneOpen() && now-lastUI>950){lastUI=now;refreshStatus();}
+    };
+    sc.events?.on?.('update',handleUpdate);
+    sc.events?.once?.('shutdown',()=>{
+      sc.events?.off?.('update',handleUpdate);
+      if(worldGraphics)worldGraphics.destroy();if(indoorGraphics)indoorGraphics.destroy();
+      worldGraphics=null;indoorGraphics=null;current=null;currentArea='';sc.__lq66Attached=false;
+    });
+    sc.__lq66Attached=true;
+  }
+  function ping(sc,frequency){
+    if(!prefs.sound)return;
+    try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+      audioCtx=audioCtx||new AC(); if(audioCtx.state==='suspended')audioCtx.resume();
+      let o=audioCtx.createOscillator(),gain=audioCtx.createGain();
+      o.type='sine';o.frequency.value=frequency;gain.gain.setValueAtTime(.018,audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.13);
+      o.connect(gain);gain.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.14);
+    }catch(_){}
+  }
+  function toast(str){if(!toastEl)return;toastEl.textContent=String(str);toastEl.hidden=false;
+    const token=++toast.token;setTimeout(()=>{if(token===toast.token)toastEl.hidden=true;},3400);
+  }
+  toast.token=0;
+
+  function focusCamera(sc){
+    if(!gameReady(sc)||sc.switching||sc.sleeping||sc.inside)return false;
+    const cfg=SCENES[area(sc)],a=cfg?anchorFor(sc,cfg):null,cam=sc.cameras?.main;
+    if(!a||!cam||typeof cam.pan!=='function')return false;
+    const here=area(sc);close();
+    try{cam.stopFollow?.();cam.pan((a.b.x+a.b.w/2)*T,(a.b.y+a.b.h/2)*T,850,'Sine.easeInOut');}
+    catch(err){console.warn('[V66] Camera',err);cam.startFollow?.(sc.player);return false;}
+    setTimeout(()=>{if(scene()===sc && area(sc)===here && !sc.switching)cam.startFollow?.(sc.player,true,.1,.1);},1600);
+    return true;
+  }
+  function paneOpen(){return !!pane&&!pane.hidden;}
+  function close(){if(pane)pane.hidden=true;}
+  function open(){if(!pane)return;redrawPanel();pane.hidden=false;}
+  function renderStatus(sc){
+    if(!gameReady(sc))return '<p>Hãy bắt đầu chơi để xem các hoạt động.</p>';
+    const id=area(sc),cfg=SCENES[id],st=cfg?status(sc):null,clock=timeOf(sc),targetNow=cfg?target(sc):null;
+    let o=`<div class="lq66-sub"><b>${html(sc.area?.name||id)}</b> · Ngày ${clock.day} · ${String(Math.floor(clock.minutes/60)).padStart(2,'0')}:${String(clock.minutes%60).padStart(2,'0')} · ${html(clock.phase)}</div>`;
+    if(cfg){
+      o+=`<h3>${html(cfg.name)}</h3><div class="lq66-progress">${[0,1,2].map(i=>`<span class="${i<st.step?'done':''}">${i+1}</span>`).join('')}</div>`;
+      o+=`<p>${html(st.complete?cfg.result:cfg.steps[st.step])}</p>`;
+      o+=`<p class="lq66-sub">${targetNow?(nearTarget(sc)?'Đã ở gần điểm hoạt động.':'Đến gần '+html(cfg.building)+' để tham gia.'):'Chưa tìm thấy vị trí tiếp cận hợp lệ của '+html(cfg.building)+'.'}</p>`;
+      o+=`<button data-v66="progress" ${st.complete||!nearTarget(sc)||!targetNow?'disabled':''}>${st.complete?'✓ Đã hoàn thành':'Thực hiện bước '+(st.step+1)}</button>`;
+      if(!sc.inside&&targetNow)o+=` <button data-v66="camera">Quan sát địa điểm</button>`;
+    }else if(TRAILS[id])o+=`<h3>${html(TRAILS[id].name)}</h3><p>Đoạn đường thám hiểm có chuyển động theo môi trường. Nhiệm vụ gốc vẫn hoạt động bình thường.</p>`;
+    else o+='<p>Không có sự kiện V66 cho khu vực này.</p>';
+    if(sc.inside){const obj=nearestItem(sc);
+      o+=`<div class="lq66-line"><h3>Tương tác nội thất</h3><p>${obj?'Đang ở gần: '+html(obj.it.k):'Hãy đến gần bàn, giường, tủ hoặc máy móc.'}</p><button data-v66="furniture" ${obj?'':'disabled'}>Dùng vật thể gần nhất</button></div>`;
+    }
+    const done=Object.values(state(sc)?.areas||{}).filter(v=>v.complete).length;
+    o+=`<p class="lq66-sub">Tiến độ V66: ${done}/8 cảnh sinh hoạt · Tiến độ được lưu cùng trò chơi.</p>`;
+    return o;
+  }
+  function settingsHTML(){return '<div class="lq66-settings">'+Object.entries({enabled:'Bật V66',quiet:'Giảm chuyển động',windows:'Cửa sổ có sinh hoạt',weather:'Dấu vết sau mưa',interior:'Hoạt cảnh trong nhà',focus:'Nhấn mạnh điểm tương tác',particles:'Hạt chuyển động nhẹ',sound:'Âm báo ngắn'}).map(([k,name])=>`<label><input type="checkbox" data-pref66="${k}" ${prefs[k]?'checked':''}/> ${name}</label>`).join('')+'</div>'}
+  function redrawPanel(){
+    if(!pane)return;
+    const el=$('lq66-content');if(el)el.innerHTML=renderStatus(scene());
+    const statuses=$('lq66-statuses');
+    if(statuses){const sc=scene(),d=state(sc);statuses.innerHTML=Object.entries(SCENES).map(([id,conf])=>{
+      const step=d?.areas?.[id]?.step||0,done=!!d?.areas?.[id]?.complete;
+      return `<div class="lq66-event"><span>${html(conf.name)}</span><strong>${done?'✓':step+'/3'}</strong></div>`;
+    }).join('');}
+    refreshStatus();
+  }
+  function refreshStatus(){
+    if(!paneOpen())return;
+    const sc=scene(),el=$('lq66-live');if(!el)return;
+    const p=gameReady(sc)?timeOf(sc):null;
+    el.textContent=p?`${html(area(sc))} · ${p.phase} · ${sc.inside?'Trong nhà':'Ngoài trời'} · Render V66 ~${benchmark.drawMs.toFixed(2)} ms/lượt`:'Chưa bắt đầu game';
+  }
+  function mount(){
+    if(root)return;
+    const css=document.createElement('style');css.id='lq66-css';css.textContent=`
+      #lq66-root[hidden],#lq66-panel[hidden],#lq66-near[hidden],#lq66-toast[hidden]{display:none!important}
+      #lq66-root{font:13px system-ui,sans-serif;color:#e5f4ee;position:fixed;z-index:9600;inset:0;pointer-events:none}
+      #lq66-open{pointer-events:auto;position:absolute;right:12px;top:108px;color:#d7f5e6;background:#163b40e8;border:1px solid #75a79d;border-radius:9px;padding:8px 10px;box-shadow:0 3px 14px #0006;cursor:pointer}
+      #lq66-near{pointer-events:auto;position:absolute;left:50%;bottom:125px;transform:translateX(-50%);padding:7px 11px;border:1px solid #a4cdad;border-radius:8px;background:#183c3ddd;color:#e9f6e5;cursor:pointer}
+      #lq66-toast{position:absolute;top:22%;left:50%;transform:translateX(-50%);max-width:440px;min-width:170px;text-align:center;background:#19393fed;border:1px solid #b6ccaa;padding:12px 16px;border-radius:9px;box-shadow:0 8px 25px #0008}
+      #lq66-panel{pointer-events:auto;position:absolute;inset:0;background:#051016bf;display:grid;place-items:center;padding:12px}
+      #lq66-panel .lq66-card{background:#132831;color:#edf6ec;width:min(620px,96vw);max-height:88vh;overflow:auto;border:1px solid #61958d;border-radius:14px;box-shadow:0 22px 65px #000b;padding:18px}
+      #lq66-panel .lq66-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}
+      #lq66-panel h2{font-size:19px;margin:0;color:#f2dab0}#lq66-panel h3{font-size:15px;margin:12px 0 7px;color:#dbe5c8}
+      #lq66-panel p{line-height:1.5;margin:8px 0 11px}#lq66-panel button{font:inherit;cursor:pointer;border:1px solid #74aa9d;border-radius:8px;background:#28595c;color:#eff8ed;padding:8px 11px}
+      #lq66-panel button:disabled{opacity:.43;cursor:not-allowed}#lq66-panel button:hover:not(:disabled){background:#376f6b}
+      #lq66-panel .lq66-sub{font-size:12px;color:#adcac3}#lq66-panel .lq66-progress{display:flex;gap:7px}
+      #lq66-panel .lq66-progress span{border:1px solid #456d64;border-radius:6px;background:#24454b;color:#a6c4ba;padding:5px 16px}
+      #lq66-panel .lq66-progress span.done{background:#597c56;color:white;border-color:#8fb78c}
+      #lq66-panel .lq66-line{border-top:1px solid #34525a;margin-top:12px;padding-top:8px}
+      #lq66-panel .lq66-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}
+      #lq66-panel .lq66-settings{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+      #lq66-panel label{display:flex;align-items:center;gap:8px;color:#daeee7;line-height:1.35}
+      #lq66-panel input{accent-color:#8bc1ae}
+      #lq66-panel .lq66-event{display:flex;justify-content:space-between;gap:9px;align-items:center;border-bottom:1px solid #31525b;padding:7px 0}
+      #lq66-panel .lq66-event strong{color:#bcdfaa}
+      @media(max-width:550px){#lq66-open{right:7px;top:90px;padding:6px 8px}#lq66-panel .lq66-settings{grid-template-columns:1fr}#lq66-near{bottom:96px}}
+    `;document.head.appendChild(css);
+    root=document.createElement('div');root.id='lq66-root';root.hidden=true;
+    root.innerHTML=`<button id="lq66-open" aria-label="Mở các cảnh V66" title="F3 · Living Moments">✦ V66</button><button id="lq66-near" hidden>F3 · Hoạt động</button><div id="lq66-toast" role="status" hidden></div>
+    <div id="lq66-panel" hidden><section class="lq66-card" role="dialog" aria-modal="true" aria-label="LifeQuest V66"><div class="lq66-head"><h2>V66 · Living Moments</h2><button data-v66="close">✕</button></div><p id="lq66-live" class="lq66-sub"></p>
+    <div class="lq66-tabs"><button data-v66="tab:scene">Hoạt động</button><button data-v66="tab:events">Tất cả khu vực</button><button data-v66="tab:settings">Đồ họa</button></div>
+    <div id="lq66-content"></div><div id="lq66-statuses" hidden></div><div id="lq66-preferences" hidden>${settingsHTML()}</div>
+    <p class="lq66-sub">F3 để mở; E và tất cả điều khiển cũ vẫn hoạt động. V66 không thêm vật cản.</p></section></div>`;
+    document.body.appendChild(root);pane=$('lq66-panel');widget=$('lq66-open');toastEl=$('lq66-toast');
+    widget.addEventListener('click',open);$('lq66-near').addEventListener('click',open);
+    root.addEventListener('click',e=>{
+      if(e.target===pane){close();return;}
+      const btn=e.target.closest?.('[data-v66]');if(!btn)return;
+      const a=btn.dataset.v66,sc=scene();
+      if(a==='close'){close();return;}
+      if(a==='progress'){let r=attend(sc);if(!r.ok)toast(r.reason);return;}
+      if(a==='furniture'){if(!inspectFurniture(sc))toast('Hãy tới gần một đồ nội thất.');return;}
+      if(a==='camera'){if(!focusCamera(sc))toast('Chưa thể mở camera tại đây.');return;}
+      if(a.startsWith('tab:')){
+        for(const [id,tab] of [['lq66-content','scene'],['lq66-statuses','events'],['lq66-preferences','settings']]) $(id).hidden=a!=='tab:'+tab;
+        if(a==='tab:scene')redrawPanel();return;
+      }
+    });
+    root.addEventListener('change',e=>{
+      const key=e.target?.dataset?.pref66;if(!key||!(key in prefs))return;
+      prefs[key]=!!e.target.checked;
+      try{localStorage.setItem(CONFIG_KEY,JSON.stringify(prefs));}catch(_){}
+      toast('Đã cập nhật thiết lập đồ họa V66.');
+    });
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'&&paneOpen()){e.preventDefault();e.stopImmediatePropagation();close();return;}
+      if(e.key!=='F3'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||e.defaultPrevented)return;
+      if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable)return;
+      if(!gameReady(scene()))return;
+      e.preventDefault();e.stopImmediatePropagation();paneOpen()?close():open();
+    },true);
+  }
+  function init(){mount();
+    // Check for scene identity every second, no extra animation timer. Actual effects live in scene.events update.
+    setInterval(()=>{const sc=scene();if(gameReady(sc)){if(!sc.__lq66Attached)attach(sc);
+      if(root && !sc.switching)root.hidden=false;
+    }else if(root){root.hidden=true;close();}},900);
+  }
+  const test=Object.freeze({
+    timeOf, state, status, target, nearTarget, nearestItem, realItems, attend, inspectFurniture, matchBuilding,
+    uniqueCount:()=>Object.keys(SCENES).length, stats:sc=>({area:area(sc),progress:state(sc)?.areas,objects:Object.keys(state(sc)?.objects||{}).length,
+      anchor:target(sc),renderMs:benchmark.drawMs,renderCount:benchmark.drawCount}),
+    emitFrame:(g,cfg,x,y,step,now)=>drawSignature(g,cfg,x,y,step,now,{phase:'day'},false)
+  });
+  window.LQ66=Object.freeze({version:VERSION,maps:SCENES,trails:TRAILS,open,close,focusCamera,settings:()=>({...prefs}),
+    progress:()=>state(),attend:()=>attend(scene()),inspect:()=>inspectFurniture(scene()),test});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,2173 @@
+          },
+            ],
+          },
+          {
+            id: 'rail-mail',
+            title: '📮 Parcel Across Two Towns',
+            level: 'A2',
+            reward: { xp: 65, money: 40 },
+            desc: 'Practice sending goods, asking for directions and chatting at the station.',
+            steps: [
+              {
+                kind: 'npc',
+                npc: 'postman',
+                words: ['letter', 'parcel', 'package', 'send', 'mail', 'stamp'],
+                text: 'Talk to Sam in English Town about sending a letter or parcel (in English).',
+              },
+              {
+                kind: 'enter',
+                building: 'Rail Station',
+                area: 'minerals',
+                text: 'Go to Minerals Town and enter the Rail Station.',
+              },
+              {
+                kind: 'npc',
+                npc: 'carter',
+                words: ['parcel', 'package', 'letter', 'delivery', 'send', 'mail', 'ticket'],
+                text: 'Ask the shipping clerk about the parcel in English.',
+              },
+            ],
+          },
+          {
+            id: 'crystal-study',
+            title: '💎 The Crystal Journey',
+            level: 'B1',
+            reward: { xp: 95, money: 55 },
+            desc: 'Explore the mine, find minerals and report your discovery.',
+            steps: [
+              {
+                kind: 'npc',
+                npc: 'foreman',
+                words: ['mine', 'crystal', 'safety', 'ore', 'work'],
+                text: 'Ask the foreman about mine safety or crystals.',
+              },
+              {
+                kind: 'floor',
+                building: 'Great Mine',
+                floor: 1,
+                text: 'Enter the Great Mine and go down to the crystal cave floor.',
+              },
+              {
+                kind: 'inspect',
+                building: 'Great Mine',
+                floor: 1,
+                objects: ['crystal'],
+                text: 'Walk up to the crystal and press E to inspect it.',
+              },
+              {
+                kind: 'npc',
+                npc: 'gemdealer',
+                words: ['gem', 'crystal', 'stone', 'mineral', 'value', 'price'],
+                text: 'Go to the Gem Shop and tell the gem dealer about the crystal.',
+              },
+              {
+                kind: 'npc',
+                npc: 'mayor',
+                words: ['crystal', 'mine', 'mineral', 'town', 'report'],
+                text: 'Return to English Town and report to the mayor in English.',
+              },
+            ],
+          },
+          {
+            id: 'first-aid',
+            title: '❤️ Healthcare Bridge',
+            level: 'A2',
+            reward: { xp: 80, money: 45 },
+            desc: 'Learn to describe health problems and ask for help.',
+            steps: [
+              {
+                kind: 'npc',
+                npc: 'doctor',
+                words: ['health', 'help', 'first aid', 'hurt', 'doctor', 'hospital', 'safety'],
+                text: 'Ask Dr. Chen about healthcare or first aid.',
+              },
+              {
+                kind: 'enter',
+                building: 'First-Aid Post',
+                area: 'minerals',
+                text: 'Go to Minerals Town and enter the First-Aid Post.',
+              },
+              {
+                kind: 'npc',
+                npc: 'medic',
+                words: ['help', 'hurt', 'medicine', 'patient', 'injury', 'first aid', 'health'],
+                text: 'Talk to the medic about how to help an injured person.',
+              },
+              {
+                kind: 'npc',
+                npc: 'doctor',
+                words: ['first aid', 'help', 'patient', 'injury', 'health', 'safe'],
+                text: 'Return to the English Town hospital and report what you learned.',
+              },
+            ],
+          },
+        ];
+        const fresh = () => ({
+          version: 8,
+          selected: 'first-day',
+          progress: {},
+          completed: [],
+          activities: [],
+          lastClockDay: null,
+          stats: { steps: 0, wordsReviewed: 0 },
+        });
+        function load() {
+          let v;
+          try {
+            v = JSON.parse(localStorage.getItem(KEY) || 'null');
+          } catch {}
+          if (!v || typeof v !== 'object' || Array.isArray(v)) v = fresh();
+          if (!v.progress || typeof v.progress !== 'object') v.progress = {};
+          if (!Array.isArray(v.completed)) v.completed = [];
+          if (!Array.isArray(v.activities)) v.activities = [];
+          if (!v.stats || typeof v.stats !== 'object') v.stats = { steps: 0, wordsReviewed: 0 };
+          if (!QUESTS.some((q) => q.id === v.selected)) v.selected = 'rail-mail';
+          return v;
+        }
+        let state = load(),
+          preferences;
+        try {
+          preferences = {
+            ...{
+              minimap: true,
+              compass: true,
+              weather: true,
+              audio: false,
+              performance: 'normal',
+              contrast: false,
+              adaptive: true,
+            },
+            ...JSON.parse(localStorage.getItem(PREF) || '{}'),
+          };
+        } catch {
+          preferences = {
+            minimap: true,
+            compass: true,
+            weather: true,
+            audio: false,
+            performance: 'normal',
+            contrast: false,
+            adaptive: true,
+          };
+        }
+        function store() {
+          try {
+            localStorage.setItem(KEY, JSON.stringify(state));
+          } catch (e) {
+            console.warn('V8 save warning', e);
+          }
+        }
+        function prefs() {
+          try {
+            localStorage.setItem(PREF, JSON.stringify(preferences));
+          } catch {}
+        }
+        const getScene = () =>
+          typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null;
+        const currentQuest = () => QUESTS.find((q) => q.id === state.selected) || QUESTS[0];
+        const progress = (q) =>
+          Math.max(0, Math.min(q.steps.length, Number(state.progress[q.id] || 0)));
+        const done = (q) => state.completed.includes(q.id);
+        const identifyArea = (scene) => scene?.area?.id || '';
+        const isMinerals = (area) => /mining|mine|mineral/i.test(String(area));
+        const isEnglish = (area) => !isMinerals(area);
+        // Used by tenshadows.js to bring its quest to the front and to sync progress.
+        const selectQuest = (id) => {
+          if (!QUESTS.some((x) => x.id === id) || state.selected === id) return;
+          state.selected = id;
+          store();
+          renderQuest();
+        };
+        const progressOf = (id) => {
+          const q = QUESTS.find((x) => x.id === id);
+          return q ? progress(q) : 0;
+        };
+        const nextStep = () => {
+          const q = currentQuest();
+          return q && !done(q) ? q.steps[progress(q)] || null : null;
+        };
+        let lastFrame = 0,
+          lastMini = 0,
+          lastHud = '',
+          fxFrame = 0,
+          fxParticles = [],
+          weatherDay = -1,
+          weatherType = 'clear',
+          lastFoot = 0;
+        let audioCtx = null;
+        function sound(type = 'click') {
+          if (!preferences.audio) return;
+          try {
+            const C = window.AudioContext || window.webkitAudioContext;
+            if (!C) return;
+            audioCtx = audioCtx || new C();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(),
+              gain = audioCtx.createGain(),
+              t = audioCtx.currentTime;
+            const hz = type === 'door' ? 440 : type === 'quest' ? 690 : type === 'step' ? 185 : 520;
+            osc.type = type === 'step' ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(hz, t);
+            if (type === 'quest') osc.frequency.exponentialRampToValueAtTime(920, t + 0.16);
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(type === 'step' ? 0.006 : 0.045, t + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + (type === 'quest' ? 0.32 : 0.12));
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(t);
+            osc.stop(t + (type === 'quest' ? 0.33 : 0.13));
+          } catch {}
+        }
+        function markActivity(text) {
+          state.activities.unshift({
+            day: getScene()?.store?.game?.day || 1,
+            text: clean(text).slice(0, 160),
+          });
+          state.activities = state.activities.slice(0, 25);
+          store();
+        }
+        function reward(q) {
+          if (done(q)) return;
+          const scene = getScene();
+          if (!scene?.store?.game) return;
+          state.completed.push(q.id);
+          state.progress[q.id] = q.steps.length;
+          const rpg = adventure.state();
+          if (rpg) rpg.xp = Math.max(0, Number(rpg.xp) || 0) + q.reward.xp;
+          scene.store.game.money = Math.max(
+            0,
+            (Number(scene.store.game.money) || 0) + q.reward.money,
+          );
+          scene.store.save();
+          store();
+          adventure.refresh();
+          sound('quest');
+          markActivity('Completed ' + q.title + ' · +' + q.reward.xp + ' XP / $' + q.reward.money);
+          toast('🏆 ' + q.title + ' — +' + q.reward.xp + ' XP, $' + q.reward.money);
+          renderQuest();
+        }
+        function onEvent(kind, payload = {}) {
+          const q = currentQuest();
+          if (!q || done(q)) return false;
+          const step = nextStep();
+          if (!step || step.kind !== kind) return false;
+          const scene = getScene();
+          if (kind === 'npc') {
+            if (payload.npc !== step.npc) return false;
+            const msg = clean(payload.text);
+            if (!/^[\x20-\x7e]+$/.test(msg) || msg.split(/\s+/).length < 3) return false;
+            const input = normalize(msg);
+            if (!step.words.some((w) => input.includes(normalize(w)))) return false;
+            // Protect against a repeated keypress or duplicate NPC callback.
+            const id = 'npc:' + step.npc + ':' + progress(q),
+              at = Date.now();
+            if (onEvent.lastId === id && at - (onEvent.lastAt || 0) < 900) return false;
+            onEvent.lastId = id;
+            onEvent.lastAt = at;
+          } else {
+            if (step.building !== payload.building) return false;
+            if (step.floor !== undefined && step.floor !== (Number(payload.floor) || 0))
+              return false;
+            if (step.objects && !step.objects.includes(payload.object)) return false;
+            if (step.area) {
+              let a = payload.area || identifyArea(scene);
+              if (step.area === 'minerals' && !isMinerals(a)) return false;
+            }
+          }
+          state.progress[q.id] = progress(q) + 1;
+          store();
+          sound('click');
+          if (progress(q) >= q.steps.length) reward(q);
+          else {
+            markActivity('Quest ' + q.title + ': ' + progress(q) + '/' + q.steps.length);
+            toast('✅ Step completed ' + progress(q) + '/' + q.steps.length);
+            renderQuest();
+          }
+          return true;
+        }
+        function toast(msg) {
+          let node = $('v8-toast');
+          if (!node) return;
+          node.textContent = msg;
+          node.hidden = false;
+          clearTimeout(toast.timer);
+          toast.timer = setTimeout(() => (node.hidden = true), 3800);
+        }
+        function renderQuest() {
+          const q = currentQuest();
+          const s = nextStep();
+          const el = $('v8-quest-text');
+          if (el) {
+            const completed = done(q);
+            let line = completed
+              ? 'Complete! Choose your next quest.'
+              : s?.text || 'Choose a quest';
+            el.textContent = line;
+            $('v8-quest-title').textContent = q.title;
+            $('v8-quest-progress').textContent = completed
+              ? '✓'
+              : progress(q) + '/' + q.steps.length;
+          }
+          const box = $('v8-quests-list');
+          if (!box) return;
+          box.replaceChildren();
+          for (const item of QUESTS) {
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'v8-quest-card' + (state.selected === item.id ? ' active' : '');
+            const end = done(item);
+            card.innerHTML =
+              '<strong>' +
+              html(item.title) +
+              '</strong><small>' +
+              html(item.desc) +
+              '</small><span>' +
+              (end ? '✅ Completed' : progress(item) + '/' + item.steps.length + ' steps') +
+              ' · ' +
+              item.reward.xp +
+              ' XP · $' +
+              item.reward.money +
+              '</span>';
+            card.addEventListener('click', () => {
+              state.selected = item.id;
+              store();
+              renderQuest();
+              sound();
+            });
+            box.appendChild(card);
+          }
+          const info = $('v8-current-steps');
+          if (info) {
+            info.replaceChildren();
+            for (const [i, st] of q.steps.entries()) {
+              const div = document.createElement('div');
+              div.className =
+                'v8-step' + (i < progress(q) ? ' finished' : i === progress(q) ? ' current' : '');
+              div.textContent = (i < progress(q) ? '✓' : i + 1) + '. ' + st.text;
+              info.appendChild(div);
+            }
+          }
+        }
+        function destinationGate(scene, label) {
+          const entry = scene.area.buildings.find((b) => scene.area.portals?.[b.name]);
+          if (entry)
+            return {
+              x: entry.door * 32 + 16,
+              y: (entry.y + entry.h) * 32 + 16,
+              name: 'Gate at ' + entry.name,
+            };
+          const warp = scene.area.warps?.[0];
+          if (warp)
+            return {
+              x: (warp.x + warp.w / 2) * 32,
+              y: (warp.y + warp.h / 2) * 32,
+              name: warp.label || 'Area gate',
+            };
+          return { remote: label, area: 'other' };
+        }
+        function target() {
+          const q = currentQuest();
+          if (done(q)) return null;
+          const step = nextStep();
+          if (!step || step.noMark) return null;
+          const scene = getScene();
+          if (!scene) return null;
+          if (step.kind === 'enter' || step.kind === 'floor' || step.kind === 'inspect') {
+            const b = scene.area.buildings.find((x) => x.name === step.building);
+            if (!b) return destinationGate(scene, step.building);
+            return { x: b.door * 32 + 16, y: (b.y + b.h) * 32 + 16, name: b.name };
+          }
+          if (step.kind === 'npc') {
+            const n = scene.npcs.find((x) => x.def.id === step.npc);
+            if (!n) return destinationGate(scene, 'NPC ' + step.npc);
+            if (n.inside !== !!scene.inside || !n.sprite.visible)
+              return { remote: n.def.name + ' (on their daily schedule)', area: 'near' };
+            return { x: n.sprite.x, y: n.sprite.y, name: n.def.name };
+          }
+          return null;
+        }
+        function paintMap() {
+          const wrap = $('v8-map-wrap'),
+            canvas = $('v8-map');
+          if (!wrap || !canvas) return;
+          wrap.hidden = !preferences.minimap;
+          if (!preferences.minimap) return;
+          const sc = getScene();
+          if (!sc?.area || !sc?.player) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          // Canvas renders at 2x for crisp lines and diagonals on high-density screens.
+          const W = 252,
+            H = 164,
+            dpr = canvas.width / W;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, W, H);
+          const mineral = isMinerals(sc.area.id),
+            inside = !!sc.inside;
+          const bg = ctx.createLinearGradient(0, 0, W, H);
+          bg.addColorStop(0, mineral ? '#172b3b' : '#183945');
+          bg.addColorStop(1, mineral ? '#223444' : '#244b4c');
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, W, H);
+          const withAlpha = (color, alpha = 1) => {
+            ctx.fillStyle = color;
+            ctx.globalAlpha = alpha;
+          };
+          const filled = (x, y, w, h, c) => {
+            ctx.fillStyle = c;
+            ctx.fillRect(x, y, w, h);
+          };
+          const circle = (x, y, r, c) => {
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = c;
+            ctx.fill();
+          };
+          const marker = (x, y, color = '#fff1a1', rotation = 0) => {
+            circle(x, y, 8, '#071822aa');
+            circle(x, y, 5.9, '#ffffff');
+            circle(x, y, 4.1, color);
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(0, -8.4);
+            ctx.lineTo(-3.6, -1.8);
+            ctx.lineTo(3.6, -1.8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          };
+          // Preserve aspect ratio for both towns and rooms. Do not stretch buildings.
+          const tilesW = inside ? sc.inside.spec.w : sc.area.w;
+          const tilesH = inside ? sc.inside.spec.h : sc.area.h;
+          const scale = Math.min((W - 17) / Math.max(1, tilesW), (H - 16) / Math.max(1, tilesH));
+          const ox = (W - tilesW * scale) / 2,
+            oy = (H - tilesH * scale) / 2;
+          const tx = (x) => ox + x * scale,
+            ty = (y) => oy + y * scale;
+          const box = (x, y, w, h, c) =>
+            filled(tx(x), ty(y), Math.max(0.5, w * scale), Math.max(0.5, h * scale), c);
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(ox, oy, tilesW * scale, tilesH * scale);
+          ctx.clip();
+          if (inside) {
+            const room = sc.inside.spec;
+            filled(ox, oy, tilesW * scale, tilesH * scale, mineral ? '#67707d' : '#d0bca0');
+            for (let y = 0; y < room.h; y++)
+              for (let x = 0; x < room.w; x++) {
+                if ((x + y) % 2 === 0) box(x, y, 1, 1, mineral ? '#78808a55' : '#e8d5b544');
+              }
+            box(0, 0, room.w, 2, '#3c5062');
+            ctx.fillStyle = '#182a38';
+            ctx.fillRect(ox, oy, tilesW * scale, Math.max(1, 2 * scale));
+            const colors = {
+              bed: '#a5c6ec',
+              hospbed: '#add8f4',
+              sofa: '#e7b18f',
+              rug: '#8595c8',
+              mat: '#899f8e',
+              plant: '#6fae70',
+              stairs: '#ffe0a2',
+              crystal: '#8bf1ed',
+              forge: '#dc825e',
+              fireplace: '#dc825e',
+              shelf: '#aa805a',
+              counter: '#e3c396',
+              desk: '#c6a67b',
+              table: '#d2b28c',
+              lantern: '#ffe18b',
+              chair: '#897a77',
+            };
+            for (const it of room.items || []) {
+              if (
+                ['paint', 'poster', 'clock', 'flag', 'screen', 'board', 'mirror', 'glass'].includes(
+                  it.k,
+                )
+              )
+                continue;
+              let color = colors[it.k] || (it.k === 'orepile' ? '#99a2b5' : '#907a64');
+              box(
+                it.x + 0.11,
+                it.y + 0.12,
+                Math.max(0.1, it.w - 0.22),
+                Math.max(0.1, it.h - 0.24),
+                '#30405280',
+              );
+              box(
+                it.x + 0.07,
+                it.y + 0.04,
+                Math.max(0.15, it.w - 0.14),
+                Math.max(0.15, it.h - 0.18),
+                color,
+              );
+            }
+            // Door threshold remains aligned with actual room entrance.
+            box(Math.max(0, room.w / 2 - 0.65), room.h - 0.6, 1.3, 0.55, '#ffdda1');
+            const k = sc.inside.k || 1;
+            const px = (sc.player.x - 20000) / (32 * k),
+              py = sc.player.y / (32 * k);
+            const facing = String(sc.pFace?.dir || 'down').toLowerCase();
+            marker(
+              tx(px),
+              ty(py),
+              '#ffe092',
+              { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 }[facing] ?? Math.PI,
+            );
+          } else {
+            filled(ox, oy, tilesW * scale, tilesH * scale, mineral ? '#344c51' : '#5f856f');
+            // Parks, school grounds and water use genuine area bounds.
+            if (sc.area.park)
+              box(sc.area.park.x, sc.area.park.y, sc.area.park.w, sc.area.park.h, '#83ad79');
+            if (sc.area.campus)
+              box(
+                sc.area.campus.x,
+                sc.area.campus.y,
+                sc.area.campus.w,
+                sc.area.campus.h,
+                '#81a38a',
+              );
+            if (sc.area.lake) {
+              const l = sc.area.lake;
+              box(l.x, l.y, l.w, l.h, '#183d5a');
+              box(
+                l.x + 0.2,
+                l.y + 0.2,
+                Math.max(0.2, l.w - 0.4),
+                Math.max(0.2, l.h - 0.4),
+                '#429fae',
+              );
+            }
+            // Original road geometry, never invented coordinates.
+            ctx.fillStyle = mineral ? '#6c7780' : '#9caaa9';
+            for (const r of sc.area.roadsH || [])
+              box(
+                r.x0 ?? 0,
+                r.y,
+                (r.x1 ?? sc.area.w) - (r.x0 ?? 0),
+                r.h,
+                mineral ? '#6c7780' : '#9caaa9',
+              );
+            for (const r of sc.area.roadsV || [])
+              box(
+                r.x,
+                r.y0 ?? 0,
+                r.w,
+                (r.y1 ?? sc.area.h) - (r.y0 ?? 0),
+                mineral ? '#6c7780' : '#9caaa9',
+              );
+            ctx.strokeStyle = mineral ? '#9fa4a3a3' : '#dfe1cca3';
+            ctx.lineWidth = 0.6;
+            ctx.setLineDash([3, 5]);
+            for (const r of sc.area.roadsH || []) {
+              ctx.beginPath();
+              ctx.moveTo(tx(r.x0 ?? 0), ty(r.y + r.h / 2));
+              ctx.lineTo(tx(r.x1 ?? sc.area.w), ty(r.y + r.h / 2));
+              ctx.stroke();
+            }
+            for (const r of sc.area.roadsV || []) {
+              ctx.beginPath();
+              ctx.moveTo(tx(r.x + r.w / 2), ty(r.y0 ?? 0));
+              ctx.lineTo(tx(r.x + r.w / 2), ty(r.y1 ?? sc.area.h));
+              ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            // Central station (south of both towns): same tile layout as drawStation().
+            if (sc.area.id === 'mining-town' || sc.area.id === 'english-town') {
+              box(4, 47, 52, 5, '#cfd4d3');
+              box(4, 52, 7, 11, '#c2c9c9');
+              box(51, 52, 5, 11, '#c2c9c9');
+              box(11, 58, 40, 5, '#d8dcdb');
+              box(28, 52, 5, 6, '#b9c1c2');
+              box(30.3, 52, 0.4, 11, '#16b3a5');
+              for (const [hx, hw] of [
+                [11, 17],
+                [33, 18],
+              ]) {
+                box(hx, 52, hw, 3, '#5b6a74');
+                box(hx, 55, hw, 1, '#24505a');
+                box(hx, 56, hw, 2, '#62b9b8');
+              }
+              box(14, 48, 3, 2, '#5a3f2c');
+              box(44, 48, 3, 2, '#5a3f2c');
+              box(25, 47, 3, 5, '#7b8b96');
+              box(33, 47, 3, 5, '#7b8b96');
+              box(4, 63, 52, 2, '#bcc3c3');
+              box(4, 67, 52, 2, '#bcc3c3');
+              box(0, 65, sc.area.w, 2, '#8a8478');
+              box(0, 69, sc.area.w, 2, '#8a8478');
+              box(15, 65, 32, 2, '#f3f6f4');
+              box(15, 66, 32, 0.5, '#16b3a5');
+              box(22, 69, 5, 2, '#1b8f8a');
+              box(27, 69, 25, 2, '#6b4a36');
+              for (const w of sc.area.warps || []) box(w.x, w.y, w.w, w.h, '#f3b94d');
+            }
+            // Obstacles are cosmetic on the minimap, with the real type and location.
+            for (const o of sc.area.obstacles || []) {
+              const xx = tx(o.x + o.w / 2),
+                yy = ty(o.y + o.h / 2);
+              if (o.kind === 'tree' || o.kind === 'pine') {
+                circle(xx + 0.5, yy + 0.8, Math.max(1.6, scale * 0.42), '#254a36');
+                circle(xx, yy, Math.max(1.2, scale * 0.36), '#9fc781');
+              } else if (o.kind === 'fountain' || o.kind === 'pond')
+                circle(xx, yy, Math.max(2, scale * 0.55), '#76d6e9');
+              else if (o.kind === 'rock') circle(xx, yy, Math.max(1, scale * 0.36), '#a1b1b4');
+              else if (o.kind === 'lamp') circle(xx, yy, 1.2, '#ffe7a5');
+            }
+            // Roof blocks, wall outlines, and entry dots.
+            for (const b of sc.area.buildings || []) {
+              const nm = String(b.name || '').toLowerCase();
+              const civic = /bank|school|hall|police|hospital|church|post|library|station/i.test(
+                nm,
+              );
+              const market = /shop|cafe|market|restaurant|hotel|inn|smithy|gem/i.test(nm);
+              const color = civic
+                ? '#93c7d7'
+                : market
+                  ? '#e7b47c'
+                  : mineral
+                    ? '#a8a5a7'
+                    : '#dca09a';
+              box(b.x - 0.08, b.y - 0.08, b.w + 0.16, b.h + 0.16, '#26394c');
+              box(
+                b.x + 0.08,
+                b.y + 0.08,
+                Math.max(0.1, b.w - 0.16),
+                Math.max(0.1, b.h - 0.16),
+                color,
+              );
+              box(
+                b.x + 0.19,
+                b.y + 0.2,
+                Math.max(0.1, b.w - 0.38),
+                Math.min(0.45, b.h * 0.17),
+                '#ffffff53',
+              );
+              circle(tx(b.door + 0.5), ty(b.y + b.h), Math.max(1.1, scale * 0.21), '#f9f4d4');
+            }
+            // Live NPC positions and any current quest target.
+            for (const n of sc.npcs || []) {
+              if (!n.sprite?.visible || n.inside) continue;
+              circle(
+                tx(n.sprite.x / 32),
+                ty(n.sprite.y / 32),
+                Math.max(1.5, scale * 0.28),
+                '#c9f0f3',
+              );
+            }
+            const tr = target();
+            if (tr && Number.isFinite(tr.x) && Number.isFinite(tr.y) && !tr.remote) {
+              const xx = tx(tr.x / 32),
+                yy = ty(tr.y / 32);
+              ctx.strokeStyle = '#ffdb7d';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(xx, yy, 7, 0, Math.PI * 2);
+              ctx.stroke();
+              circle(xx, yy, 2, '#ffe79d');
+            }
+            const cam = sc.cameras?.main?.worldView;
+            if (cam && Number.isFinite(cam.x) && Number.isFinite(cam.y)) {
+              ctx.strokeStyle = '#d2f6ff7a';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(
+                tx(cam.x / 32),
+                ty(cam.y / 32),
+                Math.max(1, (cam.width / 32) * scale),
+                Math.max(1, (cam.height / 32) * scale),
+              );
+            }
+            const facing = String(sc.pFace?.dir || 'down').toLowerCase();
+            marker(
+              tx(sc.player.x / 32),
+              ty(sc.player.y / 32),
+              '#ffd27e',
+              { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 }[facing] ?? Math.PI,
+            );
+          }
+          ctx.restore();
+          ctx.strokeStyle = '#aecbd2aa';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(ox + 0.5, oy + 0.5, tilesW * scale - 1, tilesH * scale - 1);
+          ctx.fillStyle = '#d2eefa';
+          ctx.font = 'bold 10px system-ui,sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillText('N ↑', W - 9, 12);
+          const label = $('v8-map-label');
+          if (label) {
+            const value = inside
+              ? sc.inside.b.name + (sc.inside.floor ? ' · 2nd floor' : '')
+              : sc.area.name;
+            if (label.textContent !== value) label.textContent = value;
+          }
+        }
+        function updateCompass() {
+          const el = $('v8-compass');
+          if (!el) return;
+          el.hidden = !preferences.compass;
+          if (!preferences.compass) return;
+          const sc = getScene();
+          const tr = target();
+          if (!sc || !tr) {
+            el.textContent = '🧭 Choose a quest';
+            return;
+          }
+          if (tr.remote || sc.inside) {
+            const gate = sc.inside && sc.area.portals?.[sc.inside.b.name];
+            el.textContent =
+              '🧭 ' +
+              (sc.inside
+                ? gate
+                  ? 'Press E near the gate in ' + sc.inside.b.name
+                  : 'Step outside to find the way'
+                : tr.remote + ' · another area');
+            return;
+          }
+          const dx = tr.x - sc.player.x,
+            dy = tr.y - sc.player.y;
+          const dir = Math.abs(dx) > Math.abs(dy) ? (dx >= 0 ? '→' : '←') : dy >= 0 ? '↓' : '↑';
+          el.textContent =
+            '🧭 ' + dir + ' ' + tr.name + ' · ' + Math.round(Math.hypot(dx, dy) / 32) + ' tiles';
+        }
+        const seed = (day) => {
+          let v = (day * 79 + 37) % 9;
+          return v === 0 || v === 3 ? 'rain' : v === 6 ? 'mist' : 'clear';
+        };
+        function newWeather() {
+          const sc = getScene(),
+            day = sc?.store?.game?.day || 1;
+          if (day === weatherDay) return;
+          weatherDay = day;
+          weatherType = seed(day);
+          const conditions = $('v8-weather-condition');
+          if (conditions)
+            conditions.textContent =
+              weatherType === 'rain'
+                ? '🌦️ Light rain'
+                : weatherType === 'mist'
+                  ? '🌫️ Light mist'
+                  : '☀️ Clear sky';
+        }
+        function paintWeather(now) {
+          const c = $('v8-weather-canvas');
+          if (!c) return;
+          if (!preferences.weather || preferences.performance === 'low') {
+            const cx = c.getContext('2d');
+            cx?.clearRect(0, 0, c.width, c.height);
+            return;
+          }
+          const sc = getScene();
+          if (!sc || sc.inside || weatherType === 'clear') {
+            c.getContext('2d')?.clearRect(0, 0, c.width, c.height);
+            return;
+          }
+          const fps = preferences.performance === 'high' ? 30 : 20;
+          if (now - fxFrame < 1000 / fps) return;
+          fxFrame = now;
+          const ctx = c.getContext('2d');
+          if (!ctx) return;
+          ctx.clearRect(0, 0, c.width, c.height);
+          const count =
+            weatherType === 'rain' ? (preferences.performance === 'high' ? 65 : 36) : 18;
+          while (fxParticles.length < count)
+            fxParticles.push({
+              x: Math.random() * c.width,
+              y: Math.random() * c.height,
+              speed: 1 + Math.random() * 2.4,
+            });
+          if (fxParticles.length > count) fxParticles.length = count;
+          ctx.strokeStyle =
+            weatherType === 'rain' ? 'rgba(164,209,250,0.45)' : 'rgba(234,244,255,0.16)';
+          ctx.lineWidth = weatherType === 'rain' ? 1.2 : 8;
+          for (const p of fxParticles) {
+            p.x += weatherType === 'rain' ? 2 : 0.3;
+            p.y += weatherType === 'rain' ? 6 * p.speed : 0.2 * p.speed;
+            if (p.y > c.height) {
+              p.y = -15;
+              p.x = Math.random() * c.width;
+            }
+            if (p.x > c.width) p.x = 0;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(
+              p.x + (weatherType === 'rain' ? 3 : 17),
+              p.y + (weatherType === 'rain' ? 14 : 7),
+            );
+            ctx.stroke();
+          }
+        }
+        function sizeWeather() {
+          const c = $('v8-weather-canvas');
+          if (!c) return;
+          c.width = Math.max(1, window.innerWidth);
+          c.height = Math.max(1, window.innerHeight);
+          fxParticles = [];
+        }
+        function onFrame(sc, dt) {
+          if (!sc?.player) return;
+          const now = performance.now();
+          if (now - lastFrame < 170) return;
+          lastFrame = now;
+          newWeather();
+          updateCompass();
+          paintWeather(now);
+          if (now - lastMini > 430) {
+            lastMini = now;
+            paintMap();
+          }
+          const hr = Math.floor((sc.store.game.minutes || 0) / 60),
+            status = $('v8-hud-time');
+          if (status) {
+            const day = sc.store.game.day;
+            const text =
+              'Day ' +
+              day +
+              ' · ' +
+              String(hr).padStart(2, '0') +
+              ':' +
+              String(sc.store.game.minutes % 60).padStart(2, '0') +
+              ' · $' +
+              sc.store.game.money;
+            if (text !== lastHud) {
+              status.textContent = text;
+              lastHud = text;
+            }
+          }
+          const wasMoving = sc.pMoving === true && !sc.chat?.isOpen;
+          if (wasMoving && now - lastFoot > 480) {
+            lastFoot = now;
+            state.stats.steps++;
+            sound('step');
+          }
+        }
+        let pendingOpening = false;
+        function onWorldReady() {
+          pendingOpening = false;
+          renderQuest();
+          newWeather();
+          paintMap();
+        }
+        function learningHint() {
+          let data = {};
+          try {
+            data = JSON.parse(localStorage.getItem('lifequest_study_lab_v1') || '{}');
+          } catch {}
+          const n = Number(data.quizzes) || 0,
+            correct = Number(data.correct) || 0,
+            ratio = n ? correct / n : 0,
+            current = cefrService.getLevel();
+          if (n < 12)
+            return (
+              '📚 Complete ' +
+              Math.max(0, 12 - n) +
+              ' more quiz questions to get a level suggestion. Currently studying ' +
+              current +
+              '.'
+            );
+          const idx = levels.indexOf(current);
+          const suggestion =
+            ratio > 0.83
+              ? levels[Math.min(4, idx + 1)]
+              : ratio < 0.55
+                ? levels[Math.max(0, idx - 1)]
+                : current;
+          return (
+            '🎯 Correct ' +
+            correct +
+            '/' +
+            n +
+            ' (' +
+            Math.round(ratio * 100) +
+            '%). Suggestion: ' +
+            suggestion +
+            '. ' +
+            (suggestion !== current
+              ? 'You can change it in the Level section.'
+              : 'Keep practicing new words.')
+          );
+        }
+        function maybeAdapt() {
+          if (!preferences.adaptive) return;
+          let data = {};
+          try {
+            data = JSON.parse(localStorage.getItem('lifequest_study_lab_v1') || '{}');
+          } catch {}
+          const n = Number(data.quizzes) || 0,
+            accuracy = n ? (Number(data.correct) || 0) / n : 0;
+          const previous = Math.max(0, Number(state.stats.lastAdaptedAt) || 0);
+          if (n < 12 || n - previous < 12) return;
+          const level = cefrService.getLevel(),
+            idx = levels.indexOf(level);
+          const next =
+            accuracy >= 0.86
+              ? levels[Math.min(4, idx + 1)]
+              : accuracy <= 0.45
+                ? levels[Math.max(0, idx - 1)]
+                : level;
+          if (next !== level) {
+            cefrService.setLevel(next);
+            const label = $('level-current'),
+              select = $('level-select');
+            if (label) label.textContent = next;
+            if (select) select.value = next;
+            state.stats.lastAdaptedAt = n;
+            store();
+            toast(
+              '🎓 AI Coach adjusted your level from ' +
+                level +
+                ' to ' +
+                next +
+                ' based on your practice results.',
+            );
+          }
+        }
+        function coachReply(message, ctx) {
+          const q = normalize(message);
+          if (
+            /^(?:toi bi lac|minh bi lac|i am lost|where am i|duong ve nha|di dau tiep)$/.test(q)
+          ) {
+            const sc = getScene();
+            if (!sc) return 'The town is still loading.';
+            const here = sc.inside
+              ? sc.inside.b.name + (sc.inside.floor ? ' · 2nd floor' : '')
+              : sc.area.name;
+            return (
+              '🧭 You are in ' +
+              here +
+              '. ' +
+              (sc.inside
+                ? 'To leave, head to the EXIT ▼ at the end of the room; if you are on the 2nd floor, press E near the stairs.'
+                : 'Press M to see the minimap. Press J to see quests, or ask “go to the library”.')
+            );
+          }
+          if (
+            /^(?:toi can kiem tien|kiem tien o dau|how to earn money|can kiem tien|toi can tien)$/.test(
+              q,
+            )
+          ) {
+            const qs = QUESTS.filter((q) => !done(q)).map(
+              (q) => q.title + ' ($' + q.reward.money + ')',
+            );
+            return (
+              '💰 Complete these quests: ' +
+              qs.join('; ') +
+              '. There are also NPC quests in the RPG panel (R).'
+            );
+          }
+          if (/^(?:nhiem vu v8|quest v8|nhiem vu the gioi|world quest)$/.test(q)) {
+            openPanel('quests');
+            return '📜 Opened 3 exploration quests across the two towns. Earn rewards by completing real-world steps.';
+          }
+          if (/^(?:toi dang o tang nao|which floor|vi tri trong nha)$/.test(q))
+            return (
+              '🏠 ' +
+              (getScene()?.inside
+                ? 'You are in ' +
+                  getScene().inside.b.name +
+                  ', floor ' +
+                  (getScene().inside.floor ? 2 : 1) +
+                  '.'
+                : 'You are outdoors.')
+            );
+          if (/^(?:danh gia trinh do|tien bo hoc tap|my progress)$/.test(q)) return learningHint();
+          return null;
+        }
+        function openPanel(tab = 'quests') {
+          const p = $('v8-panel');
+          if (!p) return;
+          p.hidden = false;
+          p.querySelectorAll('[data-v8-tab]').forEach((x) =>
+            x.classList.toggle('active', x.dataset.v8Tab === tab),
+          );
+          p.querySelectorAll('[data-v8-page]').forEach(
+            (x) => (x.hidden = x.dataset.v8Page !== tab),
+          );
+          if (tab === 'quests') renderQuest();
+          if (tab === 'learn') {
+            $('v8-learning-hint').textContent = learningHint();
+            $('v8-study-summary').textContent = studyLab.summary();
+          }
+          if (tab === 'npc') renderNpcs();
+          if (tab === 'journal') renderJournal();
+        }
+        function closePanel() {
+          const p = $('v8-panel');
+          if (p) p.hidden = true;
+        }
+        function renderJournal() {
+          const el = $('v8-journal-log');
+          if (!el) return;
+          el.replaceChildren();
+          for (const activity of state.activities) {
+            const div = document.createElement('div');
+            div.className = 'v8-journal-item';
+            div.textContent = 'Day ' + activity.day + ' · ' + activity.text;
+            el.appendChild(div);
+          }
+          if (!state.activities.length)
+            el.textContent = 'Explore buildings and complete quests to fill your journal.';
+        }
+        function renderNpcs() {
+          const el = $('v8-npc-list');
+          if (!el) return;
+          el.replaceChildren();
+          const sc = getScene();
+          if (!sc?.npcs) {
+            el.textContent = 'Town is loading…';
+            return;
+          }
+          const relationships = adventure.state()?.relationships || {};
+          for (const n of sc.npcs) {
+            const r = relationships[n.def.id] || {};
+            const div = document.createElement('div');
+            div.className = 'v8-npc';
+            const rank = Math.max(0, Math.min(100, Number(r.trust) || 0));
+            div.innerHTML =
+              '<div><strong>' +
+              html(n.def.name) +
+              '</strong><small>' +
+              html(n.slot?.label || 'On the move') +
+              '</small></div><div><span>♥ ' +
+              rank +
+              '/100</span><div class="v8-meter"><i style="width:' +
+              rank +
+              '%"></i></div></div>';
+            el.appendChild(div);
+          }
+        }
+        const keysToBackup = () => {
+          const keys = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (
+              (k === 'english-town-save-v1' ||
+                k === KEY ||
+                k === PREF ||
+                k === 'lifequest_study_lab_v1' ||
+                (/^lifequest[_-]/i.test(k) && !/(?:key|secret|token|credential)/i.test(k))) &&
+              k !== 'english-town-ai'
+            )
+              keys.push(k);
+          }
+          return keys;
+        };
+        function backup() {
+          try {
+            const saves = {};
+            for (const k of keysToBackup()) {
+              const v = localStorage.getItem(k);
+              if (typeof v === 'string') saves[k] = v;
+            }
+            const file = {
+              format: 'LIFEQUEST_V8_BACKUP',
+              version: 8,
+              created: new Date().toISOString(),
+              data: saves,
+            };
+            const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+            const u = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = u;
+            a.download = 'LIFEQUEST_V8_SAVE_' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(u), 5000);
+            toast('💾 Backup file exported (API keys not included).');
+          } catch (e) {
+            toast('⚠ Could not export progress: ' + e.message);
+          }
+        }
+        function importBackup(file) {
+          if (!file || file.size > 3e6) {
+            toast('⚠ Backup file is too large or invalid.');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const obj = JSON.parse(reader.result);
+              // Accept the original V1–V7 Journal/J export format for safe cross-file migration.
+              if (
+                obj.app === 'english-town' &&
+                obj.game &&
+                typeof obj.game === 'object' &&
+                ['day', 'money', 'rep', 'minutes'].every(
+                  (k) => typeof obj.game[k] === 'number' && Number.isFinite(obj.game[k]),
+                )
+              ) {
+                if (!confirm('Importing LIFEQUEST V7 data will overwrite your current progress. Continue?'))
+                  return;
+                localStorage.setItem(
+                  'english-town-save-v1',
+                  JSON.stringify({
+                    game: obj.game,
+                    mem:
+                      obj.mem && typeof obj.mem === 'object' && !Array.isArray(obj.mem)
+                        ? obj.mem
+                        : {},
+                  }),
+                );
+                location.reload();
+                return;
+              }
+              if (
+                obj.format !== 'LIFEQUEST_V8_BACKUP' ||
+                !obj.data ||
+                typeof obj.data !== 'object' ||
+                Array.isArray(obj.data)
+              )
+                throw Error('Invalid format');
+              const entries = Object.entries(obj.data);
+              if (entries.length > 100) throw Error('Too many entries');
+              for (const [k, v] of entries) {
+                if (
+                  !/^(english-town-save-v1|lifequest[_-][a-z0-9_-]{1,100})$/i.test(k) ||
+                  /(?:key|secret|token|credential)/i.test(k) ||
+                  typeof v !== 'string' ||
+                  v.length > 2e6
+                )
+                  throw Error('Invalid data: ' + k);
+                JSON.parse(v);
+              }
+              if (
+                !confirm(
+                  'Importing a backup will overwrite game progress on this device. Continue?',
+                )
+              )
+                return;
+              for (const [k, v] of entries) localStorage.setItem(k, v);
+              location.reload();
+            } catch (e) {
+              toast('⚠ Could not import backup: ' + e.message);
+            }
+          };
+          reader.readAsText(file, 'utf-8');
+        }
+        function init() {
+          if ($('v8-dock')) return;
+          const root = document.createElement('div');
+          root.id = 'v8-shell';
+          root.innerHTML = `
+      <canvas id="v8-weather-canvas" aria-hidden="true"></canvas>
+      <div id="v8-dock"><div class="v8-logo">✦ <b>LIFEQUEST <em>V8</em></b></div><span id="v8-hud-time">Loading world…</span><button id="v8-menu-btn" aria-label="Open V8 Hub">☷ <span>World</span></button></div>
+      <div id="v8-map-wrap"><div class="v8-map-head"><span>🧭 <span id="v8-map-label">English Town</span></span><button id="v8-map-hide" title="Hide map (M)" aria-label="Hide map">−</button></div><canvas id="v8-map" width="504" height="328" aria-label="Minimap of your current location"></canvas><div id="v8-map-legend"><span><i class="lqmap-dot player"></i>You</span><span><i class="lqmap-dot npc"></i>NPC</span><span><i class="lqmap-dot target"></i>Target</span></div></div>
+      <div id="v8-navigation"><button id="v8-nav-toggle" type="button" title="Hide quest card" aria-label="Hide quest card">−</button><span id="v8-compass">🧭 Finding the way…</span><div class="v8-quest-head"><span id="v8-quest-title">World quest</span><b id="v8-quest-progress">0/3</b></div><p id="v8-quest-text">Open a quest to begin</p><button id="v8-open-quests">📜 View quests</button></div>
+      <div id="v8-toast" role="status" hidden></div>
+      <div id="v8-panel" role="dialog" aria-modal="true" aria-label="LIFEQUEST V9 Hub" hidden>
+       <div class="v8-panel-head"><div><strong>✦ LIFEQUEST V9</strong><span>LIVING WORLD NEXT</span></div><button id="v8-close" aria-label="Close">✕</button></div>
+       <div class="v8-tabs"><button data-v8-tab="quests" class="active">📜 Quests</button><button data-v8-tab="npc">♥ NPC</button><button data-v8-tab="learn">📚 Learn</button><button data-v8-tab="settings">⚙ Settings</button><button data-v8-tab="journal">📝 Journal</button></div>
+       <div class="v8-page" data-v8-page="quests"><p class="v8-explain">Quests are verified: you must enter the right building, meet the right NPC and say the right thing. Rewards can only be claimed once.</p><div id="v8-quests-list"></div><h4>Tracking</h4><div id="v8-current-steps"></div></div>
+       <div class="v8-page" data-v8-page="npc" hidden><p class="v8-explain">Relationships and behavior are taken from each NPC's current state.</p><div id="v8-npc-list"></div></div>
+       <div class="v8-page" data-v8-page="learn" hidden><p id="v8-learning-hint"></p><p id="v8-study-summary"></p><p>Learn through quests, talk to NPCs in English, press K to open Gemini, and type “quiz” or “flashcard”.</p><button class="v8-primary" id="v8-learn-ai">🤖 Open AI assistant</button></div>
+       <div class="v8-page" data-v8-page="settings" hidden>
+        <div class="v8-options"><label><input type="checkbox" data-v8-pref="minimap"> 🗺️ Minimap (M)</label><label><input type="checkbox" data-v8-pref="compass"> 🧭 Quest compass</label><label><input type="checkbox" data-v8-pref="weather"> 🌦️ Weather effects</label><label><input type="checkbox" data-v8-pref="audio"> 🔊 Synthesized sound</label><label><input type="checkbox" data-v8-pref="contrast"> ♿ Increase contrast</label><label><input type="checkbox" data-v8-pref="adaptive"> 🎓 Auto-adjust level after quizzes</label><label>⚡ Performance <select id="v8-perf"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label></div>
+        <p class="v8-explain"><span id="v8-weather-condition"></span> · Old V1–V7 data is kept. Exported files do not contain your Gemini API key. You can import a V7 save (exported from Journal/J).</p>
+        <div class="v8-save-row"><button class="v8-primary" id="v8-export">⬇ Export progress</button><button id="v8-import">⬆ Import progress</button><input type="file" accept="application/json,.json" id="v8-import-file" hidden></div>
+       </div>
+       <div class="v8-page" data-v8-page="journal" hidden><div id="v8-journal-log"></div></div>
+       <footer>WASD / ↑↓←→: move · E: interact · M: map · V: V8 · ESC: close</footer>
+      </div>`;
+          document.body.appendChild(root);
+          sizeWeather();
+          window.addEventListener('resize', sizeWeather);
+          $('v8-menu-btn').addEventListener('click', () => openPanel('quests'));
+          $('v8-open-quests').addEventListener('click', () => openPanel('quests'));
+          // Quest card: "−" folds it into a small "📜 +" button, which opens it again. Remembered between visits.
+          const navCard = $('v8-navigation'),
+            navToggle = $('v8-nav-toggle');
+          const applyNavCard = () => {
+            const folded = !!preferences.questCollapsed;
+            navCard.classList.toggle('collapsed', folded);
+            navToggle.textContent = folded ? '📜 +' : '−';
+            const label = folded ? 'Show quest card' : 'Hide quest card';
+            navToggle.title = label;
+            navToggle.setAttribute('aria-label', label);
+          };
+          navToggle.addEventListener('click', () => {
+            preferences.questCollapsed = !preferences.questCollapsed;
+            prefs();
+            applyNavCard();
+          });
+          applyNavCard();
+          $('v8-map-hide').addEventListener('click', () => {
+            preferences.minimap = false;
+            prefs();
+            paintMap();
+          });
+          $('v8-close').addEventListener('click', closePanel);
+          $('v8-panel').addEventListener('click', (e) => {
+            if (e.target === $('v8-panel')) closePanel();
+          });
+          $('v8-panel').addEventListener('keydown', (e) => e.stopPropagation());
+          $('v8-panel').addEventListener('keyup', (e) => e.stopPropagation());
+          for (const button of root.querySelectorAll('[data-v8-tab]'))
+            button.addEventListener('click', () => openPanel(button.dataset.v8Tab));
+          for (const input of root.querySelectorAll('[data-v8-pref]')) {
+            input.checked = !!preferences[input.dataset.v8Pref];
+            input.addEventListener('change', () => {
+              preferences[input.dataset.v8Pref] = input.checked;
+              prefs();
+              paintMap();
+              updateCompass();
+              document.body.classList.toggle('v8-contrast', !!preferences.contrast);
+            });
+          }
+          $('v8-perf').value = preferences.performance;
+          $('v8-perf').addEventListener('change', (e) => {
+            preferences.performance = e.target.value;
+            prefs();
+          });
+          document.body.classList.toggle('v8-contrast', !!preferences.contrast);
+          $('v8-export').addEventListener('click', backup);
+          $('v8-import').addEventListener('click', () => $('v8-import-file').click());
+          $('v8-import-file').addEventListener('change', (e) => {
+            importBackup(e.target.files?.[0]);
+            e.target.value = '';
+          });
+          $('v8-learn-ai').addEventListener('click', () => {
+            closePanel();
+            $('ai-open')?.click();
+          });
+          document.addEventListener('keydown', (e) => {
+            const tag = e.target?.tagName?.toLowerCase();
+            if (['input', 'textarea', 'select'].includes(tag) || e.target?.isContentEditable)
+              return;
+            if (e.key.toLowerCase() === 'm') {
+              preferences.minimap = !preferences.minimap;
+              prefs();
+              paintMap();
+              e.preventDefault();
+            }
+            if (e.key.toLowerCase() === 'v') {
+              if ($('v8-panel').hidden) openPanel('quests');
+              else closePanel();
+              e.preventDefault();
+            }
+            if (e.key === 'Escape') closePanel();
+          });
+          renderQuest();
+          window.addEventListener('lifequest:worldready', onWorldReady);
+          window.addEventListener('lifequest:studyupdate', () => {
+            maybeAdapt();
+            if (!$('v8-panel').hidden && $('v8-learning-hint'))
+              $('v8-learning-hint').textContent = learningHint();
+          });
+          const loop = (t) => {
+            paintWeather(t);
+            requestAnimationFrame(loop);
+          };
+          requestAnimationFrame(loop);
+        }
+        return {
+          init,
+          onFrame,
+          onWorldReady,
+          onEvent,
+          coachReply,
+          getScene,
+          renderQuest,
+          select: selectQuest,
+          selected: () => state.selected,
+          isDone: (id) => state.completed.includes(id),
+          progressOf,
+          openPanel,
+          closePanel,
+          prefs,
+          paintMap,
+          sound,
+          toast,
+          learningHint,
+          isPanelOpen: () => !!$('v8-panel') && !$('v8-panel').hidden,
+          currentObjective: () => ({
+            title: currentQuest().title,
+            step: nextStep()?.text || 'Completed',
+          }),
+          // The step the player is on (kind, npc, building…), or null; used by Gojo's Six Eyes (gojo.js).
+          currentStep: () => nextStep(),
+        };
+      })();
+      window.LQV8 = V8;
+
+      const __v8OriginalAssistantRun = assistantCore.run;
+      assistantCore.run = async (message, ctx, history, options = {}) => {
+        const sc = V8.getScene();
+        const rpg = adventure.state();
+        const extra = {
+          ...ctx,
+          floor: sc?.inside?.floor || 0,
+          inventory: rpg?.inventory || {},
+          relationshipSummary: Object.entries(rpg?.relationships || {})
+            .slice(0, 18)
+            .map(([id, x]) => ({ id, trust: Number(x.trust) || 0 })),
+          worldQuest: V8.currentObjective?.() || null,
+        };
+        return __v8OriginalAssistantRun(message, extra, history, { ...options, mode: 'auto' });
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const show = (id) => ($(id).hidden = false),
+        hide = (id) => ($(id).hidden = true);
+      const status = $('ai-online-status');
+      window.__townControls = {};
+      const aiLog = $('ai-log'),
+        aiPrompt = $('ai-input'),
+        aiSend = $('ai-send');
+      function renderStudyStats() {
+        $('study-stats').textContent = studyLab.summary();
+      }
+      window.addEventListener('lifequest:studyupdate', renderStudyStats);
+      renderStudyStats();
+      const historyKey = 'lifequest_coach_pro_history_v1';
+      const maxHistory = 52;
+      const aiStart = {
+        role: 'assistant',
+        text: 'Hello! 👋 I’m AI Coach PRO. I tell questions apart from movement commands, and I offer A1–C1 quizzes, conversation practice, sentence correction, word lookup, and Gemini when you connect an API key. Try “Lily là ai?”, “đến Lily”, “flashcard”, “thử thách hôm nay”, “lộ trình học” or “kịch bản: quán cà phê”.',
+      };
+      let messages = [aiStart],
+        aiBusy = false,
+        listening = false,
+        recognition = null,
+        aborter = null,
+        mode = 'auto';
+      let lastAssistant = aiStart.text;
+      try {
+        let saved = JSON.parse(localStorage.getItem(historyKey) || 'null');
+        if (
+          Array.isArray(saved) &&
+          saved.every(
+            (m) => m && ['assistant', 'user'].includes(m.role) && typeof m.text === 'string',
+          )
+        )
+          messages = [aiStart, ...saved.slice(-maxHistory)].slice(-maxHistory);
+      } catch {}
+      function saveHistory() {
+        try {
+          localStorage.setItem(
+            historyKey,
+            JSON.stringify(
+              messages
+                .slice(-maxHistory)
+                .map(({ role, text }) => ({ role, text: text.slice(0, 5000) })),
+            ),
+          );
+        } catch {}
+      }
+      function appendBubble(role, text) {
+        const div = document.createElement('div');
+        div.className = 'ai-message ' + (role === 'user' ? 'mine' : 'theirs');
+        div.textContent = text;
+        aiLog.appendChild(div);
+        aiLog.scrollTop = aiLog.scrollHeight;
+      }
+      function addMsg(role, text) {
+        text = String(text || '').slice(0, 4800);
+        messages.push({ role, text });
+        if (messages.length > maxHistory) messages.splice(0, messages.length - maxHistory);
+        if (role === 'assistant') lastAssistant = text;
+        appendBubble(role, text);
+        while (aiLog.children.length > maxHistory) aiLog.firstElementChild.remove();
+        saveHistory();
+      }
+      for (const msg of messages) appendBubble(msg.role, msg.text);
+      lastAssistant =
+        [...messages].reverse().find((m) => m.role === 'assistant')?.text || aiStart.text;
+      function updateConnectionStatus() {
+        let obj = {};
+        try {
+          obj = JSON.parse(localStorage.getItem('english-town-ai') || '{}');
+        } catch {}
+        const key = !!String(
+          obj.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || '',
+        ).trim();
+        status.textContent = key
+          ? 'Gemini configured · lessons ready'
+          : 'Offline learning · add your own key to use Gemini';
+      }
+      updateConnectionStatus();
+      $('ai-save')?.addEventListener('click', () => setTimeout(updateConnectionStatus, 150));
+      $('ai-clear')?.addEventListener('click', () => setTimeout(updateConnectionStatus, 150));
+      function setOpen(open) {
+        $('ai-panel').hidden = !open;
+        $('ai-open').hidden = open;
+        if (open) setTimeout(() => aiPrompt.focus(), 30);
+      }
+      $('ai-open').addEventListener('click', () => setOpen(true));
+      $('copilot-close').addEventListener('click', () => setOpen(false));
+      const modeNotes = {
+        auto: 'Auto: tells Q&A apart from movement commands',
+        chat: 'Chat: Q&A only, no character control',
+        learn: 'Learn: quiz, corrections, explanations, roleplay',
+        control: 'Control: only runs in-game commands',
+      };
+      for (const btn of document.querySelectorAll('[data-ai-mode]'))
+        btn.addEventListener('click', () => {
+          mode = btn.dataset.aiMode;
+          for (const b of document.querySelectorAll('[data-ai-mode]'))
+            b.classList.toggle('selected', b === btn);
+          $('ai-mode-note').textContent = modeNotes[mode];
+          if (mode === 'chat' || mode === 'learn') cancelTownAutopilot();
+        });
+      window.addEventListener('lifequest:status', (e) => {
+        const msg = e.detail?.text;
+        if (msg) {
+          addMsg('assistant', msg);
+          if (msg.startsWith('💬')) setOpen(false);
+        }
+      });
+      async function sendAI(text = aiPrompt.value) {
+        text = (text || '').trim();
+        if (!text || aiBusy) return;
+        const previous = messages.slice(-12);
+        aiPrompt.value = '';
+        addMsg('user', text);
+        const ctx = getTownContext();
+        if (!ctx) {
+          addMsg('assistant', 'The game is starting up. Try again once the town appears.');
+          return;
+        }
+        if (!sentenceTutor.request(text)) {
+          const v8Local = V8.coachReply(text, ctx);
+          if (v8Local !== null) {
+            addMsg('assistant', v8Local);
+            return;
+          }
+          const handled = adventure.handleCoach(text);
+          if (handled !== null) {
+            addMsg('assistant', handled);
+            return;
+          }
+        }
+        aiBusy = true;
+        aiSend.disabled = true;
+        $('ai-busy').hidden = false;
+        aborter = new AbortController();
+        const current = aborter;
+        try {
+          const result = await assistantCore.run(text, ctx, previous, {
+            mode,
+            level: cefrService.getLevel(),
+            signal: current.signal,
+          });
+          if (current.signal.aborted) return;
+          const reply =
+            result.kind === 'action' ? executeTownCommand(result.command) : result.reply;
+          addMsg('assistant', reply || 'I didn’t quite understand; could you rephrase that?');
+        } catch (err) {
+          if (!current.signal.aborted)
+            addMsg(
+              'assistant',
+              '⚠ Could not process this message. Try again or check your Gemini connection.',
+            );
+        } finally {
+          if (current === aborter) {
+            aborter = null;
+            aiBusy = false;
+            aiSend.disabled = false;
+            $('ai-busy').hidden = true;
+          }
+        }
+      }
+      $('ai-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendAI();
+      });
+      for (const b of document.querySelectorAll('[data-ai-example]'))
+        b.addEventListener('click', () => sendAI(b.dataset.aiExample));
+      function cancelRequest() {
+        const did = aiBusy;
+        aborter?.abort();
+        aborter = null;
+        aiBusy = false;
+        aiSend.disabled = false;
+        $('ai-busy').hidden = true;
+        if (did) addMsg('assistant', 'AI request cancelled.');
+      }
+      $('ai-cancel').addEventListener('click', cancelRequest);
+      function stopAuto() {
+        cancelRequest();
+        addMsg('assistant', executeTownCommand({ kind: 'stop' }));
+      }
+      $('ai-stop').addEventListener('click', stopAuto);
+      $('ai-clear-chat').addEventListener('click', () => {
+        if (aiBusy) cancelRequest();
+        messages = [aiStart];
+        aiLog.replaceChildren();
+        appendBubble('assistant', aiStart.text);
+        lastAssistant = aiStart.text;
+        saveHistory();
+      });
+      $('ai-read').addEventListener('click', () => {
+        if (!('speechSynthesis' in window)) {
+          addMsg('assistant', 'Your browser does not support text-to-speech.');
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(lastAssistant.slice(0, 500));
+        utterance.lang = /[ăâđêôơưàáảãạằắẳẵặềếểễệ]/i.test(lastAssistant) ? 'vi-VN' : 'en-US';
+        utterance.rate = 0.92;
+        window.speechSynthesis.speak(utterance);
+      });
+      $('ai-copy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(lastAssistant);
+          addMsg('assistant', '📋 Copied the latest reply.');
+        } catch {
+          addMsg(
+            'assistant',
+            'Your browser does not allow copying in this mode. Select the text to copy it manually.',
+          );
+        }
+      });
+      $('ai-export-words').addEventListener('click', () => studyLab.exportWords());
+      $('ai-save-chat').addEventListener('click', () => {
+        const blob = new Blob(
+          [messages.map((m) => `${m.role === 'user' ? 'You' : 'AI'}: ${m.text}`).join('\n\n')],
+          { type: 'text/plain;charset=utf-8' },
+        );
+        const url = URL.createObjectURL(blob),
+          a = document.createElement('a');
+        a.href = url;
+        a.download = 'LIFEQUEST_AI_LICH_SU_CHAT.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        $('ai-mic').title = 'Your browser does not support voice input';
+        $('ai-mic').disabled = true;
+      } else {
+        $('ai-mic').addEventListener('click', () => {
+          if (listening) {
+            recognition?.stop();
+            return;
+          }
+          recognition = new SR();
+          recognition.lang = /^[a-zA-Z\s]+$/.test(aiPrompt.value.trim()) ? 'en-US' : 'vi-VN';
+          recognition.interimResults = false;
+          recognition.onresult = (e) => {
+            aiPrompt.value = e.results[0][0].transcript;
+            aiPrompt.focus();
+          };
+          recognition.onerror = () => {
+            $('ai-mic').classList.remove('recording');
+            listening = false;
+          };
+          recognition.onend = () => {
+            $('ai-mic').classList.remove('recording');
+            listening = false;
+          };
+          try {
+            recognition.start();
+            listening = true;
+            $('ai-mic').classList.add('recording');
+          } catch (e) {
+            listening = false;
+          }
+        });
+      }
+      // Keyboard events originating in AI panels must not issue movement/game shortcuts.
+      for (const panel of [
+        $('ai-panel'),
+        $('lq-toolbar'),
+        $('lq-guide'),
+        $('lq-levels'),
+        $('lq-voice'),
+      ]) {
+        panel.addEventListener('keydown', (e) => e.stopPropagation());
+        panel.addEventListener('keyup', (e) => e.stopPropagation());
+      }
+      $('guide-open').addEventListener('click', () => show('lq-guide'));
+      $('guide-close').addEventListener('click', () => hide('lq-guide'));
+      $('level-open').addEventListener('click', () => show('lq-levels'));
+      $('level-close').addEventListener('click', () => hide('lq-levels'));
+      $('level-select').value = cefrService.getLevel();
+      $('level-current').textContent = cefrService.getLevel();
+      $('level-select').addEventListener('change', (e) => {
+        cefrService.setLevel(e.target.value);
+        $('level-current').textContent = e.target.value;
+      });
+      $('voice-open').addEventListener('click', () => {
+        show('lq-voice');
+        drawVoices();
+      });
+      $('voice-close').addEventListener('click', () => hide('lq-voice'));
+      const voiceBox = $('voice-enabled'),
+        autoBox = $('voice-auto'),
+        voiceRate = $('voice-rate'),
+        voiceList = $('voice-list');
+      voiceBox.checked = speechService.settings.voiceEnabled;
+      autoBox.checked = speechService.settings.autoSpeak;
+      voiceRate.value = speechService.settings.rate;
+      $('voice-rate-value').textContent = Number(voiceRate.value).toFixed(1);
+      voiceBox.addEventListener('change', (e) => {
+        speechService.setVoiceEnabled(e.target.checked);
+      });
+      autoBox.addEventListener('change', (e) => speechService.setAutoSpeak(e.target.checked));
+      voiceRate.addEventListener('input', (e) => {
+        $('voice-rate-value').textContent = (+e.target.value).toFixed(1);
+        speechService.setRate(+e.target.value);
+      });
+      function drawVoices() {
+        const voices = speechService.getVoices();
+        voiceList.innerHTML = '<option value="">Auto-pick the best English voice</option>';
+        for (const voice of voices) {
+          const opt = document.createElement('option');
+          opt.value = voice.name;
+          opt.textContent = voice.name + ' (' + voice.lang + ')';
+          voiceList.appendChild(opt);
+        }
+        voiceList.value = speechService.settings.preferredVoice || '';
+      }
+      voiceList.addEventListener('change', (e) => speechService.setPreferredVoice(e.target.value));
+      $('voice-test').addEventListener('click', () =>
+        speechService.speak(
+          'Hello! Welcome to English Town. Let us practice speaking English together.',
+        ),
+      );
+      speechService.subscribe(() => {
+        if (!$('lq-voice').hidden) drawVoices();
+      });
+      for (const b of document.querySelectorAll('[data-menu-shortcut]'))
+        b.addEventListener('click', () => {
+          const action = b.dataset.menuShortcut;
+          const el = document.querySelector('#group-menu button[data-act="' + action + '"]');
+          if (el) el.click();
+        });
+      for (const modal of document.querySelectorAll('.lq-modal'))
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.hidden = true;
+        });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape')
+          for (const modal of document.querySelectorAll('.lq-modal')) modal.hidden = true;
+      });
+      // For standalone file:// mode a server proxy is absent. Personal key can be entered under K.
+      updateConnectionStatus();
+
+      /* LIFEQUEST V10 — Smart Economy Engine. Integration with V9 Phaser scene/save. */
+      const LQ10 = (() => {
+        'use strict';
+        const $ = (id) => document.getElementById(id);
+        const esc = (v) =>
+          String(v ?? '').replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+          );
+        const norm = (v) =>
+          String(v ?? '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .toLowerCase()
+            .trim();
+        const scene = () => window.__lifequestGetScene?.() || null;
+        const game = () => scene()?.store?.game || null;
+        const money = () => Number(game()?.money) || 0;
+        const clock = () => {
+          const g = game();
+          return g
+            ? `${window.LQPast?.dayLabel ? window.LQPast.dayLabel(g.day) : `Day ${g.day}`} · ${String(Math.floor(g.minutes / 60) % 24).padStart(2, '0')}:${String(g.minutes % 60).padStart(2, '0')}`
+            : '';
+        };
+        // Pricing is authoritative; the AI and DOM never determine costs.
+        const catalog = {
+          boarding_pass: {
+            name: '✅ Ticket checked',
+            price: 0,
+            category: 'ticket',
+            effect: 'pass',
+            desc: 'Your ticket was checked by the conductor on the train.',
+            shops: [],
+          },
+          tea: {
+            name: '🍵 Hot tea',
+            price: 8,
+            category: 'food',
+            effect: 'energy',
+            energy: 10,
+            desc: 'A warm cup of tea. Restores 10 energy.',
+            shops: ['Sunny Cafe'],
+          },
+          coffee: {
+            name: '☕ Coffee',
+            price: 12,
+            category: 'food',
+            effect: 'energy',
+            energy: 15,
+            desc: 'Fragrant coffee. Restores 15 energy.',
+            shops: ['Sunny Cafe'],
+          },
+          cake: {
+            name: '🍰 Pastry',
+            price: 15,
+            category: 'food',
+            effect: 'energy',
+            energy: 12,
+            desc: 'Eat it or give it to Lily and Mia.',
+            shops: ['Sunny Cafe', 'Restaurant'],
+            gift: 1,
+          },
+          cafe_combo: {
+            name: '🥐 Breakfast combo',
+            price: 22,
+            category: 'food',
+            effect: 'energy',
+            energy: 28,
+            desc: 'A tasty breakfast. Restores 28 energy.',
+            shops: ['Sunny Cafe'],
+          },
+          bread: {
+            name: '🥖 Bread',
+            price: 10,
+            category: 'food',
+            effect: 'energy',
+            energy: 14,
+            desc: 'Simple food.',
+            shops: ['Corner Shop', 'Market'],
+          },
+          apple: {
+            name: '🍎 Apple',
+            price: 8,
+            category: 'food',
+            effect: 'energy',
+            energy: 8,
+            desc: 'Nutritious fruit.',
+            shops: ['Corner Shop', 'Market'],
+          },
+          battery: {
+            name: '🔋 Pin',
+            price: 15,
+            category: 'tool',
+            effect: 'energy',
+            energy: 5,
+            desc: 'Spare batteries for your devices.',
+            shops: ['Corner Shop', 'Tool Shop'],
+          },
+          flashlight: {
+            name: '🔦 Flashlight',
+            price: 40,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Extra light for exploring the mine.',
+            shops: ['Corner Shop', 'Tool Shop'],
+          },
+          notebook: {
+            name: '📓 Notebook',
+            price: 25,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'vocab',
+            desc: 'Unlocks shopping vocabulary exercises.',
+            shops: ['Corner Shop', 'Library'],
+          },
+          backpack: {
+            name: '🎒 Large backpack',
+            price: 120,
+            category: 'tool',
+            effect: 'upgrade',
+            desc: 'Increases capacity from 24 to 48 items.',
+            shops: ['Corner Shop', 'Tool Shop'],
+            unique: true,
+          },
+          soup: {
+            name: '🥣 Hot soup',
+            price: 18,
+            category: 'food',
+            effect: 'energy',
+            energy: 25,
+            desc: 'A restaurant meal.',
+            shops: ['Restaurant'],
+          },
+          salad: {
+            name: '🥗 Salad',
+            price: 22,
+            category: 'food',
+            effect: 'energy',
+            energy: 20,
+            desc: 'A meal rich in greens.',
+            shops: ['Restaurant'],
+          },
+          pizza: {
+            name: '🍕 Pizza',
+            price: 30,
+            category: 'food',
+            effect: 'energy',
+            energy: 30,
+            desc: 'Can be used as a gift.',
+            shops: ['Restaurant'],
+            gift: 1,
+          },
+          dinner: {
+            name: '🍽️ Special dinner',
+            price: 55,
+            category: 'food',
+            effect: 'energy',
+            energy: 50,
+            desc: 'A high-energy dinner.',
+            shops: ['Restaurant'],
+          },
+          flashcards: {
+            name: '🃏 Flashcard set',
+            price: 20,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'vocab',
+            desc: 'Practice vocabulary with cards.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          book_a1: {
+            name: '📗 English Book A1',
+            price: 25,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'A1',
+            desc: 'Unlocks A1 lessons and questions.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          book_a2: {
+            name: '📘 English Book A2',
+            price: 35,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'A2',
+            desc: 'Unlocks A2 lessons and questions.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          book_b1: {
+            name: '📙 English Book B1',
+            price: 55,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'B1',
+            desc: 'Unlocks B1 lessons and questions.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          life_skills: {
+            name: '📕 Life Skills Book',
+            price: 60,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'budget',
+            desc: 'Practice planning your spending.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          hotel_room: {
+            name: '🛏️ Inn room',
+            price: 45,
+            category: 'service',
+            effect: 'room',
+            desc: 'Rest for 1 night (by in-game day).',
+            shops: ['Hotel', 'Mining Inn'],
+          },
+          hotel_suite: {
+            name: '🏨 Deluxe room',
+            price: 100,
+            category: 'service',
+            effect: 'room',
+            desc: 'Rest in a deluxe room for 1 night.',
+            shops: ['Hotel', 'Mining Inn'],
+          },
+          rail_ticket: {
+            name: '🎫 Train ticket',
+            price: 25,
+            category: 'ticket',
+            effect: 'travel',
+            desc: 'A train ticket to travel to the other town.',
+            shops: ['Rail Station'],
+            stack: 10,
+          },
+          stamp: {
+            name: '✉️ Postage stamp',
+            price: 10,
+            category: 'service',
+            effect: 'mail',
+            desc: 'Used to send a letter from the post office.',
+            shops: ['Post Office'],
+          },
+          shipping: {
+            name: '📦 Parcel service',
+            price: 30,
+            category: 'service',
+            effect: 'mail',
+            desc: 'Send one parcel.',
+            shops: ['Post Office'],
+          },
+          pickaxe: {
+            name: '⛏️ Mining pickaxe',
+            price: 90,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Used in the Great Mine to collect ore.',
+            shops: ['Smithy', 'Tool Shop'],
+            unique: true,
+          },
+          miner_lamp: {
+            name: '🏮 Mine lamp',
+            price: 55,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Light for the mine.',
+            shops: ['Tool Shop', 'Smithy'],
+            unique: true,
+          },
+          gloves: {
+            name: '🧤 Gloves',
+            price: 40,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Safe work gear.',
+            shops: ['Tool Shop'],
+            unique: true,
+          },
+          tool_kit: {
+            name: '🧰 Repair kit',
+            price: 80,
+            category: 'tool',
+            effect: 'repair',
+            desc: 'Use at the smithy to gain craft progress.',
+            shops: ['Smithy', 'Tool Shop'],
+          },
+          crystal: {
+            name: '💎 Decorative crystal',
+            price: 95,
+            category: 'collectible',
+            effect: 'display',
+            desc: 'Display it in your room.',
+            shops: ['Gem Shop'],
+          },
+          ruby: {
+            name: '❤️ Ruby',
+            price: 180,
+            category: 'collectible',
+            effect: 'display',
+            desc: 'A collectible gem.',
+            shops: ['Gem Shop'],
+          },
+          emerald: {
+            name: '💚 Emerald',
+            price: 240,
+            category: 'collectible',
+            effect: 'display',
+            desc: 'A unique gemstone.',
+            shops: ['Gem Shop'],
+          },
+          flower: {
+            name: '💐 Bouquet',
+            price: 28,
+            category: 'gift',
+            effect: 'gift',
+            desc: 'Give to an NPC to improve your relationship.',
+            shops: ['Market', 'Gem Shop'],
+          },
+          souvenir: {
+            name: '🎁 Souvenir',
+            price: 38,
+            category: 'gift',
+            effect: 'gift',
+            desc: 'Give to a townsperson.',
+            shops: ['Gem Shop', 'Market'],
+          },
+          lamp: {
+            name: '💡 Desk lamp',
+            price: 50,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'Room decoration with warm light.',
+            shops: ['Corner Shop', 'Tool Shop'],
+            unique: true,
+          },
+          home_plant: {
+            name: '🪴 Potted plant',
+            price: 60,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'Bring some greenery into your home.',
+            shops: ['Market', 'Corner Shop'],
+            unique: true,
+          },
+          rug: {
+            name: '🧶 Nice rug',
+            price: 80,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A soft rug for your home.',
+            shops: ['Market', 'Corner Shop'],
+            unique: true,
+          },
+          bookshelf: {
+            name: '📚 Bookshelf',
+            price: 120,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A book corner for your home.',
+            shops: ['Corner Shop'],
+            unique: true,
+          },
+          sofa: {
+            name: '🛋️ Sofa',
+            price: 230,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A sofa with a soft shadow.',
+            shops: ['Corner Shop'],
+            unique: true,
+          },
+          fancy_bed: {
+            name: '🛌 New bed',
+            price: 300,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A nice bed for Hero’s Home.',
+            shops: ['Corner Shop'],
+            unique: true,
+          },
+          study_corner: {
+            name: '🖥️ Study corner',
+            price: 500,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'Unlocks extra English practice.',
+            shops: ['Corner Shop', 'Library'],
+            unique: true,
+          },
+        };
+        const shops = {
+          'Sunny Cafe': {
+            npc: 'barista',
+            emoji: '☕',
+            intro: 'Welcome to Sunny Cafe! What would you like to order?',
+          },
+          'Corner Shop': {
+            npc: 'shopkeeper',
+            emoji: '🛒',
+            intro: 'Welcome! Would you like to see our prices?',
+          },
+          'Market': {
+            npc: 'shopkeeper',
+            emoji: '🥬',
+            intro: 'Fresh goods today. What are you looking for?',
+          },
+          'Restaurant': {
+            npc: 'chef',
+            emoji: '🍽️',
+            intro: 'Welcome! Would you like to order a meal?',
+          },
+          'Library': {
+            npc: 'librarian',
+            emoji: '📚',
+            intro: 'Would you like an English learning book?',
+          },
+          'School': { npc: 'teacher', emoji: '🏫', intro: 'We have books for all English levels.' },
+          'Hotel': {
+            npc: 'hotelclerk',
+            emoji: '🏨',
+            intro: 'How many nights would you like to stay?',
+          },
+          'Mining Inn': { npc: 'innkeeper', emoji: '🛏️', intro: 'Welcome! Would you like a room?' },
+          'Bank': {
+            npc: 'banker',
+            emoji: '🏦',
+            intro: 'Would you like to deposit or withdraw money?',
+          },
+          'Smithy': { npc: 'smith', emoji: '🔨', intro: 'What tool do you need today?' },
+          'Tool Shop': { npc: 'smith', emoji: '🧰', intro: 'Need safety equipment for the mine?' },
+          'Gem Shop': {
+            npc: 'gemdealer',
+            emoji: '💎',
+            intro: 'Would you like to see our gemstones?',
+          },
+          'Rail Station': { npc: 'carter', emoji: '🚂', intro: 'Where would you like to travel?' },
+          'Post Office': {
+            npc: 'postman',
+            emoji: '📮',
+            intro: 'Would you like to send a letter or parcel?',
+          },
+        };
+        const financeLessons = [
+          [
+            'asking',
+            'Asking prices',
+            'How much is this book?',
+            'How much this book?',
+            'How much is this book?',
+          ],
+          [
+            'compare',
+            'Comparing prices',
+            'The tea is cheaper than coffee.',
+            'The tea is expensive than coffee.',
+            'The tea is cheaper than coffee.',
+          ],
+          [
+            'budget',
+            'Making a budget',
+            'I have $50. I will save $20.',
+            'I have $50. I can spend $80.',
+            'I have $50. I will save $20.',
+          ],
+          [
+            'change',
+            'Getting change',
+            'My change is $5.',
+            'My money change $5.',
+            'My change is $5.',
+          ],
+          [
+            'receipt',
+            'Asking for a receipt',
+            'Could I have a receipt, please?',
+            'Give I a receipt.',
+            'Could I have a receipt, please?',
+          ],
+          [
+            'saving',
+            'Saving money',
+            'I save money for a new book.',
+            'I am save money to a book.',
+            'I save money for a new book.',
+          ],
+          [
+            'hotel',
+            'Booking a room',
+            'I would like to book a room.',
+            'I like book room.',
+            'I would like to book a room.',
+          ],
+          [
+            'ticket',
+            'Buying a ticket',
+            'One ticket to Minerals Town, please.',
+            'One ticket in Minerals Town.',
+            'One ticket to Minerals Town, please.',
+          ],
+          [
+            'return',
+            'Returning items',
+            'Can I return this unopened item?',
+            'Can I returned this item?',
+            'Can I return this unopened item?',
+          ],
+          [
+            'plan',
+            'Managing spending',
+            'I need to compare prices before buying.',
+            'I should buy everything now.',
+            'I need to compare prices before buying.',
+          ],
+        ];
+        const MAX_HISTORY = 120;
+        let openTab = 'shop',
+          chosenShop = 'Sunny Cafe',
+          active = null,
+          busy = false,
+          decorationGraphics = null,
+          msg = '',
+          lastPurch

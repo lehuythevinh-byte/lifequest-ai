@@ -1,0 +1,1799 @@
+y >= 0 && o.x + o.w <= a.w && o.y + o.h <= a.h);
+  }
+
+  const area = {
+    id: ID,
+    name: 'Oriaris Village · 70 Years Ago',
+    w: W,
+    h: H,
+    theme: 'past',
+    buildings: BUILDINGS,
+    places: PLACES,
+    roadsH: [{ y: 10, h: 3 }],
+    roadsV: [{ x: 17, w: 3 }],
+    spawn: SPAWN,
+    npcs: ['gusest'],
+    portals: {},
+    warps: WARPS,
+    makeObstacles,
+  };
+
+  // ---- painting (Phaser Graphics, called once for the area texture) ------------------------------------------------
+  // Everything is drawn with code (no image files). The world is shown through a pale filter (applyFilter), so the
+  // drawing relies on light/shadow more than on colour: every object gets a soft shadow, a lit top and a dark base.
+  function rnd(seed) {
+    let s = seed | 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Multiply a colour (k < 1 darker, k > 1 lighter).
+  const shade = (c, k) => {
+    const f = (v) => Math.max(0, Math.min(255, Math.round(v * k)));
+    return (f((c >> 16) & 255) << 16) | (f((c >> 8) & 255) << 8) | f(c & 255);
+  };
+  const T = 32;
+  let R = rnd(1);
+  const pick = (arr) => arr[Math.floor(R() * arr.length)];
+  // Things that stick up above their tile: drawn as their own sprites, in front of or behind the player.
+  const TALL = new Set(['tower', 'tree', 'well', 'banner', 'torch', 'stall', 'coop', 'rack']);
+  const shadow = (g, cx, cy, w, h, a = 0.22) => g.fillStyle(0x1a160f, a).fillEllipse(cx, cy, w, h);
+  const poly = (g, color, alpha, pts) => g.fillStyle(color, alpha).fillPoints(pts.map(([x, y]) => ({ x, y })), true);
+
+  function paint(g, a) {
+    if (a.id !== ID && window.LQFront) return window.LQFront.paint(g, a);
+    R = rnd(7070);
+    const W2 = a.w * T;
+    const H2 = a.h * T;
+    // 1. Grass: three tones per tile, then blades, clover and a few pale flowers.
+    // Soft patches instead of per-tile squares, so no grid shows through.
+    g.fillStyle(0x8e9a68, 1).fillRect(0, 0, W2, H2);
+    for (let i = 0; i < a.w * a.h * 0.9; i++) {
+      const c = pick([0x96a271, 0x86925f, 0x9aa676, 0x8a965f]);
+      g.fillStyle(c, 0.35).fillEllipse(R() * W2, R() * H2, 30 + R() * 60, 18 + R() * 36);
+    }
+    for (let i = 0; i < a.w * a.h * 0.25; i++) g.fillStyle(0x7f8b56, 0.25).fillEllipse(R() * W2, R() * H2, 10 + R() * 18, 6 + R() * 10);
+    for (let i = 0; i < a.w * a.h * 1.6; i++) {
+      const px = R() * W2;
+      const py = R() * H2;
+      const c = R() < 0.6 ? 0x6c7848 : 0xa6b07c;
+      g.lineStyle(1.4, c, 0.9).lineBetween(px, py, px - 2, py - 5).lineBetween(px, py, px + 1, py - 6).lineBetween(px, py, px + 3, py - 4);
+    }
+    for (let i = 0; i < 160; i++) {
+      const px = R() * W2;
+      const py = R() * H2;
+      g.fillStyle(R() < 0.5 ? 0xe9e2c8 : 0xd8c27a, 0.85).fillCircle(px, py, 1.6).fillCircle(px + 3, py + 1, 1.4).fillCircle(px + 1, py - 2, 1.4);
+    }
+
+    // 2. The village square: trodden earth with a soft grassy edge and pebbles.
+    const sq = { x: SQUARE.x * T, y: SQUARE.y * T, w: SQUARE.w * T, h: SQUARE.h * T };
+    g.fillStyle(0xb6a582, 1).fillRoundedRect(sq.x - 6, sq.y - 6, sq.w + 12, sq.h + 12, 26);
+    g.fillStyle(0xbfae8b, 1).fillRoundedRect(sq.x + 10, sq.y + 8, sq.w - 20, sq.h - 16, 20);
+    for (let i = 0; i < 120; i++) g.fillStyle(pick([0x9e8d6c, 0xcdbd99, 0xa89676]), 1).fillEllipse(sq.x + R() * sq.w, sq.y + R() * sq.h, 4 + R() * 4, 3 + R() * 2);
+
+    // 3. Dirt roads: worn middle, two wheel ruts, stones, grass creeping over the edges.
+    const dirt = (x, y, w, h, vertical) => {
+      g.fillStyle(0xa8966f, 1).fillRect(x, y, w, h);
+      if (vertical) g.fillStyle(0xbba985, 1).fillRect(x + 8, y, w - 16, h);
+      else g.fillStyle(0xbba985, 1).fillRect(x, y + 8, w, h - 16);
+      const rut = (rx, ry, rw, rh) => g.fillStyle(0x92805e, 0.8).fillRect(rx, ry, rw, rh);
+      if (vertical) {
+        rut(x + w * 0.3, y, 4, h);
+        rut(x + w * 0.66, y, 4, h);
+      } else {
+        rut(x, y + h * 0.32, w, 4);
+        rut(x, y + h * 0.66, w, 4);
+      }
+      for (let i = 0; i < (w * h) / 260; i++) {
+        const px = x + R() * w;
+        const py = y + R() * h;
+        g.fillStyle(0x8a7a5c, 0.6).fillEllipse(px + 1, py + 1, 5, 3);
+        g.fillStyle(pick([0xcfc2a2, 0xb7a787, 0xd8ccae]), 1).fillEllipse(px, py, 4, 3);
+      }
+      // grass tufts over both edges
+      const n = (vertical ? h : w) / 9;
+      for (let i = 0; i < n; i++) {
+        const t = R() * (vertical ? h : w);
+        [0, 1].forEach((side) => {
+          const px = vertical ? x + (side ? w - 2 : 2) : x + t;
+          const py = vertical ? y + t : y + (side ? h - 2 : 4);
+          g.lineStyle(1.5, 0x748052, 1).lineBetween(px, py, px - 2, py - 6).lineBetween(px, py, px + 2, py - 7);
+        });
+      }
+    };
+    a.roadsH.forEach((r) => dirt(0, r.y * T, W2, r.h * T, false));
+    a.roadsV.forEach((r) => dirt(r.x * T, 0, r.w * T, H2, true));
+    // crossings: smooth the middle again
+    a.roadsH.forEach((h) => a.roadsV.forEach((v) => g.fillStyle(0xb4a27e, 1).fillRect(v.x * T + 6, h.y * T + 6, v.w * T - 12, h.h * T - 12)));
+
+    // 4. Flat objects only. Tall things (buildings, towers, trees…) are separate sprites sorted against the player,
+    //    so the player can walk behind them (see tallSprites below).
+    [...a.obstacles].filter((o) => !TALL.has(o.kind)).sort((p, q) => p.y + p.h - (q.y + q.h)).forEach((o) => drawThing(g, o, a));
+    // 6. The way back to today
+    a.warps.forEach((w) => {
+      const cx = (w.x + w.w / 2) * T;
+      const cy = (w.y + 0.5) * T;
+      for (let i = 0; i < 6; i++) g.fillStyle(0xffe6a8, 0.07).fillEllipse(cx, cy, w.w * T + 40 - i * 9, T + 22 - i * 4);
+      g.fillStyle(0xfff6dc, 0.55).fillEllipse(cx, cy, w.w * T - 16, 12);
+      for (let i = 0; i < 14; i++) g.fillStyle(0xfff6dc, 0.7).fillCircle(cx + (R() - 0.5) * w.w * T, cy - R() * 26, 1.5);
+    });
+  }
+
+  function drawThing(g, o) {
+    const x = o.x * T;
+    const y = o.y * T;
+    const w = o.w * T;
+    const h = o.h * T;
+    switch (o.kind) {
+      case 'wall':
+        return wallTile(g, o);
+      case 'well':
+        return well(g, x, y, w, h);
+      case 'paddy':
+        return paddy(g, x, y, w, h);
+      case 'tree':
+        return tree(g, x + 16, y + 26);
+      case 'tower':
+        return tower(g, x, y, w, h);
+      case 'hay':
+        shadow(g, x + 18, y + 27, 28, 9);
+        g.fillStyle(0xb39a52, 1).fillEllipse(x + 16, y + 18, 28, 22);
+        g.fillStyle(0xcdb56c, 1).fillEllipse(x + 14, y + 15, 22, 15);
+        for (let i = 0; i < 9; i++) g.lineStyle(1, 0x9a8240, 0.9).lineBetween(x + 6 + i * 2.5, y + 10 + (i % 3), x + 4 + i * 2.6, y + 24);
+        return;
+      case 'cart':
+        shadow(g, x + w / 2, y + 28, w - 4, 8);
+        g.fillStyle(0x6b5233, 1).fillRect(x + 4, y + 6, w - 12, 16);
+        g.fillStyle(0x8a6a44, 1).fillRect(x + 4, y + 6, w - 12, 4);
+        for (let xx = x + 10; xx < x + w - 10; xx += 10) g.fillStyle(0x5a4429, 1).fillRect(xx, y + 10, 2, 12);
+        g.fillStyle(0xc9b06a, 1).fillEllipse(x + w / 2 - 4, y + 6, w - 22, 10);
+        [x + 14, x + w - 22].forEach((cx) => {
+          g.fillStyle(0x3d2f1f, 1).fillCircle(cx, y + 24, 8);
+          g.fillStyle(0x7a5e3a, 1).fillCircle(cx, y + 24, 5);
+          g.fillStyle(0x3d2f1f, 1).fillCircle(cx, y + 24, 2);
+        });
+        g.lineStyle(3, 0x6b5233, 1).lineBetween(x + w - 8, y + 14, x + w + 6, y + 18);
+        return;
+      case 'barrel':
+        shadow(g, x + 17, y + 28, 20, 6);
+        g.fillStyle(0x6e5132, 1).fillRoundedRect(x + 7, y + 5, 18, 23, 5);
+        g.fillStyle(0x8a6842, 1).fillRect(x + 10, y + 6, 6, 21);
+        g.fillStyle(0x4a4640, 1).fillRect(x + 7, y + 9, 18, 2).fillRect(x + 7, y + 21, 18, 2);
+        g.fillStyle(0x9a7a50, 1).fillEllipse(x + 16, y + 6, 18, 6);
+        return;
+      case 'banner':
+        g.fillStyle(0x4b3a26, 1).fillRect(x + 14, y - 22, 4, 52);
+        g.fillStyle(0xc9a24a, 1).fillCircle(x + 16, y - 23, 3);
+        poly(g, 0x7d2e2e, 1, [[x + 18, y - 18], [x + 34, y - 18], [x + 34, y + 6], [x + 26, y + 2], [x + 18, y + 6]]);
+        g.fillStyle(0x9a3c3c, 1).fillRect(x + 18, y - 18, 16, 3);
+        crest(g, x + 26, y - 8, 1.1);
+        return;
+      case 'garden':
+        g.fillStyle(0x6e5c40, 1).fillRoundedRect(x + 2, y + 6, w - 4, h - 10, 4);
+        for (let xx = x + 8; xx < x + w - 4; xx += 9) {
+          g.fillStyle(0x5c7a3c, 1).fillCircle(xx, y + 16, 4);
+          g.fillStyle(0x7a9a50, 1).fillCircle(xx - 1, y + 14, 2.4);
+        }
+        g.lineStyle(2, 0x8a6a44, 1).strokeRect(x + 2, y + 6, w - 4, h - 10);
+        return;
+      case 'torch': {
+        for (let i = 0; i < 4; i++) g.fillStyle(0xffd27a, 0.06).fillCircle(x + 16, y + 6, 22 - i * 5);
+        shadow(g, x + 18, y + 29, 10, 4);
+        g.fillStyle(0x4b3a26, 1).fillRect(x + 14, y + 8, 4, 21);
+        g.fillStyle(0x3a3a3a, 1).fillRect(x + 11, y + 7, 10, 4);
+        poly(g, 0xd9822e, 1, [[x + 10, y + 8], [x + 22, y + 8], [x + 19, y - 1], [x + 16, y - 9], [x + 13, y - 1]]);
+        poly(g, 0xffd27a, 1, [[x + 13, y + 8], [x + 19, y + 8], [x + 17, y + 1], [x + 16, y - 3], [x + 15, y + 1]]);
+        return;
+      }
+      case 'rack': {
+        shadow(g, x + w / 2, y + 30, w, 8);
+        g.fillStyle(0x5e4630, 1).fillRect(x + 4, y + 2, 4, 28).fillRect(x + w - 8, y + 2, 4, 28);
+        g.fillStyle(0x7a5e3a, 1).fillRect(x + 2, y + 4, w - 4, 4);
+        for (let xx = x + 11; xx < x + w - 8; xx += 8) {
+          poly(g, 0xb79a52, 1, [[xx - 4, y + 8], [xx + 4, y + 8], [xx + 3, y + 22], [xx, y + 27], [xx - 3, y + 22]]);
+          g.fillStyle(0xd5bc72, 1).fillRect(xx - 2, y + 9, 2, 12);
+          g.fillStyle(0x6b5a30, 1).fillRect(xx - 4, y + 12, 8, 2);
+        }
+        return;
+      }
+      case 'stall': {
+        shadow(g, x + w / 2, y + 30, w + 6, 8);
+        g.fillStyle(0x5e4630, 1).fillRect(x + 3, y - 12, 3, 40).fillRect(x + w - 6, y - 12, 3, 40);
+        g.fillStyle(0x7a5e3a, 1).fillRect(x + 1, y + 12, w - 2, 14);
+        g.fillStyle(0x8f7048, 1).fillRect(x + 1, y + 12, w - 2, 4);
+        for (let i = 0; i < 8; i++) g.fillStyle(i % 2 ? 0xd9cdb4 : 0x9a8466, 1).fillRect(x - 3 + i * ((w + 6) / 8), y - 16, (w + 6) / 8, 9);
+        for (let i = 0; i < 8; i++) g.fillStyle(i % 2 ? 0xd9cdb4 : 0x9a8466, 1).fillTriangle(x - 3 + i * ((w + 6) / 8), y - 7, x - 3 + (i + 1) * ((w + 6) / 8), y - 7, x - 3 + (i + 0.5) * ((w + 6) / 8), y - 2);
+        [[x + 12, 0xb7964e], [x + 26, 0xd8cfb0], [x + 42, 0x9a6e44], [x + 54, 0xb7964e]].forEach(([cx, c]) => {
+          g.fillStyle(0x6b5233, 1).fillEllipse(cx, y + 13, 12, 6);
+          g.fillStyle(c, 1).fillCircle(cx - 2, y + 10, 3).fillCircle(cx + 2, y + 10, 3).fillCircle(cx, y + 8, 3);
+        });
+        return;
+      }
+      case 'woodpile':
+        shadow(g, x + w / 2, y + 30, w, 7);
+        for (let i = 0; i < 3; i++)
+          for (let j = 0; j < 5 - i; j++) {
+            const cx = x + 10 + j * 11 + i * 5.5;
+            const cy = y + 25 - i * 8;
+            g.fillStyle(0x5a4429, 1).fillCircle(cx, cy, 5.5);
+            g.fillStyle(0xb8955f, 1).fillCircle(cx, cy, 3.8);
+            g.fillStyle(0x8f7048, 1).fillCircle(cx, cy, 1.5);
+          }
+        return;
+      case 'coop': {
+        shadow(g, x + w / 2 + 3, y + h - 6, w, 12);
+        g.fillStyle(0x6b5233, 1).fillRect(x + 8, y + 22, w - 16, h - 30);
+        for (let xx = x + 10; xx < x + w - 10; xx += 7) g.fillStyle(0x7d6142, 1).fillRect(xx, y + 22, 4, h - 30);
+        poly(g, 0xb79a5a, 1, [[x + 2, y + 25], [x + w - 2, y + 25], [x + w - 10, y + 6], [x + 10, y + 6]]);
+        for (let yy = y + 9; yy < y + 25; yy += 4) g.lineStyle(1, 0x95793e, 1).lineBetween(x + 8, yy, x + w - 8, yy);
+        g.fillStyle(0x2e261c, 1).fillRoundedRect(x + w / 2 - 6, y + h - 20, 12, 12, 5);
+        // little ramp and scattered grain; the hens themselves are alive (see the flock below)
+        g.fillStyle(0x7a5e3a, 1).fillRect(x + w / 2 - 5, y + h - 8, 10, 8);
+        for (let i = 0; i < 14; i++) g.fillStyle(0xd8c07e, 0.9).fillCircle(x + 4 + ((i * 37) % (w + 20)), y + h + 4 + ((i * 13) % 18), 1.2);
+        return;
+      }
+      case 'sign':
+        shadow(g, x + 16, y + 29, 22, 6);
+        g.fillStyle(0x4b3a26, 1).fillRect(x + 8, y + 10, 3, 19).fillRect(x + 21, y + 10, 3, 19);
+        g.fillStyle(0x7a5e3a, 1).fillRoundedRect(x + 2, y + 1, 28, 15, 3);
+        g.fillStyle(0x8f7048, 1).fillRect(x + 3, y + 2, 26, 3);
+        g.fillStyle(0xe2d3a8, 1).fillRect(x + 6, y + 7, 20, 2).fillRect(x + 6, y + 11, 14, 2);
+        g.fillStyle(0x3a2e20, 1).fillCircle(x + 5, y + 4, 1).fillCircle(x + 27, y + 4, 1);
+        return;
+      default:
+        return;
+    }
+  }
+
+  function hen(g, cx, cy) {
+    shadow(g, cx, cy + 4, 10, 3, 0.2);
+    g.fillStyle(0xefe9dc, 1).fillEllipse(cx, cy, 11, 8);
+    g.fillStyle(0xf7f3ea, 1).fillCircle(cx + 4, cy - 4, 3.4);
+    g.fillStyle(0xc8432f, 1).fillRect(cx + 3, cy - 9, 3, 2);
+    g.fillStyle(0xd9a13a, 1).fillTriangle(cx + 7, cy - 4, cx + 10, cy - 3, cx + 7, cy - 2);
+  }
+
+  // Stone wall: irregular blocks, a lit top, crenels on the outer rows and a shadow on the ground below.
+  function wallTile(g, o) {
+    const x = o.x * T;
+    const y = o.y * T;
+    const r = rnd(o.x * 131 + o.y * 977);
+    const STONES = [0x8e897f, 0x98938a, 0x86817a, 0xa19c92];
+    g.fillStyle(0x1a160f, 0.18).fillRect(x, y + T, T, 6);
+    g.fillStyle(0x5d5850, 1).fillRect(x, y, T, T);
+    const rows = [[1, 9], [11, 9], [21, 10]];
+    rows.forEach(([ry, rh], i) => {
+      let cx = x + (i % 2 ? -6 : 0);
+      while (cx < x + T) {
+        const sw = 9 + Math.floor(r() * 9);
+        const sx = Math.max(x, cx + 1);
+        const ex = Math.min(x + T, cx + sw - 1);
+        if (ex - sx > 2) {
+          const c = STONES[Math.floor(r() * STONES.length)];
+          g.fillStyle(c, 1).fillRoundedRect(sx, y + ry, ex - sx, rh - 1, 2);
+          g.fillStyle(shade(c, 1.12), 1).fillRect(sx + 1, y + ry, ex - sx - 2, 2);
+          g.fillStyle(shade(c, 0.82), 1).fillRect(sx + 1, y + ry + rh - 3, ex - sx - 2, 2);
+        }
+        cx += sw;
+      }
+    });
+    // walkway cap and crenels on top
+    g.fillStyle(0xb2ada2, 1).fillRect(x, y - 3, T, 4);
+    if ((o.x + o.y) % 2 === 0) {
+      g.fillStyle(0x9a958b, 1).fillRect(x + 4, y - 10, T - 8, 8);
+      g.fillStyle(0xb8b3a8, 1).fillRect(x + 4, y - 10, T - 8, 2);
+    }
+    // a little moss
+    if (r() < 0.35) g.fillStyle(0x6f7d4c, 0.8).fillEllipse(x + r() * T, y + T - 3, 8, 4);
+  }
+
+  function well(g, x, y, w, h) {
+    const cx = x + w / 2;
+    const cy = y + h / 2 + 4;
+    shadow(g, cx + 4, cy + 18, w + 6, 18, 0.25);
+    // stone ring
+    g.fillStyle(0x6f6a62, 1).fillEllipse(cx, cy + 6, 54, 34);
+    for (let i = 0; i < 16; i++) {
+      const ang = (i / 16) * Math.PI * 2;
+      g.fillStyle(i % 2 ? 0x9a958b : 0x8a857c, 1).fillEllipse(cx + Math.cos(ang) * 22, cy + 4 + Math.sin(ang) * 13, 12, 9);
+    }
+    g.fillStyle(0x26323a, 1).fillEllipse(cx, cy + 3, 30, 16);
+    g.fillStyle(0x3f5560, 1).fillEllipse(cx - 4, cy + 1, 16, 6);
+    g.fillStyle(0xdfe8ea, 0.5).fillEllipse(cx - 7, cy, 6, 2);
+    // posts, beam, little thatch roof, rope and bucket
+    g.fillStyle(0x5e4630, 1).fillRect(cx - 25, cy - 30, 5, 36).fillRect(cx + 20, cy - 30, 5, 36);
+    g.fillStyle(0x7a5e3a, 1).fillRect(cx - 27, cy - 26, 54, 5);
+    poly(g, 0xb39a5a, 1, [[cx - 32, cy - 26], [cx + 32, cy - 26], [cx + 22, cy - 44], [cx - 22, cy - 44]]);
+    for (let i = 0; i < 5; i++) g.fillStyle(i % 2 ? 0xc6ad6a : 0xa58c4c, 1).fillRect(cx - 30 + i, cy - 30 - i * 3, 60 - i * 2, 2);
+    g.fillStyle(0x8a7340, 1).fillRect(cx - 23, cy - 46, 46, 4);
+    g.lineStyle(1, 0x3a3127, 1).lineBetween(cx + 2, cy - 21, cx + 2, cy - 6);
+    g.fillStyle(0x6b5233, 1).fillRect(cx - 3, cy - 8, 10, 8);
+    g.fillStyle(0x4a4640, 1).fillRect(cx - 3, cy - 6, 10, 1);
+  }
+
+  // A big rice paddy: earth dike, water with sky reflections, rows of rice (some fields ripe and golden).
+  function paddy(g, x, y, w, h) {
+    const r = rnd(x * 7 + y * 13);
+    const ripe = r() < 0.35;
+    g.fillStyle(0x1a160f, 0.15).fillRect(x + 2, y + h, w, 5);
+    g.fillStyle(0x86744f, 1).fillRoundedRect(x, y, w, h, 6);
+    g.fillStyle(0x9a875f, 1).fillRect(x + 2, y + 1, w - 4, 4);
+    g.fillStyle(0x7f9893, 1).fillRoundedRect(x + 6, y + 7, w - 12, h - 13, 4);
+    g.fillStyle(0x96aea9, 1).fillRect(x + 8, y + 9, w - 16, 5);
+    // sky reflections and ripples on the water
+    for (let i = 0; i < (w * h) / 700; i++) g.fillStyle(0xd3dfdb, 0.4).fillRoundedRect(x + 10 + r() * (w - 50), y + 14 + r() * (h - 30), 18 + r() * 26, 3, 1.5);
+    for (let i = 0; i < (w * h) / 1400; i++) g.lineStyle(1, 0xc4d2cd, 0.5).strokeEllipse(x + 20 + r() * (w - 40), y + 20 + r() * (h - 40), 10, 4);
+    const GREEN = [0x5f8a3c, 0x72a04a, 0x679444];
+    const GOLD = [0xc9a84d, 0xd8bb62, 0xb89640];
+    for (let yy = y + 20; yy < y + h - 8; yy += 15)
+      for (let xx = x + 14 + (Math.round((yy - y) / 15) % 2) * 6; xx < x + w - 12; xx += 13) {
+        const c = ripe ? pick2(r, GOLD) : pick2(r, GREEN);
+        // one rice clump: a dark reflection, five blades fanning out, a light tip (ripe ones bow with grain)
+        g.fillStyle(0x4a5e5a, 0.4).fillEllipse(xx, yy + 1, 10, 3);
+        g.lineStyle(1.8, shade(c, 0.78), 1).lineBetween(xx, yy, xx - 5, yy - 9).lineBetween(xx, yy, xx + 5, yy - 9);
+        g.lineStyle(1.8, c, 1).lineBetween(xx, yy, xx - 2, yy - 12).lineBetween(xx, yy, xx + 2, yy - 12).lineBetween(xx, yy, xx, yy - 13);
+        g.lineStyle(1.2, shade(c, 1.25), 1).lineBetween(xx - 1, yy - 5, xx - 2, yy - 11);
+        if (ripe) {
+          g.fillStyle(0xe6cd78, 1).fillEllipse(xx + 4, yy - 11, 4, 6).fillEllipse(xx - 4, yy - 10, 4, 5);
+        }
+      }
+  }
+  const pick2 = (r, arr) => arr[Math.floor(r() * arr.length)];
+
+  function tree(g, cx, by) {
+    const r = rnd(cx * 3 + by * 5);
+    shadow(g, cx + 6, by + 2, 34, 11, 0.24);
+    g.fillStyle(0x4b3a26, 1).fillRect(cx - 3, by - 16, 6, 17);
+    g.fillStyle(0x5e4a30, 1).fillRect(cx - 3, by - 16, 2, 17);
+    const LEAF = [0x45603d, 0x52703f, 0x5e7d48];
+    [[0, -24, 15], [-9, -18, 11], [9, -17, 11], [-4, -31, 10], [6, -29, 10]].forEach(([dx, dy, rr], i) => {
+      g.fillStyle(LEAF[i % 3], 1).fillCircle(cx + dx, by + dy, rr);
+    });
+    for (let i = 0; i < 6; i++) g.fillStyle(0x7b9a5c, 0.8).fillCircle(cx - 8 + r() * 12, by - 34 + r() * 14, 2.5);
+    g.fillStyle(0x2f4229, 0.35).fillEllipse(cx + 4, by - 12, 22, 8);
+  }
+
+  // Watchtower: about four tiles high, ladder, railing, a guard with a helmet and a spear, a thatch roof.
+  function tower(g, x, y, w, h) {
+    const base = y + h - 4; // feet on the ground
+    const P = y - 30; // platform floor
+    const cx = x + w / 2;
+    shadow(g, cx + 10, base + 2, w + 26, 16, 0.26);
+    // back legs (darker), then front legs
+    g.fillStyle(0x4a3826, 1).fillRect(x + 14, P, 5, base - P - 6).fillRect(x + w - 19, P, 5, base - P - 6);
+    g.fillStyle(0x5e4630, 1).fillRect(x + 6, P, 7, base - P).fillRect(x + w - 13, P, 7, base - P);
+    g.fillStyle(0x7a5e3a, 1).fillRect(x + 6, P, 2, base - P).fillRect(x + w - 13, P, 2, base - P);
+    // cross braces
+    g.lineStyle(3, 0x5e4630, 1);
+    g.lineBetween(x + 10, P + 14, x + w - 10, base - 24).lineBetween(x + w - 10, P + 14, x + 10, base - 24);
+    g.lineBetween(x + 10, base - 22, x + w - 10, base - 2).lineBetween(x + w - 10, base - 22, x + 10, base - 2);
+    // ladder
+    g.fillStyle(0x8a6a44, 1).fillRect(cx - 7, P + 8, 2, base - P - 8).fillRect(cx + 5, P + 8, 2, base - P - 8);
+    for (let yy = P + 14; yy < base; yy += 7) g.fillStyle(0x8a6a44, 1).fillRect(cx - 7, yy, 14, 2);
+    // platform
+    g.fillStyle(0x6b5233, 1).fillRect(x - 2, P, w + 4, 10);
+    g.fillStyle(0x8f7048, 1).fillRect(x - 2, P, w + 4, 3);
+    for (let xx = x; xx < x + w; xx += 8) g.fillStyle(0x5a4429, 1).fillRect(xx, P + 3, 1, 7);
+    // guard (behind the railing): boots hidden, tunic, belt, helmet, face, spear
+    const gx = cx + 4;
+    g.lineStyle(2, 0x6b5a45, 1).lineBetween(gx + 9, P - 2, gx + 9, P - 58);
+    g.fillStyle(0xbfc3c4, 1).fillTriangle(gx + 6, P - 56, gx + 12, P - 56, gx + 9, P - 66);
+    g.fillStyle(0x5c5246, 1).fillRect(gx - 7, P - 22, 14, 20);
+    g.fillStyle(0x7a6c5a, 1).fillRect(gx - 7, P - 22, 14, 4);
+    g.fillStyle(0x3d342a, 1).fillRect(gx - 7, P - 11, 14, 2);
+    g.fillStyle(0xe2c4a4, 1).fillRect(gx + 7, P - 18, 3, 6);
+    g.fillStyle(0xe2c4a4, 1).fillCircle(gx, P - 27, 5.5);
+    g.fillStyle(0x8e9294, 1).fillEllipse(gx, P - 31, 14, 8);
+    g.fillStyle(0xaeb2b4, 1).fillRect(gx - 8, P - 29, 16, 2);
+    g.fillStyle(0x2a241d, 1).fillRect(gx - 2, P - 27, 1.5, 1.5).fillRect(gx + 2, P - 27, 1.5, 1.5);
+    // railing in front of the guard
+    g.fillStyle(0x6b5233, 1).fillRect(x - 2, P - 14, w + 4, 4);
+    g.fillStyle(0x8f7048, 1).fillRect(x - 2, P - 14, w + 4, 1);
+    for (let xx = x; xx <= x + w; xx += 11) g.fillStyle(0x5e4630, 1).fillRect(xx - 1, P - 14, 3, 14);
+    // roof posts and thatch roof
+    g.fillStyle(0x5e4630, 1).fillRect(x, P - 40, 3, 40).fillRect(x + w - 3, P - 40, 3, 40);
+    poly(g, 0xb39a5a, 1, [[x - 10, P - 36], [x + w + 10, P - 36], [cx + 4, P - 70], [cx - 4, P - 70]]);
+    for (let i = 0; i < 6; i++) {
+      const yy = P - 38 - i * 5;
+      const half = (w / 2 + 10) * (1 - i / 7);
+      g.fillStyle(i % 2 ? 0xc6ad6a : 0xa58c4c, 1).fillRect(cx - half, yy, half * 2, 3);
+    }
+    g.fillStyle(0x8a7340, 1).fillRect(cx - 5, P - 72, 10, 5);
+    g.fillStyle(0x1a160f, 0.22).fillRect(x - 6, P - 36, w + 12, 3);
+  }
+
+  // Gold shield with a brown tower: the Oriaris crest (same shape as in oldmap.js).
+  function crest(g, cx, cy, s) {
+    g.fillStyle(0xd9a93a, 1).fillRect(cx - 4 * s, cy - 4 * s, 8 * s, 5 * s);
+    g.fillTriangle(cx - 4 * s, cy + 1 * s, cx + 4 * s, cy + 1 * s, cx, cy + 5 * s);
+    g.fillStyle(0x6b4a12, 1).fillRect(cx - 1.5 * s, cy - 2.5 * s, 3 * s, 5 * s);
+    g.fillRect(cx - 2.5 * s, cy - 3 * s, 1 * s, 1 * s).fillRect(cx - 0.5 * s, cy - 3 * s, 1 * s, 1 * s).fillRect(cx + 1.5 * s, cy - 3 * s, 1 * s, 1 * s);
+  }
+
+  // Shared house parts --------------------------------------------------------------------------------------------------
+  function door(g, dx, by, wd = 18, ht = 26) {
+    g.fillStyle(0x3a2d1f, 1).fillRoundedRect(dx - wd / 2 - 3, by - ht - 3, wd + 6, ht + 3, { tl: 6, tr: 6, bl: 0, br: 0 });
+    g.fillStyle(0x6b5233, 1).fillRoundedRect(dx - wd / 2, by - ht, wd, ht, { tl: 5, tr: 5, bl: 0, br: 0 });
+    for (let i = 1; i < 3; i++) g.fillStyle(0x553f27, 1).fillRect(dx - wd / 2 + (wd / 3) * i, by - ht + 2, 1, ht - 2);
+    g.fillStyle(0x3a3a3a, 1).fillRect(dx - wd / 2, by - ht + 7, wd, 2).fillRect(dx - wd / 2, by - 8, wd, 2);
+    g.fillStyle(0xc9a24a, 1).fillCircle(dx + wd / 2 - 4, by - ht / 2, 1.6);
+    g.fillStyle(0x8f887a, 1).fillRect(dx - wd / 2 - 4, by, wd + 8, 4);
+  }
+  function windowBox(g, wx, wy, ww = 14, wh = 12, shutters = true) {
+    if (shutters) {
+      g.fillStyle(0x5e4630, 1).fillRect(wx - 7, wy - 1, 6, wh + 2).fillRect(wx + ww + 1, wy - 1, 6, wh + 2);
+      g.fillStyle(0x4a3826, 1).fillRect(wx - 5, wy + 2, 2, wh - 4).fillRect(wx + ww + 3, wy + 2, 2, wh - 4);
+    }
+    g.fillStyle(0x4a3826, 1).fillRect(wx - 2, wy - 2, ww + 4, wh + 4);
+    g.fillStyle(0x2b3236, 1).fillRect(wx, wy, ww, wh);
+    g.fillStyle(0xe8c77a, 0.35).fillRect(wx + 1, wy + 1, ww / 2 - 1, wh / 2 - 1);
+    g.fillStyle(0x4a3826, 1).fillRect(wx + ww / 2 - 1, wy, 2, wh).fillRect(wx, wy + wh / 2 - 1, ww, 2);
+    g.fillStyle(0x7a5e3a, 1).fillRect(wx - 3, wy + wh + 1, ww + 6, 3);
+  }
+  function foundation(g, x, y, w) {
+    const r = rnd(x + y);
+    g.fillStyle(0x6f6a62, 1).fillRect(x - 2, y - 7, w + 4, 8);
+    for (let xx = x; xx < x + w; xx += 8 + r() * 6) g.fillStyle(r() < 0.5 ? 0x8e897f : 0x9a958b, 1).fillRoundedRect(xx, y - 6, 7 + r() * 4, 6, 2);
+  }
+  function chimney(g, cx, top) {
+    g.fillStyle(0x6f6a62, 1).fillRect(cx - 6, top, 12, 18);
+    g.fillStyle(0x8e897f, 1).fillRect(cx - 6, top, 4, 18);
+    g.fillStyle(0x55504a, 1).fillRect(cx - 7, top - 2, 14, 4);
+    [[0, -8, 6], [4, -16, 7], [-1, -25, 8], [5, -34, 7]].forEach(([dx, dy, rr], i) => g.fillStyle(0xe8e4dc, 0.28 - i * 0.05).fillCircle(cx + dx, top + dy, rr));
+  }
+
+  function building(g, b) {
+    const x = b.x * T;
+    const y = b.y * T;
+    const w = b.w * T;
+    const h = b.h * T;
+    shadow(g, x + w / 2 + 8, y + h + 2, w + 20, 18, 0.26);
+    if (b.kind === 'hall') return hall(g, b, x, y, w, h);
+    if (b.kind === 'barn') return barn(g, b, x, y, w, h);
+    if (b.kind === 'wood') return woodHouse(g, b, x, y, w, h);
+    return thatchHouse(g, b, x, y, w, h);
+  }
+
+  // Straw-roofed cottage: thick layered thatch, daub walls with a timber frame, stone footing.
+  function thatchHouse(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.42;
+    const by = y + h;
+    // walls
+    g.fillStyle(0xddd1b4, 1).fillRect(x + 2, wallTop, w - 4, by - wallTop);
+    g.fillStyle(0xcfc2a2, 1).fillRect(x + 2, by - 16, w - 4, 10);
+    // timber frame: posts, beam, braces
+    g.fillStyle(0x5a4429, 1);
+    [x + 2, x + w / 2 - 2, x + w - 6].forEach((px) => g.fillRect(px, wallTop, 4, by - wallTop));
+    g.fillRect(x + 2, wallTop + 4, w - 4, 3);
+    g.lineStyle(3, 0x5a4429, 1).lineBetween(x + 6, by - 8, x + w / 2 - 2, wallTop + 8).lineBetween(x + w - 6, by - 8, x + w / 2 + 2, wallTop + 8);
+    foundation(g, x + 2, by, w - 4);
+    // window on the side away from the door
+    const dx = b.door * T + 16;
+    const winX = dx < x + w / 2 ? x + w - 34 : x + 18;
+    windowBox(g, winX, wallTop + 14, 14, 12, true);
+    g.fillStyle(0x6f7d4c, 1).fillRect(winX - 2, wallTop + 29, 18, 4);
+    g.fillStyle(0xd9cfa0, 1).fillCircle(winX + 2, wallTop + 29, 2).fillCircle(winX + 9, wallTop + 28, 2);
+    door(g, dx, by - 2, 18, 26);
+    // thatch roof: rounded mass, layered bands with ragged edges, bound ridge
+    const ry = y - 10;
+    const rh = h * 0.56 + 10;
+    g.fillStyle(0x1a160f, 0.25).fillRoundedRect(x - 8, wallTop - 2, w + 16, 10, 5);
+    g.fillStyle(0x9a8044, 1).fillRoundedRect(x - 10, ry, w + 20, rh, 18);
+    const r = rnd(x * 3 + y);
+    const bands = 6;
+    for (let i = bands - 1; i >= 0; i--) {
+      const yy = ry + 6 + (i * (rh - 10)) / bands;
+      const c = i % 2 ? 0xc8ae6c : 0xb79c58;
+      g.fillStyle(c, 1).fillRoundedRect(x - 9 + i * 0.5, yy, w + 18 - i, (rh - 10) / bands + 4, 8);
+      for (let xx = x - 8; xx < x + w + 8; xx += 5) {
+        const len = 4 + r() * 5;
+        g.fillStyle(shade(c, 0.8), 1).fillRect(xx, yy + (rh - 10) / bands + 1, 2, len - 2);
+        g.lineStyle(1, shade(c, 1.12), 0.9).lineBetween(xx + 1, yy + 2, xx + 1, yy + 6);
+      }
+    }
+    g.fillStyle(0x8a7038, 1).fillRoundedRect(x - 4, ry - 4, w + 8, 10, 5);
+    for (let xx = x; xx < x + w; xx += 12) g.fillStyle(0x6b5a30, 1).fillRect(xx, ry - 4, 2, 10);
+    g.fillStyle(0xd8c07e, 0.6).fillRoundedRect(x - 2, ry - 3, w + 4, 3, 2);
+    chimney(g, x + w - 22, ry - 12);
+  }
+
+  // Plank house: vertical boards, a shingle roof with a lit ridge, a little porch roof over the door.
+  function woodHouse(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.44;
+    const by = y + h;
+    const PL = [0x7f6142, 0x8a6a48, 0x76593c];
+    for (let xx = x + 2; xx < x + w - 2; xx += 7) {
+      g.fillStyle(PL[Math.floor(((xx - x) / 7) % 3)], 1).fillRect(xx, wallTop, 7, by - wallTop);
+      g.fillStyle(0x4a3826, 1).fillRect(xx + 6, wallTop, 1, by - wallTop);
+      g.fillStyle(0x9a7a52, 0.6).fillRect(xx + 1, wallTop, 1, by - wallTop);
+    }
+    g.fillStyle(0x5a4429, 1).fillRect(x + 2, wallTop, 4, by - wallTop).fillRect(x + w - 6, wallTop, 4, by - wallTop);
+    g.fillStyle(0x5a4429, 1).fillRect(x + 2, wallTop + 2, w - 4, 3);
+    foundation(g, x + 2, by, w - 4);
+    const dx = b.door * T + 16;
+    const winX = dx < x + w / 2 ? x + w - 34 : x + 18;
+    windowBox(g, winX, wallTop + 13, 14, 12, true);
+    door(g, dx, by - 2, 18, 26);
+    // porch roof over the door
+    poly(g, 0x5d4a3a, 1, [[dx - 18, by - 30], [dx + 18, by - 30], [dx + 14, by - 38], [dx - 14, by - 38]]);
+    g.fillStyle(0x4a3826, 1).fillRect(dx - 17, by - 30, 3, 28).fillRect(dx + 14, by - 30, 3, 28);
+    // shingle roof
+    const ry = y - 8;
+    const rh = h * 0.56 + 8;
+    g.fillStyle(0x1a160f, 0.25).fillRect(x - 6, wallTop - 2, w + 12, 8);
+    g.fillStyle(shade(b.color, 0.8), 1).fillRect(x - 8, ry, w + 16, rh);
+    const rows = 7;
+    for (let i = 0; i < rows; i++) {
+      const yy = ry + 4 + (i * (rh - 6)) / rows;
+      const off = i % 2 ? 6 : 0;
+      for (let xx = x - 8 - off; xx < x + w + 8; xx += 12) {
+        const sx = Math.max(x - 8, xx);
+        const ex = Math.min(x + w + 8, xx + 11);
+        if (ex <= sx) continue;
+        const c = shade(b.color, 0.92 + ((xx * 7 + i * 3) % 5) * 0.05);
+        g.fillStyle(c, 1).fillRect(sx, yy, ex - sx, (rh - 6) / rows + 2);
+        g.fillStyle(shade(c, 0.7), 1).fillRect(sx, yy + (rh - 6) / rows, ex - sx, 2);
+      }
+    }
+    g.fillStyle(shade(b.color, 0.6), 1).fillRect(x - 8, ry, 3, rh).fillRect(x + w + 5, ry, 3, rh);
+    g.fillStyle(shade(b.color, 1.3), 1).fillRect(x - 6, ry - 4, w + 12, 6);
+    g.fillStyle(shade(b.color, 0.75), 1).fillRect(x - 6, ry + 1, w + 12, 2);
+    chimney(g, x + 20, ry - 10);
+  }
+
+  // Big stone hall with an arched door, tall windows, buttresses, a slate roof and a square tower with a banner.
+  function hall(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.4;
+    const by = y + h;
+    const r = rnd(4242);
+    g.fillStyle(0x8f897d, 1).fillRect(x, wallTop, w, by - wallTop);
+    for (let yy = wallTop; yy < by - 4; yy += 9) {
+      const off = ((yy - wallTop) / 9) % 2 ? 10 : 0;
+      for (let xx = x - off; xx < x + w; xx += 20) {
+        const sx = Math.max(x, xx + 1);
+        const ex = Math.min(x + w, xx + 19);
+        const c = pick2(r, [0xb2ab9e, 0xa9a295, 0xbab4a8]);
+        g.fillStyle(c, 1).fillRect(sx, yy + 1, ex - sx, 7);
+        g.fillStyle(shade(c, 1.1), 1).fillRect(sx, yy + 1, ex - sx, 1);
+      }
+    }
+    // buttresses
+    [x - 4, x + w - 8, x + w / 2 - 50, x + w / 2 + 38].forEach((bx) => {
+      g.fillStyle(0x8f897d, 1).fillRect(bx, wallTop + 6, 12, by - wallTop - 6);
+      g.fillStyle(0xc2bcb0, 1).fillRect(bx, wallTop + 6, 12, 3);
+    });
+    // tall arched windows
+    [x + 26, x + w - 46].forEach((wx) => {
+      g.fillStyle(0x6f6a62, 1).fillRoundedRect(wx - 2, wallTop + 10, 20, 36, { tl: 10, tr: 10, bl: 0, br: 0 });
+      g.fillStyle(0x2b3236, 1).fillRoundedRect(wx, wallTop + 12, 16, 32, { tl: 8, tr: 8, bl: 0, br: 0 });
+      g.fillStyle(0xe8c77a, 0.3).fillRect(wx + 2, wallTop + 16, 5, 12);
+      g.fillStyle(0x6f6a62, 1).fillRect(wx + 7, wallTop + 12, 2, 32).fillRect(wx, wallTop + 28, 16, 2);
+    });
+    // arched double door with studs, steps
+    const dx = b.door * T + 16;
+    g.fillStyle(0x6f6a62, 1).fillRoundedRect(dx - 19, by - 44, 38, 44, { tl: 19, tr: 19, bl: 0, br: 0 });
+    g.fillStyle(0x4b3a26, 1).fillRoundedRect(dx - 15, by - 40, 30, 40, { tl: 15, tr: 15, bl: 0, br: 0 });
+    g.fillStyle(0x3a2d1f, 1).fillRect(dx - 1, by - 38, 2, 38);
+    for (let yy = by - 32; yy < by - 2; yy += 8) g.fillStyle(0x2a2a2a, 1).fillCircle(dx - 9, yy, 1.3).fillCircle(dx + 9, yy, 1.3);
+    g.fillStyle(0x9a958b, 1).fillRect(dx - 26, by, 52, 4).fillRect(dx - 22, by + 4, 44, 4);
+    // slate roof
+    const ry = y - 2;
+    const rh = h * 0.42 + 6;
+    g.fillStyle(0x1a160f, 0.25).fillRect(x - 6, wallTop - 2, w + 12, 7);
+    g.fillStyle(0x4c535b, 1).fillRect(x - 8, ry, w + 16, rh);
+    for (let i = 0; i < 6; i++) {
+      const yy = ry + 2 + i * (rh / 6);
+      for (let xx = x - 8 - (i % 2) * 5; xx < x + w + 8; xx += 10) {
+        const sx = Math.max(x - 8, xx);
+        const ex = Math.min(x + w + 8, xx + 9);
+        if (ex <= sx) continue;
+        g.fillStyle(pick2(r, [0x5a626b, 0x535b64, 0x626a73]), 1).fillRect(sx, yy, ex - sx, rh / 6);
+        g.fillStyle(0x3c4249, 1).fillRect(sx, yy + rh / 6 - 1, ex - sx, 1);
+      }
+    }
+    g.fillStyle(0x7a828a, 1).fillRect(x - 6, ry - 3, w + 12, 4);
+    // central tower with crenels, pyramid roof, flag
+    const tw = 54;
+    const tx = x + w / 2 - tw / 2;
+    const tt = y - 52;
+    g.fillStyle(0x9a9386, 1).fillRect(tx, tt, tw, ry - tt + 10);
+    for (let yy = tt + 4; yy < ry + 8; yy += 9) g.fillStyle(0x8a8377, 1).fillRect(tx, yy, tw, 1);
+    g.fillStyle(0xb2ab9e, 1).fillRect(tx, tt, 4, ry - tt + 10);
+    for (let i = 0; i < 5; i++) g.fillStyle(0xa39c8f, 1).fillRect(tx + 2 + i * 11, tt - 7, 7, 8);
+    g.fillStyle(0x2b3236, 1).fillRoundedRect(tx + tw / 2 - 5, tt + 14, 10, 16, { tl: 5, tr: 5, bl: 0, br: 0 });
+    crest(g, tx + tw / 2, tt + 40, 2.2);
+    g.fillStyle(0x4b3a26, 1).fillRect(tx + tw / 2 - 1, tt - 40, 3, 34);
+    poly(g, 0x7d2e2e, 1, [[tx + tw / 2 + 2, tt - 40], [tx + tw / 2 + 30, tt - 36], [tx + tw / 2 + 24, tt - 30], [tx + tw / 2 + 30, tt - 24], [tx + tw / 2 + 2, tt - 26]]);
+    crest(g, tx + tw / 2 + 13, tt - 33, 0.9);
+    // banners hanging on the front wall
+    [x + 8, x + w - 20].forEach((bx) => {
+      poly(g, 0x7d2e2e, 1, [[bx, wallTop + 4], [bx + 12, wallTop + 4], [bx + 12, wallTop + 34], [bx + 6, wallTop + 29], [bx, wallTop + 34]]);
+      crest(g, bx + 6, wallTop + 15, 1);
+    });
+  }
+
+  // Wooden granary: planks, a big X-braced door, a hay loft and a gambrel-style shingle roof.
+  function barn(g, b, x, y, w, h) {
+    const wallTop = y + h * 0.36;
+    const by = y + h;
+    for (let xx = x + 2; xx < x + w - 2; xx += 8) {
+      g.fillStyle(((xx - x) / 8) % 2 ? 0x8a6a48 : 0x7f6142, 1).fillRect(xx, wallTop, 8, by - wallTop);
+      g.fillStyle(0x4a3826, 1).fillRect(xx + 7, wallTop, 1, by - wallTop);
+    }
+    g.fillStyle(0x5a4429, 1).fillRect(x + 2, wallTop, 5, by - wallTop).fillRect(x + w - 7, wallTop, 5, by - wallTop).fillRect(x + 2, wallTop + 3, w - 4, 3);
+    foundation(g, x + 2, by, w - 4);
+    const dx = b.door * T + 16;
+    g.fillStyle(0x4a3826, 1).fillRect(dx - 24, by - 46, 48, 46);
+    g.fillStyle(0x6b5233, 1).fillRect(dx - 22, by - 44, 21, 44).fillRect(dx + 1, by - 44, 21, 44);
+    g.lineStyle(3, 0x8f7048, 1).strokeRect(dx - 22, by - 44, 44, 44);
+    g.lineBetween(dx - 22, by - 44, dx - 1, by).lineBetween(dx - 1, by - 44, dx - 22, by);
+    g.lineBetween(dx + 1, by - 44, dx + 22, by).lineBetween(dx + 22, by - 44, dx + 1, by);
+    // hay loft window with hay
+    g.fillStyle(0x2e261c, 1).fillRect(dx - 10, wallTop + 4, 20, 14);
+    g.fillStyle(0xcdb56c, 1).fillEllipse(dx, wallTop + 16, 18, 8);
+    // roof
+    const ry = y - 10;
+    const rh = h * 0.4 + 10;
+    g.fillStyle(0x1a160f, 0.25).fillRect(x - 6, wallTop - 2, w + 12, 7);
+    poly(g, 0x5d4a3a, 1, [[x - 10, wallTop], [x + w + 10, wallTop], [x + w + 2, ry + rh * 0.4], [x + w - 20, ry], [x + 20, ry], [x - 2, ry + rh * 0.4]]);
+    for (let i = 0; i < 7; i++) {
+      const yy = ry + 3 + i * (rh / 7);
+      g.lineStyle(2, 0x45372b, 1).lineBetween(x - 8 + (i < 3 ? 12 - i * 4 : 0), yy, x + w + 8 - (i < 3 ? 12 - i * 4 : 0), yy);
+    }
+    g.fillStyle(0x7d6852, 1).fillRect(x + 18, ry - 3, w - 36, 5);
+    // hay bales by the wall
+    [[x - 12, by - 6], [x - 4, by - 16]].forEach(([hx, hy]) => {
+      g.fillStyle(0xb39a52, 1).fillRoundedRect(hx, hy, 22, 14, 3);
+      g.fillStyle(0xcdb56c, 1).fillRect(hx + 2, hy + 2, 18, 4);
+      g.fillStyle(0x8a7038, 1).fillRect(hx + 7, hy, 2, 14).fillRect(hx + 14, hy, 2, 14);
+    });
+  }
+
+  // ---- tall sprites: depth-sorted against the player ----------------------------------------------------------------
+  // Each tall thing is baked once into its own texture (translateCanvas moves it to 0,0), then shown as an image.
+  // Every frame: if the player's feet are above (north of) the thing's base, the thing is drawn over the player.
+  const PLAYER_DEPTH = 10;
+  function tallList(a) {
+    const out = [];
+    a.obstacles.forEach((o, i) => {
+      if (!TALL.has(o.kind)) return;
+      const x = o.x * T;
+      const y = o.y * T;
+      const w = o.w * T;
+      const h = o.h * T;
+      const pad = {
+        tower: [16, 96, 16, 16],
+        tree: [12, 30, 12, 14],
+        well: [14, 40, 14, 22],
+        banner: [4, 32, 14, 8],
+        torch: [10, 24, 10, 8],
+        stall: [10, 24, 10, 10],
+        coop: [8, 4, 30, 18],
+        rack: [6, 4, 6, 12],
+      }[o.kind];
+      out.push({ key: `past_o${i}_${o.kind}`, x0: x - pad[0], y0: y - pad[1], x1: x + w + pad[2], y1: y + h + pad[3], base: (o.y + o.h) * T, draw: (g) => drawThing(g, o, a) });
+    });
+    a.buildings.forEach((b, i) => {
+      const x = b.x * T;
+      const y = b.y * T;
+      out.push({ key: `past_b${i}`, x0: x - 36, y0: y - 104, x1: x + b.w * T + 36, y1: y + b.h * T + 24, base: (b.y + b.h) * T, draw: (g) => building(g, b) });
+    });
+    return out;
+  }
+  function buildTall(sc) {
+    const items = tallList(sc.area).map((t) => {
+      const w = Math.ceil(t.x1 - t.x0);
+      const h = Math.ceil(t.y1 - t.y0);
+      if (!sc.textures.exists(t.key)) {
+        const g = sc.add.graphics();
+        g.translateCanvas(-t.x0, -t.y0);
+        t.draw(g);
+        g.generateTexture(t.key, w, h);
+        g.destroy();
+      }
+      return { img: sc.add.image(t.x0, t.y0, t.key).setOrigin(0).setDepth(PLAYER_DEPTH - 0.6), base: t.base };
+    });
+    const st = { area: sc.area, items };
+    st.update = () => {
+      if (sc.area !== st.area) return clearTall(sc);
+      if (!sc.player) return;
+      const hide = !!sc.inside;
+      const py = sc.player.y;
+      for (const it of items) {
+        it.img.setVisible(!hide);
+        it.img.setDepth(py < it.base ? PLAYER_DEPTH + 0.6 : PLAYER_DEPTH - 0.6);
+      }
+    };
+    sc.events.on('update', st.update);
+    sc.__lqPastTall = st;
+    st.update();
+  }
+  function clearTall(sc) {
+    const st = sc && sc.__lqPastTall;
+    if (!st) return;
+    sc.events.off('update', st.update);
+    st.items.forEach((it) => it.img.destroy());
+    sc.__lqPastTall = null;
+  }
+  function syncTall(sc) {
+    const st = sc.__lqPastTall;
+    if (here(sc) && !sc.switching) {
+      if (st && st.area !== sc.area) clearTall(sc);
+      if (!sc.__lqPastTall) {
+        try {
+          buildTall(sc);
+        } catch (e) {
+          console.warn('past tall sprites failed', e);
+          sc.__lqPastTall = { area: sc.area, items: [], update() {} };
+        }
+      }
+    } else if (st) clearTall(sc);
+  }
+
+  // ---- the flock: hens, a rooster and chicks that wander, peck, and run away from the player ------------------------
+  // Each group stays near its home (tile cx, cy, radius r). Drawn every frame into one Graphics just below the player.
+  const FLOCKS = [
+    { cx: 7, cy: 23.5, r: 2.8, hens: 5, rooster: true, chicks: 3 },
+    { cx: 25, cy: 19.5, r: 2.6, hens: 3, chicks: 2 },
+    { cx: 11, cy: 9.5, r: 2.2, hens: 2 },
+    { cx: 21, cy: 29.5, r: 2, hens: 2, chicks: 2 },
+  ];
+  const HEN_SPEED = 26;
+  const RUN_SPEED = 95;
+  const SCARE = 46;
+  function makeFlock(a) {
+    const r = rnd(2024);
+    const birds = [];
+    const free = (x, y) => !a.isTileBlocked(Math.floor(x / T), Math.floor(y / T));
+    const spot = (f) => {
+      for (let i = 0; i < 40; i++) {
+        const ang = r() * Math.PI * 2;
+        const d = Math.sqrt(r()) * f.r * T;
+        const x = (f.cx + 0.5) * T + Math.cos(ang) * d;
+        const y = (f.cy + 0.5) * T + Math.sin(ang) * d;
+        if (free(x, y)) return { x, y };
+      }
+      return { x: (f.cx + 0.5) * T, y: (f.cy + 0.5) * T };
+    };
+    FLOCKS.forEach((f) => {
+      const add = (kind) => {
+        const p = spot(f);
+        birds.push({ kind, f, x: p.x, y: p.y, tx: p.x, ty: p.y, state: 'idle', t: r() * 2, face: r() < 0.5 ? -1 : 1, phase: r() * 10, flap: 0, mom: null });
+      };
+      for (let i = 0; i < f.hens; i++) add('hen');
+      if (f.rooster) add('rooster');
+      const moms = birds.filter((b) => b.f === f && b.kind === 'hen');
+      for (let i = 0; i < (f.chicks || 0); i++) {
+        add('chick');
+        birds[birds.length - 1].mom = moms[i % moms.length] || null;
+      }
+    });
+    return { birds, free, spot, r };
+  }
+  function henTick(fl, sc, dt) {
+    const who = scarers(sc);
+    for (const b of fl.birds) {
+      b.t -= dt;
+      b.phase += dt * (b.state === 'walk' || b.state === 'run' ? 14 : 3);
+      b.flap = Math.max(0, b.flap - dt);
+      // The nearest one who scares it: the player, or a running child.
+      let px = who[0].x;
+      let py = who[0].y;
+      for (const s of who) {
+        if (Math.hypot(b.x - s.x, b.y - s.y) < Math.hypot(b.x - px, b.y - py)) {
+          px = s.x;
+          py = s.y;
+        }
+      }
+      const dp = Math.hypot(b.x - px, b.y - py);
+      // Scared: run straight away from the player, flapping.
+      if (dp < SCARE && b.state !== 'run') {
+        const k = 70 / Math.max(1, dp);
+        b.tx = b.x + (b.x - px) * k;
+        b.ty = b.y + (b.y - py) * k;
+        b.state = 'run';
+        b.flap = 0.6;
+        b.t = 1.2;
+      }
+      if (b.state === 'walk' || b.state === 'run') {
+        const sp = (b.state === 'run' ? RUN_SPEED : HEN_SPEED) * (b.kind === 'chick' ? 1.15 : 1) * dt;
+        const dx = b.tx - b.x;
+        const dy = b.ty - b.y;
+        const d = Math.hypot(dx, dy);
+        if (Math.abs(dx) > 0.5) b.face = dx < 0 ? -1 : 1;
+        if (d <= sp || b.t <= 0) {
+          b.state = fl.r() < 0.6 ? 'peck' : 'idle';
+          b.t = 0.8 + fl.r() * 2.2;
+        } else {
+          const nx = b.x + (dx / d) * sp;
+          const ny = b.y + (dy / d) * sp;
+          if (fl.free(nx, ny)) {
+            b.x = nx;
+            b.y = ny;
+          } else {
+            b.state = 'idle';
+            b.t = 0.3;
+          }
+        }
+      } else if (b.t <= 0) {
+        // Pick the next place: chicks follow their mother, the others wander around home.
+        let p;
+        if (b.kind === 'chick' && b.mom) p = { x: b.mom.x + (fl.r() - 0.5) * 30, y: b.mom.y + 6 + (fl.r() - 0.5) * 16 };
+        else p = fl.spot(b.f);
+        b.tx = p.x;
+        b.ty = p.y;
+        b.state = 'walk';
+        b.t = 6;
+        if (b.kind === 'rooster' && fl.r() < 0.15) b.flap = 0.8;
+      }
+    }
+  }
+  function drawBird(g, b) {
+    const f = b.face;
+    const x = b.x;
+    const walking = b.state === 'walk' || b.state === 'run';
+    const bob = walking ? Math.abs(Math.sin(b.phase)) * 1.6 : 0;
+    const y = b.y - bob;
+    if (b.kind === 'chick') {
+      g.fillStyle(0x1a160f, 0.2).fillEllipse(b.x, b.y + 4, 8, 3);
+      g.fillStyle(0xf1d36a, 1).fillCircle(x, y, 3.6);
+      g.fillStyle(0xf6df86, 1).fillCircle(x + f * 2.5, y - 3, 2.6);
+      g.fillStyle(0xd9822e, 1).fillTriangle(x + f * 4.5, y - 3.5, x + f * 6.5, y - 3, x + f * 4.5, y - 2.3);
+      g.fillStyle(0x2a241d, 1).fillRect(x + f * 3 - 0.5, y - 4, 1.2, 1.2);
+      return;
+    }
+    const big = b.kind === 'rooster' ? 1.18 : 1;
+    const body = b.kind === 'rooster' ? 0xc0743c : 0xefe9dc;
+    const wing = b.kind === 'rooster' ? 0x9a5a2e : 0xd9d2c2;
+    const pecking = b.state === 'peck' && Math.sin(b.phase * 2.2) > 0.2;
+    g.fillStyle(0x1a160f, 0.2).fillEllipse(b.x, b.y + 6 * big, 14 * big, 4);
+    // legs (step when walking)
+    const step = walking ? Math.sin(b.phase) * 2 : 0;
+    g.lineStyle(1.3, 0xd9a13a, 1).lineBetween(x - 1.5, y + 2, x - 1.5 + step, y + 6 * big).lineBetween(x + 1.5, y + 2, x + 1.5 - step, y + 6 * big);
+    // tail
+    if (b.kind === 'rooster') {
+      g.fillStyle(0x2f4a3a, 1).fillTriangle(x - f * 4, y - 1, x - f * 11, y - 11, x - f * 9, y + 1);
+      g.fillStyle(0x23382c, 1).fillTriangle(x - f * 5, y, x - f * 12, y - 6, x - f * 8, y + 3);
+    } else g.fillStyle(0xe2dccd, 1).fillTriangle(x - f * 4, y - 1, x - f * 9, y - 7, x - f * 8, y + 1);
+    // body + wing (wing lifts when flapping)
+    g.fillStyle(body, 1).fillEllipse(x, y, 13 * big, 9 * big);
+    if (b.flap > 0) {
+      const up = Math.sin(b.flap * 40) * 4;
+      g.fillStyle(wing, 1).fillTriangle(x - f * 2, y - 2, x - f * 8, y - 7 - up, x + f * 3, y - 3);
+    } else g.fillStyle(wing, 1).fillEllipse(x - f * 1, y + 0.5, 7 * big, 5 * big);
+    // head: down to the ground when pecking
+    const hx = x + f * (pecking ? 7 : 5) * big;
+    const hy = y - (pecking ? -1 : 5) * big;
+    g.fillStyle(body === 0xefe9dc ? 0xf7f3ea : 0xd08446, 1).fillCircle(hx, hy, 3.4 * big);
+    g.fillStyle(0xc8432f, 1).fillRect(hx - 1.5, hy - 4.6 * big, 3 * big, 2 * big);
+    if (b.kind === 'rooster') g.fillStyle(0xc8432f, 1).fillCircle(hx + f * 1, hy - 4.5 * big, 1.6).fillCircle(hx - f * 1, hy - 5 * big, 1.6).fillCircle(hx + f * 2.5, hy + 2.5, 1.3);
+    g.fillStyle(0xd9a13a, 1).fillTriangle(hx + f * 3, hy - 0.8, hx + f * 6, hy, hx + f * 3, hy + 1);
+    g.fillStyle(0x2a241d, 1).fillRect(hx + f * 1.2 - 0.6, hy - 1.4, 1.3, 1.3);
+  }
+  function hensUpdate(sc, delta) {
+    let st = sc.__lqPastHens;
+    if (!here(sc) || sc.switching || !sc.player) {
+      if (st) {
+        st.g.destroy();
+        sc.__lqPastHens = null;
+      }
+      return;
+    }
+    if (!st || st.area !== sc.area) {
+      if (st) st.g.destroy();
+      st = sc.__lqPastHens = { area: sc.area, g: sc.add.graphics().setDepth(PLAYER_DEPTH - 0.5), fl: makeFlock(sc.area) };
+    }
+    st.g.clear();
+    if (sc.inside) return;
+    henTick(st.fl, sc, Math.min(0.05, (delta || 16) / 1000));
+    [...st.fl.birds].sort((a, b) => a.y - b.y).forEach((b) => drawBird(st.g, b));
+  }
+
+  // ---- villagers: men, women and children living their day in the village ----------------------------------------------
+  // They use the game's own character art (window.LQCharacter), scaled by height: seventy years ago people were shorter.
+  // Only the grown men are as tall as the player; women are a little shorter, children much shorter.
+  // Positions are in tiles (25.5 = middle of tile 25). Modes: home [x, y, radius] = wander around it; still = stand there;
+  // path = walk the points in a loop; follow = stay next to another villager (index); play: 'tag' = children's game.
+  const HEIGHT = { man: 1, woman: 0.88, girl: 0.72, boy: 0.72, kid: 0.6 };
+  const WALK = { man: 34, woman: 30, girl: 42, boy: 42, kid: 38 };
+  const TAG_RUN = 74;
+  const FEET = 9.2; // from player.y (origin Gr of the 38px sprite) down to the feet
+  const OLD_SKIN = [0xf6d2b0, 0xe8b88a, 0xf6d2b0, 0xc98e62];
+  const OLD_HAIR = [0x1b1b1b, 0x3a2418, 0x5a3b2a, 0x8a5a3b];
+  const TUNIC = [0x7a5a3a, 0x8a7a5a, 0x5d6b5a, 0x6b5a45, 0x9a8a6a, 0x5a4a3a];
+  const GOWN = [0x8a6a5a, 0x7a7a8a, 0x9a8466, 0x6a5a6a, 0xa89a7a, 0x7d5f4a];
+  const BREECHES = [0x4a3a2a, 0x3b3127, 0x5a4a38];
+  // work: [door x of their house, x, y of their place in the paddy]. Those villagers (the children and their mothers)
+  // follow the working day of the village: see workMode below.
+  const FOLK = [
+    // the well: women fetching water and talking, a little girl holding on to her mother
+    { kind: 'woman', home: [25.5, 16.7, 1.3], style: 'bun', work: [14, 11.5, 39.6] },
+    { kind: 'woman', home: [28.7, 16.5, 1.1], style: 'long', work: [31, 31.6, 39.6] },
+    { kind: 'woman', home: [27.2, 17.6, 1.5], style: 'ponytail', hair: 0x5a3b2a, work: [36, 41.2, 39.4] },
+    { kind: 'kid', follow: 2, style: 'bob', dress: true, work: [36, 42.2, 39.9] },
+    // the little market: a woman selling, a man buying
+    { kind: 'woman', home: [30.9, 17.6, 0.4], still: 'down', style: 'bun', hair: 0x8a5a3b },
+    { kind: 'man', home: [31, 19.2, 1.4], style: 'short' },
+    // children playing tag in the square (they scare the hens too)
+    { kind: 'boy', play: 'tag', home: [22.5, 19.6, 2.6], style: 'short', work: [14, 13.2, 37.6] },
+    { kind: 'boy', play: 'tag', home: [22.5, 19.6, 2.6], style: 'curly', work: [14, 14.6, 39.8] },
+    { kind: 'girl', play: 'tag', home: [22.5, 19.6, 2.6], style: 'ponytail', work: [31, 33.6, 37.8] },
+    { kind: 'kid', play: 'tag', home: [22.5, 19.6, 2.6], style: 'short', work: [31, 35.6, 39.5] },
+    // the granary: a man carrying a sack to the market, an old man by the door
+    { kind: 'man', path: [[8.5, 7.6], [8.5, 11.5], [29, 11.5], [30.5, 15.4], [29, 11.5], [8.5, 11.5]], style: 'short', hair: 0x3a2418 },
+    { kind: 'man', home: [8.5, 7.8, 1.2], style: 'bald', hair: 0x9a9a9a },
+    // the wood pile
+    { kind: 'man', home: [37.9, 14.7, 0.3], still: 'up', style: 'curly' },
+    // a girl carrying water from the well out to the east fields (the board there says so)
+    { kind: 'girl', path: [[29.5, 17.3], [29.5, 13], [36, 11.5], [44, 11.5], [51, 11.5], [44, 11.5], [36, 11.5], [29.5, 13]], style: 'long', work: [9, 5.4, 43.4] },
+    // farmers on the dikes between the paddies
+    { kind: 'man', path: [[54.5, 3], [54.5, 27.5]], style: 'short' },
+    { kind: 'man', path: [[29.5, 35], [29.5, 46.5]], style: 'crop' },
+    // the cottages: a grandmother and her grandson, a man at the Farmer's Cottage
+    { kind: 'woman', home: [6.8, 29.9, 1.2], style: 'long', hair: 0xb8b8b8 },
+    { kind: 'kid', home: [7.2, 30.2, 1.5], style: 'short', work: [3, 51.2, 43.6] },
+    { kind: 'man', home: [33, 29.9, 1.6], style: 'scruffy' },
+    // the young soldier's mother, waiting at the door of the Brown Family Home
+    { kind: 'woman', home: [24.5, 28.7, 0.3], still: 'down', style: 'bun', hair: 0x5a3b2a, mother: true },
+    // (Lord Gusest is a real chat NPC now: id 'gusest' in game/02, standing at PLACES.gusest_post.)
+    // The young soldier (Mayor Brown's father, 17) is away at the wall for 13 days: he is only home after the Day of Glory.
+    { kind: 'man', home: [25.7, 28.8, 0.3], still: 'down', style: 'short', hair: 0x3a2418, outfit: 0x6b5a45, name: 'Tom Brown', say: 'soldier', after: true },
+  ];
+  // What they say when the player stops next to them: always the past tense (the topic of the chapter).
+  const SAY = {
+    man: [
+      ['We built this wall last spring.', 'Mùa xuân năm ngoái chúng tôi đã xây bức tường này.'],
+      ['I worked in the rice fields all day.', 'Tôi đã làm ngoài ruộng cả ngày.'],
+      ['My brother went north with the knights.', 'Anh trai tôi đã đi về phía bắc cùng các kỵ sĩ.'],
+    ],
+    woman: [
+      ['I carried water from the well this morning.', 'Sáng nay tôi đã gánh nước từ giếng.'],
+      ['We shared our rice with the neighbours.', 'Chúng tôi đã chia gạo cho hàng xóm.'],
+      ['Lord Gusest sent us bread yesterday.', 'Hôm qua Lãnh chúa Gusest đã gửi bánh mì cho chúng tôi.'],
+      ['The children planted rice with us all morning.', 'Bọn trẻ đã cấy lúa cùng chúng tôi cả buổi sáng.'],
+    ],
+    kid: [
+      ['I saw a knight yesterday!', 'Hôm qua cháu đã thấy một kỵ sĩ!'],
+      ['We planted rice with Mother this morning.', 'Sáng nay bọn cháu đã cấy lúa cùng mẹ.'],
+      ['We played by the well before the war.', 'Trước chiến tranh bọn cháu đã chơi bên giếng.'],
+      ['Mother told me a story last night.', 'Tối qua mẹ đã kể chuyện cho cháu nghe.'],
+    ],
+    mother: [['My son went to the wall. I waited for him every day.', 'Con trai tôi đã ra bức tường. Ngày nào tôi cũng đợi nó.']],
+    peace: [
+      ['The war ended! We were so happy.', 'Chiến tranh đã kết thúc! Chúng tôi đã rất vui.'],
+      ['The colours came back on the Day of Glory.', 'Màu sắc đã trở lại vào Ngày Vinh Quang.'],
+    ],
+    motherPeace: [['My son came home with the flag. I cried all day.', 'Con trai tôi đã về nhà với lá cờ. Tôi đã khóc cả ngày.']],
+    gusest: [
+      ['I sent bread and rice to every family this week.', 'Tuần này ta đã gửi bánh mì và gạo cho mọi gia đình.'],
+      ['Yesterday I wrote a letter to our knights in the north.', 'Hôm qua ta đã viết thư cho các kỵ sĩ của chúng ta ở phương bắc.'],
+    ],
+    gusestPeace: [['Our knights came home. I was so proud of this village.', 'Các kỵ sĩ của chúng ta đã trở về. Ta đã rất tự hào về ngôi làng này.']],
+    soldierPeace: [
+      ['I ran all the way home with the flag!', 'Tôi đã chạy một mạch về nhà với lá cờ!'],
+      ['My mother waited for me every day. I missed her so much.', 'Mẹ tôi đã đợi tôi mỗi ngày. Tôi đã nhớ mẹ rất nhiều.'],
+    ],
+  };
+  const isKid = (k) => k === 'girl' || k === 'boy' || k === 'kid';
+  function folkLook(v, r) {
+    const pick2 = (arr) => arr[Math.floor(r() * arr.length)];
+    const female = v.kind === 'woman' || v.kind === 'girl' || !!v.dress;
+    // Always draw the random picks (even when overridden) so the other villagers keep the same looks.
+    const skin = pick2(OLD_SKIN);
+    const hair = pick2(OLD_HAIR);
+    const outfit = female ? pick2(GOWN) : pick2(TUNIC);
+    const pants = pick2(BREECHES);
+    return {
+      gender: female ? 'female' : 'male',
+      skin: v.skin != null ? v.skin : skin,
+      hair: v.hair != null ? v.hair : hair,
+      style: v.style || 'short',
+      eye: 0x3a2a1e,
+      outfit: v.outfit != null ? v.outfit : outfit,
+      pants: v.pants != null ? v.pants : pants,
+      hat: null,
+      dress: female,
+    };
+  }
+  // Plate armour (no helmet) for Lord Gusest. The game's character art has no armour, so we draw him with marker colours
+  // and repaint every frame: magenta top -> steel (same light and shade), green legs -> dark steel greaves,
+  // a gold crest on the chest, and from behind a red cloak over the back.
+  const ARMOR_DIRS = ['down', 'up', 'side', 'uside', 'dside'];
+  function armorize(sc, key, inPlace) {
+    const out = inPlace ? key : `${key}_armor`;
+    for (const dir of ARMOR_DIRS) {
+      for (let f = 0; f < 3; f++) {
+        const src = `ch_${key}_${dir}_${f}`;
+        const dst = `ch_${out}_${dir}_${f}`;
+        if (!sc.textures.exists(src) || (!inPlace && sc.textures.exists(dst))) continue;
+        const img = sc.textures.get(src).getSourceImage();
+        const cv = document.createElement('canvas');
+        cv.width = img.width;
+        cv.height = img.height;
+        const cx = cv.getContext('2d');
+        cx.drawImage(img, 0, 0);
+        const id = cx.getImageData(0, 0, cv.width, cv.height);
+        const px = id.data;
+        let x0 = 1e9;
+        let x1 = -1;
+        let y0 = 1e9;
+        let y1 = -1;
+        const back = dir === 'up';
+        for (let k = 0; k < px.length; k += 4) {
+          const R = px[k];
+          const G = px[k + 1];
+          const B = px[k + 2];
+          if (!px[k + 3]) continue;
+          const top = R > G + 60 && B > G + 60; // magenta marker (any shade)
+          const leg = G > R + 60 && G > B + 60; // green marker
+          if (!top && !leg) continue;
+          const l = (top ? (R + B) / 2 : G) / 255; // keep the shading of the original
+          if (top && back) {
+            // the cloak, seen from behind
+            px[k] = 60 + l * 90;
+            px[k + 1] = 22 + l * 26;
+            px[k + 2] = 24 + l * 26;
+          } else if (top) {
+            // darker steel than white cloth, so it still reads as metal under the sepia filter of the village
+            px[k] = 58 + l * 78;
+            px[k + 1] = 64 + l * 82;
+            px[k + 2] = 78 + l * 92;
+          } else {
+            px[k] = 46 + l * 60;
+            px[k + 1] = 50 + l * 62;
+            px[k + 2] = 60 + l * 68;
+          }
+          if (top) {
+            const x = (k / 4) % cv.width;
+            const y = Math.floor(k / 4 / cv.width);
+            x0 = Math.min(x0, x);
+            x1 = Math.max(x1, x);
+            y0 = Math.min(y0, y);
+            y1 = Math.max(y1, y);
+          }
+        }
+        cx.putImageData(id, 0, 0);
+        if (x1 >= 0) {
+          const w = x1 - x0 + 1;
+          if (!back) {
+            // the red cloak shows behind the arms, from the shoulders down to the knees
+            cx.fillStyle = '#7d2e2e';
+            cx.fillRect(x0 - 1, y0 + 1, 1, y1 - y0 + 4);
+            cx.fillRect(x1 + 1, y0 + 1, 1, y1 - y0 + 4);
+            // plate lines across the breastplate (lames), and a bright rim on top
+            cx.fillStyle = '#2b3038';
+            for (let y = y0 + 4; y < y1; y += 3) cx.fillRect(x0 + 1, y, w - 2, 1);
+            cx.fillStyle = '#e6ebf2';
+            cx.fillRect(x0 + 1, y0 + 1, w - 2, 1);
+          }
+          // pauldrons: round steel plates a little wider than the shoulders
+          cx.fillStyle = '#8d96a3';
+          cx.fillRect(x0 - 1, y0, 3, 3);
+          cx.fillRect(x1 - 1, y0, 3, 3);
+          cx.fillStyle = '#dfe5ec';
+          cx.fillRect(x0 - 1, y0, 3, 1);
+          cx.fillRect(x1 - 1, y0, 3, 1);
+          cx.fillStyle = '#2b3038';
+          cx.fillRect(x0 - 1, y0 + 3, 3, 1);
+          cx.fillRect(x1 - 1, y0 + 3, 3, 1);
+          const mx = Math.round((x0 + x1) / 2);
+          if (dir === 'down' || dir === 'dside') {
+            // the Oriaris crest: a little gold shield with a brown tower
+            cx.fillStyle = '#e0b440';
+            cx.fillRect(mx - 1, y0 + 2, 3, 3);
+            cx.fillRect(mx, y0 + 5, 1, 1);
+            cx.fillStyle = '#6b4a2a';
+            cx.fillRect(mx, y0 + 3, 1, 2);
+          } else if (back) {
+            // the cloak hangs down over the legs
+            cx.fillStyle = '#5c2224';
+            cx.fillRect(x0, y1 + 1, x1 - x0 + 1, 4);
+            cx.fillStyle = '#7d2e2e';
+            cx.fillRect(x0 + 1, y1 + 1, x1 - x0 - 1, 3);
+          }
+        }
+        if (inPlace) sc.textures.remove(src);
+        sc.textures.addCanvas(dst, cv);
+      }
+    }
+    return out;
+  }
+  // Lord Gusest is a chat NPC (game/02 + Nr.gusest in game/10, drawn in marker colours): put his armour on once.
+  function armorNpc(sc) {
+    const n = (sc.npcs || []).find((x) => x.def && x.def.id === 'gusest');
+    if (!n || !sc.textures.exists('ch_gusest_down_0')) return;
+    if (sc.textures.get('ch_gusest_down_0').__lqArmor) return;
+    try {
+      armorize(sc, 'gusest', true);
+      sc.textures.get('ch_gusest_down_0').__lqArmor = true;
+      n.sprite.setTexture(n.sprite.texture.key);
+    } catch (e) {
+      console.warn('Gusest armour failed', e);
+    }
+  }
+  function makeFolk(sc) {
+    const C = window.LQCharacter;
+    if (!C || !C.ensure) return [];
+    const r = rnd(1970);
+    const pad = C.pad || 0;
+    const oy = (35 + pad) / (38 + pad); // origin at the feet, so a smaller person still stands on the ground
+    return FOLK.map((v, i) => {
+      let key = C.ensure(sc, folkLook(v, r));
+      if (v.armor) {
+        try {
+          key = armorize(sc, key);
+        } catch (e) {
+          console.warn('armour failed', e);
+        }
+      }
+      const start = v.home || (v.path && v.path[0]) || FOLK[v.follow].home;
+      const p = {
+        v, i, key,
+        x: start[0] * T, y: start[1] * T, tx: start[0] * T, ty: start[1] * T,
+        dir: v.still || 'down', flip: false, walking: false, anim: r() * 1, t: r() * 2,
+        leg: 0, it: null, chaser: false, freeze: 0, said: false, bubble: null,
+      };
+      p.img = sc.add.image(p.x, p.y + FEET, `ch_${key}_down_0`).setOrigin(0.5, oy).setScale(HEIGHT[v.kind] || 1);
+      return p;
+    });
+  }
+  function faceTo(p, dx, dy) {
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    if (ax < 0.01 && ay < 0.01) return;
+    if (ay < ax * 0.4) {
+      p.dir = 'side';
+      p.flip = dx < 0;
+    } else if (ax < ay * 0.4) p.dir = dy < 0 ? 'up' : 'down';
+    else {
+      p.dir = dy < 0 ? 'uside' : 'dside';
+      p.flip = dx < 0;
+    }
+  }
+  function folkSpot(st, home) {
+    for (let k = 0; k < 30; k++) {
+      const ang = st.r() * Math.PI * 2;
+      const d = Math.sqrt(st.r()) * home[2] * T;
+      const x = home[0] * T + Math.cos(ang) * d;
+      const y = home[1] * T + Math.sin(ang) * d;
+      if (st.free(x, y)) return { x, y };
+    }
+    return { x: home[0] * T, y: home[1] * T };
+  }
+  // Move p toward (tx, ty). Returns true when it got there (or is stuck).
+  function folkStep(st, p, sp, px, py) {
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= sp) {
+      p.x = p.tx;
+      p.y = p.ty;
+      return true;
+    }
+    const nx = p.x + (dx / d) * sp;
+    const ny = p.y + (dy / d) * sp;
+    faceTo(p, dx, dy);
+    if (Math.hypot(nx - px, ny - py) < 14) return false; // never walk through the player: wait
+    if (!st.free(nx, ny)) return true;
+    p.x = nx;
+    p.y = ny;
+    p.walking = true;
+    return false;
+  }
+  // ---- the working day: children worked too in those days ---------------------------------------------------------------
+  // Village clock (game minutes): 05:30–11:30 and 13:00–17:30 planting rice in the south paddies, back in the village at
+  // noon and in the evening, and from 19:30 home: they walk to their own door and go inside (hidden) until morning.
+  // They go out through the south gate and along the dike, so the routes never cross the wall.
+  const HUB = [18.5, 30.5]; // just inside the south gate
+  const DOOR_Y = 28.8; // in front of the cottage doors
+  function workMode(min) {
+    const m = ((min % 1440) + 1440) % 1440;
+    if (m < 330 || m >= 1170) return 'home';
+    if (m < 690 || (m >= 780 && m < 1050)) return 'field';
+    return 'village';
+  }
+  function workBase(v) {
+    if (v.home) return v.home;
+    if (v.path) return v.path[0];
+    return FOLK[v.follow].home;
+  }
+  function workRoute(p, from, to) {
+    const [door, sx, sy] = p.v.work;
+    const base = workBase(p.v);
+    const low = (y) => y > 26.5; // south of the cottages: go along the lane behind them
+    const out = [];
+    if (from === 'field') out.push([sx, 41.5], [18.5, 41.5], [18.5, 33], HUB);
+    else if (from === 'home') out.push([door + 0.5, 30.5], HUB);
+    else out.push(low(p.y / T) ? [p.x / T, 30.5] : [18.5, 20.5], HUB);
+    if (to === 'field') out.push([18.5, 33], [18.5, 41.5], [sx, 41.5], [sx, sy]);
+    else if (to === 'home') out.push([door + 0.5, 30.5], [door + 0.5, DOOR_Y]);
+    else out.push(low(base[1]) ? [base[0], 30.5] : [18.5, 20.5], [base[0], base[1]]);
+    return out;
+  }
+  // Like folkStep, but on a planned route (gates, dikes): no wall check. Still never walks through the player.
+  function workStep(p, sp, px, py) {
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= sp) {
+      p.x = p.tx;
+      p.y = p.ty;
+      return true;
+    }
+    faceTo(p, dx, dy);
+    const nx = p.x + (dx / d) * sp;
+    const ny = p.y + (dy / d) * sp;
+    if (Math.hypot(nx - px, ny - py) < 14) return false;
+    p.x = nx;
+    p.y = ny;
+    p.walking = true;
+    return false;
+  }
+  // Returns true when the schedule moved this villager (their usual village life is skipped this frame).
+  function workTick(sc, p, dt, px, py) {
+    const v = p.v;
+    if (!v.work) return false;
+    const g = sc.store && sc.store.game;
+    const want = workMode(g && typeof g.minutes === 'number' ? g.minutes : 480);
+    const [door, sx, sy] = v.work;
+    if (!p.mode) {
+      // First frame in the village: put them where the clock says, without walking there.
+      p.mode = want;
+      if (want === 'field') {
+        p.x = p.tx = sx * T;
+        p.y = p.ty = sy * T;
+      } else if (want === 'home') {
+        p.x = p.tx = (door + 0.5) * T;
+        p.y = p.ty = DOOR_Y * T;
+        p.gone = true;
+      }
+    }
+    if (!p.route && p.mode !== want) {
+      p.route = workRoute(p, p.mode, want);
+      p.goal = want;
+      p.gone = false; // morning: they come out of their door
+      p.chaser = false;
+    }
+    p.away = !!p.route || p.mode !== 'village';
+    if (p.route) {
+      const pt = p.route[0];
+      p.tx = pt[0] * T;
+      p.ty = pt[1] * T;
+      if (workStep(p, (WALK[v.kind] || 32) * dt, px, py)) {
+        p.route.shift();
+        if (!p.route.length) {
+          p.route = null;
+          p.mode = p.goal;
+          if (p.mode === 'home') p.gone = true;
+          if (p.mode === 'village') {
+            p.away = false;
+            p.leg = 0;
+            p.t = 0;
+          }
+        }
+      }
+      return true;
+    }
+    if (p.mode === 'home') return true;
+    if (p.mode === 'field') {
+      // Planting: step slowly along the row, bending down again and again to push the seedlings in.
+      p.plant = (p.plant || 0) + dt;
+      p.x = sx * T + Math.sin(p.plant * 0.25 + p.i) * 0.9 * T;
+      p.y = sy * T;
+      p.dir = 'down';
+      p.planting = true;
+      return true;
+    }
+    return false;
+  }
+
+  function folkTick(st, sc, dt) {
+    const px = sc.player.x;
+    const py = sc.player.y;
+    const folk = st.folk;
+    const taggers = folk.filter((p) => p.v.play === 'tag' && !p.away);
+    if (taggers.length && !taggers.some((p) => p.chaser)) taggers[0].chaser = true;
+    for (const p of folk) {
+      const v = p.v;
+      p.walking = false;
+      p.planting = false;
+      if (v.after) {
+        // Only home after the Day of Glory (the young soldier).
+        const d = data();
+        p.gone = !(d && d.done);
+        if (p.gone) continue;
+      }
+      p.t -= dt;
+      p.freeze = Math.max(0, p.freeze - dt);
+      if (p.gone && p.mode === 'home' && workMode(sc.store.game.minutes) === 'home') continue;
+      const dp = Math.hypot(p.x - px, p.y - py);
+      // Grown-ups stop and look at the player who comes close; children keep playing.
+      if (!isKid(v.kind) && dp < 48) {
+        faceTo(p, px - p.x, py - p.y);
+        continue;
+      }
+      if (workTick(sc, p, dt, px, py)) continue;
+      if (v.play === 'tag') {
+        const home = v.home;
+        const sp = TAG_RUN * dt;
+        if (p.freeze > 0) continue;
+        if (p.chaser) {
+          // Run after the nearest other child; touching them makes them "it".
+          let best = null;
+          let bd = 1e9;
+          for (const o of taggers) {
+            if (o === p || o.freeze > 0) continue;
+            const d = Math.hypot(o.x - p.x, o.y - p.y);
+            if (d < bd) {
+              bd = d;
+              best = o;
+            }
+          }
+          if (!best) continue;
+          if (bd < 11) {
+            p.chaser = false;
+            best.chaser = true;
+            best.freeze = 1.1; // the new "it" counts a little before running
+            p.freeze = 0.4;
+            continue;
+          }
+          p.tx = best.x;
+          p.ty = best.y;
+          folkStep(st, p, sp * 0.92, px, py);
+        } else {
+          const ch = taggers.find((o) => o.chaser);
+          const dc = ch ? Math.hypot(ch.x - p.x, ch.y - p.y) : 1e9;
+          if (ch && dc < 56 && ch.freeze <= 0) {
+            // Run away from "it", but stay in the square.
+            let tx = p.x + ((p.x - ch.x) / Math.max(1, dc)) * 40;
+            let ty = p.y + ((p.y - ch.y) / Math.max(1, dc)) * 40;
+            if (Math.hypot(tx - home[0] * T, ty - home[1] * T) > home[2] * T || !st.free(tx, ty)) {
+              const s = folkSpot(st, home);
+              tx = s.x;
+              ty = s.y;
+            }
+            if (p.t <= 0 || Math.hypot(p.tx - p.x, p.ty - p.y) < 4) {
+              p.tx = tx;
+              p.ty = ty;
+              p.t = 0.6;
+            }
+            folkStep(st, p, sp, px, py);
+          } else {
+            if (p.t <= 0 || Math.hypot(p.tx - p.x, p.ty - p.y) < 3) {
+              const s = folkSpot(st, home);
+              p.tx = s.x;
+              p.ty = s.y;
+              p.t = 1 + st.r() * 1.5;
+            }
+            folkStep(st, p, sp * 0.55, px, py);
+          }
+        }
+        continue;
+      }
+      const sp = (WALK[v.kind] || 32) * dt;
+      if (v.follow != null) {
+        // A little one next to her mother: a step behind and to the side.
+        const m = folk[v.follow];
+        p.tx = m.x + 10;
+        p.ty = m.y + 6;
+        if (Math.hypot(p.tx - p.x, p.ty - p.y) > 6) folkStep(st, p, sp * 1.3, px, py);
+        else faceTo(p, m.x - p.x, m.y - p.y);
+        continue;
+      }
+      if (v.path) {
+        if (p.leg == null) p.leg = 0;
+        if (p.t > 0) continue; // a short pause at each point
+        const pt = v.path[p.leg];
+        p.tx = pt[0] * T;
+        p.ty = pt[1] * T;
+        if (folkStep(st, p, sp, px, py)) {
+          p.leg = (p.leg + 1) % v.path.length;
+          p.t = 0.6 + st.r() * 1.8;
+        }
+        continue;
+      }
+      if (v.still) {
+        // Stands at the spot (comes back to it if it was pushed away) and looks the same way.
+        p.tx = v.home[0] * T;
+        p.ty = v.home[1] * T;
+        if (Math.hypot(p.tx - p.x, p.ty - p.y) > 2) folkStep(st, p, sp, px, py);
+        else p.dir = v.still;
+        continue;
+      }
+      // Wander around home, with pauses.
+      if (p.t > 0 && Math.hypot(p.tx - p.x, p.ty - p.y) < 1) continue;
+      if (p.t <= 0 && Math.hypot(p.tx - p.x, p.ty - p.y) < 1) {
+        const s = folkSpot(st, v.home);
+        p.tx = s.x;
+        p.ty = s.y;
+        p.t = 8;
+      }
+      if (folkStep(st, p, sp, px, py)) p.t = 1.5 + st.r() * 4;
+    }
+  }
+  // Depth: in front of / behind the player, and behind a house or tree when standing north of its base.
+  function folkDepth(sc, p) {
+    let dep = (p.y < sc.player.y ? PLAYER_DEPTH - 0.1 : PLAYER_DEPTH + 0.1) + p.y * 1e-5;
+    const tall = sc.__lqPastTall && sc.__lqPastTall.items;
+    if (tall) {
+      for (const it of tall) {
+        const im = it.img;
+        if (p.x < im.x || p.x > im.x + im.width || p.y + FEET < im.y || p.y > it.base + 24) continue;
+        if (p.y < it.base) dep = Math.min(dep, im.depth - 0.05);
+        else dep = Math.max(dep, im.depth + 0.05);
+      }
+    }
+    return dep;
+  }
+  function folkSay(sc, st, p) {
+    const d = data();
+    const peace = !!(d && d.done);
+    const v = p.v;
+    const set = v.say
+      ? (peace && SAY[v.say + 'Peace']) || SAY[v.say]
+      : v.mother
+        ? peace
+          ? SAY.motherPeace
+          : SAY.mother
+        : peace
+          ? SAY.peace
+          : SAY[isKid(v.kind) ? 'kid' : v.kind];
+    const line = set[(p.i + (st.talks = (st.talks || 0) + 1)) % set.length];
+    if (p.bubble) p.bubble.destroy();
+    p.bubble = sc.add
+      .text(p.x, p.y - 30, `${v.name ? v.name + ': ' : ''}${line[0]}\n${line[1]}`.normalize('NFC'), {
+        // not Georgia: it has no Vietnamese tone marks, the browser then stacks them apart ("chiê ́n")
+        fontFamily: "'Segoe UI', Arial, sans-serif",
+        fontSize: '10px',
+        color: '#2a241d',
+        align: 'center',
+        backgroundColor: '#f3ead8',
+        padding: { x: 6, y: 4 },
+        wordWrap: { width: 190 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(PLAYER_DEPTH + 2)
+      .setResolution(2);
+    p.bubbleT = 4.5;
+  }
+  function folkUpdate(sc, delta) {
+    let st = sc.__lqPastFolk;
+    const kill = () => {
+      if (!st) return;
+      st.folk.forEach((p) => {
+        p.img.destroy();
+        if (p.bubble) p.bubble.destroy();
+      });
+      sc.__lqPastFolk = null;
+    };
+    if (!here(sc) || sc.switching || !sc.player) return kill();
+    if (!st || st.area !== sc.area) {
+      kill();
+      const a = sc.area;
+      st = sc.__lqPastFolk = { area: a, folk: [], r: rnd(29), free: (x, y) => !a.isTileBlocked(Math.floor(x / T), Math.floor(y / T)) };
+      try {
+        st.folk = makeFolk(sc);
+      } catch (e) {
+        console.warn('past villagers failed', e);
+      }
+    }
+    const hide = !!sc.inside || filming;
+    const dt = Math.min(0.05, (delta || 16) / 1000);
+    if (!hide) folkTick(st, sc, dt);
+    for (const p of st.folk) {
+      p.img.setVisible(!hide && !p.gone);
+      if (hide || p.gone) {
+        if (p.bubble) p.bubble.setVisible(false);
+        continue;
+      }
+      // Planting rice: bend down and up (origin is at the feet, so they stay on the ground).
+      const h = HEIGHT[p.v.kind] || 1;
+      p.img.setScale(h, p.planting ? h * (0.9 + 0.06 * Math.sin(p.plant * 2.4 + p.i)) : h);
+      // Walk frames: 1 and 2 while moving (children step faster), 0 when standing.
+      p.anim += dt * (p.walking ? (isKid(p.v.kind) ? 9 : 6) : 0);
+      const frame = p.walking ? 1 + (Math.floor(p.anim) % 2) : 0;
+      const tex = `ch_${p.key}_${p.dir}_${frame}`;
+      if (p.img.texture.key !== tex) p.img.setTexture(tex);
+      p.img.setFlipX(p.flip && p.dir !== 'down' && p.dir !== 'up');
+      p.img.setPosition(p.x, p.y + FEET);
+      p.img.setDepth(folkDepth(sc, p));
+      // Talk once each time the player comes close (and stays a moment).
+      const dp = Math.hypot(p.x - sc.player.x, p.y - sc.player.y);
+      if (dp < 48) {
+        p.near = (p.near || 0) + dt;
+        if (!p.said && p.near > 0.5) {
+          p.said = true;
+          folkSay(sc, st, p);
+        }
+      } else if (dp > 70) {
+        p.said = false;
+        p.near = 0;
+      }
+      if (p.bubble) {
+        p.bubbleT -= dt;
+        if (p.bubbleT <= 0) {
+          p.bubble.destroy();
+          p.bubble = null;
+        } else p.bubble.setVisible(true).setPosition(p.x, p.y + FEET - 38 * (HEIGHT[p.v.kind] || 1)).setAlpha(Math.min(1, p.bubbleT * 2));
+      }
+    }
+  }
+  // Children (and the player) scare the hens.
+  function scarers(sc) {
+    const out = [{ x: sc.player.x, y: sc.player.y }];
+    const st = sc.__lqPastFolk;
+    if (st) st.folk.forEach((p) => isKid(p.v.kind) && p.walking && out.push({ x: p.x, y: p.y }));
+    return out;
+  }
+
+  // ---- runtime ----------------------------------------------------------------------------------------------------------
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const toast = (title, sub, hint) => {
+    try {
+      window.LQAchievements && window.LQAchievements.toast && window.LQAchievements.toast(title, sub, hint);
+    } catch (e) {}
+  };
+  function data() {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') g.ach = { steps: {}, done: {} };
+    if (!g.ach.past || typeof g.ach.past !== 'object') g.ach.past = { visits: 0, read: {} };
+    if (!g.ach.past.read) g.ach.past.read = {};
+    return g.ach.past;
+  }
+  const save = () => {
+    try {
+      const sc = getScene();
+      sc && sc.store && sc.store.save();
+    } catch (e) {}
+  };
+  const here = (sc) => !!(sc && sc.area && sc.area.id === ID);
+  // The village, or the North Trail / North Camp (js/front.js): same time period, same pale filter, same calendar.
+  const inPast = (sc) => here(sc) || !!(sc && sc.area && window.LQFront && window.LQFront.ids.includes(sc.area.id));
+
+  // Pale colours while the player is in the past.
+  // The game canvas and the minimap (and any other small canvas the HUD draws), not the cutscene canvases.
+  let filtered = false;
+  const PALE = 'grayscale(.62) sepia(.32) saturate(.9) contrast(1.02) brightness(1.03)';
+  function applyFilter(sc, seconds) {
+    const cv = sc && sc.game && sc.game.canvas;
+    if (!cv) return;
+    const want = inPast(sc) && !colorBack;
+    if (want === filtered) return;
+    filtered = want;
+    document.querySelectorAll('canvas').forEach((c) => {
+      if (c.closest('#lq-oldmap, #lq-intro, #lq-shrine')) return;
+      c.style.transition = `filter ${seconds || 1.2}s ease`;
+      c.style.filter = want ? PALE : '';
+    });
+  }
+  let colorBack = false;
+  // Colours back (Day 14 ending, and every visit after the chapter is done). `seconds`: how slowly they come back.
+  function setColor(on, seconds) {
+    colorBack = !!on;
+    const sc = getScene();
+    if (!sc) return;
+    filtered = !(inPast(sc) && !colorBack);
+    applyFilter(sc, seconds);
+  }
+
+  // Signs: walking up to one shows its text (again after you walk away).
+  // Inside a room the same works with NOTES (room tiles are scaled by ins.k, like fingers.js / tenshadows.js).
+  let near = null;
+  function nearestText(sc) {
+    const ins = sc.inside;
+    if (!ins) return SIGNS.find((s) => Math.hypot(sc.player.x - (s.x * 32 + 16), sc.player.y - (s.y * 32 + 16)) < READ_RADIUS);
+    if (ins.floor !== 0 || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    return NOTES.find((n) => {
+      if (n.room !== ins.b.name) return false;
+      const x = ins.objs[0].x + (n.x + 0.5) * unit;
+      const y = ins.objs[0].y + (n.y + 0.5) * unit;
+      return Math.hypot(sc.player.x - x, sc.player.y - y) < 1.9 * unit;
+    });
+  }
+  function checkSigns(sc) {
+    if (!here(sc) || filming || !sc.player) {
+      near = null;
+      return;
+    }
+    const s = nearestText(sc);
+    if (!s) {
+      near = null;
+      return;
+    }
+    if (near === s.id) return;
+    near = s.id;
+    const d = data();
+    if (d && !d.read[s.id]) {
+      d.read[s.id] = Date.now();
+      save();
+    }
+    const n = d ? [...SIGNS, ...NOTES].filter((x) => d.read[x.id]).length : 0;
+    toast(s.title, s.en, `${s.vi} · ${n}/${ALL_READ()}`);
+  }
+
+  // ---- lead-in film (in the real map) ----------------------------------------------------------------------------------
+  const CSS = `
+body.lq-filming>:not(#lq-past):not(:has(canvas)){visibility:hidden!important}
+body.lq-filming>:has(canvas) :not(canvas){visibility:hidden}
+body.lq-filming canvas:not(.lq-main){visibility:hidden!important}
+body.lq-filming canvas.lq-main{visibility:visible!important}
+#lq-past{position:fixed;inset:0;z-index:10040;pointer-events:none;font-family:system-ui,'Segoe UI',sans-serif}
+#lq-past .lb{position:absolute;left:0;right:0;height:10vh;background:#000;transition:transform .8s ease}
+#lq-past .lb.t{top:0}#lq-past .lb.b{bottom:0}
+#lq-past.out .lb.t{transform:translateY(-100%)}#lq-past.out .lb.b{transform:translateY(100%)}
+#lq-past .cap{position:absolute;left:50%;bottom:calc(10vh + 12px);transform:translateX(-50%);width:min(760px,calc(100vw - 32px));box-sizing:border-box;background:#1c1c1ce8;border:2px solid #b9b2a4;border-radius:14px;padding:12px 18px;color:#f2f2f2;opacity:0;transition:opacity .35s;pointer-events:auto;cursor:pointer}
+#lq-past .cap.show{opacity:1}
+#lq-past .who{font:800 12px system-ui,sans-serif;color:#e0c27a;letter-spacing:.04em;margin-bottom:3px}
+#lq-past .en{margin:0;font:600 clamp(16px,2.4vw,20px)/1.4 Georgia,'Times New Roman',serif}
+#lq-past .vi{margin:5px 0 0;font:14px/1.4 system-ui,sans-serif;color:#b8b8b8}
+#lq-past .hint{font-size:11px;color:#8d8d8d;text-align:right;margin-top:4px}
+#lq-past .skip{position:absolute;top:calc(10vh + 10px);right:14px;background:#0009;color:#fff;border:1px solid #ffffff55;border-radius:999px;padding:7px 14px;font:700 13px system-ui,sans-serif;cursor:pointer;pointer-events:auto}
+#lq-past .card{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;color:#eee;text-shadow:0 2px 12px #000;opacity:0;transition:opacity .8s;white-space:nowrap;padding:30px 60px;background:radial-gradient(closest-side,#000a,#0000)}
+#lq-past .card.show{opacity:1}
+#lq-past .card small{display:block;font:700 13px system-ui,sans-serif;letter-spacing:.35em;color:#d6d0c4;text-transform:uppercase}
+#lq-past .card b{display:block;font:800 clamp(28px,5.5vw,48px)/1.1 Georgia,'Times New Roman',serif;margin:6px 0}
+#lq-past .card span{font:600 14px system-ui,sans-serif;color:#cfcfcf}
+`;
+  // who: '' = narrator. cam: tile to look at. act: what happens in the scene at this line.
+  const FILM = [
+    { cam: [27, 15], zoom: 1, en: 'The village of Oriaris. The colors were pale, and the days were hard.', vi: 'Làng Oriaris. Màu sắc nhợt nhạt, và những ngày tháng thật vất vả.', act: 'crowd' },
+    { cam: [30, 9], zoom: 1.35, who: 'Lord Gusest', en: 'People of Oriaris! This war will pass. Peace will come back.', vi: 'Hỡi người dân Oriaris! Cuộc chiến này rồi sẽ qua. Hòa bình sẽ trở lại.', act: 'gusest' },
+    { cam: [30, 9], zoom: 1.35, who: 'Lord Gusest', en: 'Our knights are brave. They will win!', vi: 'Các kỵ sĩ của chúng ta rất dũng cảm. Họ sẽ chiến thắng!' },
+    { cam: [28, 12], zoom: 1.15, en: 'The people cheered. For a moment, nobody was afraid.', vi: 'Dân làng reo hò. Trong khoảnh khắc ấy, không ai còn sợ hãi.', act: 'cheer' },
+    { cam: [28, 18], zoom: 1, en: 'Lord Gusest left, but he sent food to every family.', vi: 'Lãnh chúa Gusest rời đi, nhưng ngài đã gửi lương thực cho từng gia đình.', act: 'leave' },
+    { cam: null, zoom: 1, en: 'Now the village waits. Live here, day by day, until the war is over.', vi: 'Giờ đây cả làng chờ đợi. Hãy sống ở đây, từng ngày một, cho đến khi chiến tranh kết thúc.', act: 'end' },
+  ];
+  let filming = false;
+  function drawPerson(g, x, y, cloth, hair, cape) {
+    g.fillStyle(0x000000, 0.25).fillEllipse(x, y + 13, 14, 5);
+    if (cape) g.fillStyle(cape, 1).fillRect(x - 7, y - 4, 14, 17);
+    g.fillStyle(cloth, 1).fillRect(x - 5, y - 4, 10, 14);
+    g.fillStyle(0x3b3127, 1).fillRect(x - 4, y + 10, 3, 4).fillRect(x + 1, y + 10, 3, 4);
+    g.fillStyle(0xe2c4a4, 1).fillCircle(x, y - 9, 5);
+    g.fillStyle(hair, 1).fillRect(x - 5, y - 15, 10, 4);
+  }
+  // ---- film player (shared by the lead-in and the Day 14 ending) ------------------------------------------------------
+  // opts: { card: {small, big, sub}, lines: [{cam, zoom, who, en, vi, act}], setup(sc, actors) -> {tick(time), act(name)} }
+  function ensureCss() {
+    if (document.getElementById('lq-past-css')) return;
+    const st = document.createElement('style');
+    st.id = 'lq-past-css';
+    st.textContent = CSS + DAY_CSS;
+    document.head.appendChild(st);
+  }
+  function runFilm(opts) {
+    const sc = getScene();
+    if (!sc || !here(sc) || filming) return Promise.resolve(false);
+    filming = true;
+    ensureCss();
+    closeDayCard();
+    return new Promise((resolve) => {
+      const cam = sc.cameras.main;
+      const zoom0 = cam.zoom;
+      const kb = sc.input && sc.input.keyboard;
+      if (kb) {
+        kb.enabled = false;
+        try {
+          kb.resetKeys();
+        } catch (e) {}
+      }
+      cam.stopFollow();
+      const actors = sc.add.graphics().setDepth(9.6);
+      const scene = opts.setup ? opts.setup(sc, actors) : {};
+      const tick = (time) => {
+        actors.clear();
+        if (scene.tick) scene.tick(time);
+      };
+      sc.events.on('update', tick);
+      const lines = opts.lines;
+      const root = document.createElement('div');
+      root.id = 'lq-past';
+      root.innerHTML =
+        '<div class="lb t"></div><div class="lb b"></div>' +
+        `<div class="card"><small>${opts.card.small}</small><b>${opts.card.big}</b><span>${opts.card.sub}</span></div>` +
+        '<div class="cap"><div class="who"></div><p class="en"></p><p class="vi"></p><div class="hint">Click / Space ▶</div></div>' +
+        '<button class="skip" type="button">Skip ⏭</button>';
+      document.body.appendChild(root);
+      if (sc.game && sc.game.canvas) sc.game.canvas.classList.add('lq-main');
+      document.body.classList.add('lq-filming');
+      const card = root.querySelector('.card');
+      const cap = root.querySelector('.cap');
+      const who = root.querySelector('.who');
+      const en = root.querySelector('.en');
+      const vi = root.querySelector('.vi');
+      let i = -1;
+      let typing = 0;
+      let full = '';
+      let ended = false;
+      const look = (shot, ms) => {
+        if (shot.cam) cam.pan(shot.cam[0] * 32 + 16, shot.cam[1] * 32 + 16, ms, 'Sine.easeInOut', true);
+        else cam.pan(sc.player.x, sc.player.y, ms, 'Sine.easeInOut', true);
+        cam.zoomTo(zoom0 * (shot.zoom || 1), ms, 'Sine.easeInOut', true);
+      };
+      const show = () => {
+        const s = lines[i];
+        look(s, i === 0 ? 1 : 1400);
+        if (s.act && scene.act) scene.act(s.act);
+        who.textContent = s.who || '';
+        who.style.display = s.who ? '' : 'none';
+        vi.textContent = s.vi;
+        full = s.en;
+        en.textContent = '';
+        clearInterval(typing);
+        let n = 0;
+        typing = setInterval(() => {
+          n += 1;
+          en.textContent = full.slice(0, n);
+          if (n >= full.length) clearInterval(typing);
+        }, 28);
+      };
+      const next = () => {
+        if (ended) return;
+        if (i >= 0 && en.textContent.length < full.length) {
+          clearInterval(typing);
+          en.textContent = full;
+          return;
+        }
+        i += 1;
+        if (i >= lines.length) return finish();
+        show();
+      };
+      const finish = () => {
+        if (ended) return;
+        ended = true;
+        clearInterval(typing);
+        window.removeEventListener('keydown', onKey, true);
+        // Skipping still runs every remaining action once (e.g. the colours come back), so the story state is right.
+        if (scene.act) for (let k = i + 1; k < lines.length; k++) if (lines[k].act) scene.act(lines[k].act, true);
+        root.classList.add('out');
+        document.body.classList.remove('lq-filming');
+        cap.classList.remove('show');
+        card.classList.remove('show');
+        sc.events.off('update', tick);
+        actors.destroy();
+        cam.zoomTo(zoom0, 600, 'Sine.easeInOut', true);
+        cam.startFollow(sc.player, true, 0.1, 0.1);
+        if (kb) kb.enabled = true;
+        setTimeout(() => {
+          root.remove();
+          filming = false;
+          resolve(true);
+        }, 850);
+      };
+      const onKey = (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          next();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          finish();
+        }
+      };
+      window.addEventListener('keydown', onKey, true);
+      cap.addEventListener('click', next);
+      root.querySelector('.skip').addEventListener('click', finish);
+      const first = lines[0].cam || [sc.player.x / 32, sc.player.y / 32];
+      cam.centerOn(first[0] * 32 + 16, first[1] * 32 + 16);
+      if (scene.act && lines[0].act) scene.act(lines[0].act);
+      card.classList.add('show');
+      setTimeout(() => {
+        if (ended) return;
+        card.classList.remove('show');
+        cap.classList.add('show');
+        next();
+      }, 2600);
+    });
+  }
+
+  // ---- lead-in film --------------------------------------------------------------------------------------------------
+  function play() {
+    return runFilm({
+      card: { small: 'Chapter 2', big: '70 Years Ago', sub: 'Chương 2 · 70 năm trước' },
+      lines: FILM,
+      setup(sc, acto
