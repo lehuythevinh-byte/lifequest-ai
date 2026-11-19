@@ -1,0 +1,1000 @@
+    if (area === TOWN && stepDone(a, 'visit') && (mark(a, 'return') || stepDone(a, 'return'))) {
+      greeting = true;
+      (window.LQGojo ? window.LQGojo.greet() : Promise.resolve()).then(() => {
+        greeting = false;
+        complete(a);
+      });
+    }
+  }
+
+  // ---- Menu page ----------------------------------------------------------------------------------------------
+  const PAGE_CSS = `
+.ach-list{display:grid;gap:12px}
+.ach-card{background:#162033;border:1px solid #34516c;border-radius:14px;padding:14px;display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
+.ach-card.done{border-color:#ffd36b;background:#1d2538}
+.ach-ic{font-size:30px;grid-row:span 3;align-self:start}
+.ach-card h4{margin:0;font-size:16px;color:#ffd36b}
+.ach-card p{margin:0;color:#b8c6dd;font-size:13px}
+.ach-steps{margin:0;padding:0;list-style:none;display:grid;gap:3px;font-size:13px}
+.ach-steps li{color:#9fb0cc}.ach-steps li.ok{color:#8be29b}
+.ach-reward{grid-column:1/-1;display:flex;align-items:center;gap:12px;background:#0f1726;border:1px dashed #4a5f86;border-radius:10px;padding:8px 10px}
+.ach-reward canvas{image-rendering:pixelated;width:48px;height:100px;flex:none}
+.ach-reward canvas.lock{filter:brightness(0) opacity(.55)}
+.ach-reward b{display:block;color:#eef3ff;font-size:14px}.ach-reward span{color:#9fb0cc;font-size:12px}
+.ach-reward .ach-go{margin-left:auto;background:#f3b94d;color:#1b2630;border:0;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}
+.ach-tag{margin-left:auto;color:#ffb4b4;font-size:12px;white-space:nowrap}
+`;
+  let cssDone = false;
+
+  function presetIndex(name) {
+    const ui = window.LQCreatorUI;
+    return ui && ui.presets ? ui.presets.findIndex((p) => p.name === name) : -1;
+  }
+
+  function renderPage() {
+    if (!cssDone) {
+      cssDone = true;
+      const st = document.createElement('style');
+      st.textContent = PAGE_CSS;
+      document.head.appendChild(st);
+    }
+    const total = ACHIEVEMENTS.length;
+    const doneCount = ACHIEVEMENTS.filter((a) => isUnlocked(a.id)).length;
+    const cards = ACHIEVEMENTS.map((a) => {
+      const done = isUnlocked(a.id);
+      const list = (a.steps || []).map((s) => ({ ok: stepDone(a, s.id) || done, text: s.text }));
+      const steps = list.map((s) => `<li class="${s.ok ? 'ok' : ''}">${s.ok ? '✅' : '⬜'} ${esc(s.text)}</li>`).join('');
+      // A counter achievement shows only how many are collected, never where the remaining ones are.
+      const c = a.counter ? a.counter() : null;
+      const progress = c ? ` (${done ? c.total : c.done}/${c.total})` : '';
+      const ch = a.reward && a.reward.character;
+      const idx = ch ? presetIndex(ch) : -1;
+      const reward = ch
+        ? `<div class="ach-reward"><canvas width="24" height="50" data-ach-thumb="${idx}" class="${done ? '' : 'lock'}"></canvas>
+            <div><b>${done ? esc(ch) : '🔒 ' + esc(ch)}</b><span>${done ? 'Character unlocked' : 'Complete the achievement to unlock this character'}</span></div>
+            ${done ? `<button type="button" class="ach-go" data-l11-action="ach:wear:${idx}">Wear now</button>` : '<span class="ach-tag">Locked</span>'}</div>`
+        : '';
+      return `<article class="ach-card ${done ? 'done' : ''}"><div class="ach-ic">${done ? '🏆' : a.icon}</div><h4>${esc(a.title)}${progress}</h4><p>${esc(a.desc)}</p>
+        <ul class="ach-steps">${steps}</ul>${done ? '' : `<p>💡 ${esc(a.hint)}</p>`}${reward}</article>`;
+    }).join('');
+    setTimeout(drawThumbs, 0);
+    return `<h3>🏆 Achievements</h3><p class="l11-explain">Complete quests to unlock new characters. Completed ${doneCount}/${total}.</p><div class="ach-list">${cards}</div>`;
+  }
+
+  function drawThumbs() {
+    const sc = getScene();
+    const ui = window.LQCreatorUI;
+    if (!sc || !ui || !window.LQCharacter) return;
+    document.querySelectorAll('canvas[data-ach-thumb]').forEach((cv) => {
+      const p = ui.presets[Number(cv.dataset.achThumb)];
+      if (!p) return;
+      const cx = cv.getContext('2d');
+      cx.clearRect(0, 0, cv.width, cv.height);
+      cx.imageSmoothingEnabled = false;
+      try {
+        cx.drawImage(window.LQCharacter.imageFor(sc, ui.presetLook(p), 'down', 0), 0, 0);
+      } catch (e) {
+        console.warn('achievement thumbnail failed', e);
+      }
+    });
+  }
+
+  // Called by the Menu for data-l11-action="ach:..." buttons.
+  function action(a) {
+    if (a.startsWith('wear:')) {
+      const i = Number(a.slice(5));
+      const ui = window.LQCreatorUI;
+      if (ui && ui.applyPreset) ui.applyPreset(i);
+      if (window.LQ11_UI) window.LQ11_UI.page('achievements');
+    }
+  }
+
+  function start() {
+    setInterval(tick, 500);
+  }
+
+  window.LQAchievements = {
+    list: ACHIEVEMENTS,
+    isUnlocked,
+    hint,
+    renderPage,
+    action,
+    start,
+    toast,
+    complete: (id) => {
+      const a = byId(id);
+      if (a) complete(a);
+    },
+  };
+  start();
+})();
+
+</script>
+    <script>
+/*
+ * Shrine cutscene: plays when the 20th finger is picked up (see fingers.js).
+ *
+ * 1. Four huge red parallelogram eyes fill a white, speckled screen.
+ * 2. The camera pulls back: the eyes shrink up into a blood-red cloudy sky while the white clears, revealing the
+ *    domain - a shrine rising out of cyan, rippling water with its reflection.
+ * 3. Sukuna is a tiny figure on the shrine roof, dead centre between the eyes, so the domain feels vast around him.
+ * 4. The picture holds for a moment, then fades out.
+ *
+ * It is drawn at 480 x 270 "pixels" and scaled up without smoothing for the pixel-art look.
+ * window.LQShrine.play({ freeze }) returns a promise that resolves when the cutscene is over. `freeze` (ms) pins the
+ * picture at that moment and never fades; it is only used to take screenshots while tuning the artwork.
+ */
+(function () {
+  'use strict';
+
+  const VW = 480;
+  const VH = 270;
+  const T_EYES = 600; // eyes fill the screen
+  const T_PULL = 900; // camera pulls back, white clears
+  const T_HOLD = 1100; // the domain, held
+  const T_FADE = 1500; // fade out
+  const RED = '#ed1c24';
+  // Lead-in before the flash: the screen goes dark and a line is typed out letter by letter.
+  const LEAD_TEXT = 'King of Curses has arrived';
+  const LEAD_FONT = 'Cinzel, "Trajan Pro", "Times New Roman", Georgia, serif';
+  const LEAD_FADE = 400; // fade to black
+  const LEAD_CHAR = 55; // ms per letter
+  const LEAD_HOLD = 800; // pause on the finished line before the cut
+  const T_LEAD = LEAD_FADE + LEAD_TEXT.length * LEAD_CHAR + LEAD_HOLD;
+  const HORIZON = 150;
+  const CX = VW / 2;
+
+  // The four eyes at full-screen size (upper pair large, lower pair smaller); right side is the mirror image.
+  const EYES_BIG = [
+    [[34, 52], [212, 96], [212, 150], [34, 106]],
+    [[62, 176], [200, 176], [186, 236], [48, 236]],
+  ];
+  const EYES = [...EYES_BIG, ...EYES_BIG.map((e) => e.map(([x, y]) => [VW - x, y]))];
+  const BIG_CENTER = [CX, 135];
+  const SKY_CENTER = [CX, 50];
+  const SKY_SCALE = 0.38;
+
+  const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 0.75;
+
+  function seeded(seed) {
+    let s = seed | 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function canvas(w, h) {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return c;
+  }
+
+  // ---- static backdrops, painted once ---------------------------------------------------------------------------
+  function paintSky() {
+    const c = canvas(VW, HORIZON);
+    const g = c.getContext('2d');
+    const rnd = seeded(7);
+    const bands = ['#1a0610', '#220813', '#2b0a16', '#340c1a', '#3d0f1e', '#481222', '#531526'];
+    const bh = HORIZON / bands.length;
+    bands.forEach((col, i) => {
+      g.fillStyle = col;
+      g.fillRect(0, Math.floor(i * bh), VW, Math.ceil(bh) + 1);
+    });
+    const shades = ['#2a0b15', '#3a0f1c', '#56142a', '#6c1a2e', '#7d2234'];
+    for (let i = 0; i < 130; i++) {
+      const x = rnd() * VW;
+      const y = rnd() * HORIZON;
+      const rx = 18 + rnd() * 52;
+      const ry = 5 + rnd() * 15;
+      g.fillStyle = shades[Math.floor(rnd() * shades.length)];
+      for (const ox of [-VW, 0, VW]) {
+        g.beginPath();
+        g.ellipse(x + ox, y, rx, ry, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    // checkerboard dithering over the clouds
+    g.fillStyle = 'rgba(0,0,0,0.22)';
+    for (let y = 0; y < HORIZON; y += 2) for (let x = (y / 2) % 2 ? 1 : 0; x < VW; x += 4) g.fillRect(x, y, 1, 1);
+    return c;
+  }
+
+  function paintWater() {
+    const h = VH - HORIZON;
+    const c = canvas(VW, h);
+    const g = c.getContext('2d');
+    const rnd = seeded(21);
+    const bands = ['#0f5a6a', '#0d4e5d', '#0b4351', '#09394a', '#073040', '#052837', '#04212e'];
+    const bh = h / bands.length;
+    bands.forEach((col, i) => {
+      g.fillStyle = col;
+      g.fillRect(0, Math.floor(i * bh), VW, Math.ceil(bh) + 1);
+    });
+    for (let i = 0; i < 520; i++) {
+      const y = rnd() * h;
+      const w = 4 + rnd() * 26 * (0.4 + y / h);
+      g.fillStyle = rnd() < 0.5 ? 'rgba(53,198,209,0.28)' : 'rgba(0,0,0,0.28)';
+      g.fillRect(rnd() * VW, y, w, 1);
+    }
+    return c;
+  }
+
+  // ---- the shrine and Sukuna (pixel sprites; feet of the shrine on y = 156) --------------------------------------
+  const BASE = 156;
+  function shrine(g) {
+    const r = (x, y, w, h, col) => {
+      g.fillStyle = col;
+      g.fillRect(x, y, w, h);
+    };
+    r(213, 120, 8, BASE - 120, '#c9341a'); // pillars
+    r(259, 120, 8, BASE - 120, '#c9341a');
+    r(215, 120, 2, BASE - 120, '#e2501f');
+    r(261, 120, 2, BASE - 120, '#e2501f');
+    r(221, 124, 38, BASE - 124, '#15090e'); // dark body
+    r(208, 126, 64, 3, '#8e1f12'); // lower beam
+    // roof: dark gable with a red trim on top
+    g.fillStyle = '#1d0e16';
+    g.beginPath();
+    g.moveTo(204, 114);
+    g.lineTo(224, 102);
+    g.lineTo(256, 102);
+    g.lineTo(276, 114);
+    g.closePath();
+    g.fill();
+    r(224, 101, 32, 1, '#7a1a1e');
+    r(200, 114, 80, 5, '#e2501f'); // upper beam, ends swept up
+    r(200, 114, 80, 1, '#ff8a3a');
+    r(200, 110, 6, 5, '#e2501f');
+    r(274, 110, 6, 5, '#e2501f');
+    // the dark body is a gaping maw with teeth (the shrine itself has no eyes)
+    for (let x = 226; x < 254; x += 2) r(x, 146 + ((x / 2) % 2), 1, 2, '#d9d2bd');
+  }
+
+  function sukuna(g) {
+    const r = (x, y, w, h, col) => {
+      g.fillStyle = col;
+      g.fillRect(x, y, w, h);
+    };
+    // soft red glow: a few faint stacked ellipses instead of one hard disc
+    g.fillStyle = 'rgba(255,40,40,0.045)';
+    for (let i = 0; i < 6; i++) {
+      g.beginPath();
+      g.ellipse(240, 95, 7 + i * 3, 6 + i * 3, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    r(237, 88, 6, 3, '#ea8fa0'); // hair
+    r(236, 87, 1, 2, '#ea8fa0');
+    r(243, 87, 1, 2, '#ea8fa0');
+    r(239, 86, 2, 1, '#ea8fa0');
+    r(238, 91, 4, 3, '#f6d2b0'); // face
+    r(238, 92, 1, 1, '#c02a2a');
+    r(241, 92, 1, 1, '#c02a2a');
+    r(236, 94, 8, 8, '#e9e4d6'); // kimono
+    r(236, 94, 1, 8, '#233a63');
+    r(243, 94, 1, 8, '#233a63');
+    r(237, 97, 6, 1, '#cfc9b8'); // folded arms
+  }
+
+  // ---- animated parts -------------------------------------------------------------------------------------------
+  function ripples(g, t) {
+    const cy = BASE + 4;
+    for (let i = 0; i < 7; i++) {
+      const r = ((t * 0.028 + i * 17) % 119) + 4;
+      const a = 1 - r / 125;
+      g.fillStyle = `rgba(150,235,240,${(0.55 * a).toFixed(3)})`;
+      const steps = Math.floor(r * 4);
+      for (let s = 0; s < steps; s++) {
+        const ang = (s / steps) * Math.PI * 2;
+        g.fillRect(Math.round(CX + Math.cos(ang) * r * 1.6), Math.round(cy + Math.sin(ang) * r * 0.34), 1, 1);
+      }
+    }
+  }
+
+  function sparkles(g, t) {
+    const rnd = seeded(Math.floor(t / 140) + 3);
+    for (let i = 0; i < 90; i++) {
+      g.fillStyle = rnd() < 0.5 ? 'rgba(120,230,235,0.8)' : 'rgba(255,255,255,0.6)';
+      g.fillRect(Math.floor(rnd() * VW), HORIZON + 4 + Math.floor(rnd() * (VH - HORIZON - 4)), 1, 1);
+    }
+  }
+
+  function ash(g, t) {
+    const rnd = seeded(99);
+    for (let i = 0; i < 70; i++) {
+      const x0 = rnd() * VW;
+      const y0 = rnd() * HORIZON;
+      const sp = 0.012 + rnd() * 0.02;
+      const y = (((y0 - t * sp) % HORIZON) + HORIZON) % HORIZON;
+      g.fillStyle = rnd() < 0.5 ? 'rgba(255,90,60,0.75)' : 'rgba(255,176,138,0.6)';
+      g.fillRect(Math.floor(x0 + Math.sin(t / 700 + i) * 3), Math.floor(y), 1, 1);
+    }
+  }
+
+  function scene(g, t, sky, water) {
+    const off = (t * 0.006) % VW;
+    g.drawImage(sky, -off, 0);
+    g.drawImage(sky, VW - off, 0);
+    g.fillStyle = 'rgba(160,30,44,0.7)';
+    g.fillRect(0, HORIZON - 1, VW, 1);
+    g.drawImage(water, 0, HORIZON);
+    // reflection of the shrine
+    g.save();
+    g.globalAlpha = 0.32;
+    g.translate(0, BASE * 2);
+    g.scale(1, -1);
+    shrine(g);
+    g.restore();
+    ripples(g, t);
+    sparkles(g, t);
+    shrine(g);
+    sukuna(g);
+    ash(g, t);
+  }
+
+  function eyes(g, e, t) {
+    const lw = 22 + (7 - 22) * e;
+    const flick = e > 0.98 ? 0.93 + 0.07 * Math.sin(t / 90) : 1;
+    g.save();
+    g.globalAlpha = flick;
+    g.lineJoin = 'round';
+    for (const eye of EYES) {
+      const pts = eye.map(([x, y]) => {
+        const sx = SKY_CENTER[0] + (x - BIG_CENTER[0]) * SKY_SCALE;
+        const sy = SKY_CENTER[1] + (y - BIG_CENTER[1]) * SKY_SCALE;
+        return [x + (sx - x) * e, y + (sy - y) * e];
+      });
+      g.beginPath();
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+      g.closePath();
+      g.fillStyle = RED;
+      g.strokeStyle = RED;
+      g.lineWidth = lw;
+      g.fill();
+      g.stroke();
+      g.strokeStyle = '#fff';
+      g.lineWidth = 1;
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  function speckle(g, alpha) {
+    if (alpha <= 0.02) return;
+    g.globalAlpha = alpha;
+    const centers = [[110, 100], [370, 100], [120, 205], [360, 205]];
+    for (let i = 0; i < 9000; i++) {
+      let x = Math.random() * VW;
+      let y = Math.random() * VH;
+      if (Math.random() < 0.7) {
+        const c = centers[Math.floor(Math.random() * 4)];
+        x = c[0] + gauss() * 70;
+        y = c[1] + gauss() * 55;
+      }
+      g.fillStyle = Math.random() < 0.45 ? RED : '#000';
+      g.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+    }
+    g.globalAlpha = 1;
+  }
+
+  function playSound() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ac = new AC();
+      const t = ac.currentTime;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(110, t);
+      o.frequency.exponentialRampToValueAtTime(38, t + 0.9);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.5, t + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+      o.connect(g).connect(ac.destination);
+      o.start(t);
+      o.stop(t + 1.5);
+      setTimeout(() => ac.close().catch(() => {}), 2000);
+    } catch (e) {
+      /* sound is optional */
+    }
+  }
+
+  let playing = false;
+
+  // Start fetching the lead-in font as soon as the script loads, so it is ready by the time the 20th finger is found.
+  try {
+    if (document.fonts && document.fonts.load) document.fonts.load('800 40px Cinzel').catch(() => {});
+  } catch (e) {
+    /* the serif fallback is used instead */
+  }
+
+  function play(opts) {
+    const freeze = opts && typeof opts.freeze === 'number' ? opts.freeze : null;
+    const leadAt = opts && typeof opts.leadAt === 'number' ? opts.leadAt : null; // screenshots of the lead-in only
+    if (playing) return Promise.resolve();
+    playing = true;
+    return new Promise((resolve) => {
+      const cv = document.createElement('canvas');
+      cv.setAttribute('aria-hidden', 'true');
+      cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;z-index:9800;pointer-events:none;background:#1a0610';
+      document.body.appendChild(cv);
+      const W = (cv.width = Math.max(1, window.innerWidth));
+      const H = (cv.height = Math.max(1, window.innerHeight));
+      const ctx = cv.getContext('2d');
+      const lo = canvas(VW, VH);
+      const g = lo.getContext('2d');
+      const sky = paintSky();
+      const water = paintWater();
+      // wide screens are filled edge to edge; tall ones keep the whole picture and show dark bars
+      const scale = W / H >= 1.4 ? Math.max(W / VW, H / VH) : Math.min(W / VW, H / VH);
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // The dark lead-in: the line is typed in the middle of the screen (split over two lines on narrow screens).
+      const drawLead = (el) => {
+        cv.style.opacity = String(Math.min(1, el / LEAD_FADE));
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#050207';
+        ctx.fillRect(0, 0, W, H);
+        const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.1, W / 2, H / 2, Math.max(W, H) * 0.7);
+        vg.addColorStop(0, 'rgba(120,12,24,0.28)');
+        vg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, 0, W, H);
+        const shown = Math.max(0, Math.min(LEAD_TEXT.length, Math.floor((el - LEAD_FADE) / LEAD_CHAR)));
+        const size = Math.max(18, Math.min(W * 0.04, 52));
+        ctx.font = `800 ${size}px ${LEAD_FONT}`;
+        if ('letterSpacing' in ctx) ctx.letterSpacing = `${(size * 0.1).toFixed(1)}px`; // wide, monumental spacing
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        let lines = [LEAD_TEXT];
+        if (ctx.measureText(LEAD_TEXT).width > W * 0.88) {
+          const words = LEAD_TEXT.split(' ');
+          const mid = Math.ceil(words.length / 2);
+          lines = [words.slice(0, mid).join(' '), words.slice(mid).join(' ')];
+        }
+        const lh = size * 1.5;
+        let left = shown;
+        lines.forEach((ln, i) => {
+          const part = ln.slice(0, Math.max(0, Math.min(ln.length, left)));
+          left -= ln.length + 1;
+          const w = ctx.measureText(ln).width;
+          const x = (W - w) / 2;
+          const y = H / 2 + (i - (lines.length - 1) / 2) * lh;
+          ctx.shadowColor = '#ff1c2c';
+          ctx.shadowBlur = size * 0.5;
+          ctx.fillStyle = '#f4e9e9';
+          ctx.fillText(part, x, y);
+          ctx.shadowBlur = 0;
+          // blinking caret at the end of what has been typed so far
+          if (part.length < ln.length || (i === lines.length - 1 && Math.floor(el / 380) % 2 === 0)) {
+            if (part.length > 0 || i === 0) {
+              ctx.fillStyle = RED;
+              ctx.fillRect(x + ctx.measureText(part).width + 3, y - size * 0.55, Math.max(2, size * 0.06), size * 1.1);
+            }
+          }
+        });
+      };
+      let soundDone = false;
+      const start = performance.now();
+      const frame = (now) => {
+        const el = now - start;
+        if (leadAt !== null || (freeze === null && el < T_LEAD)) {
+          drawLead(leadAt !== null ? leadAt : el);
+          requestAnimationFrame(frame);
+          return;
+        }
+        if (!soundDone && freeze === null) {
+          soundDone = true;
+          playSound();
+        }
+        const t = freeze !== null ? freeze : el - T_LEAD;
+        const total = T_EYES + T_PULL + T_HOLD + T_FADE;
+        if (freeze === null && t >= total) {
+          cv.remove();
+          playing = false;
+          resolve();
+          return;
+        }
+        const fadeStart = T_EYES + T_PULL + T_HOLD;
+        cv.style.opacity = freeze !== null || t < fadeStart ? '1' : String(Math.max(0, 1 - (t - fadeStart) / T_FADE));
+        const e = reduce ? 1 : ease((t - T_EYES) / T_PULL);
+        // the domain, with the camera easing back from a slight zoom
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.fillStyle = '#1a0610';
+        g.fillRect(0, 0, VW, VH);
+        g.save();
+        const zs = 1.22 - 0.22 * e;
+        g.translate(CX, HORIZON);
+        g.scale(zs, zs);
+        g.translate(-CX, -HORIZON);
+        scene(g, t, sky, water);
+        g.restore();
+        // white screen clears away
+        g.fillStyle = `rgba(255,255,255,${(1 - e).toFixed(3)})`;
+        g.fillRect(0, 0, VW, VH);
+        speckle(g, reduce ? 0 : 1 - e);
+        const shake = reduce || freeze !== null ? 0 : Math.max(0, 1 - t / 350) * 3;
+        g.save();
+        g.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+        eyes(g, e, t);
+        g.restore();
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = '#1a0610';
+        ctx.fillRect(0, 0, W, H);
+        ctx.drawImage(lo, Math.round((W - VW * scale) / 2), Math.round((H - VH * scale) / 2), VW * scale, VH * scale);
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+
+  window.LQShrine = { play };
+
+  // Preview without DevTools: open the game with ?shrine=1 in the address bar and the cutscene plays once after loading.
+  if (/[?&]shrine=1\b/.test(location.search)) window.addEventListener('load', () => setTimeout(() => play(), 800));
+})();
+
+</script>
+    <script>
+/*
+ * Sukuna's 20 fingers: 20 cursed fingers lie at 20 different spots across English Town and Minerals Town. Walking over
+ * one picks it up; progress is stored in the normal save (game.ach.fingers), and the 20th finger completes the
+ * 'sukuna-fingers' achievement (see achievements.js). Ten fingers lie outdoors on named place tiles and ten lie
+ * inside buildings, so they are spread out and always reachable on foot.
+ */
+(function () {
+  'use strict';
+
+  const TOWN = 'english-town';
+  const MINE = 'mining-town';
+  const ACH_ID = 'sukuna-fingers';
+  const PICK_RADIUS = 22;
+
+  // Outdoor fingers: x/y are tile coordinates (the same ones used by the areas' `places`).
+  // Indoor fingers: `in` is the building name (a key of the interiors); the finger lies on the building's first
+  // `guests` tile, which NPCs stand on, so it is always walkable. Only the ground floor is used.
+  const FINGERS = [
+    { id: 'f01', area: TOWN, x: 25, y: 15, clue: 'In the middle of the park' },
+    { id: 'f02', area: TOWN, x: 55, y: 41, clue: 'By the lake' },
+    { id: 'f03', area: TOWN, x: 55, y: 22, clue: 'In front of the school' },
+    { id: 'f04', area: TOWN, x: 24, y: 61, clue: 'Waiting bench at the English Town station' },
+    { id: 'f05', area: TOWN, x: 44, y: 58, clue: 'Cargo area at the English Town station' },
+    { id: 'f06', area: TOWN, in: 'Sunny Cafe', clue: 'Inside the Sunny Cafe' },
+    { id: 'f07', area: TOWN, in: 'Bank', clue: 'Inside the bank' },
+    { id: 'f08', area: TOWN, in: 'Library', clue: 'Inside the library' },
+    { id: 'f09', area: TOWN, in: 'Cinema', clue: 'Inside the cinema' },
+    { id: 'f10', area: TOWN, in: 'Church', clue: 'Inside the church' },
+    { id: 'f11', area: MINE, x: 22, y: 18, clue: 'West side of the mine' },
+    { id: 'f12', area: MINE, x: 41, y: 19, clue: 'Ore yard' },
+    { id: 'f13', area: MINE, x: 30, y: 28, clue: 'Mining town square' },
+    { id: 'f14', area: MINE, x: 38, y: 26, clue: 'In front of the tool shop' },
+    { id: 'f15', area: MINE, x: 24, y: 61, clue: 'Waiting bench at the Minerals Town station' },
+    { id: 'f16', area: MINE, in: 'Great Mine', clue: 'Inside the Great Mine' },
+    { id: 'f17', area: MINE, in: 'Smithy', clue: 'Inside the smithy' },
+    { id: 'f18', area: MINE, in: 'Gem Shop', clue: 'Inside the gem shop' },
+    { id: 'f19', area: MINE, in: 'Mining Inn', clue: 'Inside the inn' },
+    { id: 'f20', area: MINE, in: 'First-Aid Post', clue: 'Inside the first-aid post' },
+  ];
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  function foundMap(create) {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return {};
+    if (!g.ach || typeof g.ach !== 'object') {
+      if (!create) return {};
+      g.ach = { steps: {}, done: {} };
+    }
+    if (!g.ach.fingers || typeof g.ach.fingers !== 'object') {
+      if (!create) return {};
+      g.ach.fingers = {};
+    }
+    return g.ach.fingers;
+  }
+
+  const isFound = (id) => !!foundMap(false)[id];
+  const count = () => FINGERS.filter((f) => isFound(f.id)).length;
+
+  let cutsceneBusy = false;
+
+  function collect(sc, f) {
+    foundMap(true)[f.id] = Date.now();
+    try {
+      sc.store.save();
+    } catch (e) {
+      console.warn('finger save failed', e);
+    }
+    const n = count();
+    const A = window.LQAchievements;
+    if (n >= FINGERS.length) {
+      // Unlock only once the cutscene is over; the saved count is enough to finish it later if the page closes now.
+      cutsceneBusy = true;
+      (window.LQShrine ? window.LQShrine.play() : Promise.resolve()).then(() => {
+        cutsceneBusy = false;
+        if (A) A.complete(ACH_ID);
+      });
+    } else if (A) {
+      A.toast('👆 Cursed finger', `Collected ${n}/${FINGERS.length} fingers`, 'Keep going!');
+    }
+    window.dispatchEvent(new CustomEvent('lifequest:fingers', { detail: { count: n } }));
+  }
+
+  // World position (pixels) and scale of a finger in what the player currently sees, or null when it is not here.
+  function spotFor(sc, f) {
+    if (f.area !== sc.area.id) return null;
+    const ins = sc.inside;
+    if (!f.in) return ins ? null : { x: f.x * 32 + 16, y: f.y * 32 + 16, k: 1 };
+    if (!ins || ins.floor !== 0 || ins.b.name !== f.in || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    const t = ins.spec;
+    // objs[0] is the floor image, whose top-left corner is the origin of the interior's tile grid.
+    const at = (pt) => ({ x: ins.objs[0].x + (pt[0] + 0.5) * unit, y: ins.objs[0].y + (pt[1] + 0.5) * unit, k: ins.k });
+    // Take the first guest tile (or the default one) that no furniture covers, so the finger can always be reached.
+    const margin = 12 * ins.k;
+    const covered = (p) => (ins.rects || []).some((r) => p.x > r.x - margin && p.x < r.x + r.w + margin && p.y > r.y - margin && p.y < r.y + r.h + margin);
+    const cands = [...(t.guests || []), [Math.floor(t.w / 2), Math.max(3, t.h - 4)]].map(at);
+    return cands.find((p) => !covered(p)) || cands[0];
+  }
+
+  function drawFinger(g, cx, cy, s, time, seed) {
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.003 + seed);
+    const y = cy + Math.sin(time * 0.002 + seed * 1.7) * 1.5 * s;
+    // Cursed glow: faint violet halo that builds up towards the centre.
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle(0xa23bff, 0.035 + pulse * 0.015);
+      g.fillCircle(cx, y, (20 - i * 3) * s);
+    }
+    // The finger: a withered digit with a dark nail and two joint creases.
+    g.fillStyle(0x000000, 0.3);
+    g.fillEllipse(cx, cy + 9 * s, 12 * s, 4 * s);
+    g.fillStyle(0x6e3b55, 1);
+    g.fillRoundedRect(cx - 3 * s, y - 8 * s, 6 * s, 15 * s, 3 * s);
+    g.fillStyle(0x4a2339, 1);
+    g.fillRect(cx - 3 * s, y - 2 * s, 6 * s, s);
+    g.fillRect(cx - 3 * s, y + 3 * s, 6 * s, s);
+    g.fillStyle(0x1d0f1c, 1);
+    g.fillRoundedRect(cx - 2 * s, y - 8 * s, 4 * s, 4 * s, 2 * s);
+    g.fillStyle(0xff6b8a, 0.5 + pulse * 0.4);
+    g.fillCircle(cx, y + 5 * s, 1.2 * s);
+  }
+
+  function draw(sc, time) {
+    const st = sc.__lqFingers;
+    if (!st) return;
+    const g = st.g;
+    g.clear();
+    if (!sc.area || sc.switching || !sc.player || !sc.store || !sc.store.game) return;
+    if (!window.LQAchievements || window.LQAchievements.isUnlocked(ACH_ID)) return;
+    const found = foundMap(false);
+    const px = sc.player.x;
+    const py = sc.player.y;
+    FINGERS.forEach((f, i) => {
+      if (found[f.id]) return;
+      const p = spotFor(sc, f);
+      if (!p) return;
+      if (Math.hypot(px - p.x, py - p.y) < PICK_RADIUS * p.k) collect(sc, f);
+      else drawFinger(g, p.x, p.y, p.k, time, i);
+    });
+  }
+
+  function attach(sc) {
+    if (sc.__lqFingers) return;
+    sc.__lqFingers = { g: sc.add.graphics().setDepth(8.8) };
+    sc.events.on('update', (time) => draw(sc, time));
+    sc.events.once('shutdown', () => {
+      sc.__lqFingers = null;
+    });
+  }
+
+  setInterval(() => {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqFingers) {
+      try {
+        attach(sc);
+      } catch (e) {
+        console.warn('fingers attach failed', e);
+      }
+    }
+  }, 1000);
+
+  // All 20 collected but the achievement is not marked done (page closed during the cutscene): finish it quietly.
+  setInterval(() => {
+    const A = window.LQAchievements;
+    if (A && !cutsceneBusy && getScene() && count() >= FINGERS.length && !A.isUnlocked(ACH_ID)) A.complete(ACH_ID);
+  }, 2000);
+
+  // LQFingers.preview() replays the cutscene without changing any progress (handy for tuning it).
+  window.LQFingers = {
+    list: FINGERS,
+    count,
+    total: FINGERS.length,
+    isFound,
+    preview: () => (window.LQShrine ? window.LQShrine.play() : null),
+    draw: drawFinger,
+    // Where a finger is in what the player sees right now ({x, y, k}) or null; used by Gojo's Six Eyes (gojo.js).
+    spot: (id) => {
+      const sc = getScene();
+      const f = FINGERS.find((x) => x.id === id);
+      return sc && sc.area && f ? spotFor(sc, f) : null;
+    },
+  };
+})();
+
+</script>
+    <script>
+/*
+ * The Ten Shadows: a guided quest chain that unlocks Megumi.
+ *
+ *  1. Ask Ms. Green (the librarian) about the Ten Shadows: she tells the legend and the quest starts.
+ *  2. Ask the villagers about "the shadows". The ten holders each tell the legend of one shadow beast and a clue to
+ *     where its mark is hidden; everybody else points the player on. Only after a holder has told the clue does that
+ *     shadow's mark appear in the world (a dark pool with a glowing ring and the beast's icon).
+ *  3. Walk over a mark to collect it. The tenth (Mahoraga) only reveals itself once nine are found.
+ *  4. Ten shadows complete the 'ten-shadows' achievement (achievements.js), which unlocks Megumi.
+ *
+ * The quest is also listed in the quest panel (quest 'ten-shadows' in 14-v8-quests-and-minimap.js); its first step
+ * reads its text from status() below, so the panel always shows the next clue. Progress is stored in the normal save
+ * (game.ach.shadows = { started, told, found }). Chat hook: 10-core-characters-and-scene.js calls onNpcMessage().
+ */
+(function () {
+  'use strict';
+
+  const TOWN = 'english-town';
+  const MINE = 'mining-town';
+  const ACH_ID = 'ten-shadows';
+  const QUEST_ID = 'ten-shadows';
+  const PICK_RADIUS = 22;
+
+  // npc = id of the villager who knows this shadow. Outdoor marks use x/y (tile coordinates of the areas' `places`);
+  // indoor marks use `in` (building name, first free guest tile of the ground floor, like the fingers).
+  const SHADOWS = [
+    { id: 'dogs', icon: '🐕', name: 'Divine Dogs', npc: 'police', area: TOWN, x: 19, y: 14,
+      clue: 'In the town plaza, where the paths meet.',
+      legend: 'The Divine Dogs! Two hounds, one white and one black, who never leave their master. I once saw a black shadow run across the town plaza at dusk. Look for it where the paths meet.' },
+    { id: 'nue', icon: '🦉', name: 'Nue', npc: 'teacher', area: TOWN, x: 60, y: 7,
+      clue: 'Near the Fire Station, where the alarm sounds like thunder.',
+      legend: 'The Nue is a night owl wrapped in lightning. My students say it sleeps near the Fire Station, where the alarm sounds like thunder.' },
+    { id: 'serpent', icon: '🐍', name: 'Great Serpent', npc: 'hotelclerk', area: TOWN, in: 'Hotel',
+      clue: 'Inside the Hotel, in the quiet lobby.',
+      legend: 'The Great Serpent slides through the quietest places. A guest told me something long and dark moved across the floor of our hotel. Look in the lobby.' },
+    { id: 'toad', icon: '🐸', name: 'Toad', npc: 'kid', area: TOWN, x: 23, y: 22,
+      clue: 'Near the Market, a dark puddle that never dries.',
+      legend: 'The Toad! My friends say a giant toad hides near the Market when it rains. It leaves a dark puddle that never dries.' },
+    { id: 'elephant', icon: '🐘', name: 'Max Elephant', npc: 'shopkeeper', area: TOWN, in: 'Corner Shop',
+      clue: "Inside the Corner Shop (Tom's shop).",
+      legend: 'Max Elephant never forgets, and neither do I. A shadow with a long trunk appeared in my shop after closing time. Look inside the Corner Shop.' },
+    { id: 'rabbit', icon: '🐇', name: 'Rabbit Escape', npc: 'doctor', area: TOWN, in: 'Hospital',
+      clue: 'Inside the Hospital.',
+      legend: 'Rabbit Escape is a swarm of little rabbits that run away in every direction. At night I found tiny dark footprints in the hospital. Look inside the Hospital.' },
+    { id: 'deer', icon: '🦌', name: 'Round Deer', npc: 'medic', area: MINE, x: 21, y: 37,
+      clue: 'Just outside the First-Aid Post.',
+      legend: 'The Round Deer heals those who are hurt. On quiet mornings a calm shadow stands just outside the First-Aid Post.' },
+    { id: 'ox', icon: '🐂', name: 'Piercing Ox', npc: 'miner', area: MINE, x: 38, y: 18,
+      clue: 'On the east side of the mine.',
+      legend: 'The Piercing Ox charges straight through rock! On the east side of the mine there is a strange mark where the ground was split.' },
+    { id: 'tiger', icon: '🐅', name: 'Tiger Funeral', npc: 'smith', area: MINE, in: 'Tool Shop',
+      clue: 'Inside the Tool Shop, near the anvils.',
+      legend: 'Tiger Funeral is a tiger made of shadow that sleeps next to cold iron. Look inside the Tool Shop, near the anvils.' },
+    { id: 'mahoraga', icon: '⚔️', name: 'Divine General Mahoraga', npc: 'stationmaster', area: MINE, in: 'Rail Station', needs: 9,
+      clue: 'Inside the Rail Station, where all the roads meet.',
+      legend: 'The last one is Divine General Mahoraga, the strongest of all. It waits where all the roads meet: the Rail Station.' },
+  ];
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const A = () => window.LQAchievements;
+  const V8 = () => window.LQV8;
+  const norm = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd');
+  // "ten shadows", "shadow(s)", "shikigami", or the Vietnamese name of the technique.
+  const ASKING = /\bshadows?\b|shikigami|thap chung anh/;
+
+  function data(create) {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') {
+      if (!create) return null;
+      g.ach = { steps: {}, done: {} };
+    }
+    if (!g.ach.shadows || typeof g.ach.shadows !== 'object') {
+      if (!create) return null;
+      g.ach.shadows = { started: 0, told: {}, found: {} };
+    }
+    const d = g.ach.shadows;
+    if (!d.told) d.told = {};
+    if (!d.found) d.found = {};
+    return d;
+  }
+  const save = () => {
+    const sc = getScene();
+    try {
+      sc && sc.store && sc.store.save();
+    } catch (e) {
+      console.warn('ten shadows save failed', e);
+    }
+  };
+
+  const isStarted = () => !!(data(false) && data(false).started);
+  const isFound = (id) => !!(data(false) && data(false).found[id]);
+  const isTold = (id) => !!(data(false) && data(false).told[id]);
+  const count = () => SHADOWS.filter((s) => isFound(s.id)).length;
+  // Villagers of the other town are not in the scene, so keep their display names here.
+  const NAMES = {
+    librarian: 'Ms. Green (Librarian)', police: 'Officer Davis (Police)', teacher: 'Ms. Taylor (Teacher)',
+    hotelclerk: 'Sofia (Hotel Clerk)', kid: 'Mia (Student)', shopkeeper: 'Tom (Shopkeeper)', doctor: 'Dr. Chen (Doctor)',
+    medic: 'Rita (Mine Medic)', miner: 'Ben (Digger)', smith: 'Olga (Blacksmith)', stationmaster: 'Mr. Hale (Station Master)',
+  };
+  const npcName = (sc, id) => {
+    const n = sc && sc.npcs && sc.npcs.find((x) => x.def.id === id);
+    return n ? n.def.name : NAMES[id] || id;
+  };
+  const askWho = (sc, s) => npcName(sc, s.npc) + (s.area === MINE ? ' in Minerals Town' : '');
+
+  // The shadow whose clue was told but not collected yet (the oldest one).
+  const pending = () => {
+    const d = data(false);
+    if (!d) return null;
+    return (
+      SHADOWS.filter((s) => d.told[s.id] && !d.found[s.id]).sort((a, b) => d.told[a.id] - d.told[b.id])[0] || null
+    );
+  };
+
+  // Text for the quest panel's first step.
+  function status() {
+    const sc = getScene();
+    if (!isStarted()) return 'Ask Ms. Green in the Library about the Ten Shadows. Try typing: "Tell me about the Ten Shadows".';
+    const n = count();
+    if (n >= SHADOWS.length) return 'All ten shadows found!';
+    const p = pending();
+    if (p) return `Shadows found: ${n}/10. Next clue: ${p.clue} (${p.name})`;
+    const open = SHADOWS.filter((s) => !isTold(s.id) && !(s.needs && n < s.needs)).slice(0, 3).map((s) => askWho(sc, s));
+    return `Shadows found: ${n}/10. Ask the villagers about the shadows. Try: ${open.join(', ') || 'anyone you have not asked yet'}.`;
+  }
+
+  const refreshQuest = () => {
+    try {
+      V8() && V8().renderQuest();
+    } catch (e) {
+      /* the quest panel is not ready */
+    }
+  };
+
+  function finish() {
+    const a = A();
+    if (a && !a.isUnlocked(ACH_ID)) a.complete(ACH_ID);
+    try {
+      const v = V8();
+      if (v && v.progressOf(QUEST_ID) === 0) {
+        v.select(QUEST_ID);
+        v.onEvent('shadows', {});
+      }
+    } catch (e) {
+      console.warn('ten shadows quest sync failed', e);
+    }
+  }
+
+  function collect(sc, s) {
+    const d = data(true);
+    d.found[s.id] = Date.now();
+    save();
+    const n = count();
+    const a = A();
+    if (n >= SHADOWS.length) finish();
+    else if (a) a.toast('🌑 Shadow found', `${s.name} · ${n}/${SHADOWS.length}`, n === 9 ? 'One left… Mahoraga is waiting.' : 'Keep asking the villagers.');
+    refreshQuest();
+    window.dispatchEvent(new CustomEvent('lifequest:shadows', { detail: { count: n } }));
+  }
+
+  // ---- chat hook: what villagers say when asked about the shadows -----------------------------------------------
+  function onNpcMessage(npcId, text, areaId) {
+    const m = norm(text);
+    if (!ASKING.test(m)) return [];
+    const sc = getScene();
+    const d = data(true);
+    if (!d) return [];
+    const who = npcName(sc, npcId);
+    const say = (t) => `📜 ${who}: ${t}`;
+    const n = count();
+    const v8 = V8();
+
+    if (npcId === 'librarian') {
+      if (!d.started) {
+        d.started = Date.now();
+        save();
+        try {
+          v8 && v8.select(QUEST_ID);
+        } catch (e) {}
+        refreshQuest();
+        const a = A();
+        if (a) a.toast('📜 New quest', 'The Ten Shadows', 'Ask the villagers about the shadows. See Quests (V) for clues.');
+        return [
+          say('Ah, the Ten Shadows! An old legend says a sorcerer could call ten shadow beasts from his own shadow.'),
+          say('When he vanished, the shadows left their marks across English Town and Minerals Town.'),
+          say('Ask the villagers about the shadows: each one knows a story and a clue. Find all ten marks, and tell me when you are done.'),
+        ];
+      }
+      if (n >= SHADOWS.length) {
+        try {
+          v8 && v8.select(QUEST_ID);
+        } catch (e) {}
+        return [say('You found all ten shadows! The power of the Ten Shadows answers you now. Well done!')];
+      }
+      return [say(`You have found ${n} of the ten shadows. ${pending() ? 'Remember the clue: ' + pending().clue : 'Ask the villagers about the shadows to learn the next clue.'}`)];
+    }
+
+    if (!d.started) return [say('Shadows? I only know old stories. Ms. Green in the Library knows the whole legend. Try asking her.')];
+
+    const s = SHADOWS.find((x) => x.npc === npcId);
+    if (!s) {
+      const open = SHADOWS.filter((x) => !d.told[x.id] && !(x.needs && n < x.needs));
+      const here = open.find((x) => x.area === areaId) || open[0];
+      return [say(here ? `I do not know much about the shadows. Try asking ${askWho(sc, here)}.` : 'I do not know much about the shadows. Check the quest panel for your next clue.')];
+    }
+    if (d.found[s.id]) return [say(`You already found the ${s.name}. Well done!`)];
+    if (d.told[s.id]) return [say(`I already told you about the ${s.name}. Remember: ${s.clue}`)];
+    if (s.needs && n < s.needs) return [say(`Come back when you have found the other ${s.needs} shadows. Ask the villagers about them first.`)];
+    d.told[s.id] = Date.now();
+    save();
+    refreshQuest();
+    const a = A();
+    if (a) a.toast('📜 New clue', s.name, s.clue);
+    return [say(s.legend), `🌑 Clue: ${s.clue}`];
+  }
+
+  // ---- marks in the world -----------------------------------------------------------------------------------------
+  // World position (pixels) and scale of a mark in what the player currently sees, or null when it is not here.
+  function spotFor(sc, s) {
+    if (s.area !== sc.area.id) return null;
+    const ins = sc.inside;
+    if (!s.in) return ins ? null : { x: s.x * 32 + 16, y: s.y * 32 + 16, k: 1 };
+    if (!ins || ins.floor !== 0 || ins.b.name !== s.in || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    const t = ins.spec;
+    const at = (pt) => ({ x: ins.objs[0].x + (pt[0] + 0.5) * unit, y: ins.objs[0].y + (pt[1] + 0.5) * unit, k: ins.k });
+    const margin = 12 * ins.k;
+    const covered = (p) => (ins.rects || []).some((r) => p.x > r.x - margin && p.x < r.x + r.w + margin && p.y > r.y - margin && p.y < r.y + r.h + margin);
+    // Try the guest tiles from the end so a mark does not share a tile with a finger (those use the first free one).
+    const cands = [...(t.guests || []), [Math.floor(t.w / 2) + 1, Math.max(3, t.h - 4)]].map(at).reverse();
+    return cands.find((p) => !covered(p)) || cands[0];
+  }
+
+  function drawMark(g, cx, cy, s, time, seed) {
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.003 + seed);
+    // Blue-violet glow that builds up towards the centre.
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle(i % 2 ? 0x5a6cff : 0x8a4bff, 0.03 + pulse * 0.014);
+      g.fillCircle(cx, cy, (22 - i * 3) * s);
+    }
+    // A dark pool on the ground with a slowly spreading ring.
+    const ring = (time * 0.0008 + seed * 0.37) % 1;
+    g.fillStyle(0x6a5cff, 0.2 * (1 - ring));
+    g.fillEllipse(cx, cy + 5 * s, (14 + 16 * ring) * s, (5 + 6 * ring) * s);
+    g.fillStyle(0x07070f, 0.85);
+    g.fillEllipse(cx, cy + 5 * s, 18 * s, 7 * s);
+    g.fillStyle(0x15152a, 0.9);
+    g.fillEllipse(cx - 2 * s, cy + 4 * s, 9 * s, 3 * s);
+  }
+
+  function draw(sc, time) {
+    const st = sc.__lqTenShadows;
+    if (!st) return;
+    st.g.clear();
+    st.texts.forEach((t) => t.setVisible(false));
+    if (!sc.area || sc.switching || !sc.player || !sc.store || !sc.store.game) return;
+    const d = data(false);
+    if (!d || !d.started) return;
+    const px = sc.player.x;
+    const py = sc.player.y;
+    SHADOWS.forEach((s, i) => {
+      // A mark exists in the world only after its villager told the clue, and until it is collected.
+      if (!d.told[s.id] || d.found[s.id]) return;

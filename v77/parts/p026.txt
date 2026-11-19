@@ -1,0 +1,1000 @@
+                age: [`Sixty-one. Forty years in this kitchen. I still do not like waste.`],
+                family: [
+                  `I had three sons. All miners. Now I feed everyone else too, so I have thirty sons. Ha.`,
+                ],
+                food: [`My own stew. Plain and hot. No fancy food in my house.`],
+                dream: [`I want the Inn to stand another fifty years. And a full pot every night.`],
+                pet: [
+                  `Three hens behind the kitchen. They give me eggs. They are the real bosses.`,
+                ],
+              },
+              stranger: {
+                greeting: `Oh! A new face! You are not from MT. So thin! Come in, sit. Who are you, dear?`,
+                heard: `So you are the newcomer from English Town! Come in, sit, eat. Everyone talks about you.`,
+                remark: `A stranger! Sit, dear. You came a long way, no? Eat first, talk later.`,
+                note: `You are motherly and welcome a stranger at once: you want to feed them, you ask where they come from and scold them for being thin. Warm in a plain, loud way.`,
+              },
+              reactions: Qe,
+            },
+          };
+
+var et = {
+            blaster: {
+              short: `Tomas`,
+              traits: `strong, honest, plain-spoken, a little deaf from thirty years of blasts so he often asks people to repeat, very careful about safety, counts out loud, proud that every tunnel of Minerals Town (MT) started with his charges`,
+              style: `Plain and loud-ish. Short sentences. Often says "What?", "Say again, slowly", "Three, two, one". Talks about rock, dynamite and safe distance. No fancy words.`,
+              lines: {
+                greet: [
+                  `What? Oh. Hello, {p}. I am Tomas. Speak up, my ears are old.`,
+                  `Hey, {p}. Careful here. I make the big boom.`,
+                ],
+                howAreYou: [
+                  `What? Ha. Fine, {p}. My ears ring, my heart is good. You?`,
+                  `Good. Loud, but good. And you?`,
+                ],
+                askName: [`Tomas. Blaster. I make rock go boom. Your name? Slowly.`],
+                thanks: [`Sure, {p}. No problem.`, `Fine. Just stay behind the line.`],
+                bye: [
+                  `Bye, {p}. When you hear the horn, stay back.`,
+                  `Go well. Cover your ears if you hear a boom.`,
+                ],
+                yes: [`Good. Say it again, slowly?`, `Yes. Go on.`],
+                no: [`No? Okay. Say it louder next time. Ha.`, `Fine. No problem.`],
+                whereFrom: [`MT. Born here. Loud town, loud man. You?`],
+                hobby: [
+                  `I play the drum. Of course. Loud. My wife leaves the house. You?`,
+                  `I sing. Nobody listens. Ha. And you, {p}?`,
+                ],
+                weather: [
+                  `Thunder? Not as loud as my work. Ha. Rain is good, it keeps the dust down.`,
+                ],
+                help: [
+                  `Not with the boom. That is my job. But I can show you the safe place to stand.`,
+                ],
+                compliment: [`What? Thank you. Say it again. I like it.`, `Ha. Thanks, {p}.`],
+                insult: [`No, no, {p}. Not in MT. Say sorry.`],
+                work: [
+                  `I blast the hard rock. Small holes, small charges, careful counting. Three, two, one. Boom. Then the diggers come in.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(dynamite|explosive|explosives|blast|blasting|boom|powder|charge|charges)\b/,
+                  replies: [
+                    `Dynamite is strong powder. I drill a small hole, put a small charge, run the wire, and stand far away. Count to three. Boom.`,
+                    `Never touch a charge you did not place yourself. Never. That is my first rule.`,
+                  ],
+                },
+                {
+                  re: /\b(horn|siren|warning|signal)\b/,
+                  replies: [
+                    `Two short horns: go back. One long horn: it is safe. Learn it. It can save your life.`,
+                  ],
+                },
+                {
+                  re: /\b(rock|stone|hard|tunnel)\b/,
+                  replies: [
+                    `Hard rock needs a big charge. Soft rock, a small one. I look at the rock first, then I decide.`,
+                  ],
+                },
+                {
+                  re: /\b(ear|ears|deaf|hear|hearing|loud|noise)\b/,
+                  replies: [
+                    `What? Ha. Yes, my ears are tired. Thirty years of booms. Wear ear covers, {p}.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `What? Say again, {p}. Slowly.`,
+                `Ha. I did not hear. Short words, please.`,
+                `Fair enough. What else?`,
+                `Hm. Is it about the rock?`,
+              ],
+              hints: [
+                `Want to know how I break the rock, {p}? Ask me. Dynamite. Boom.`,
+                `Ask me about dynamite. I know it all.`,
+              ],
+              goalDone: [
+                `Good question, {p}. I like people who ask. Your English is clear.`,
+                `Yes. Ask, and you stay safe. Well said.`,
+              ],
+              personal: {
+                age: [`Fifty. Thirty years of booms. Hearing: bad. Heart: good.`],
+                family: [
+                  `My wife says I snore like a blast. We have two daughters. They are quiet. Ha.`,
+                ],
+                food: [`Spicy sausage and potatoes. Hot food for a loud life.`],
+                dream: [`No accidents. Ever. And one quiet week.`],
+                pet: [`A dog called Fuse. He hides when I come home smelling of powder.`],
+              },
+              stranger: {
+                greeting: `What? Who? I do not know you! You are not from MT. Where did you come from? Speak up!`,
+                heard: `What? You are the newcomer? From English Town? Speak up, I am half deaf!`,
+                remark: `Say again? You talk funny. Not from MT, yes?`,
+                note: `You are loud and a little confused, and half deaf, so you ask people to repeat. You find the stranger's clean clothes and way of talking odd. You warn them kindly to stay away from the blasting area.`,
+              },
+              reactions: Qe,
+            },
+            carter: {
+              short: `Pete`,
+              traits: `steady, quietly cheerful, whistles while he works, never late, loves the rails and the rhythm of the wagons, proud that everything Minerals Town (MT) digs leaves on his wagons`,
+              style: `Plain, steady sentences with a little rhythm. Sometimes says "Click-clack". Talks about wagons, rails, loads and time. Never fancy.`,
+              lines: {
+                greet: [
+                  `Hello, {p}. Pete here. Wagons on time, always.`,
+                  `Hey, {p}. Click-clack. Good to see you.`,
+                ],
+                howAreYou: [
+                  `Steady. Busy. The rails are happy, so I am happy. You?`,
+                  `Good, {p}. Eight wagons today, no problems. And you?`,
+                ],
+                askName: [`Pete. I drive the ore wagons. Your name?`],
+                thanks: [`Sure, {p}.`, `No problem. Just stay off the rails.`],
+                bye: [`Bye, {p}. I have a wagon to move.`, `Go well. Click-clack.`],
+                yes: [`Good. Go on.`, `Yes. Tell me more.`],
+                no: [`Okay.`, `Fine. No problem.`],
+                whereFrom: [`MT. My father drove wagons too. Rails run in the family. You?`],
+                hobby: [
+                  `I whistle train songs. And I fix old clocks. Time matters. You?`,
+                  `I watch the sky. Rain makes the rails slippery. It is a habit.`,
+                ],
+                weather: [`Rain: slippery rails. Dry: good. I check the sky every morning.`],
+                help: [
+                  `I carry things. Ore, boxes, sometimes people. The Rail Station is that way. Need a ride?`,
+                ],
+                compliment: [
+                  `Thanks, {p}. I try to be on time.`,
+                  `Good. Kind words are light to carry.`,
+                ],
+                insult: [`That is not good, {p}. We say kind words in MT.`],
+                work: [
+                  `I haul the ore from the Great Mine to the Rail Station. Wagon after wagon, all day.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(wagon|wagons|cart|carts|train|trains|rail|rails|track|tracks)\b/,
+                  replies: [
+                    `Eight wagons on a good day. Two tons each. Slow, but it never stops.`,
+                    `Brakes first. Always. A wagon full of ore does not stop by itself.`,
+                  ],
+                },
+                {
+                  re: /\b(ore|haul|carry|load|loading|copper|iron|coal)\b/,
+                  replies: [
+                    `Copper, iron, coal. It goes from the mine to the Rail Station. From there, the whole country gets it.`,
+                  ],
+                },
+                {
+                  re: /\b(station|time|schedule|late|early|clock)\b/,
+                  replies: [`First wagon at seven. Last at five. I am never late. Never.`],
+                },
+                {
+                  re: /\b(where does|where do|go after|goes after)\b/,
+                  replies: [
+                    `The ore goes to the station, then by train to the big cities. Every wire and every pot in the country has some MT in it.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Hm. Say it plain, {p}.`,
+                `I do not follow. Short words, please.`,
+                `Fair enough. What else?`,
+                `Click-clack. Is it about the wagons?`,
+              ],
+              hints: [
+                `Want to know where the ore goes, {p}? Ask me about the wagons.`,
+                `Ask me about the rails. I know every meter.`,
+              ],
+              goalDone: [
+                `Good question, {p}. I like people who ask about my work. Your English is clear.`,
+                `Yes. Ask, and I will tell you. Well said.`,
+              ],
+              personal: {
+                age: [`Forty-two. Twenty years on the rails.`],
+                family: [
+                  `My wife and my two boys. They wave from the hill when I pass. Best part of my day.`,
+                ],
+                food: [`Bread, cheese and hot tea in a metal cup. Rail food.`],
+                dream: [`A long train to the sea. One day. I have never seen the sea.`],
+                pet: [`A canary at home. She sings when the wagons come in.`],
+              },
+              stranger: {
+                greeting: `Hello. New face. I know every face on my rails. You are not from MT. Where do you come from?`,
+                heard: `Ah. You are the newcomer. English Town, yes? I carry things there too, sometimes.`,
+                remark: `I know every face in MT. Not yours. Welcome, I guess.`,
+                note: `You are calm and observant. You know every face in town, and this one is new, so you are curious. You ask where they came from, and you wonder how they got here, since not on your wagons.`,
+              },
+              reactions: Qe,
+            },
+            sorter: {
+              short: `Lena`,
+              traits: `small, quick, sharp-eyed, dry humor, never wastes time, loves a clean piece of copper, proud that no bad ore ever leaves Minerals Town (MT)`,
+              style: `Plain and quick. Short sentences with a little dry humor. Talks about color, weight and shine: "Heavy and orange-green: copper." No fancy words.`,
+              lines: {
+                greet: [
+                  `Do not touch the piles. I am Lena. I sort.`,
+                  `Hello, {p}. Watch your hands. The rocks bite.`,
+                ],
+                howAreYou: [
+                  `Busy. Hands dirty. Eyes sharp. You, {p}?`,
+                  `Good. Three tons sorted. My back is not happy. You?`,
+                ],
+                askName: [`Lena. Ore sorter. And you?`],
+                thanks: [`Sure, {p}.`, `It is nothing. Wash your hands.`],
+                bye: [
+                  `Bye, {p}. Mind the piles.`,
+                  `Go well. Come back when you can tell copper from rock.`,
+                ],
+                yes: [`Good. Go on.`, `Yes. Say it straight.`],
+                no: [`Okay.`, `Fine. Your choice.`],
+                whereFrom: [`MT. Born near the mine. My first toy was a stone. True story.`],
+                hobby: [
+                  `I collect colorful pebbles from the river. I have seven hundred. You?`,
+                  `I read old mine maps. They are better than novels.`,
+                ],
+                weather: [`Wet rock shows its true color. I like rain, {p}.`],
+                help: [
+                  `If you want to learn to sort, ask. If you want to touch the piles, do not.`,
+                ],
+                compliment: [
+                  `Hm. Thanks, {p}. Keep your eyes open.`,
+                  `Thank you. Now look at this stone.`,
+                ],
+                insult: [`Careful, {p}. I throw rocks very well.`],
+                work: [
+                  `I sort the ore by hand. Copper here, iron there, plain rock in the bin. Every piece.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(tell|difference|different|color|colour|heavy|light|shine|shiny)\b/,
+                  replies: [
+                    `Copper: orange-green, heavy. Iron: dark red-brown, heavy. Plain rock: gray, light. Pick it up. You will feel it.`,
+                  ],
+                },
+                {
+                  re: /\b(gold|golden|yellow|real)\b/,
+                  replies: [
+                    `Real gold is yellow, soft and very heavy. Fool's gold is lighter and breaks. Always test it.`,
+                  ],
+                },
+                {
+                  re: /\b(sort|sorting|pile|piles|bin|ore)\b/,
+                  replies: [
+                    `Three piles: copper, iron, waste. I pick up each stone once. My hands know before my eyes.`,
+                  ],
+                },
+                {
+                  re: /\b(bad|quality|buyer|buyers|trust|proud)\b/,
+                  replies: [
+                    `No bad ore leaves MT. That is why the buyers trust us. I check every piece.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Hm. Say it plain, {p}.`,
+                `I did not catch that. Short words.`,
+                `Fair enough. What else?`,
+                `Is it about the ore?`,
+              ],
+              hints: [
+                `Want to know how to tell copper from rock, {p}? Ask me. It is easy.`,
+                `Ask me about colors and weight. I will show you.`,
+              ],
+              goalDone: [
+                `Good question, {p}. Use your eyes and your hands. Your English is clear.`,
+                `Right. You ask well, {p}. Good.`,
+              ],
+              personal: {
+                age: [`Twenty-nine. Twelve years at the ore heap.`],
+                family: [
+                  `My grandfather taught me to sort. He is ninety. He still checks my work.`,
+                ],
+                food: [
+                  `Black bread with butter and a pickle. Dora makes it better than my mother. Do not tell her.`,
+                ],
+                dream: [`To find one perfect piece of copper. Pure. Shiny. Then I keep it.`],
+                pet: [`A cat called Pebble. She sleeps in the ore bin. She is the real sorter.`],
+              },
+              stranger: {
+                greeting: `Hm. You. Clean boots, clean hands. You are not from MT. What do you want? Do not touch the piles.`,
+                heard: `So you are the stranger everyone talks about. English Town. I look at hands. Show me yours.`,
+                remark: `Look at those hands. Soft. You are not from MT, no? Who are you?`,
+                note: `You are sharp, dry and observant. You judge strangers by their hands, boots and clothes the way you judge ore. You tease them a little, but you are not hostile.`,
+              },
+              reactions: Qe,
+            },
+            timberman: {
+              short: `Gus`,
+              traits: `quiet, patient, careful, slow to speak and never in a hurry, treats wood and steel with respect, proud that nobody has ever been hurt in one of his tunnels, proud of Minerals Town (MT)`,
+              style: `Plain and calm. Very short sentences. Likes sayings such as "Slow is safe". Talks about beams, supports, roofs and weight.`,
+              lines: {
+                greet: [
+                  `Hello, {p}. I am Gus. I hold up the roof.`,
+                  `Good to see you, {p}. Mind your head under the beams.`,
+                ],
+                howAreYou: [
+                  `Calm. Slow. Safe. That is a good day. You?`,
+                  `Fine, {p}. The roof is still up. You?`,
+                ],
+                askName: [`Gus. I build the supports. Your name?`],
+                thanks: [`Sure, {p}.`, `It is nothing. Just be careful down there.`],
+                bye: [`Bye, {p}. Go slow.`, `Go safe. Look up sometimes.`],
+                yes: [`Good. Go on.`, `Yes. Slowly, tell me more.`],
+                no: [`Okay. Slow is fine.`, `Fine. No hurry.`],
+                whereFrom: [
+                  `MT. My father cut wood for the first tunnels. Now I use the wood. You?`,
+                ],
+                hobby: [
+                  `I carve small wooden horses. Slow work. Good work. You?`,
+                  `I sit by the river and listen. A good builder listens.`,
+                ],
+                weather: [`Rain makes the ground heavy. I check the beams more on wet days.`],
+                help: [`If you need to know about tunnels, ask me. If you want to hurry, do not.`],
+                compliment: [`Hm. Thank you, {p}.`, `That is kind. The beams do the real work.`],
+                insult: [`That is not good, {p}. Slow down, and say it again kindly.`],
+                work: [
+                  `I build the supports: wood and steel beams. They hold the roof up. Slow work, safe work.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(support|supports|beam|beams|roof|hold|holds|collapse|fall|falls|why)\b/,
+                  replies: [
+                    `The rock above is heavy. Heavier than you think. Wood and steel hold it. Without supports, the roof falls. Simple.`,
+                  ],
+                },
+                {
+                  re: /\b(wood|timber|oak|steel|metal)\b/,
+                  replies: [
+                    `Old oak is best. It cracks before it breaks, so it warns you. Steel does not warn you. I use both.`,
+                  ],
+                },
+                {
+                  re: /\b(tunnel|tunnels|mine|dark)\b/,
+                  replies: [
+                    `A tunnel is a promise. The roof promises not to fall. I help it keep the promise.`,
+                  ],
+                },
+                {
+                  re: /\b(crack|cracks|noise|sound|safe|safety)\b/,
+                  replies: [
+                    `When wood cracks, you leave. No questions. Slow is safe, but leaving is faster.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Hm. Say it slowly, {p}.`,
+                `I did not follow. Short words.`,
+                `Fair enough. What else?`,
+                `Is it about the tunnel?`,
+              ],
+              hints: [
+                `Want to know why a tunnel needs supports, {p}? Ask me.`,
+                `Ask me about the beams. I like that question.`,
+              ],
+              goalDone: [
+                `Good question, {p}. Take your time with everything. Your English is clear.`,
+                `Right. You ask slowly and well. Good.`,
+              ],
+              personal: {
+                age: [
+                  `Fifty-five. Thirty-five years of beams. No tunnel of mine has fallen. Not one.`,
+                ],
+                family: [`My wife and my grandson. He carries my small tools. He is learning.`],
+                food: [`Soup and dark bread. Slow food for a slow man.`],
+                dream: [`That my tunnels stand for a hundred years. After me.`],
+                pet: [`A sheepdog called Beam. He sleeps under my table.`],
+              },
+              stranger: {
+                greeting: `Hello. Slowly. I do not know you. You are not from MT. Where do you come from?`,
+                heard: `Ah. The newcomer from English Town. I heard. Slow down. You are welcome here.`,
+                remark: `Hm. A new face. Slowly, friend. Where are you from?`,
+                note: `You are calm and slow, welcoming but watchful, a quiet man looking at a stranger who stands under his tunnel roof. You ask where they come from, and you mind their head under the beams.`,
+              },
+              reactions: Qe,
+            },
+            stationmaster: {
+              short: `Mr. Hale`,
+              traits: `calm, formal, precise, loves punctuality, checks his pocket watch, proud of Minerals Central Station and of trains that leave on time`,
+              style: `Polite, clear and formal. Short sentences. Often says "Mind the yellow line" or "All aboard". Talks about trains, platforms, tickets and time.`,
+              lines: {
+                greet: [
+                  `Good day, {p}. Welcome to Minerals Central.`,
+                  `Hello, {p}. Mind the yellow line, please.`,
+                ],
+                howAreYou: [
+                  `Very well, thank you. The trains are on time, so I am happy. And you, {p}?`,
+                  `Fine, thank you. Busy, but in order. How are you?`,
+                ],
+                askName: [`I am Mr. Hale, the station master. And your name?`],
+                thanks: [`You are welcome, {p}.`, `My pleasure. Safe travels.`],
+                bye: [`Goodbye, {p}. Safe travels.`, `Take care. Mind the gap.`],
+                yes: [`Good. Please continue.`, `Yes. Go on.`],
+                no: [`I see. No problem.`, `Very well.`],
+                whereFrom: [
+                  `I was born in Minerals Town. My grandfather built the first platform here. And you?`,
+                ],
+                hobby: [
+                  `I collect old pocket watches. Time is my hobby. You?`,
+                  `I like to watch the trains arrive. It is like music. What about you?`,
+                ],
+                weather: [
+                  `Rain or sun, the trains run. But rain makes the platform slippery, so walk slowly.`,
+                ],
+                help: [
+                  `I can tell you about the trains and platforms. For tickets, ask Nina at the ticket window. For bags, ask Ollie.`,
+                ],
+                compliment: [`Thank you, {p}. We work hard to keep the station nice.`],
+                insult: [`That is not polite, {p}. We speak kindly in this station.`],
+                work: [
+                  `I watch the platforms, check the trains and make sure everyone is safe. The ore train leaves at noon.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(train|trains|platform|platforms|track|tracks|rail|rails)\b/,
+                  replies: [
+                    `Platform 1 is for passenger trains. Platform 2 is for the ore express.`,
+                    `The big white train goes to the cities. The ore train goes to the factories.`,
+                  ],
+                },
+                {
+                  re: /\b(time|schedule|timetable|late|early|depart|departure|departs|leave|leaves|next)\b/,
+                  replies: [
+                    `The passenger train leaves every hour. The ore express leaves at noon. We are never late.`,
+                  ],
+                },
+                {
+                  re: /\b(ticket|tickets|fare|price)\b/,
+                  replies: [`Tickets are at window one. Ask Nina. She is fast and kind.`],
+                },
+                {
+                  re: /\b(station|clock|tower|big|building)\b/,
+                  replies: [
+                    `This is the biggest station in the region. Our two clock towers show the same time, always.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Pardon, {p}? Please say it again, slowly.`,
+                `I am not sure I understand. Is it about the trains?`,
+                `Hm. Ask me about a platform or a time.`,
+              ],
+              hints: [
+                `Do you want to know about the next train, {p}? Ask me about the platform.`,
+                `Ask me about the time. I always know it.`,
+              ],
+              goalDone: [
+                `Good question, {p}. Platform 1, passenger train. Your English is clear and polite.`,
+                `Well asked. You speak like a real traveller.`,
+              ],
+              personal: {
+                age: [`Fifty-five. Thirty years at this station.`],
+                family: [`My wife and my daughter. My daughter wants to drive a train.`],
+                food: [`Tea and a cheese sandwich, always at four o'clock.`],
+                dream: [`To see the first high-speed train arrive on Platform 1.`],
+                pet: [`No pets. But a cat sleeps in the ticket office. Do not tell anyone.`],
+              },
+              stranger: {
+                greeting: `Good day. I do not know your face. Are you a traveller? Welcome to Minerals Central.`,
+                heard: `Ah, you are the newcomer from English Town. Welcome. Do you have a ticket?`,
+                remark: `A new face. I know every regular passenger. Welcome.`,
+                note: `You are formal and calm. You notice new faces, and you ask politely whether they are travelling.`,
+              },
+              reactions: Qe,
+            },
+            ticketclerk: {
+              short: `Nina`,
+              traits: `friendly, quick, polite, loves numbers and timetables, smiles at every passenger, a little talkative`,
+              style: `Bright and helpful. Short polite questions like "Single or return?". Talks about tickets, prices, destinations and times.`,
+              lines: {
+                greet: [
+                  `Hello, {p}! Welcome to Minerals Central. Where to today?`,
+                  `Hi, {p}! Need a ticket?`,
+                ],
+                howAreYou: [
+                  `I am great, thanks! Lots of passengers today. How are you, {p}?`,
+                  `Good, thank you! Window one is busy but fun. And you?`,
+                ],
+                askName: [`I am Nina. I sell the tickets. What is your name?`],
+                thanks: [`You are welcome, {p}! Have a nice trip.`, `My pleasure!`],
+                bye: [`Bye, {p}! Have a nice trip!`, `See you soon. Safe travels!`],
+                yes: [`Great! Go on.`, `Yes, of course.`],
+                no: [`No problem at all.`, `That is fine, {p}.`],
+                whereFrom: [
+                  `I come from the next valley. I take the train home every Sunday. And you?`,
+                ],
+                hobby: [
+                  `I love maps and timetables. Weird, I know! And you?`,
+                  `I draw little trains in my notebook. What about you?`,
+                ],
+                weather: [`Sunny days are busy. Rainy days are busier! Everyone wants a train.`],
+                help: [
+                  `Tell me where you want to go, and I will sell you a ticket. Single or return?`,
+                ],
+                compliment: [`Aw, thank you, {p}! That is so nice.`],
+                insult: [`That is not nice, {p}. Please be kind at my window.`],
+                work: [`I sell tickets, answer questions and watch the clock. It is a happy job.`],
+              },
+              topics: [
+                {
+                  re: /\b(ticket|tickets|single|return|fare|price|cost|cheap|expensive)\b/,
+                  replies: [
+                    `A single ticket is five coins. A return is eight. Cheaper than two singles!`,
+                    `Single or return? A return ticket saves money.`,
+                  ],
+                },
+                {
+                  re: /\b(train|trains|platform|time|schedule|timetable|leave|leaves)\b/,
+                  replies: [
+                    `The passenger train leaves every hour from Platform 1. The ore express is for cargo only.`,
+                  ],
+                },
+                {
+                  re: /\b(where|go|travel|trip|city|cities|english)\b/,
+                  replies: [
+                    `From here you can go to English Town and the big cities. Just tell me where, {p}.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Sorry, {p}, can you say that again?`,
+                `Hmm, I did not catch that. Is it about a ticket?`,
+                `Where would you like to go?`,
+              ],
+              hints: [
+                `Want to practise? Try to buy a ticket from me, {p}. Say where you want to go.`,
+                `Ask me for a ticket. Say, "A ticket to English Town, please."`,
+              ],
+              goalDone: [
+                `Perfect, {p}! "A single ticket, please" is just right. Your English is great!`,
+                `Very polite! Here is your imaginary ticket. Have a nice trip!`,
+              ],
+              personal: {
+                age: [`Twenty-six. This is my second year at the window.`],
+                family: [`I have a big family: three brothers! They all want free tickets, ha ha.`],
+                food: [`Noodle soup and sweet tea. I eat on the bench at lunch.`],
+                dream: [`I want to travel across the whole country by train.`],
+                pet: [`A little rabbit named Ticket. Funny, right?`],
+              },
+              stranger: {
+                greeting: `Hello! New face! Welcome to Minerals Central. Are you travelling today?`,
+                heard: `Oh, you must be the newcomer! Welcome! Need a ticket anywhere?`,
+                remark: `I know most of the regulars. Not you. Welcome!`,
+                note: `You are cheerful and curious about travellers. You want to know where they are going and offer a ticket.`,
+              },
+              reactions: Qe,
+            },
+            porter: {
+              short: `Ollie`,
+              traits: `strong, cheerful, jokes a lot, loves helping, proud of carrying every bag without dropping one`,
+              style: `Easy and funny, short sentences. Says "No worries" and "Heavy!" Talks about bags, parcels, trolleys and trains.`,
+              lines: {
+                greet: [
+                  `Hey, {p}! Ollie the porter. Got a heavy bag?`,
+                  `Hello, {p}! No worries, I can carry it.`,
+                ],
+                howAreYou: [
+                  `Strong as always! My trolley is full, my day is good. And you, {p}?`,
+                  `Great! Lots of bags, lots of smiles. You?`,
+                ],
+                askName: [`I am Ollie! I carry everything. What is your name?`],
+                thanks: [`No worries, {p}!`, `Any time! That is my job.`],
+                bye: [`See you, {p}! Do not forget your bag!`, `Bye! Safe travels!`],
+                yes: [`Yes! Go on.`, `Sure thing.`],
+                no: [`No worries.`, `That is okay, {p}.`],
+                whereFrom: [`From a farm near here. Carrying hay made me strong! You?`],
+                hobby: [
+                  `I lift stones at the weekend. Funny hobby, yes? And you?`,
+                  `I whistle old train songs. What about you?`,
+                ],
+                weather: [`Rain makes the bags heavy! Sunshine makes me happy.`],
+                help: [
+                  `I carry bags and parcels. Give me your suitcase, and I take it to the platform.`,
+                ],
+                compliment: [`Ha ha, thanks, {p}! You are kind.`],
+                insult: [`Hey, that is not nice, {p}. Be kind, please.`],
+                work: [
+                  `I carry bags and load parcels onto the trains. Up, down, up, down. Good exercise!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(bag|bags|luggage|suitcase|backpack|heavy|carry|carries)\b/,
+                  replies: [
+                    `Heavy bag? No worries. I carry it to the platform for you.`,
+                    `The heaviest bag today was a bag of stones! Do not ask why.`,
+                  ],
+                },
+                {
+                  re: /\b(parcel|parcels|package|cargo|box|boxes|send)\b/,
+                  replies: [
+                    `Parcels go to the cargo window, over there. I load them onto the train.`,
+                  ],
+                },
+                {
+                  re: /\b(train|trains|platform|ticket|tickets)\b/,
+                  replies: [
+                    `Tickets at window one, with Nina. Trains at the platforms. I carry everything between!`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Sorry, {p}? Say it again, please.`,
+                `Ha, I did not get that. Is it about a bag?`,
+                `Hmm. Tell me more, {p}.`,
+              ],
+              hints: [
+                `Need help with your luggage, {p}? Just ask me, "Can you carry my bag, please?"`,
+                `Ask me about parcels. I know every box in this station.`,
+              ],
+              goalDone: [
+                `Good job, {p}! "Can you carry my bag, please?" is perfect. Your English is strong, like me!`,
+                `Ha ha, polite and clear. Give me your bag!`,
+              ],
+              personal: {
+                age: [`Thirty-three. Strong and happy.`],
+                family: [`A big sister and a loud little brother. We all work at the station!`],
+                food: [`Fried rice and a big glass of milk.`],
+                dream: [`To run my own luggage shop one day.`],
+                pet: [`A goat named Boss. He eats my socks.`],
+              },
+              stranger: {
+                greeting: `Hey, new face! Welcome to Minerals Central. Heavy bag? I can help!`,
+                heard: `Oh, you are the newcomer! Welcome! Need help with your bags?`,
+                remark: `Not a regular, I think. Welcome anyway!`,
+                note: `You are friendly and helpful. You notice bags first and offer to carry them.`,
+              },
+              reactions: Qe,
+            },
+            etmaster: {
+              short: `Mr. Reed`,
+              traits: `calm, formal, precise, loves punctuality, checks his pocket watch, proud of English Town Central Station and of trains that leave on time`,
+              style: `Polite, clear and formal. Short sentences. Often says "Mind the yellow line" or "All aboard". Talks about trains, platforms, tickets and time.`,
+              lines: {
+                greet: [
+                  `Good day, {p}. Welcome to English Town Central.`,
+                  `Hello, {p}. Mind the yellow line, please.`,
+                ],
+                howAreYou: [
+                  `Very well, thank you. The trains are on time, so I am happy. And you, {p}?`,
+                  `Fine, thank you. Busy, but in order. How are you?`,
+                ],
+                askName: [`I am Mr. Reed, the station master. And your name?`],
+                thanks: [`You are welcome, {p}.`, `My pleasure. Safe travels.`],
+                bye: [`Goodbye, {p}. Safe travels.`, `Take care. Mind the gap.`],
+                yes: [`Good. Please continue.`, `Yes. Go on.`],
+                no: [`I see. No problem.`, `Very well.`],
+                whereFrom: [
+                  `I was born in English Town. My grandfather built the first platform here. And you?`,
+                ],
+                hobby: [
+                  `I collect old pocket watches. Time is my hobby. You?`,
+                  `I like to watch the trains arrive. It is like music. What about you?`,
+                ],
+                weather: [
+                  `Rain or sun, the trains run. But rain makes the platform slippery, so walk slowly.`,
+                ],
+                help: [
+                  `I can tell you about the trains and platforms. For tickets, ask Emma at the ticket window. For bags, ask Leo.`,
+                ],
+                compliment: [`Thank you, {p}. We work hard to keep the station nice.`],
+                insult: [`That is not polite, {p}. We speak kindly in this station.`],
+                work: [
+                  `I watch the platforms, check the trains and make sure everyone is safe. The ore train leaves at noon.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(train|trains|platform|platforms|track|tracks|rail|rails)\b/,
+                  replies: [
+                    `Platform 1 is for passenger trains. Platform 2 is for the ore express.`,
+                    `The big white train goes to the cities. The ore train goes to the factories.`,
+                  ],
+                },
+                {
+                  re: /\b(time|schedule|timetable|late|early|depart|departure|departs|leave|leaves|next)\b/,
+                  replies: [
+                    `The passenger train leaves every hour. The ore express leaves at noon. We are never late.`,
+                  ],
+                },
+                {
+                  re: /\b(ticket|tickets|fare|price)\b/,
+                  replies: [`Tickets are at window one. Ask Emma. She is fast and kind.`],
+                },
+                {
+                  re: /\b(station|clock|tower|big|building)\b/,
+                  replies: [
+                    `This is the biggest station in the region. Our two clock towers show the same time, always.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Pardon, {p}? Please say it again, slowly.`,
+                `I am not sure I understand. Is it about the trains?`,
+                `Hm. Ask me about a platform or a time.`,
+              ],
+              hints: [
+                `Do you want to know about the next train, {p}? Ask me about the platform.`,
+                `Ask me about the time. I always know it.`,
+              ],
+              goalDone: [
+                `Good question, {p}. Platform 1, passenger train. Your English is clear and polite.`,
+                `Well asked. You speak like a real traveller.`,
+              ],
+              personal: {
+                age: [`Fifty-five. Thirty years at this station.`],
+                family: [`My wife and my daughter. My daughter wants to drive a train.`],
+                food: [`Tea and a cheese sandwich, always at four o'clock.`],
+                dream: [`To see the first high-speed train arrive on Platform 1.`],
+                pet: [`No pets. But a cat sleeps in the ticket office. Do not tell anyone.`],
+              },
+              stranger: {
+                greeting: `Good day. I do not know your face. Are you a traveller? Welcome to English Town Central.`,
+                heard: `Ah, you are the newcomer. Welcome. Do you have a ticket?`,
+                remark: `A new face. I know every regular passenger. Welcome.`,
+                note: `You are formal and calm. You notice new faces, and you ask politely whether they are travelling.`,
+              },
+              reactions: Qe,
+            },
+            etclerk: {
+              short: `Emma`,
+              traits: `friendly, quick, polite, loves numbers and timetables, smiles at every passenger, a little talkative`,
+              style: `Bright and helpful. Short polite questions like "Single or return?". Talks about tickets, prices, destinations and times.`,
+              lines: {
+                greet: [
+                  `Hello, {p}! Welcome to English Town Central. Where to today?`,
+                  `Hi, {p}! Need a ticket?`,
+                ],
+                howAreYou: [
+                  `I am great, thanks! Lots of passengers today. How are you, {p}?`,
+                  `Good, thank you! Window one is busy but fun. And you?`,
+                ],
+                askName: [`I am Emma. I sell the tickets. What is your name?`],
+                thanks: [`You are welcome, {p}! Have a nice trip.`, `My pleasure!`],
+                bye: [`Bye, {p}! Have a nice trip!`, `See you soon. Safe travels!`],
+                yes: [`Great! Go on.`, `Yes, of course.`],
+                no: [`No problem at all.`, `That is fine, {p}.`],
+                whereFrom: [
+                  `I come from the next valley. I take the train home every Sunday. And you?`,
+                ],
+                hobby: [
+                  `I love maps and timetables. Weird, I know! And you?`,
+                  `I draw little trains in my notebook. What about you?`,
+                ],
+                weather: [`Sunny days are busy. Rainy days are busier! Everyone wants a train.`],
+                help: [
+                  `Tell me where you want to go, and I will sell you a ticket. Single or return?`,
+                ],
+                compliment: [`Aw, thank you, {p}! That is so nice.`],
+                insult: [`That is not nice, {p}. Please be kind at my window.`],
+                work: [`I sell tickets, answer questions and watch the clock. It is a happy job.`],
+              },
+              topics: [
+                {
+                  re: /\b(ticket|tickets|single|return|fare|price|cost|cheap|expensive)\b/,
+                  replies: [
+                    `A single ticket is five coins. A return is eight. Cheaper than two singles!`,
+                    `Single or return? A return ticket saves money.`,
+                  ],
+                },
+                {
+                  re: /\b(train|trains|platform|time|schedule|timetable|leave|leaves)\b/,
+                  replies: [
+                    `The passenger train leaves every hour from Platform 1. The ore express is for cargo only.`,
+                  ],
+                },
+                {
+                  re: /\b(where|go|travel|trip|city|cities|english|minerals)\b/,
+                  replies: [
+                    `From here you can go to Minerals Town and the big cities. Just tell me where, {p}.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Sorry, {p}, can you say that again?`,
+                `Hmm, I did not catch that. Is it about a ticket?`,
+                `Where would you like to go?`,
+              ],
+              hints: [
+                `Want to practise? Try to buy a ticket from me, {p}. Say where you want to go.`,
+                `Ask me for a ticket. Say, "A ticket to Minerals Town, please."`,
+              ],
+              goalDone: [
+                `Perfect, {p}! "A single ticket, please" is just right. Your English is great!`,
+                `Very polite! Here is your imaginary ticket. Have a nice trip!`,
+              ],
+              personal: {
+                age: [`Twenty-six. This is my second year at the window.`],
+                family: [`I have a big family: three brothers! They all want free tickets, ha ha.`],
+                food: [`Noodle soup and sweet tea. I eat on the bench at lunch.`],
+                dream: [`I want to travel across the whole country by train.`],
+                pet: [`A little rabbit named Ticket. Funny, right?`],
+              },
+              stranger: {
+                greeting: `Hello! New face! Welcome to English Town Central. Are you travelling today?`,
+                heard: `Oh, you must be the newcomer! Welcome! Need a ticket anywhere?`,
+                remark: `I know most of the regulars. Not you. Welcome!`,
+                note: `You are cheerful and curious about travellers. You want to know where they are going and offer a ticket.`,
+              },
+              reactions: Qe,
+            },
+            etporter: {
+              short: `Leo`,
+              traits: `strong, cheerful, jokes a lot, loves helping, proud of carrying every bag without dropping one`,
+              style: `Easy and funny, short sentences. Says "No worries" and "Heavy!" Talks about bags, parcels, trolleys and trains.`,
+              lines: {
+                greet: [
+                  `Hey, {p}! Leo the porter. Got a heavy bag?`,
+                  `Hello, {p}! No worries, I can carry it.`,
+                ],
+                howAreYou: [
+                  `Strong as always! My trolley is full, my day is good. And you, {p}?`,
+                  `Great! Lots of bags, lots of smiles. You?`,
+                ],
+                askName: [`I am Leo! I carry everything. What is your name?`],
+                thanks: [`No worries, {p}!`, `Any time! That is my job.`],
+                bye: [`See you, {p}! Do not forget your bag!`, `Bye! Safe travels!`],
+                yes: [`Yes! Go on.`, `Sure thing.`],
+                no: [`No worries.`, `That is okay, {p}.`],
+                whereFrom: [`From a farm near here. Carrying hay made me strong! You?`],
+                hobby: [
+                  `I lift stones at the weekend. Funny hobby, yes? And you?`,
+                  `I whistle old train songs. What about you?`,
+                ],
+                weather: [`Rain makes the bags heavy! Sunshine makes me happy.`],
+                help: [
+                  `I carry bags and parcels. Give me your suitcase, and I take it to the platform.`,
+                ],
+                compliment: [`Ha ha, thanks, {p}! You are kind.`],
+                insult: [`Hey, that is not nice, {p}. Be kind, please.`],
+                work: [
+                  `I carry bags and load parcels onto the trains. Up, down, up, down. Good exercise!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(bag|bags|luggage|suitcase|backpack|heavy|carry|carries)\b/,
+                  replies: [
+                    `Heavy bag? No worries. I carry it to the platform for you.`,
+                    `The heaviest bag today was a bag of stones! Do not ask why.`,
+                  ],
+                },
+                {
+                  re: /\b(parcel|parcels|package|cargo|box|boxes|send)\b/,
+                  replies: [
+                    `Parcels go to the cargo window, over there. I load them onto the train.`,
+                  ],
+                },
+                {
+                  re: /\b(train|trains|platform|ticket|tickets)\b/,
+                  replies: [
+                    `Tickets at window one, with Emma. Trains at the platforms. I carry everything between!`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Sorry, {p}? Say it again, please.`,
+                `Ha, I did not get that. Is it about a bag?`,
+                `Hmm. Tell me more, {p}.`,
+              ],
+              hints: [
+                `Need help with your luggage, {p}? Just ask me, "Can you carry my bag, please?"`,
+                `Ask me about parcels. I know every box in this station.`,
+              ],
+              goalDone: [
+                `Good job, {p}! "Can you carry my bag, please?" is perfect. Your English is strong, like me!`,
+                `Ha ha, polite and clear. Give me your bag!`,
+              ],
+              personal: {
+                age: [`Thirty-three. Strong and happy.`],
+                family: [`A big sister and a loud little brother. We all work at the station!`],
+                food: [`Fried rice and a big glass of milk.`],
+                dream: [`To run my own luggage shop one day.`],
+                pet: [`A goat named Boss. He eats my socks.`],
+              },
+              stranger: {
+                greeting: `Hey, new face! Welcome to English Town Central. Heavy bag? I can help!`,
+                heard: `Oh, you are the newcomer! Welcome! Need help with your bags?`,
+                remark: `Not a regular, I think. Welcome anyway!`,
+                note: `You are friendly and helpful. You notice bags first and offer to carry them.`,
+              },
+              reactions: Qe,
+            },
+          };
+var tt = { ...$e, ...et };
+var nt = {
+            barista: {
+              short: `Lily`,
+              traits: `cheerful, bubbly, loves chatting, a bit gossipy, always offers food and drinks`,
+              style: `Warm and energetic. Uses exclamation marks and words like "awesome", "sweet", "yum".`,
+              lines: {
+                greet: [
+                  `Hi hi, {p}! Great to see you! Coffee day, huh?`,
+                  `Hello! Welcome back to Sunny Cafe!`,
+                ],
+                howAreYou: [
+                  `I'm awesome, thanks for asking! The morning rush was crazy, but I love it. How about you, {p}?`,
+                  `Super good! Fresh coffee makes everything better. And you?`,
+                ],
+                askName: [
+                  `I'm Lily! I've worked here for three years. What's your name?`,
+                  `Lily! Like the flower. And you are...?`,
+                ],
+                thanks: [`Aww, you're welcome, {p}!`, `Anytime! That is what I am here for!`],
+                bye: [
+                  `Bye, {p}! Come again soon, I will save you a cookie!`,
+                  `See you later! Have a sweet day!`,
+                ],
+                yes: [`Awesome! Tell me more!`, `Yay! So, what do you feel like having today?`],
+                no: [
+                  `Oh no, really? What would make your day better?`,
+                  `Hmm, okay! Maybe a warm drink will change your mind?`,
+                ],
+                whereFrom: [
+                  `I was born in this town! But my grandma is from Italy, that's why I love espresso. Where are you from?`,
+                ],
+                hobby: [
+                  `I love baking cakes on Sundays! Do you like sweet food, {p}?`,
+                  `I paint little pictures on the foam! Have you ever tried latte art?`,
+                ],
+                weather: [
+                  `It's so sunny today! Perfect for an iced drink, don't you think?`,
+                  `Rain makes people want hot chocolate, so I secretly love rainy days!`,
+                ],
+                help: [`Sure! I can help with drinks, cake, or directions. What do you need?`],
+                compliment: [
+                  `Aww, thank you, you made my day! 😊`,
+                  `Stop it, I'm blushing! Thanks, {p}!`,
+                ],
+                insult: [`Ouch, that's not very nice. Let's try again with a smile, okay?`],
+                work: [
+                  `I make coffee, tea and smoothies. The cheesecake is my favorite part of the job!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(menu|special|recommend|best)\b/,
+                  replies: [
+                    `Today our special is a vanilla latte with cinnamon cake. Yum! Want to try it?`,
+                  ],
+                },
+                {
+                  re: /\b(price|cost|how much|expensive|cheap)\b/,
+                  replies: [`A coffee is just five dollars, and cake is four. Very fair, right?`],
+                },
+                {
+                  re: /\b(food|eat|hungry|breakfast|lunch)\b/,
+                  replies: [`We have sandwiches and cake! What do you usually eat for breakfast?`],
+                },
+              ],
+              fallback: [
+                `Oh, interesting! Tell me more, {p}.`,
+                `Ha, I like that! What else is new with you?`,
+                `Really? That's so cool! What happened next?`,
+                `Hmm, I never thought about it that way! Do you want something to drink while we talk?`,
+              ],
+              hints: [
+                `By the way, would you like to order something? I have coffee, tea and cake!`,
+                `You look thirsty, {p}! What would you like to drink?`,
+              ],
+              goalDone: [
+                `Coming right up! One order for {p}! Thanks, and your English was great!`,
+                `Perfect choice! I'll make it right now. Nice job speaking so clearly!`,
+              ],
+            },
+            mayor: {
+              short: `Mr. Brown`,
+              traits: `serious, formal, polite, hardworking, speaks like a politician, cares about the town budget`,
+              style: `Formal and measured. Uses phrases like "I appreciate that", "Indeed", "citizen". No slang.`,
+              lines: {
+                greet: [
+                  `Good day, {p}. It is a pleasure to see a citizen at Town Hall.`,
+                  `Welcome. Please, speak freely.`,
+                ],
+                howAreYou: [
+                  `I am well, thank you. Busy, as always. A mayor never rests. And yourself?`,
+                  `Tired but determined. The town needs me. How are you, {p}?`,
+                ],

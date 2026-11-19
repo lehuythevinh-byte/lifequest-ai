@@ -1,0 +1,1000 @@
+                  button.textContent = choice;
+                  button.title = `Put this sentence in the chat box`;
+                  button.addEventListener(`click`, () => {
+                    this.input.value = choice;
+                    this.input.focus();
+                  });
+                  this.suggestionList.appendChild(button);
+                }
+              } finally {
+                this.suggestionButton.disabled = false;
+                this.suggestionButton.textContent = `✨ AI suggests a sentence`;
+              }
+            }
+            setupMic() {
+              let e = window,
+                t = e.SpeechRecognition ?? e.webkitSpeechRecognition;
+              if (!t) {
+                this.micBtn.style.display = `none`;
+                return;
+              }
+              let n = new t();
+              ((n.lang = `en-US`),
+                (n.interimResults = !0),
+                (n.continuous = !1),
+                (n.maxAlternatives = 1),
+                (n.onresult = (e) => {
+                  let t = ``;
+                  for (let n = 0; n < e.results.length; n++) t += e.results[n][0].transcript;
+                  ((this.input.value = t.trim()),
+                    e.results[e.results.length - 1].isFinal && this.input.value && this.send());
+                }),
+                (n.onend = () => this.setListening(!1)),
+                (n.onerror = (e) => {
+                  (this.setListening(!1),
+                    e.error === `not-allowed` || e.error === `service-not-allowed`
+                      ? this.append(
+                          `fix`,
+                          `🎤 The microphone is blocked. Allow it in the browser address bar, then try again.`,
+                        )
+                      : e.error === `no-speech`
+                        ? this.append(
+                            `fix`,
+                            `🎤 I did not hear anything. Press the mic and speak again.`,
+                          )
+                        : e.error !== `aborted` &&
+                          this.append(`fix`, `🎤 Speech recognition failed (${e.error}).`));
+                }),
+                (this.rec = n),
+                this.micBtn.addEventListener(`click`, () => {
+                  (this.toggleMic(), this.input.focus());
+                }));
+            }
+            setListening(e) {
+              ((this.listening = e),
+                this.micBtn.classList.toggle(`on`, e),
+                (this.input.placeholder = e
+                  ? `Listening... speak English now`
+                  : `Type in English and press Enter, or press the mic and speak...`));
+            }
+            toggleMic() {
+              if (this.rec && !this.busy) {
+                if (this.listening) {
+                  this.rec.stop();
+                  return;
+                }
+                this.input.value = ``;
+                try {
+                  (this.rec.start(), this.setListening(!0));
+                } catch {}
+              }
+            }
+            setProvider(e) {
+              this.provider = e;
+            }
+            gossipFor(e) {
+              let t = [];
+              for (let n of re)
+                if (n.id !== e.id)
+                  for (let e of this.store.get(n.id).events.slice(-2))
+                    t.push(`${nt[n.id].short} says the player ${e.text} (day ${e.day})`);
+              return t.slice(-6);
+            }
+            summarizing = new Set();
+            async summarize(e) {
+              let t = this.store.get(e.id),
+                n = Math.min(t.turnCounter - t.summarizedCounter, t.transcript.length);
+              if (n < 2 || !this.provider.summarize || this.summarizing.has(e.id)) return;
+              this.summarizing.add(e.id);
+              let r = t.turnCounter;
+              try {
+                let i = await this.provider.summarize(
+                  e,
+                  t.summary,
+                  t.transcript.slice(-n),
+                  this.situation(e).day,
+                );
+                i && ((t.summary = i.slice(0, 900)), (t.summarizedCounter = r), this.store.save());
+              } catch {}
+              this.summarizing.delete(e.id);
+            }
+            get currentProvider() {
+              return this.provider;
+            }
+            get isOpen() {
+              return this.npc !== null;
+            }
+            get currentId() {
+              return this.npc?.id ?? null;
+            }
+            get providerLabel() {
+              return this.provider.label;
+            }
+            open(e) {
+              let t = this.store.get(e.id),
+                n = this.situation(e);
+              ((this.npc = e), (this.prior = [...t.transcript]), (this.counted = !1));
+              if (e.uiTheme) this.root.dataset.npcTheme = e.uiTheme;
+              else delete this.root.dataset.npcTheme;
+              let r = Ee(e.id).npcs.filter(
+                (t) => t !== e.id && this.store.get(t).visits > 0,
+              ).length;
+              ((this.stranger = st(e, t, r)), this.summarize(e));
+              let i = ot(e, t, n.day, n.minutes, this.stranger);
+              ((this.history = [{ role: `npc`, text: i }]),
+                this.suggestionList?.replaceChildren(),
+                (this.logEl.innerHTML = ``),
+                (this.nameEl.textContent = `${e.name} · ${n.activity} · ${Ve(t.affinity)}`),
+                this.updateGoal());
+              let a = nt[e.id].short,
+                o = this.provider.greet
+                  ? this.append(`npc`, `${a} looks at you...`)
+                  : this.append(`npc`, `${a}: ${i}`);
+              (this.provider.greet && this.aiGreeting(e, o, i),
+                (this.root.style.display = `block`),
+                (this.input.value = ``),
+                setTimeout(() => this.input.focus(), 0));
+            }
+            async aiGreeting(e, t, n) {
+              let r = nt[e.id].short,
+                i = this.store.get(e.id),
+                a = {
+                  ...this.situation(e),
+                  memory: i,
+                  prior: this.prior,
+                  gossip: this.gossipFor(e),
+                  stranger: this.stranger,
+                },
+                o = ``;
+              try {
+                o = await Promise.race([
+                  this.provider.greet(e, a),
+                  new Promise((e) => setTimeout(() => e(``), 5e3)),
+                ]);
+              } catch {}
+              if (this.npc !== e) return;
+              let s = lqNpcSafeText(o || n, lqNpcSafeText(n, `Hello! Nice to see you.`));
+              t.textContent = `${r}: ${s}`;
+              if (t.querySelector && !t.querySelector(`.speaker-btn`)) {
+                let spk = document.createElement(`button`);
+                spk.type = `button`;
+                spk.className = `speaker-btn`;
+                spk.textContent = `🔊`;
+                spk.title = `Listen again`;
+                spk.onclick = () => {
+                  speechService.speak(s);
+                };
+                t.appendChild(spk);
+              }
+              speechService.speak(s);
+              this.history.length === 1 && (this.history[0] = { role: `npc`, text: s });
+            }
+            close() {
+              speechService.stop();
+              this.npc &&
+                (this.listening && this.rec?.abort(),
+                this.summarize(this.npc),
+                (this.npc = null),
+                delete this.root.dataset.npcTheme,
+                (this.root.style.display = `none`),
+                this.input.blur(),
+                this.store.save(),
+                this.onClose());
+            }
+            updateGoal() {
+              if (!this.npc) return;
+              let e = this.npc.goal;
+              this.goalEl.textContent = this.store.get(this.npc.id).goalDone
+                ? `Mission complete: ${e.text}`
+                : `Mission: ${e.text}`;
+            }
+            append(e, t, mood) {
+              let n = document.createElement(`div`);
+              n.className = e;
+              if (e === `npc`) {
+                if (mood && mood !== 'neutral') {
+                  let chip = document.createElement(`span`);
+                  chip.className = `lq77-mood lq77-mood-${mood}`;
+                  chip.textContent = mood;
+                  chip.title = `${t.split(':')[0]} feels ${mood} right now`;
+                  n.appendChild(chip);
+                }
+                let textSpan = document.createElement(`span`);
+                textSpan.textContent = t;
+                n.appendChild(textSpan);
+
+                // Add replay speaker button
+                let spk = document.createElement(`button`);
+                spk.type = `button`;
+                spk.className = `speaker-btn`;
+                spk.textContent = `🔊`;
+                spk.title = `Listen to pronunciation again`;
+                spk.onclick = (ev) => {
+                  ev.stopPropagation();
+                  let clean = t.replace(/^[^:]+:\s*/, ``);
+                  speechService.speak(clean);
+                };
+                n.appendChild(spk);
+              } else {
+                n.textContent = t;
+              }
+              this.logEl.appendChild(n);
+              this.logEl.scrollTop = this.logEl.scrollHeight;
+              return n;
+            }
+            setTeacher(e) {
+              ((this.teacherOn = e),
+                (this.teacherBtn.textContent = `✎ Teacher: ${e ? `ON` : `OFF`}`),
+                this.teacherBtn.classList.toggle(`off`, !e));
+              try {
+                localStorage.setItem(dt, e ? `1` : `0`);
+              } catch {}
+            }
+            async checkGrammar(e) {
+              if (!this.teacherOn || !this.provider.check || e.split(/\s+/).length < 2) return null;
+              try {
+                return await Promise.race([
+                  this.provider.check(e),
+                  new Promise((e) => setTimeout(() => e(null), 6e3)),
+                ]);
+              } catch {
+                return null;
+              }
+            }
+            async askWordHelper(e) {
+              let t = [...this.history].reverse().find((e) => e.role === `npc`)?.text ?? ``,
+                n = e.slice(1).trim() || t;
+              if (((this.input.value = ``), !n)) return;
+              ((this.busy = !0),
+                this.append(
+                  `me`,
+                  `📖 ${e.slice(1).trim() ? `What does "${n}" mean?` : `Explain the last sentence`}`,
+                ));
+              let r = this.append(`npc`, `Word helper is thinking...`);
+              try {
+                let e = await ct(this.provider, n);
+                (Ae(this.store.game.stats, { term: e.term || n, vi: e.vi, meaning: e.meaning }),
+                  this.store.save(),
+                  r.replaceWith(lt(e)));
+              } catch (e) {
+                (r.remove(), this.append(`fix`, `📖 ${e.message}`));
+              }
+              ((this.logEl.scrollTop = this.logEl.scrollHeight),
+                (this.busy = !1),
+                this.input.focus());
+            }
+            async send() {
+              let e = this.npc,
+                t = this.input.value.trim();
+              if (!e || !t || this.busy) return;
+              if (t.startsWith(`?`)) {
+                await this.askWordHelper(t);
+                return;
+              }
+              let n = this.store.get(e.id),
+                r = nt[e.id].short;
+              ((this.input.value = ``), (this.busy = !0));
+              let i = this.append(`me`, `You: ${t}`),
+                a = document.createElement(`div`);
+              ((a.className = `npc`),
+                (a.textContent = `${r} is thinking...`),
+                this.logEl.appendChild(a));
+              let o = We(t);
+              o && (n.playerName = o);
+              let s = this.situation(e),
+                c = {
+                  ...s,
+                  memory: n,
+                  prior: this.prior,
+                  gossip: this.gossipFor(e),
+                  stranger: this.stranger,
+                },
+                l,
+                u = null;
+              try {
+                // One Gemini call per message: the NPC reply already carries "correction" and "vietnameseTip",
+                // so the separate checkGrammar() call (a second request every turn) is no longer made here.
+                l = await this.provider.respond(e, this.history, t, n.goalDone, c);
+              } catch (e) {
+                (a.remove(),
+                  i.remove(),
+                  this.append(
+                    `fix`,
+                    `⚠ ${r} could not answer (${e.message}). Your message is back in the box: press Enter to try again.`,
+                  ),
+                  (this.input.value = t),
+                  (this.busy = !1),
+                  this.input.focus());
+                return;
+              }
+              ((l = jt(l, n.goalDone, e, this.history)),
+                a.remove(),
+                (this.counted ||= (n.visits++, !0)),
+                (n.lastVisit = { day: s.day, minutes: s.minutes }),
+                Ye(
+                  n,
+                  { day: s.day, minutes: s.minutes, role: `user`, text: t },
+                  { day: s.day, minutes: s.minutes, role: `npc`, text: l.reply, mood: l.mood || `` },
+                ));
+              for (let e of Ke(t)) qe(n, e);
+              (l.remember && qe(n, l.remember),
+                (n.affinity = Math.max(
+                  -20,
+                  Math.min(100, n.affinity + 1 + (l.affinityDelta ?? 0) + (l.goalDone ? 8 : 0)),
+                )),
+                l.goalDone && ((n.goalDone = !0), Je(n, s.day, e.goal.deed)),
+                (l.affinityDelta ?? 0) <= -3 && Je(n, s.day, `was rude to them`));
+              let d = ``,
+                f = ``;
+              if (this.teacherOn) {
+                if (u) {
+                  if (!u.ok) {
+                    d = u.fixed ? `"${u.fixed}"${u.tip ? ` · ${u.tip}` : ``}` : u.tip;
+                    f = u.fixed ? `Better: "${u.fixed}"${u.tip ? ` (${u.tip})` : ``}` : u.tip;
+                  }
+                } else if (l.correction) {
+                  d = l.correction;
+                  f = l.correction;
+                }
+              }
+              if (d && l.vietnameseTip && l.vietnameseTip.trim()) {
+                d += ` · 🇻🇳 ${l.vietnameseTip.trim()}`;
+              }
+              Ne(this.store.game.stats, t, f);
+              this.store.save();
+              this.history.push({ role: `user`, text: t }, { role: `npc`, text: l.reply });
+              if (d) {
+                let e = document.createElement(`div`);
+                e.className = `fix`;
+                e.textContent = `✎ ${d}`;
+                i.insertAdjacentElement(`afterend`, e);
+              }
+              if (l.vocabulary && l.vocabulary.trim()) {
+                let vocDiv = document.createElement(`div`);
+                vocDiv.className = `voc-badge`;
+                vocDiv.textContent = `📖 Suggested vocabulary: "${l.vocabulary}" (Click or type ?${l.vocabulary.split(/[\s,;:]+/)[0]} to look it up)`;
+                vocDiv.onclick = () => {
+                  this.askWordHelper(`?${l.vocabulary.split(/[\s,;:]+/)[0]}`);
+                };
+                i.insertAdjacentElement(`afterend`, vocDiv);
+              }
+              speechService.speak(l.reply);
+              if (
+                l.naturalAlternative &&
+                l.naturalAlternative.trim() &&
+                l.naturalAlternative.toLowerCase() !== t.toLowerCase()
+              ) {
+                let altDiv = document.createElement(`div`);
+                altDiv.className = `natural-alt`;
+                altDiv.textContent = `💡 Native way: "${l.naturalAlternative}"`;
+                i.insertAdjacentElement(`afterend`, altDiv);
+              }
+              (this.append(`npc`, `${r}: ${l.reply}`, l.mood),
+                l.notice && this.append(`fix`, `⚠ ${l.notice}`));
+              // n.goalDone was already set above (line ~566); jt() only lets goalDone through when the goal was not
+              // done before, so l.goalDone alone means "completed just now".
+              if (l.goalDone) {
+                this.updateGoal();
+                this.append(
+                  `fix`,
+                  `★ Mission complete! +$${e.goal.reward}, +${e.goal.rep} reputation`,
+                );
+                this.onGoalDone(e);
+              }
+              // Do not advance keyword-based story hooks for rejected or unclear turns.
+              if (!lqNpcTopicBlocksQuest(l.topicStatus)) {
+                for (let n of this.onSaid(e, t)) this.append(`quest`, n);
+              }
+              ((this.nameEl.textContent = `${e.name} · ${s.activity} · ${Ve(n.affinity)}`),
+                (this.busy = !1),
+                this.input.focus());
+            }
+          };
+var pt = [
+            {
+              idx: 0,
+              title: `Newcomer`,
+              icon: ``,
+              color: 3842303,
+              min: 0,
+              perk: `Start helping your neighbors!`,
+            },
+            {
+              idx: 1,
+              title: `Friendly Neighbor`,
+              icon: `🏠`,
+              color: 4903072,
+              min: 10,
+              perk: `Neighbors know your face now.`,
+            },
+            {
+              idx: 2,
+              title: `Town Helper`,
+              icon: `🤝`,
+              color: 16756794,
+              min: 25,
+              perk: `Daily income grows with every point of reputation.`,
+            },
+            {
+              idx: 3,
+              title: `Local Hero`,
+              icon: `⭐`,
+              color: 16734858,
+              min: 50,
+              perk: `Everyone greets you as a hero.`,
+            },
+            {
+              idx: 4,
+              title: `Town Guardian`,
+              icon: `🛡️`,
+              color: 10514687,
+              min: 90,
+              perk: `The whole town trusts you.`,
+            },
+            {
+              idx: 5,
+              title: `Honorary Mayor`,
+              icon: `👑`,
+              color: 16765498,
+              min: 140,
+              perk: `You are the heart of English Town!`,
+            },
+          ];
+        function mt(e) {
+          let t = pt[0];
+          for (let n of pt) e >= n.min && (t = n);
+          return t;
+        }
+        function ht(e) {
+          return pt.find((t) => t.min > e) ?? null;
+        }
+        var gt = class {
+            store;
+            root = document.getElementById(`journal`);
+            constructor(e) {
+              this.store = e;
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            toggle() {
+              if (this.isOpen) {
+                this.root.style.display = `none`;
+                return;
+              }
+              (this.render(), (this.root.style.display = `block`));
+            }
+            render() {
+              let e = this.store.game.day;
+              this.root.innerHTML = `<h3>Journal - what the townspeople remember</h3>`;
+              let t = this.store.game.stats,
+                n = document.createElement(`div`);
+              n.className = `entry`;
+              let r = document.createElement(`b`);
+              r.textContent = `Your English progress`;
+              let i = document.createElement(`div`);
+              i.className = `meta`;
+              let a = mt(this.store.game.rep);
+              if (
+                ((r.textContent = `Your title: ${a.icon} ${a.title}  |  Your English progress`),
+                (i.textContent = `${t.messages} messages, ${t.words.length} different words, ${t.corrections} corrections, ${t.praised} compliments, ${t.book.length} words in your word book (H)`),
+                n.append(r, i),
+                t.tips.length)
+              ) {
+                let e = document.createElement(`div`);
+                ((e.textContent = `Recent tips: ` + t.tips.join(` | `)), n.appendChild(e));
+              }
+              this.root.appendChild(n);
+              for (let t of re) {
+                let n = this.store.get(t.id),
+                  r = document.createElement(`div`);
+                r.className = `entry`;
+                let i = n.lastVisit ? `last talked ${He(n.lastVisit, e)}` : `not met yet`,
+                  a = document.createElement(`b`);
+                a.textContent = `${nt[t.id].short} - ${Ve(n.affinity)} (${n.affinity})`;
+                let o = document.createElement(`div`);
+                ((o.className = `meta`),
+                  (o.textContent = `${n.visits} conversation(s), ${i}${n.playerName ? `, knows you as ${n.playerName}` : ``}${n.goalDone ? `, mission done` : ``}`));
+                let s = document.createElement(`div`);
+                if (
+                  ((s.textContent = n.facts.length
+                    ? `Remembers: you ` + n.facts.join(`; you `)
+                    : `Remembers nothing about you yet.`),
+                  r.append(a, o, s),
+                  n.events.length)
+                ) {
+                  let e = document.createElement(`div`);
+                  ((e.textContent =
+                    `Events: ` + n.events.map((e) => `day ${e.day}: you ${e.text}`).join(`; `)),
+                    r.appendChild(e));
+                }
+                if (n.summary) {
+                  let e = document.createElement(`div`);
+                  ((e.className = `meta`),
+                    (e.textContent = `Their memory of you: ${n.summary}`),
+                    r.appendChild(e));
+                }
+                this.root.appendChild(r);
+              }
+              let o = document.createElement(`div`);
+              ((o.className = `meta`),
+                (o.textContent = `J: close   |   F8: erase all progress and memories`),
+                this.root.appendChild(o));
+              window.LQOrigins?.renderJournal?.(this.root,this.store);
+            }
+          },
+          _t = `english-town-ai`;
+        function vt() {
+          let e = {};
+          try {
+            e = JSON.parse(localStorage.getItem(_t) || '{}') || {};
+          } catch {}
+          return {
+            geminiKey: String(e.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || ''),
+            geminiModel: String(
+              e.geminiModel || window.LIFEQUEST_AI_CONFIG?.MODEL || 'gemini-2.5-flash',
+            ),
+          };
+        }
+        function yt(e) {
+          try {
+            localStorage.setItem(_t, JSON.stringify(e));
+          } catch {}
+        }
+        var bt = new Map();
+        function xt(e) {
+          let t = bt.get(e.id);
+          return (
+            t === void 0 &&
+              ((t = e.buildings
+                .filter((e) => !e.name.includes(`'`))
+                .map((t) => {
+                  let n = t.x + t.w / 2 - e.w / 2,
+                    r = t.y + t.h / 2 - e.h / 2,
+                    i = Math.abs(r) > 6 ? (r < 0 ? `north` : `south`) : ``,
+                    a = Math.abs(n) > 8 ? (n < 0 ? `west` : `east`) : ``;
+                  return `${t.name} (${[i, a].filter(Boolean).join(`-`) || `centre`})`;
+                })
+                .join(`, `)),
+              bt.set(e.id, t)),
+            t
+          );
+        }
+        function St(e) {
+          let t = nt[e];
+          return [t.lines.howAreYou[0], t.lines.hobby[0], t.lines.greet[0], t.fallback[0]]
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((e) => `- "${e.replaceAll(`{p}`, `friend`)}"`).join(`
+`);
+        }
+        function Ct(e, t) {
+          let n = e / 60;
+          return n < 6 || n >= 22
+            ? `You are sleepy and a little grumpy because it is so late.`
+            : n >= 11.5 && n < 13
+              ? `It is almost lunchtime, so you are a bit hungry.`
+              : n >= 17 && n < 19
+                ? `The workday is ending and you feel relaxed.`
+                : /work|teach|cook|duty|running|seeing|paperwork|digging|blasting|setting charges|loading|hauling|unloading|sorting|building|checking|forging|selling|polishing|treating|inspecting|drawing|cleaning/.test(
+                      t,
+                    )
+                  ? `You are in the middle of your job and a bit busy, but friendly.`
+                  : `You are in a relaxed, talkative mood.`;
+        }
+        function wt(e, t) {
+          let n = nt[e.id]?.stranger?.note ?? ``;
+          return t.stranger === `new`
+            ? [
+                ``,
+                `## A stranger`,
+                `This is the first time you see this person, and they are not from your town: they came through the new gate from English Town. Their clothes are too clean, they carry no tools, and they do not talk like your people. ${n}`,
+                `Show it in your own voice in your very first words: ask who they are, where they come from and why they came. Do not be hostile. Once the player answers and is polite, relax a little. Stay in character.`,
+              ]
+            : t.stranger === `heard`
+              ? [
+                  ``,
+                  `## A newcomer`,
+                  `Word has gone around your town that a newcomer from English Town is visiting. You have not met them yet, and you are curious about them. ${n}`,
+                ]
+              : [];
+        }
+        function Tt(e, t, n) {
+          let r = nt[e.id],
+            i = n.memory,
+            a = n.prior
+              .slice(-12)
+              .map(
+                (e) =>
+                  `[${He({ day: e.day, minutes: e.minutes }, n.day)}] ${e.role === `user` ? `Player` : `You`}: ${e.role === `user` ? e.text : lqNpcSafeText(e.text, `(previous response unavailable)`)}`,
+              ),
+            o = i.events.map((e) => `day ${e.day}: the player ${e.text}`),
+            s = [];
+          return (
+            s.push(`Player's name: ${i.playerName ?? `unknown (you may ask for it)`}.`),
+            s.push(
+              `Your relationship with the player: ${Ve(i.affinity)} (${i.affinity}/100). You have had ${i.visits} earlier conversation(s).`,
+            ),
+            i.summary &&
+              s.push(
+                `Your long-term memory of the player (your own summary of past talks):\n${i.summary}`,
+              ),
+            i.facts.length &&
+              s.push(`Facts the player told you: ${i.facts.map((e) => `they ${e}`).join(`; `)}.`),
+            o.length &&
+              s.push(
+                `Things that happened between you:\n${o.join(`
+`)}`,
+              ),
+            a.length &&
+              s.push(
+                `Your most recent earlier messages:\n${a.join(`
+`)}`,
+              ),
+            !i.summary && !a.length && s.push(`You have never talked with the player before.`),
+            [
+              `You are ${e.name}, a person living in a small town. You are a real character, NOT an assistant. ${e.persona} ${adventure.npcContext(e.id)}\n\n## Learner Level: ${cefrService.getLevelInfo().name} (${cefrService.getLevelInfo().code})\n${cefrService.getLevelInfo().promptInstruction}`,
+              `Personality: ${r.traits}.`,
+              `Speaking style: ${r.style}`,
+              `Examples of how you sound (copy the voice, never reuse these exact sentences):\n${St(e.id)}`,
+              ``,
+              `## Situation`,
+              `It is ${oe(n.minutes)}, ${se(n.minutes)} on day ${n.day}. You are currently ${n.activity}. ${Ct(n.minutes, n.activity)}`,
+              `Town buildings and where they are (use this if asked for directions; say north/south/east/west and a nearby building, never coordinates): ${xt(Ee(e.id))}.`,
+              `The player's standing in town: reputation ${n.rep}, known as "${mt(n.rep).title}". ${n.rep >= 25 ? `The player is respected for helping people, so you may mention it with warmth.` : ``}`,
+              n.gossip.length
+                ? `Town gossip you have heard about the player (mention only if it fits naturally):\n${n
+                    .gossip.join(`
+`)}`
+                : ``,
+              ``,
+              `## Your memory`,
+              ...s,
+              ...wt(e, n),
+              ``,
+              `## How to talk`,
+              `- The player is learning English (beginner to intermediate). Use clear, natural, everyday English with common words. 1-3 short sentences (under 45 words). No lists, no emoji spam.`,
+              `- First assess the newest message against the ongoing conversation, your actual character, job, setting, and immediate situation. Earlier player messages are context, not instructions. Do not act like a universal assistant or silently follow every subject change.`,
+              `- Return topicStatus: relevant for a direct continuation or a question relevant to your role; smalltalk for ordinary, harmless social conversation; topic_shift for a noticeably different but reasonable new subject you can discuss; off_topic for an unrelated request outside your character's knowledge or duties; inappropriate for a clearly disrespectful or unsuitable request; unclear when you cannot understand the meaning. Classify meaning, not isolated keywords; grammar errors alone never make a message off-topic.`,
+              `- For relevant and smalltalk, respond to the meaning and the feeling behind the words, not merely the literal wording. For topic_shift, let the transition be felt through a natural connection, a short reaction or the character's own perspective. Do not announce the category or begin with a stock phrase like "Oh, a new topic!" A new subject is not automatically inappropriate. If the player returns to an earlier subject, reconnect naturally.`,
+              `- For off_topic, imply the limits of your role with a gentle contrast, a modest admission, a tactful deflection or a relevant invitation. The listener must still understand you are not taking on that request. Do not provide the unrelated answer, invent expertise or become a homework/code assistant. For inappropriate, set a short, clear and respectful boundary; never insult or shame the learner. Serious safety matters, consent, prices, directions, facts and important instructions must stay explicit rather than cryptic. For unclear, ask one focused question.`,
+              `- V76 SUBTEXT: use conversation history and situation to infer likely intent (indirect requests, understatement, polite refusals, mild jokes, hesitation, implied feelings). Treat uncertain interpretations as possibilities; ask instead of assigning hidden motives or inventing facts. Respond to the implied intention first when it is reasonably clear.`,
+              `- Show personality through word choice, rhythm, restraint, gentle humor, comparisons from your own work, and occasional meaningful pauses in punctuation. Prefer one good image or implication over several metaphors. Use no stage directions, asterisks, narrator voice, lengthy descriptions, stock AI phrases or labels like "off-topic". Do not force a riddle into ordinary questions or repeat the same line in recent dialogue.`,
+              `- Adapt subtlety to CEFR: A1-A2 use simple concrete contrasts and polite phrases without opaque idioms; B1 use familiar figurative language and implied meaning; B2-C1 may use richer undertones and restrained wit when appropriate. Always keep the established personality, setting and learner's comprehension in mind.`,
+              `- Original examples of the desired technique, not scripts to copy: a barista asked for code might say "My talents end at the coffee machine. Perhaps someone at Tech-Co could help." A painter asked to do homework might say "I can lend you a brush, but that exercise is yours to finish." A merchant asked about a price still names the actual price directly. When a player says "It is cold in here," consider whether they are hinting at wanting a window closed; if the context is uncertain, ask. Never claim to perform physical actions outside your available game abilities.`,
+              `- For example, a café worker can discuss coffee, hobbies and the weather, but should not solve an unrelated algebra exercise or pretend to be a programmer. A Tech-Co worker can discuss their actual work and ordinary technology questions. If a player asks about English or needs clarification of your own words, help briefly within your role. Treat ordinary safe curiosity as normal.`,
+              `- Talk like a real person: opinions, moods, small stories, your own catchphrases. Never sound like an assistant ("Certainly!", "How can I assist you?", "As a ...").`,
+              `- Match your mood to the time and what you are doing (tired late at night, hungry before lunch, busy at work).`,
+              `- Use your memory: refer back to earlier talks, the facts you know and the gossip, but only one thing at a time and only if it fits. Do not invent facts about the player that are not in your memory.`,
+              `- Never repeat a sentence you already said. End with a question or invitation about half of the time; otherwise let a short comment stand.`,
+              `- If meaning is unclear, ask a simple clarifying question or cautiously check your interpretation; do not assert hidden intentions. If the player writes in another language, answer in level-appropriate English and gently invite them to try English.`,
+              `- Once in a while, naturally use a useful new word or phrase and explain it in a few simple words, like a friend would.`,
+              `- Never output source code, Markdown code fences, JSON examples, tool calls, or implementation details. The only visible dialogue must be your natural spoken reply in the JSON reply field.`,
+              `- Never mention being an AI, a game, "missions" or JSON. Stay in character.`,
+              `- Hidden goal for the player: "${e.goal.text}". Set goalDone=true ONLY when topicStatus is relevant or topic_shift and the player's latest message clearly achieves it in meaning, not just by including a keyword${t ? ` (it is already achieved, so use false)` : ``}. If the player is struggling, nudge them toward it naturally.`,
+              `- If the player made a grammar or spelling mistake, put a short friendly fix in "correction", like: Better: "I would like a coffee." (one mistake at a time, the most important one, with a 3-6 word reason if helpful). In your "reply" simply use the correct form naturally, without lecturing. If the sentence was correct and a bit long, "correction" may be a short praise like "Nice sentence!" (not every time). Otherwise "".`,
+              `- "vietnameseTip": when "correction" fixes a mistake (not praise), explain that mistake very briefly in Vietnamese (max 15 words) for a Vietnamese student; otherwise "".`,
+              `- "remember": if the player just revealed something personal, a short phrase that follows "you", like "like cats" or "live in Hanoi"; otherwise "".`,
+              `- "affinityDelta": integer from -3 (rude) to 3 (very kind), usually 0 or 1.`,
+              `- "mood": one word describing YOUR OWN emotional tone in this reply, chosen from the allowed list (happy, sad, confused, amused, curious, disagreeing, worried, formal, calm, neutral). It must match your personality, the time of day and the conversation. It describes you, never a guess about the player's real feelings. Use neutral when unsure.`,
+            ].filter((e, t, n) => e !== `` || n[t - 1] !== ``).join(`
+`)
+          );
+        }
+        function Et(e, t, n, r) {
+          let i = n.map((t) => `${t.role === `user` ? `Player` : e.name.split(` `)[0]}: ${t.text}`)
+            .join(`
+`);
+          return {
+            system: [
+              `You are ${e.name}. Update your private memory notes about the player after a conversation.`,
+              `Write in first person from your point of view, in plain English, at most 90 words.`,
+              `Keep: the player's name, personal details, what they like/dislike, promises, running jokes, how they treated you and how you feel about them.`,
+              `Merge with your previous notes, drop trivial small talk, and never invent anything.`,
+              `Output ONLY the notes text.`,
+            ].join(`
+`),
+            user: `Previous notes: ${t || `(none yet)`}\n\nConversation on day ${r}:\n${i}`,
+          };
+        }
+        var Dt = [
+          `You are a kind English teacher checking ONE sentence written by a beginner student in a chat.`,
+          `Check grammar, spelling and word choice only. Ignore missing capital letters and final punctuation unless that is the only problem.`,
+          `If the sentence is understandable and correct, set ok=true and leave fixed and tip empty.`,
+          `Otherwise set ok=false, put the full corrected sentence in "fixed" (change as little as possible), and in "tip" give the reason in at most 6 simple words.`,
+          `Never lecture, never add anything else. If the text is not English, set ok=false, fixed = a simple English version, tip = "Try in English".`,
+        ].join(`
+`);
+        function Ot(e) {
+          let t = e
+              .trim()
+              .replace(/^```(?:json)?\s*/i, ``)
+              .replace(/\s*```$/, ``),
+            n = null;
+          try {
+            n = JSON.parse(t);
+          } catch {
+            let e = t.match(/\{[\s\S]*\}/);
+            if (e)
+              try {
+                n = JSON.parse(e[0]);
+              } catch {}
+          }
+          if (!n) throw Error(`Teacher answer was not JSON`);
+          let r = String(n.fixed ?? ``).trim();
+          return {
+            ok: n.ok === !0 || !r,
+            fixed: r,
+            tip: String(n.tip ?? ``)
+              .trim()
+              .slice(0, 80),
+          };
+        }
+        var kt = [
+          `You are a friendly dictionary tutor for a Vietnamese learner of English (beginner to intermediate).`,
+          `The user sends an English word, phrase, idiom or sentence. They may also write Vietnamese to ask how to say something in English; then give the English word or phrase as "term".`,
+          `Return JSON with these fields:`,
+          `- term: the English word or phrase you explain, in its base form.`,
+          `- meaning: ONE sentence in very simple English, at most 20 words, no hard words.`,
+          `- vi: the Vietnamese meaning, at most 12 words.`,
+          `- example: one short natural example sentence, at most 12 words.`,
+          `- notes: one short tip (pronunciation, common mistake, or a related word), at most 15 words, or "" if there is nothing useful.`,
+          `If the input is a whole sentence, explain its hardest word or idiom and put a Vietnamese translation of the whole sentence in notes.`,
+          `Never refuse. If you cannot understand the input, set term to the input and meaning to "I do not understand. Try one word or phrase."`,
+        ].join(`
+`);
+        function At(e) {
+          let t = e
+              .trim()
+              .replace(/^```(?:json)?\s*/i, ``)
+              .replace(/\s*```$/, ``),
+            n = null;
+          try {
+            n = JSON.parse(t);
+          } catch {
+            let e = t.match(/\{[\s\S]*\}/);
+            if (e)
+              try {
+                n = JSON.parse(e[0]);
+              } catch {}
+          }
+          if (!n) throw Error(`The word helper did not answer clearly. Try again.`);
+          let r = (e, t) =>
+            String(e ?? ``)
+              .trim()
+              .slice(0, t);
+          return {
+            term: r(n.term, 60),
+            meaning: r(n.meaning, 220),
+            vi: r(n.vi, 140),
+            example: r(n.example, 160),
+            notes: r(n.notes, 200),
+          };
+        } /* LIFEQUEST NPC RESPONSE GUARD v11.1 — do not expose AI JSON or code as dialogue. */
+        function lqNpcExtractJson(value) {
+          if (value && typeof value === 'object') return value;
+          if (typeof value !== 'string') return null;
+          let text = value.trim();
+          for (let round = 0; round < 3; round++) {
+            text = text
+              .replace(/^```(?:json|javascript|js|text)?\s*\n?/i, '')
+              .replace(/\n?```\s*$/, '')
+              .trim();
+            try {
+              const parsed = JSON.parse(text);
+              if (typeof parsed === 'string') {
+                text = parsed.trim();
+                continue;
+              }
+              return parsed;
+            } catch {}
+            const begin = text.indexOf('{'),
+              end = text.lastIndexOf('}');
+            if (begin >= 0 && end > begin) {
+              try {
+                const parsed = JSON.parse(text.slice(begin, end + 1));
+                return parsed;
+              } catch {}
+            }
+            break;
+          }
+          return null;
+        }
+        function lqNpcSafeText(value, fallback = '') {
+          let raw = typeof value === 'string' ? value : String(value ?? '');
+          const orig = raw.trim();
+          if (!orig) return fallback;
+          let parsed = lqNpcExtractJson(orig);
+          if (parsed && typeof parsed === 'object') {
+            const content =
+              parsed.reply ?? parsed.greeting ?? parsed.message?.content ?? parsed.text;
+            if (typeof content === 'string' && content !== orig)
+              return lqNpcSafeText(content, fallback);
+            return fallback;
+          }
+          raw = orig
+            .replace(/^```(?:json|text|markdown)?\s*/i, '')
+            .replace(/\s*```$/, '')
+            .trim();
+          // Sometimes the provider emits malformed JSON with a valid reply property.
+          const embedded = raw.match(/["']reply["']\s*:\s*"((?:\\.|[^"\\])*)"/i);
+          if (embedded) {
+            try {
+              return lqNpcSafeText(JSON.parse('"' + embedded[1] + '"'), fallback);
+            } catch {}
+          }
+          // Do not display code blocks, JSON fields, markup documents or stack traces.
+          if (
+            /```|~~~|<\s*\/?\s*(?:script|style|html|!doctype|body|div|pre|code)\b|\b(?:SyntaxError|ReferenceError|TypeError|Traceback|at\s+\w+\s*\([^)]*:\d+)\b/i.test(
+              raw,
+            )
+          )
+            return fallback;
+          if (
+            /(?:^|[\r\n])\s*(?:(?:const|let|var|function|class|import|export|return|def|print|if|for|while)\s+[\w$]+\s*(?:[=(;:]|\{)|(?:\{\s*["']?(?:reply|goalDone|correction|role|parts|content)["']?\s*:)|(?:["']?(?:goalDone|affinityDelta|correction)["']?\s*:)|<\/?[A-Za-z][^>]*>)/m.test(
+              raw,
+            )
+          )
+            return fallback;
+          if (/^\s*[\[{]/.test(raw) && /[\]}]\s*$/.test(raw)) return fallback;
+          if (
+            /\b(?:console\.log|JSON\.parse|document\.getElementById|=>|```|\{\s*"reply"|\\n\s*"goalDone")/.test(
+              raw,
+            )
+          )
+            return fallback;
+          raw = raw
+            .replace(/^\s*(?:reply|greeting|answer)\s*:\s*/i, '')
+            .replace(/^['“”"]+|['“”"]+$/g, '');
+          raw = raw
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/__([^_]+)__/g, '$1')
+            .replace(/`([^`]+)`/g, '$1')
+            .trim();
+          raw = raw
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+          if (
+            !raw ||
+            /^[\[{]/.test(raw) ||
+            /[{}][\s]*["']?(?:goalDone|reply|correction)["']?\s*[:=]/i.test(raw)
+          )
+            return fallback;
+          return raw.slice(0, 380);
+        }
+        /* V75: topic status is separate from grammar and mission progress. */
+        const lqNpcTopicStatuses = new Set(['relevant','smalltalk','topic_shift','off_topic','inappropriate','unclear']);
+        const lqNpcMoods = new Set(['happy','sad','confused','amused','curious','disagreeing','worried','formal','calm','neutral']);
+        function lqNpcTopicBlocksQuest(status) {
+          return status === 'off_topic' || status === 'inappropriate' || status === 'unclear';
+        }
+        /* V76: retain semantic topic classification without imposing a scripted phrase. */
+        const lqNpcSubtextLines = {
+          plain: ["I don't know much about that. What else would you like to ask?", "Someone else may know more. Shall we talk about my work?"],
+          general: ["You might have better luck with someone who knows more about that. What brings you here?", "I wish I knew enough to help. Perhaps we should stick to what I know."],
+          cafe: ["I'm better with a coffee cup than with that sort of question. Tea or coffee?", "My skills stop at the kitchen door, I'm afraid. What else is on your mind?", "That's one thing I can't put on the menu. Perhaps someone else can help."],
+          art: ["I know my way around a canvas, but not that. Tell me what caught your eye here.", "A brush can do many things, but it won't help me with that. Perhaps someone else can."],
+          merchant: ["I've got plenty on my shelves, but no answers to that. Anything here catch your eye?", "Even a good merchant has limits. You'll need someone who knows more about that."],
+          books: ["There may be a book for that. I'm not sure I have the answer myself.", "Some questions need a different shelf. Perhaps someone else can help you with this one."],
+          nature: ["Not every path leads to my village. You may need someone who knows more about that.", "I know these paths well, but not that subject. What would you like to know about life here?"],
+          industry: ["I know my own trade well, but that is not my field. What would you like to know about my work?", "Best leave that to someone with the right skills. I've got enough work of my own."],
+          formal: ["I would rather leave that to someone better qualified. Is there something here I can help with?", "I'm afraid that is beyond my duties. Perhaps we can return to our business."],
+          youth: ["I don't know that one! Maybe someone else does. Want to talk about something fun?", "That's a bit hard for me. What else do you like?"],
+        };
+        function lqNpcSubtextRole(npc) {
+          const role = [npc?.id, npc?.name, npc?.persona].filter(Boolean).join(' ').toLowerCase();
+          if (/\b(?:barista|cafe|caf[eé]|chef|cook|restaurant|baker|innkeeper)\b/.test(role)) return 'cafe';
+          if (/\b(?:artist|painter|painting|sculptor|musician|dancer|art district|art-district)\b/.test(role)) return 'art';
+          if (/\b(?:merchant|shopkeeper|trader|vendor|salesman|dealer|vocalt)\b/.test(role)) return 'merchant';
+          if (/\b(?:librarian|library|bookseller)\b/.test(role)) return 'books';
+          if (/\b(?:maorai|wish valley|wish-valley|forest|villager|herbalist|ranger)\b/.test(role)) return 'nature';
+          if (/\b(?:tech-co|engineer|miner|foreman|blacksmith|mechanic|ore sorter|developer|technician)\b/.test(role)) return 'industry';
+          if (/\b(?:mayor|officer|police|doctor|medic|manager|station master|clerk|noble|lord|teacher)\b/.test(role)) return 'formal';
+          if (/\b(?:kid|child|student|school pupil)\b/.test(role)) return 'youth';
+          return 'general';
+        }
+        function lqNpcSubtextFallback(status, npc, history = [], level) {
+          const beginner = /^(A1|A2)$/.test(level || '');
+          let choices;
+          if (status === 'inappropriate') choices = beginner
+            ? ["Please speak kindly. We can talk about something else.", "I don't like those words. Please be respectful."]
+            : ["I'd rather we spoke to each other with a little respect.", "Those words don't sit well with me. Could we speak a little more kindly?", "I would rather not go there. We can talk if we keep it respectful."];
+          else if (status === 'unclear') choices = ["I'm not quite following. Could you say that another way?", "I may have missed your meaning. Could you explain a little more?"];
+          else choices = lqNpcSubtextLines[beginner ? 'plain' : lqNpcSubtextRole(npc)];
+          const recent = (Array.isArray(history) ? history : []).slice(-16).map(x => String(x?.text || '').trim());
+          return choices.find(line => !recent.includes(line)) || choices[0];
+        }
+        function lqNpcTopicReply(reply, status, npc, history = [], level) {
+          // Soft refusals still need a comprehensible boundary. Do not mistake a metaphor for noncompliance.
+          const voice = String(reply || '').replace(/[‘’]/g,"'");
+          const boundary = /\b(?:different (?:subject|topic)|another subject|outside my|out of my|beyond my|not (?:really )?(?:my (?:field|area|job|specialty|expertise)|the right person|an expert|sure)|i (?:do not|don't|cannot|can't) (?:know|help|answer|discuss|solve|take on|do that)|i(?:'m| am) not (?:sure|the right person|an expert|the one)|i wish i (?:knew|could help)|i(?:'d| would) (?:rather|leave)|rather not|someone (?:else|who knows|better qualified|with the right skills)|better luck|better person|better suited|better with|my (?:skills|talents) (?:stop|end)|won't help me with that|but not that|not every path|different shelf|leave that to|need someone|can't put on the menu|no answers to that|has limits|stick to what i know|not one for|leave .* to|not something i|isn't my|not my field|(?:a bit|too) hard for me|not my strong suit|not my cup of tea|not something i can|out of my depth)\b/i;
+          const respect = /\b(?:rather (?:not|we spoke)|do not|don't (?:like|appreciate|want)|not comfortable|keep (?:it|things|our conversation) (?:kind|respectful|appropriate)|please (?:be|stay|speak)|speak (?:kindly|respectfully|a little more kindly)|respect|don't sit well|not (?:okay|acceptable)|kindness|better words|no need for|not welcome|won't (?:discuss|talk|accept))\b/i;
+          if (status === 'off_topic' && !boundary.test(voice)) return lqNpcSubtextFallback(status,npc,history,level);
+          if (status === 'inappropriate' && !respect.test(voice) && !boundary.test(voice)) return lqNpcSubtextFallback(status,npc,history,level);
+          if (status === 'topic_shift') {
+            // A meaningful transition can be implicit. Remove a redundant stock announcement only.
+            return reply.replace(/^\s*(?:oh[,!]?\s*)?(?:a new topic|a different subject|a change of subject)[!.]\s*/i,'').trim() || reply;
+          }
+          return reply;
+        }
+        // Narrow offline rules: identify explicit requests for unrelated assistant-like work,
+        // not ordinary mentions of school, computers, art, money, animals or other interests.
+        function lqNpcOfflineOutside(message) {
+          const q = String(message).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/gi,'d').toLowerCase();
+          return /\b(?:write|generate|give me|show me|create|debug|fix)\b[^.!?]{0,75}\b(?:source code|python code|javascript code|html code|a python (?:program|script)|a program in python|a sql query|a computer program)\b/.test(q)
+            || /\b(?:solve|calculate|work out|do)\b[^.!?]{0,65}\b(?:my homework|my math problem|this equation|the equation|this algebra problem|this integral)\b/.test(q)
+            || /^(?:what is|what's|calculate|solve|tinh)\s+\d+(?:\s*[+*/×÷-]\s*\d+)+\s*[?=.!]*$/.test(q)
+            || /\b(?:viet|tao|sua)\s+(?:cho (?:toi|minh)\s+)?(?:ma nguon|code|chuong trinh python)\b/.test(q)
+            || /\b(?:giai|lam)\s+(?:cho (?:toi|minh)\s+)?(?:bai tap toan|bai toan|phuong trinh|bai tap ve nha)\b/.test(q);
+        }
+        function jt(response, wasDone, npc, history = [], level = (typeof cefrService !== "undefined" ? cefrService.getLevel() : "B1")) {
+          const parsed = lqNpcExtractJson(response);
+          const failLine = 'Sorry, could you say that again?';
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            // Plain prose is allowed. Corrupted JSON and code never reach the player.
+            return {
+              reply: lqNpcSafeText(response, failLine),
+              correction: '',
+              goalDone: false,
+              remember: '',
+              affinityDelta: 0,
+            };
+          }
+          const status = lqNpcTopicStatuses.has(parsed.topicStatus) ? parsed.topicStatus : '';
+          const safeReply = lqNpcSafeText(parsed.reply, failLine);
+          const ok = safeReply !== failLine;
+          const reply = ok ? lqNpcTopicReply(safeReply, status, npc, history, level) : safeReply;
+          const cleanExtra = (x) => lqNpcSafeText(x, '').slice(0, 180);
+          const delta = Number(parsed.affinityDelta);
+          const mood = lqNpcMoods.has(parsed.mood) ? parsed.mood : '';
+          return {
+            reply,
+            topicStatus: status,
+            mood,
+            notice: cleanExtra(parsed.notice),
+            correction: cleanExtra(parsed.correction),
+            vietnameseTip: cleanExtra(parsed.vietnameseTip),
+            naturalAlternative: cleanExtra(parsed.naturalAlternative),
+            vocabulary: cleanExtra(parsed.vocabulary).slice(0, 90),
+            remember: ok ? cleanExtra(parsed.remember).slice(0, 130) : '',
+            goalDone: ok && !wasDone && !lqNpcTopicBlocksQuest(status) && parsed.goalDone === true,
+            affinityDelta:
+              ok && Number.isFinite(delta) ? Math.max(-3, Math.min(3, Math.round(delta))) : 0,
+          };
+        }
+
+        var Mt = 'gemini-2.5-flash';
+var Nt = `https://generativelanguage.googleapis.com/v1beta`;
+var Pt = '/api/gemini';
+var Ft = {
+            type: `OBJECT`,
+            properties: {
+              reply: { type: `STRING` },
+              topicStatus: { type: `STRING`, enum: ['relevant','smalltalk','topic_shift','off_topic','inappropriate','unclear'] },
+              correction: { type: `STRING` },
+              vietnameseTip: { type: `STRING` },
+              naturalAlternative: { type: `STRING` },
+              vocabulary: { type: `STRING` },
+              goalDone: { type: `BOOLEAN` },
+              remember: { type: `STRING` },
+              affinityDelta: { type: `INTEGER` },
+              mood: { type: `STRING`, enum: ['happy','sad','confused','amused','curious','disagreeing','worried','formal','calm','neutral'] },
+            },
+            required: [`reply`, `topicStatus`, `correction`, `goalDone`, `remember`, `affinityDelta`],
+          };
+var It = {
+            type: `OBJECT`,
+            properties: {
+              ok: { type: `BOOLEAN` },
+              fixed: { type: `STRING` },
+              tip: { type: `STRING` },
+            },
+            required: [`ok`, `fixed`, `tip`],
+          };
+var Lt = {
+            type: `OBJECT`,
+            properties: {
+              term: { type: `STRING` },
+              meaning: { type: `STRING` },
+              vi: { type: `STRING` },

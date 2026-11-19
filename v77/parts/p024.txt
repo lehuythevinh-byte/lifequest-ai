@@ -1,0 +1,1000 @@
+                  x: 51,
+                  y: 46,
+                  w: 3,
+                  h: 1,
+                  label: `Hidden freight tunnel → Art District`,
+                  to: `art-district`,
+                  spawn: { x: 35, y: 51 },
+                  requiresArtDistrict: !1,
+                  hiddenUntilArtUnlock: !1,
+                },
+              ],
+              makeObstacles: xe,
+            }),
+            new ue({
+              id: `art-district`,
+              name: `Art District – Painters Quarter & Neon Carnival`,
+              w: 110,
+              h: 100,
+              theme: `art`,
+              buildings: [
+                { name: `Neon Symphony Hall`, x: 77, y: 55, w: 13, h: 8, color: 0xffb668, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Skybridge Gallery`, x: 77, y: 3, w: 13, h: 8, color: 0xaab6ff, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Aurora Rooftop Club`, x: 94, y: 55, w: 13, h: 8, color: 0x89ecf0, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Mirror Dance Academy`, x: 77, y: 72, w: 13, h: 8, color: 0xf6b1dc, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Graffiti Tower`, x: 77, y: 20, w: 13, h: 9, color: 0xf9b06a, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Light Lab Studio`, x: 94, y: 20, w: 13, h: 9, color: 0x85bdff, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Hologram Theater`, x: 94, y: 3, w: 13, h: 8, color: 0xc1a4fc, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Costume Studio`, x: 77, y: 38, w: 13, h: 8, color: 0xffab9b, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Vinyl Social House`, x: 94, y: 72, w: 13, h: 8, color: 0xf7cd89, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Art Hostel`, x: 94, y: 38, w: 13, h: 8, color: 0xb6e6aa, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Cinema Wall`, x: 77, y: 88, w: 13, h: 8, color: 0xffa7bf, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Kite Roof Plaza`, x: 94, y: 88, w: 13, h: 8, color: 0x8dd4ce, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Artist Market Arcade`, x: 4, y: 61, w: 14, h: 7, color: 0xe9b8f2, wall: 0x40546a, door: 11, chimney: !1 },
+                { name: `Midnight Snack Alley`, x: 4, y: 79, w: 14, h: 7, color: 0xffbd81, wall: 0x40546a, door: 11, chimney: !1 },
+                { name: `Rhythm Workshop`, x: 40, y: 61, w: 14, h: 7, color: 0xe7acfa, wall: 0x40546a, door: 47, chimney: !1 },
+                { name: `Sound Garden`, x: 58, y: 61, w: 14, h: 7, color: 0xa3ecb3, wall: 0x40546a, door: 65, chimney: !1 },
+                { name: `Sculpture Garden`, x: 22, y: 61, w: 14, h: 7, color: 0xc0e1ff, wall: 0x40546a, door: 29, chimney: !1 },
+                { name: `Beat Bridge`, x: 22, y: 79, w: 14, h: 7, color: 0xfea4cd, wall: 0x40546a, door: 29, chimney: !1 },
+                { name: `Mini Ferris Neon`, x: 40, y: 79, w: 14, h: 7, color: 0xffda89, wall: 0x40546a, door: 47, chimney: !1 },
+                { name: `Lantern Courtyard`, x: 58, y: 79, w: 14, h: 7, color: 0xa4e5ce, wall: 0x40546a, door: 65, chimney: !1 },
+                { name: `Color Gallery`, x: 4, y: 4, w: 11, h: 7, color: 5724237, wall: 8619141, door: 9, chimney: !1 },
+                // (moved from the top middle to the bottom-left corner on 08/11/2026: the middle is kept free for a future landmark)
+                { name: `Backbeat Warehouse`, x: 4, y: 39, w: 11, h: 6, color: 4936534, wall: 7892069, door: 9, chimney: !1 },
+                { name: `Open Canvas Gallery`, x: 57, y: 4, w: 11, h: 7, color: 6250337, wall: 9211020, door: 62, chimney: !1 },
+                { name: `Mural Workshop`, x: 4, y: 25, w: 11, h: 7, color: 5263693, wall: 7766156, door: 9, chimney: !1 },
+                { name: `Photo Lab`, x: 57, y: 25, w: 11, h: 7, color: 4803911, wall: 8290435, door: 62, chimney: !1 },
+                { name: `Independent Studio`, x: 57, y: 39, w: 11, h: 6, color: 5395280, wall: 8882312, door: 62, chimney: !1 },
+              ],
+              places: {
+                noor_front: { x: 9, y: 12 },
+                ivo_front: { x: 9, y: 47 },
+                ada_front: { x: 62, y: 12 },
+                kai_front: { x: 9, y: 34 },
+                mira_yard: { x: 27, y: 44 },
+                ren_front: { x: 62, y: 34 },
+                sol_front: { x: 62, y: 47 },
+                tunnel_spawn: { x: 35, y: 51 },
+                plaza: { x: 36, y: 40 }, // in front of the tunnel (the middle is the fenced site)
+              },
+              // V69: continuous pedestrian avenues through both new quarters;
+              // all old streets and tunnel approach remain available.
+              roadsH: [
+                { y: 14, h: 3 }, { y: 27, h: 2, x0: 23, x1: 49 },
+                { y: 33, h: 3 }, { y: 49, h: 3, x0: 69, x1: 110 },
+                { y: 69, h: 3 }, { y: 86, h: 2 },
+              ],
+              roadsV: [
+                { x: 20, w: 3, y0: 14, y1: 59 },
+                { x: 49, w: 3, y0: 14, y1: 59 },
+                { x: 34, w: 4, y0: 10, y1: 58 },
+                { x: 72, w: 4, y0: 10, y1: 98 },
+                { x: 90, w: 4, y0: 10, y1: 98 },
+                { x: 18, w: 4, y0: 57, y1: 98 },
+                { x: 37, w: 3, y0: 57, y1: 98 },
+                { x: 55, w: 3, y0: 57, y1: 98 },
+              ],
+              spawn: { x: 35, y: 51 },
+              npcs: [`noor`, `ivo`, `ada`, `kai`, `mira`, `ren`, `sol`],
+              warps: [
+                {
+                  x: 33, y: 54, w: 4, h: 1,
+                  label: `Back through the hidden freight tunnel`,
+                  to: `mining-town`, spawn: { x: 48, y: 47 },
+                },
+              ],
+              // V67 — fully open Living Canvas plaza. Only the two gate tower bases
+              // are physical blockers; the 4-tile central axis remains walkable.
+              makeObstacles: (a) => [
+                { kind: `art-gate-base`, x: 30, y: 11, w: 3, h: 5 },
+                { kind: `art-gate-base`, x: 40, y: 11, w: 3, h: 5 },
+                { kind: `bench`, x: 25, y: 19, w: 1, h: 1 },
+                { kind: `bench`, x: 46, y: 19, w: 1, h: 1 },
+                { kind: `lamp`, x: 17, y: 18, w: 1, h: 1 },
+                { kind: `lamp`, x: 54, y: 18, w: 1, h: 1 },
+                { kind: `lamp`, x: 18, y: 37, w: 1, h: 1 },
+                { kind: `lamp`, x: 53, y: 37, w: 1, h: 1 },
+                { kind: `barrel`, x: 16, y: 23, w: 1, h: 1 },
+                { kind: `barrel`, x: 55, y: 23, w: 1, h: 1 },
+                { kind: `crates`, x: 19, y: 29, w: 1, h: 1 },
+                { kind: `crates`, x: 52, y: 29, w: 1, h: 1 },
+                { kind: `bench`, x: 24, y: 44, w: 1, h: 1 },
+                { kind: `bench`, x: 47, y: 44, w: 1, h: 1 },
+                { kind: `lamp`, x: 30, y: 48, w: 1, h: 1 },
+                { kind: `lamp`, x: 41, y: 48, w: 1, h: 1 },
+              ],
+            }),
+          ],
+          Ce = _e.id;
+        // Chapter 2: Oriaris Village, English Town 70 years ago (data and drawing in js/past.js).
+        if (window.LQPast && window.LQPast.area) Se.push(new ue(window.LQPast.area));
+        // Chapter 2: the North Trail (3 maps) and the North Camp, where the player brings the letters (js/front.js).
+        if (window.LQFront && window.LQFront.areas) window.LQFront.areas.forEach((a) => Se.push(new ue(a)));
+        // Public directory of every real, registered outdoor map. Keep this driven by
+        // Se so newly added chapters automatically appear in the Menu map selector.
+        // Fast travel never creates a fake area and only spawns on walkable tiles.
+        window.LQWorldMaps = Object.freeze({
+          list: () => Se.map((a) => ({ id: a.id, name: a.name, theme: a.theme, w: a.w, h: a.h })),
+          destination: (id) => {
+            const area = Se.find((a) => a.id === id);
+            if (!area) return null;
+            const spawn = area.spawn || { x: Math.floor(area.w / 2), y: Math.floor(area.h / 2) };
+            const x0 = Math.max(0, Math.min(area.w - 1, Math.floor(Number(spawn.x) || 0)));
+            const y0 = Math.max(0, Math.min(area.h - 1, Math.floor(Number(spawn.y) || 0)));
+            for (let radius = 0; radius < Math.max(area.w, area.h); radius++) {
+              for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                  if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+                  const x = x0 + dx, y = y0 + dy;
+                  if (area.isTileBlocked(x, y) || area.warpAt(x, y)) continue;
+                  return { id: area.id, name: area.name, spawn: { x, y } };
+                }
+              }
+            }
+            return null;
+          },
+        });
+        function we(e) {
+          return Se.find((t) => t.id === e) ?? _e;
+        }
+        function Te(e) {
+          return re.filter((t) => e.npcs.includes(t.id));
+        }
+        function Ee(e) {
+          return Se.find((t) => t.npcs.includes(e)) ?? _e;
+        }
+        function De() {
+          let e = [],
+            t = new Map();
+          for (let n of Se) {
+            n.npcs.length > 0 &&
+              n.npcs.length < 3 &&
+              e.push(`${n.id}: has ${n.npcs.length} resident(s); use 0 or at least 3`);
+            let r = (t, r, i) => {
+              let a = Se.find((e) => e.id === r);
+              if (!a) {
+                e.push(`${n.id}: ${t} leads to unknown area "${r}"`);
+                return;
+              }
+              (a.isTileBlocked(i.x, i.y) &&
+                e.push(`${n.id}: ${t} lands on a blocked tile (${i.x},${i.y}) of ${r}`),
+                a.warpAt(i.x, i.y) &&
+                  e.push(
+                    `${n.id}: ${t} lands inside a warp zone of ${r} (it would bounce straight back)`,
+                  ));
+            };
+            for (let e of n.warps) r(`warp "${e.label}"`, e.to, e.spawn);
+            for (let [t, i] of Object.entries(n.portals))
+              (n.buildings.some((e) => e.name === t) ||
+                e.push(`${n.id}: portal in unknown building "${t}"`),
+                r(`portal "${i.label}"`, i.to, i.spawn),
+                i.guard &&
+                  !n.npcs.includes(i.guard) &&
+                  e.push(
+                    `${n.id}: portal "${i.label}" guard "${i.guard}" does not live in this area`,
+                  ));
+            for (let r of n.npcs) {
+              (re.some((e) => e.id === r) || e.push(`${n.id}: resident "${r}" is not in NPCS`),
+                ie[r] || e.push(`${n.id}: resident "${r}" has no schedule`));
+              let i = t.get(r);
+              (i && e.push(`NPC "${r}" lives in both ${i} and ${n.id}`), t.set(r, n.id));
+              for (let t of ie[r] ?? [])
+                n.places[t.place] ||
+                  e.push(`${n.id}: ${r}'s schedule uses unknown place "${t.place}"`);
+            }
+            for (let [t, r] of Object.entries(n.places))
+              n.isTileBlocked(r.x, r.y) &&
+                e.push(`${n.id}: place "${t}" (${r.x},${r.y}) is blocked`);
+            n.isTileBlocked(n.spawn.x, n.spawn.y) && e.push(`${n.id}: spawn tile is blocked`);
+            for (let t of n.buildings)
+              n.isTileBlocked(t.door, t.y + t.h) &&
+                e.push(`${n.id}: the door of ${t.name} is blocked`);
+          }
+          for (let n of re) t.has(n.id) || e.push(`NPC "${n.id}" does not live in any area`);
+          return e;
+        }
+
+        var Oe = () => ({ messages: 0, corrections: 0, praised: 0, words: [], tips: [], book: [] }),
+          ke = 150;
+        function Ae(e, t) {
+          let n = t.term.trim().toLowerCase();
+          if (!n) return;
+          let r = e.book.findIndex((e) => e.term.toLowerCase() === n);
+          (r >= 0 && e.book.splice(r, 1), e.book.push(t), e.book.length > ke && e.book.shift());
+        }
+        var je = 600,
+          Me = 6;
+        function Ne(e, t, n) {
+          e.messages++;
+          for (let n of t.toLowerCase().match(/[a-z']{4,}/g) ?? [])
+            e.words.length < je && !e.words.includes(n) && e.words.push(n);
+          n &&
+            (/^(better|remember|check|use|tip)/i.test(n)
+              ? (e.corrections++, e.tips.push(n), e.tips.length > Me && e.tips.shift())
+              : e.praised++);
+        }
+        function Pe(e, t) {
+          let n = e.toLowerCase();
+          return t.some((e) =>
+            RegExp(`(?:^|[^a-z'])${e.replace(/[.*+?^${}()|[\]\\]/g, `\\$&`)}(?:$|[^a-z'])`).test(n),
+          );
+        }
+        var Fe = `english-town-save-v1`,
+          Ie = 80,
+          Le = 12,
+          Re = 10,
+          ze = () => ({
+            playerName: null,
+            visits: 0,
+            lastVisit: null,
+            affinity: 0,
+            facts: [],
+            transcript: [],
+            goalDone: !1,
+            summary: ``,
+            events: [],
+            turnCounter: 0,
+            summarizedCounter: 0,
+          }),
+          Be = class {
+            game = {
+              money: 100,
+              rep: 0,
+              day: 1,
+              minutes: 480,
+              quests: {},
+              stats: Oe(),
+              area: Ce,
+              visited: [Ce],
+            };
+            mem = {};
+            load() {
+              try {
+                let e = localStorage.getItem(Fe);
+                if (!e) return;
+                let t = JSON.parse(e);
+                (Object.assign(this.game, t.game),
+                  (this.game.stats = { ...Oe(), ...t.game?.stats }),
+                  Array.isArray(this.game.visited) || (this.game.visited = [Ce]),
+                  (this.mem = t.mem ?? {}));
+              } catch {}
+            }
+            frozen = !1;
+            save() {
+              if (!this.frozen)
+                try {
+                  localStorage.setItem(Fe, JSON.stringify({ game: this.game, mem: this.mem }));
+                } catch {}
+            }
+            exportJson() {
+              return JSON.stringify(
+                { app: `english-town`, version: 1, game: this.game, mem: this.mem },
+                null,
+                2,
+              );
+            }
+            importJson(e) {
+              let t = JSON.parse(e),
+                n = t?.game;
+              if (
+                !n ||
+                typeof n != `object` ||
+                typeof n.day != `number` ||
+                typeof n.money != `number` ||
+                typeof n.rep != `number` ||
+                typeof n.minutes != `number`
+              )
+                throw Error(`This file is not an English Town save.`);
+              (localStorage.setItem(
+                Fe,
+                JSON.stringify({ game: n, mem: t.mem && typeof t.mem == `object` ? t.mem : {} }),
+              ),
+                (this.frozen = !0));
+            }
+            reset() {
+              try {
+                localStorage.removeItem(Fe);
+              } catch {}
+            }
+            get(e) {
+              return (this.mem[e] = { ...ze(), ...this.mem[e] });
+            }
+            all() {
+              return Object.entries(this.mem);
+            }
+          };
+        function Ve(e) {
+          return e < 0
+            ? `Unfriendly`
+            : e < 10
+              ? `Stranger`
+              : e < 30
+                ? `Acquaintance`
+                : e < 60
+                  ? `Friend`
+                  : `Close friend`;
+        }
+        function He(e, t) {
+          let n = t - e.day;
+          return n <= 0 ? `earlier today` : n === 1 ? `yesterday` : `${n} days ago`;
+        }
+        var Ue = new Set([
+          `fine`,
+          `good`,
+          `ok`,
+          `okay`,
+          `great`,
+          `happy`,
+          `sad`,
+          `tired`,
+          `hungry`,
+          `a`,
+          `an`,
+          `the`,
+          `new`,
+          `from`,
+          `here`,
+          `student`,
+          `looking`,
+          `not`,
+          `very`,
+          `so`,
+          `sorry`,
+          `learning`,
+          `ready`,
+          `bored`,
+          `busy`,
+        ]);
+        function We(e) {
+          let t = e.match(/\b(?:my name is|i am|i'm|im|call me)\s+([a-z]+)/i);
+          return !t || Ue.has(t[1].toLowerCase())
+            ? null
+            : t[1][0].toUpperCase() + t[1].slice(1).toLowerCase();
+        }
+        var Ge = (e) => e.split(/\s+(?:and|but|because|so|when|if)\s+|[.,!?;]/)[0].trim();
+        function Ke(e) {
+          let t = e,
+            n = [],
+            r = (e, t) => {
+              let r = t ? Ge(t) : ``;
+              r.length >= 2 && r.length <= 30 && n.push(`${e} ${r}`);
+            };
+          (r(`like`, t.match(/\bi (?:really |also )?(?:like|love|enjoy) ([a-z' ]+)/i)?.[1]),
+            r(`dislike`, t.match(/\bi (?:hate|(?:don't|do not|dont) like) ([a-z' ]+)/i)?.[1]),
+            r(`live in`, t.match(/\bi live in ([a-z ]+)/i)?.[1]),
+            r(`are from`, t.match(/\bi(?: am|'m) from ([a-z ]+)/i)?.[1]));
+          let i = t.match(/\bmy fa?vou?rite (\w+) is ([a-z ]+)/i);
+          if (i) {
+            let e = Ge(i[2]);
+            e && n.push(`say your favorite ${i[1]} is ${e}`);
+          }
+          return n;
+        }
+        function qe(e, t) {
+          let n = t.trim();
+          n &&
+            !e.facts.some((e) => e.toLowerCase() === n.toLowerCase()) &&
+            (e.facts.push(n), e.facts.length > Le && e.facts.shift());
+        }
+        function Je(e, t, n) {
+          (e.events.push({ day: t, text: n }), e.events.length > Re && e.events.shift());
+        }
+        function Ye(e, ...t) {
+          ((e.turnCounter += t.length),
+            e.transcript.push(...t),
+            e.transcript.length > Ie && e.transcript.splice(0, e.transcript.length - Ie));
+        }
+
+        var Xe = {
+            doctor: {
+              short: `Dr. Chen`,
+              traits: `calm, caring, observant, dry sense of humor, always thinks about health and gives practical advice`,
+              style: `Gentle and professional. Asks about symptoms ("since when?", "how bad?"). Ends with a short health tip. Says "take care".`,
+              lines: {
+                greet: [
+                  `Hello, {p}. Please, come in. How are you feeling?`,
+                  `Good to see you, {p}! Is everything okay?`,
+                ],
+                howAreYou: [
+                  `I'm fine, thank you for asking. Most patients forget to ask! How are you feeling, {p}?`,
+                  `A little tired, but a doctor is always on duty. And you?`,
+                ],
+                askName: [
+                  `I'm Dr. Chen. I take care of everyone in this town. And your name is...?`,
+                ],
+                thanks: [
+                  `You're welcome. Remember to drink water and sleep well!`,
+                  `My pleasure, {p}. Take care of yourself.`,
+                ],
+                bye: [
+                  `Take care, {p}. Come back if you feel worse.`,
+                  `Goodbye! And remember: eight hours of sleep, every night.`,
+                ],
+                yes: [`Good. Can you tell me more?`, `I see. Let's go step by step.`],
+                no: [
+                  `No problem. Tell me what is bothering you instead.`,
+                  `That's good to hear. Any other symptoms?`,
+                ],
+                whereFrom: [
+                  `I studied medicine in the big city, but I came back here. Small towns need doctors too. Where are you from?`,
+                ],
+                hobby: [
+                  `I like jogging in the park and playing the piano. Do you exercise, {p}?`,
+                  `I love cooking healthy soup! Do you cook?`,
+                ],
+                weather: [
+                  `Cold weather means many colds. Wear a jacket, {p}!`,
+                  `Hot days? Drink plenty of water and wear a hat.`,
+                ],
+                help: [`Of course. Tell me what hurts, and since when.`],
+                compliment: [
+                  `Thank you, that is kind. I just do my job.`,
+                  `Ha, thanks. A smile is good medicine too!`,
+                ],
+                insult: [`Please stay calm. Anger is bad for your heart.`],
+                work: [
+                  `I treat colds, broken arms, headaches... everything! The hospital is always busy.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(headache|head hurts|migraine)\b/,
+                  replies: [
+                    `A headache? Do you drink enough water? Rest your eyes and sleep well. Does it hurt a lot?`,
+                  ],
+                },
+                {
+                  re: /\b(cold|cough|fever|flu|sore throat)\b/,
+                  replies: [
+                    `That sounds like a cold. Rest, drink warm tea, and stay home. For how many days?`,
+                  ],
+                },
+                {
+                  re: /\b(stomach|belly|vomit|nausea)\b/,
+                  replies: [
+                    `A stomach ache? Eat light food, like rice or soup. What did you eat today?`,
+                  ],
+                },
+                {
+                  re: /\b(tired|sleep|insomnia)\b/,
+                  replies: [
+                    `Tired? Sleep seven or eight hours and never skip breakfast. How late do you go to bed?`,
+                  ],
+                },
+                {
+                  re: /\b(medicine|pill|tablet)\b/,
+                  replies: [
+                    `Take medicine only as I tell you, and never too many! Do you have any allergies?`,
+                  ],
+                },
+              ],
+              fallback: [
+                `I see. Can you describe it in a simple way?`,
+                `Hmm, tell me more, {p}. How long has it been like this?`,
+                `Interesting. Does anything make it better or worse?`,
+                `Mm-hm. And how do you feel today, in general?`,
+              ],
+              hints: [
+                `By the way, {p}, is anything hurting today? You can tell me.`,
+                `Do you have any health problem you want to talk about? A headache, a cold...?`,
+              ],
+              goalDone: [
+                `Thank you for telling me, {p}. Rest, drink water, and you will feel better soon. Your English is very clear!`,
+                `I understand now. Don't worry, it is nothing serious. Well explained, {p}!`,
+              ],
+            },
+            police: {
+              short: `Officer Davis`,
+              traits: `firm but friendly, protective, observant, loves his town, knows every street, a little serious about safety rules`,
+              style: `Calm and clear, short sentences. Says "stay safe". Gives precise directions using landmarks. Never rude.`,
+              lines: {
+                greet: [
+                  `Good day, {p}. Everything alright in town?`,
+                  `Hello there. Officer Davis here. Need anything?`,
+                ],
+                howAreYou: [
+                  `Doing well, thanks. A quiet day is the best kind of day for a police officer. And you, {p}?`,
+                  `Fine, a bit of paperwork today. How about you?`,
+                ],
+                askName: [`I'm Officer Davis. I keep the town safe. May I ask your name?`],
+                thanks: [`You're welcome. Stay safe out there.`, `Just doing my job, {p}.`],
+                bye: [
+                  `Stay safe, {p}. And use the zebra crossings!`,
+                  `Take care. You know where to find me if you need help.`,
+                ],
+                yes: [`Good. Please, go on.`, `Understood. What else can I do for you?`],
+                no: [`Alright. Is there a problem?`, `Okay. Let me know if anything changes.`],
+                whereFrom: [
+                  `I grew up two streets from here. I never wanted to leave. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `I like fishing at the lake on weekends, and I coach the kids' football team. What do you do for fun?`,
+                  `Reading detective novels, of course! Do you like mysteries?`,
+                ],
+                weather: [
+                  `Rain makes the roads slippery. Walk carefully, {p}!`,
+                  `Sunny days are great for patrol. I walk the whole town.`,
+                ],
+                help: [`Of course, that is my job. What is the problem?`],
+                compliment: [
+                  `Thank you, that is kind of you.`,
+                  `Appreciate it, {p}. The town makes my job easy.`,
+                ],
+                insult: [`Please watch your language. Let us stay polite.`],
+                work: [
+                  `I patrol the town, help people, and solve small problems. Mostly lost cats and lost tourists!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(hospital|doctor|clinic)\b/,
+                  replies: [
+                    `The hospital is in the east. Take the main road, cross the big avenue at the zebra crossing, and look for the blue roof.`,
+                  ],
+                },
+                {
+                  re: /\b(school|teacher|class)\b/,
+                  replies: [
+                    `The school is in the east too, behind the white fence. Cross the big avenue and follow the road south.`,
+                  ],
+                },
+                {
+                  re: /\b(library|book)\b/,
+                  replies: [
+                    `The library is south-west of the main road, with the green roof, next to the gym.`,
+                  ],
+                },
+                {
+                  re: /\b(cafe|coffee)\b/,
+                  replies: [
+                    `Sunny Cafe is in the north-west. Follow the main road west and look for the red roof with stripes.`,
+                  ],
+                },
+                {
+                  re: /\b(park|fountain)\b/,
+                  replies: [
+                    `The park with the fountain is in the middle of town, just south of the main road.`,
+                  ],
+                },
+                {
+                  re: /\b(steal|stole|thief|crime|lost wallet)\b/,
+                  replies: [
+                    `Report it to me right away. Tell me what happened and where. Safety first.`,
+                  ],
+                },
+                {
+                  re: /\b(road|cross|crossing|traffic|street)\b/,
+                  replies: [`Always use the zebra crossings and look both ways. It saves lives!`],
+                },
+              ],
+              fallback: [
+                `I see. Can you explain more clearly, {p}?`,
+                `Hmm. Tell me what you mean.`,
+                `Understood. Is that something I should know about?`,
+                `Interesting. Anything else I can help with?`,
+              ],
+              hints: [
+                `If you are looking for a place in town, just ask me for directions, {p}.`,
+                `Are you lost? I know every street. Just ask me where something is.`,
+              ],
+              goalDone: [
+                `Of course, {p}. Follow the main road, use the zebra crossing, and you will find it. Good question!`,
+                `No problem! Stay on the sidewalk, and ask me again if you get lost. Your English is clear, {p}!`,
+              ],
+            },
+            teacher: {
+              short: `Ms. Taylor`,
+              traits: `enthusiastic, encouraging, patient, loves languages, celebrates every small success, a bit of a perfectionist about grammar`,
+              style: `Warm and upbeat. Says "Great job!", "Nice try!", "Let's practice!". Gently repeats the correct form. Asks the player to try again.`,
+              lines: {
+                greet: [
+                  `Hello, {p}! Great to see you! Ready to practice some English?`,
+                  `Hi there, {p}! What a nice surprise!`,
+                ],
+                howAreYou: [
+                  `I'm wonderful, thank you for asking! Nice and polite, {p}! How are you today?`,
+                  `Very well! I love teaching. How about you?`,
+                ],
+                askName: [`I'm Ms. Taylor, the English teacher. Can you say: "My name is..."?`],
+                thanks: [
+                  `You're welcome! Nice use of "thank you"!`,
+                  `Anytime, {p}! Keep practicing!`,
+                ],
+                bye: [
+                  `Goodbye, {p}! Practice a little every day!`,
+                  `See you soon! Remember: one new word a day!`,
+                ],
+                yes: [`Great! Can you say it in a full sentence?`, `Excellent! Tell me more.`],
+                no: [
+                  `That's okay! Can you explain why? Try a full sentence.`,
+                  `No problem. What would you like to practice instead?`,
+                ],
+                whereFrom: [
+                  `I'm from a small town near the sea. Can you tell me about YOUR hometown? Use full sentences!`,
+                ],
+                hobby: [
+                  `I love reading, singing, and learning languages. What is your hobby? Say: "My hobby is..."`,
+                  `I paint on weekends. It's relaxing! And you?`,
+                ],
+                weather: [
+                  `Let's use the weather to practice! "It is sunny." "It is rainy." What is it like today?`,
+                  `Weather is a perfect topic for small talk. How is the weather in your country?`,
+                ],
+                help: [`Of course! I love helping. Ask me anything about English.`],
+                compliment: [
+                  `Aw, thank you, {p}! You are a wonderful student!`,
+                  `That is so kind. Your English is improving, too!`,
+                ],
+                insult: [`That's not a kind word. Let's use polite English, please.`],
+                work: [`I teach English at the school. My students are the best part of my day!`],
+              },
+              topics: [
+                {
+                  re: /\b(grammar|tense|verb|sentence)\b/,
+                  replies: [
+                    `Grammar is just patterns! Try: subject + verb + object. "I like apples." Can you make your own sentence?`,
+                  ],
+                },
+                {
+                  re: /\b(vocabulary|words?|meaning)\b/,
+                  replies: [
+                    `Learn five new words a day and use each one in a sentence. Which word is new for you?`,
+                  ],
+                },
+                {
+                  re: /\b(speak|speaking|talk|pronunciation)\b/,
+                  replies: [
+                    `Speaking is the best practice! Talk to people in town every day, just like you are doing now.`,
+                  ],
+                },
+                {
+                  re: /\b(homework|exercise|assignment)\b/,
+                  replies: [
+                    `Homework: write three sentences about your day. Can you tell me one right now?`,
+                  ],
+                },
+                {
+                  re: /\b(exam|test|quiz)\b/,
+                  replies: [
+                    `Don't worry about tests! A little practice every day beats studying all night.`,
+                  ],
+                },
+                {
+                  re: /\b(movie|film|music|song|youtube)\b/,
+                  replies: [
+                    `Watching movies in English with subtitles really helps! What is your favorite film?`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Good try, {p}! Can you say that again, a little more slowly?`,
+                `Interesting! Can you make it a full sentence?`,
+                `Nice! Tell me more. Try to use a new word!`,
+                `I like your effort! What happened next?`,
+              ],
+              hints: [
+                `Do you have a question about English, {p}? Homework, grammar, how to learn faster? I'm here to help!`,
+                `Would you like some tips to learn English? Just ask me!`,
+              ],
+              goalDone: [
+                `What a great question, {p}! Study a little every day, speak with people, and read. Wonderful English!`,
+                `Excellent, {p}! Asking about learning is the first step. Here's a tip: practice every single day!`,
+              ],
+            },
+            firefighter: {
+              short: `Carlos`,
+              traits: `brave, warm, sporty, jokes to stay cheerful, proud of the fire station, always safety-minded`,
+              style: `Energetic and friendly. Says "my friend", "no sweat", "stay safe". Uses short, vivid sentences. Sometimes teases lightly.`,
+              lines: {
+                greet: [
+                  `Hey, {p}! Good to see you, my friend!`,
+                  `Hello! Welcome to the best station in town!`,
+                ],
+                howAreYou: [
+                  `Strong and ready, my friend! Just finished training. How are you, {p}?`,
+                  `Can't complain! No fires today, which is great. And you?`,
+                ],
+                askName: [`I'm Carlos, firefighter! Strong arms, big heart. What's your name?`],
+                thanks: [`No sweat, {p}! Happy to help!`, `Anytime! That's what we're here for!`],
+                bye: [`Stay safe, {p}! And check your smoke alarm!`, `See you around, my friend!`],
+                yes: [`Awesome! Tell me more!`, `That is the spirit!`],
+                no: [`No worries. What would you like instead?`, `Fair enough, my friend.`],
+                whereFrom: [`Born here! My dad was a firefighter too. Where are you from, {p}?`],
+                hobby: [
+                  `I love football, grilling, and rescuing cats from trees. True story! What about you?`,
+                  `Working out at the gym! Strong body, strong rescue. Do you exercise?`,
+                ],
+                weather: [
+                  `Hot dry days worry us. Fires start easily. Be careful with campfires, {p}!`,
+                  `Rainy days are quiet for us. I like them!`,
+                ],
+                help: [`Sure thing! What do you need, my friend?`],
+                compliment: [
+                  `Ha, thanks! You are too kind!`,
+                  `Thank you, {p}! Pizza on me. Just kidding!`,
+                ],
+                insult: [`Hey, easy now. Let us keep it friendly, okay?`],
+                work: [
+                  `I put out fires and rescue people and cats. Every day is different. I love it!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(fire|smoke|alarm|burn)\b/,
+                  replies: [
+                    `Always test your smoke alarm every month, my friend! Do you have one at home?`,
+                  ],
+                },
+                {
+                  re: /\b(truck|siren|hose|ladder)\b/,
+                  replies: [
+                    `Our red fire truck is the pride of the station! Want to see the ladder? Just do not touch the siren!`,
+                  ],
+                },
+                {
+                  re: /\b(emergency|accident|danger)\b/,
+                  replies: [
+                    `In an emergency, stay calm, call the emergency number, and say your address clearly.`,
+                  ],
+                },
+                {
+                  re: /\b(cat|dog|animal|tree)\b/,
+                  replies: [
+                    `Ha! Yes, I once saved a cat from a tall tree. Classic! Do you like animals?`,
+                  ],
+                },
+                {
+                  re: /\b(gym|exercise|train|training|strong)\b/,
+                  replies: [`We train every day. Strong body, strong rescue! Do you work out?`],
+                },
+              ],
+              fallback: [
+                `Ha! Good one, {p}. Tell me more!`,
+                `No kidding? And then what?`,
+                `Interesting, my friend. What else is going on?`,
+                `I like that! Keep going.`,
+              ],
+              hints: [
+                `Hey, {p}, do you know what to do in a fire? Ask me about fire safety!`,
+                `Curious about my job, my friend? Ask me anything about fire safety!`,
+              ],
+              goalDone: [
+                `Great question, {p}! Stay low under the smoke, test your alarm, and know two exits. You'll be safe. Nice English!`,
+                `That's what I like to hear! Fire safety matters. Thanks for asking, {p}!`,
+              ],
+            },
+            chef: {
+              short: `Marco`,
+              traits: `passionate, dramatic, proud of his family recipes, generous, talks with his hands, hates when people say food is "just okay"`,
+              style: `Warm and theatrical. Sprinkles "Mamma mia!", "bellissimo", "my friend". Describes food with delicious details. Speaks simple English.`,
+              lines: {
+                greet: [
+                  `Ciao, {p}! Welcome, welcome! Are you hungry?`,
+                  `Ah, a new face! Sit down, my friend!`,
+                ],
+                howAreYou: [
+                  `Mamma mia, I'm great! The sauce is perfect today. And you, {p}?`,
+                  `Hot kitchen, hot heart! I'm good. How are you?`,
+                ],
+                askName: [`I'm Marco, the chef! My name is on the sign. What's your name, friend?`],
+                thanks: [`Prego! It is my pleasure, {p}!`, `For you, always! Enjoy your meal!`],
+                bye: [`Ciao, {p}! Come back hungry!`, `Arrivederci! The kitchen will miss you!`],
+                yes: [`Bellissimo! Tell me more!`, `Perfetto! What shall we cook?`],
+                no: [
+                  `No? Mamma mia! What would you like instead?`,
+                  `Ah, a picky customer! I like a challenge!`,
+                ],
+                whereFrom: [
+                  `My family came from Italy three generations ago. I learned to cook from my grandma. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `Cooking is my work AND my hobby! On Sundays I make pasta for the whole street. Do you cook?`,
+                  `I love opera and football! Do you like music?`,
+                ],
+                weather: [
+                  `Cold weather? Soup, my friend! Hot weather? Ice cream! Food fixes every weather.`,
+                  `A sunny day is perfect for fresh salad!`,
+                ],
+                help: [`Of course! Are you hungry? Tell me what you like and I cook it!`],
+                compliment: [
+                  `Grazie! You make me blush, {p}!`,
+                  `Mamma mia, thank you! That is the best part of my day!`,
+                ],
+                insult: [`Ehi! In my kitchen, we are kind to each other. Please!`],
+                work: [
+                  `I cook for the whole town! Pizza, pasta, soup, everything fresh. Cooking is my love.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(pizza|margherita)\b/,
+                  replies: [
+                    `Pizza! My grandmother's recipe, with fresh basil and hot cheese. One margherita coming up?`,
+                  ],
+                },
+                {
+                  re: /\b(pasta|spaghetti|lasagna|noodles?)\b/,
+                  replies: [
+                    `Pasta, bellissimo! Handmade this morning. Tomato sauce or cream sauce?`,
+                  ],
+                },
+                {
+                  re: /\b(soup)\b/,
+                  replies: [
+                    `My vegetable soup warms the heart. Perfect for a cold day. Do you want a big bowl?`,
+                  ],
+                },
+                {
+                  re: /\b(dessert|cake|ice cream|tiramisu|sweet)\b/,
+                  replies: [
+                    `Dessert? Tiramisu is my masterpiece! Coffee, cream and cocoa. You must try it!`,
+                  ],
+                },
+                {
+                  re: /\b(price|cost|how much|expensive|cheap)\b/,
+                  replies: [
+                    `For you, a fair price! Pasta is ten dollars, pizza twelve, dessert five. Deal?`,
+                  ],
+                },
+                {
+                  re: /\b(vegetarian|vegan|meat)\b/,
+                  replies: [
+                    `Vegetarian? Of course! My vegetable lasagna is bellissimo. No meat, only love!`,
+                  ],
+                },
+                {
+                  re: /\b(spicy|hot sauce|chili)\b/,
+                  replies: [
+                    `Spicy? A little chili, yes! But not too much. We want to taste the food!`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Ah, interesting, {p}! Tell me more!`,
+                `Mamma mia, really? And then?`,
+                `Hmm, I like how you think! What else?`,
+                `You know what goes well with that? Good food! Are you hungry?`,
+              ],
+              hints: [
+                `But you must be hungry, {p}! What would you like to eat today? Pasta? Pizza?`,
+                `Come on, my friend, order something! Tell me what you would like to eat!`,
+              ],
+              goalDone: [
+                `Bellissimo choice, {p}! I cook it right now, with love. And your English is perfetto!`,
+                `Perfetto! One order coming up, {p}! Nice speaking, my friend!`,
+              ],
+            },
+          };
+var Ze = {
+            banker: {
+              short: `Ms. Park`,
+              traits: `precise, polite, thrifty, quietly funny, loves numbers and tidy desks, gives careful money advice`,
+              style: `Calm and professional. Says "certainly", "of course", "let me check". Explains money words in simple English.`,
+              lines: {
+                greet: [
+                  `Good day, {p}. Welcome to the bank. How may I help you?`,
+                  `Hello, {p}. Please, come to my desk.`,
+                ],
+                howAreYou: [
+                  `I am well, thank you. Numbers are calm today. And you, {p}?`,
+                  `Quite good! My coffee and my calculator are both working. How are you?`,
+                ],
+                askName: [`I am Ms. Park, the bank manager. May I have your name, please?`],
+                thanks: [
+                  `You are welcome, {p}. Safe saving!`,
+                  `My pleasure. That is what the bank is for.`,
+                ],
+                bye: [
+                  `Goodbye, {p}. Remember: save a little every week.`,
+                  `Have a lovely day. Come back any time.`,
+                ],
+                yes: [`Wonderful. Please, tell me more.`, `Certainly. What would you like to do?`],
+                no: [
+                  `I understand. Is there something else I can do?`,
+                  `That is fine. Take your time to decide.`,
+                ],
+                whereFrom: [
+                  `I grew up in a small town by the river. I moved here for the quiet. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `I collect old coins from different countries. Do you collect anything, {p}?`,
+                  `I enjoy gardening on Sundays. Small seeds, big results, like savings!`,
+                ],
+                weather: [
+                  `Rainy days are good for the bank: nobody goes shopping! Ha. What do you like, {p}?`,
+                ],
+                help: [
+                  `Of course. I can help you open an account, save money, or change money. What do you need?`,
+                ],
+                compliment: [
+                  `Thank you, that is very kind of you, {p}.`,
+                  `How nice. You have good manners.`,
+                ],
+                insult: [`Please, let us stay polite. Respect is free, but it is worth a lot.`],
+                work: [
+                  `I manage the bank. I help people save money, open accounts and plan for the future.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(account|open an account|savings)\b/,
+                  replies: [
+                    `A savings account is a safe place for your money, and it grows a little each month. Would you like to open one?`,
+                  ],
+                },
+                {
+                  re: /\b(save|saving|deposit)\b/,
+                  replies: [
+                    `Saving is easy: put aside a small part of your money each week. How much would you like to deposit?`,
+                  ],
+                },
+                {
+                  re: /\b(loan|borrow|debt)\b/,
+                  replies: [
+                    `A loan is money you borrow and pay back later, with a little extra. Think carefully first. What is the money for?`,
+                  ],
+                },
+                {
+                  re: /\b(card|credit|cash|atm)\b/,
+                  replies: [
+                    `Cash is good for small things, and a card is safer for big things. Which do you use, {p}?`,
+                  ],
+                },
+                {
+                  re: /\b(rich|poor|money|salary)\b/,
+                  replies: [
+                    `Money is a tool, not a goal. It helps you live well. What is your plan for it?`,
+                  ],
+                },
+              ],
+              fallback: [
+                `I see. Could you explain a little more, {p}?`,
+                `Hmm. Let me think. Do you have a question about money?`,
+                `Interesting. Is that something the bank can help with?`,
+                `Certainly. And what else would you like to know?`,
+              ],
+              hints: [
+                `By the way, {p}, would you like to open a savings account? I can explain it.`,
+                `Do you want to save some money today? Just tell me what you need.`,
+              ],
+              goalDone: [
+                `Certainly, {p}! I will open your account right away. Your English is very clear!`,
+                `Excellent decision, {p}. Saving is a good habit. Well said!`,
+              ],
+            },
+            postman: {
+              short: `Sam`,
+              traits: `friendly, sporty, always in a hurry, loves walking, knows everyone and every street, collects funny stories about letters`,
+              style: `Quick and cheerful. Says "no problem", "right away", "you got it". Short sentences, lots of street and delivery words.`,
+              lines: {
+                greet: [
+                  `Hey, {p}! Good to see you! Got a letter for me?`,
+                  `Hello there! Sam, the post office. What can I do?`,
+                ],
+                howAreYou: [
+                  `Tired legs, happy heart! I walked ten kilometers today. How are you, {p}?`,
+                  `Super! The sun is out and the bag is light. And you?`,
+                ],
+                askName: [`I'm Sam! I bring the mail to everyone in town. What's your name?`],
+                thanks: [`No problem, {p}! Delivered with a smile!`, `You got it! Anytime!`],
+                bye: [`See you, {p}! I have letters to deliver!`, `Bye! Write to me sometime!`],
+                yes: [`You got it! What next?`, `Great! Let us do it right away.`],
+                no: [`No problem. What would you like instead?`, `Okay, okay! Take your time.`],
+                whereFrom: [`Born here! I know every door in town. Where are you from, {p}?`],
+                hobby: [
+                  `Running! I run the town marathon every year. Slowly, but I finish! Do you run?`,
+                  `I like fishing at the lake. It is the only time I sit down! What about you?`,
+                ],
+                weather: [
+                  `Rain, snow, sun, I walk in all of it! The worst is wind, my letters fly away. Ha!`,
+                ],
+                help: [`Sure! Letters, parcels and stamps, that is my job. What do you need?`],
+                compliment: [
+                  `Aw, thanks, {p}! You made my day!`,
+                  `Ha, thank you! I will tell the dog next door!`,
+                ],
+                insult: [`Hey, easy! I only bring the mail, I do not write it!`],
+                work: [
+                  `I work at the post office and deliver letters and parcels. The dogs know me very well!`,
+                ],
+              },

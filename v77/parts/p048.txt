@@ -1,0 +1,1000 @@
+              return [];
+            if (count('boarding_pass') > 0 || count('rail_ticket') > 0)
+              return [
+                '🎫 You already have a ticket. Go to platform 1 and step onto the front of the train; the conductor will check your ticket on board. “Please board the train at platform one.”',
+              ];
+            if (usedSpace() >= capacity())
+              return ['🎒 Your bag is full. Free up some space, then ask for the ticket again.'];
+            moveItem('rail_ticket', 1);
+            log('travel', 0, 'Received a free train ticket');
+            save();
+            railPop('🎫', 'You received: Train ticket');
+            return [
+              '🎫 Your free train ticket is in your bag. “Here is your ticket. Please board the train at platform one.” Step onto the front of the train at platform 1; your ticket will be checked on board.',
+            ];
+          }
+          if (!/(ticket|train|platform|board|check|inspect|here|please)/.test(text)) return [];
+          if (count('rail_ticket') > 0 || count('boarding_pass') > 0)
+            return [
+              '🚆 Your ticket is good. Step onto the front of the train at platform 1; the conductor will check your ticket on board. “The conductor will check your ticket on the train.”',
+            ];
+          return [
+            '⚠️ You do not have a ticket yet. Ask for one at the ticket window (window one) in English first. “Tickets are at window one.”',
+          ];
+        }
+        const TRAIN_CSS =
+          '#lq-train{position:fixed;inset:0;z-index:90;background:#000;opacity:0;transition:opacity .5s}#lq-train.on{opacity:1}#lq-train canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated}#lq-train-hdr{position:absolute;top:18px;left:50%;transform:translateX(-50%);background:#101a28e6;color:#ffe9a8;border:2px solid #f3b94d;border-radius:999px;padding:6px 16px;font:700 14px system-ui,sans-serif;white-space:nowrap}#lq-train-box{position:absolute;left:50%;top:64px;transform:translateX(-50%);width:min(720px,92vw);box-sizing:border-box;background:#141824f2;border:2px solid #5a6a9a;border-radius:10px;padding:12px 16px;color:#fff;font:16px/1.4 system-ui,sans-serif;display:none}#lq-train-box.show{display:block}#lq-train-name{color:#ffd36b}#lq-train-line{margin:6px 0 0}#lq-train-line small{display:block;color:#a9b8d0;margin-top:2px}#lq-train-btn{margin-top:10px;background:#f3b94d;color:#1b2630;border:0;border-radius:8px;padding:8px 16px;font:800 15px system-ui,sans-serif;cursor:pointer;animation:lqpulse 1s infinite alternate}@keyframes lqpulse{from{transform:scale(1)}to{transform:scale(1.07)}}';
+        let rideActive = false;
+        function noPass() {
+          railPop('🚆', 'You need a train ticket to board');
+          notice(
+            'Ask for a ticket at the ticket window (talk to the ticket clerk in English), then come back to board the train.',
+          );
+        }
+        function boardTrain(zone, sc) {
+          if (rideActive || !zone || !sc) return;
+          if (count('rail_ticket') < 1 && count('boarding_pass') < 1) {
+            noPass();
+            return;
+          }
+          rideActive = true;
+          try {
+            startRide(zone, sc);
+          } catch (err) {
+            console.warn('train ride failed', err);
+            rideActive = false;
+            try {
+              sc.scene.resume();
+            } catch {}
+          }
+        }
+        function mixColor(a, b, t) {
+          const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)),
+            x = p(a),
+            y = p(b);
+          return (
+            '#' +
+            x
+              .map((v, i) =>
+                Math.round(v + (y[i] - v) * t)
+                  .toString(16)
+                  .padStart(2, '0'),
+              )
+              .join('')
+          );
+        }
+        function startRide(zone, sc) {
+          const toMine = zone.to === 'mining-town',
+            dest = toMine ? 'Minerals Town' : 'English Town',
+            origin = toMine ? 'English Town' : 'Minerals Town',
+            dir = toMine ? 1 : -1;
+          const town = {
+              sky: '#6fbcff',
+              sky2: '#dff3ff',
+              far: '#8fb7a8',
+              hill: '#79b27e',
+              tree: '#3f8a4f',
+              ground: '#8cc56d',
+            },
+            mine = {
+              sky: '#8497a8',
+              sky2: '#d3dce2',
+              far: '#7d8e9b',
+              hill: '#6b7f8b',
+              tree: '#4a6670',
+              ground: '#8b8a80',
+            };
+          const P0 = toMine ? town : mine,
+            P1 = toMine ? mine : town;
+          const checked = count('boarding_pass') > 0;
+          try {
+            sc.scene.pause();
+          } catch {}
+          const root = document.createElement('div');
+          root.id = 'lq-train';
+          root.innerHTML =
+            '<canvas></canvas><div id="lq-train-hdr"></div><div id="lq-train-box"><b id="lq-train-name"></b><p id="lq-train-line"></p><button type="button" id="lq-train-btn" hidden>[E] Show ticket</button></div>';
+          document.body.appendChild(root);
+          const cv = root.querySelector('canvas'),
+            cx = cv.getContext('2d'),
+            hdr = root.querySelector('#lq-train-hdr'),
+            box = root.querySelector('#lq-train-box'),
+            nameEl = root.querySelector('#lq-train-name'),
+            lineEl = root.querySelector('#lq-train-line'),
+            btn = root.querySelector('#lq-train-btn');
+          requestAnimationFrame(() => root.classList.add('on'));
+          const say = (who, en, vi, speak) => {
+            nameEl.textContent = who;
+            lineEl.innerHTML = esc(en) + (vi ? '<small>' + esc(vi) + '</small>' : '');
+            box.classList.add('show');
+            if (speak)
+              try {
+                speechService.speak(en);
+              } catch {}
+          };
+          const size = () => {
+            cv.width = innerWidth;
+            cv.height = innerHeight;
+          };
+          size();
+          addEventListener('resize', size);
+          const stops = [
+            { x: 72, l: 'Good day. Tickets, please.' },
+            { x: 142, l: 'Thank you, sir. Have a nice trip.' },
+            { x: 212, you: true },
+            { x: 282, l: 'Tickets, please... Thank you, young man.' },
+          ];
+          let phase = 'depart',
+            pt = 0,
+            speed = 0,
+            scroll = 0,
+            condX = -30,
+            si = 0,
+            last = performance.now(),
+            raf = 0,
+            done = false,
+            prog = 0;
+          const setPhase = (p) => {
+            phase = p;
+            pt = 0;
+          };
+          const nextStop = () => {
+            si++;
+            box.classList.remove('show');
+            setPhase(si >= stops.length ? 'exit' : 'walk');
+          };
+          function inspect() {
+            if (phase !== 'ask') return;
+            btn.hidden = true;
+            if (count('rail_ticket') > 0) {
+              moveItem('rail_ticket', -1);
+              moveItem('boarding_pass', 1);
+              log('travel', 0, 'Ticket checked on the train');
+              save();
+            }
+            railPop('✅', 'Ticket checked');
+            say(
+              'Conductor',
+              'Thank you! Enjoy your trip to ' + dest + '.',
+              'Thank you! Have a pleasant trip.',
+              true,
+            );
+            setPhase('check');
+          }
+          const onKey = (ev) => {
+            ev.preventDefault();
+            ev.stopImmediatePropagation();
+            if ((ev.key === 'e' || ev.key === 'E') && !ev.repeat) inspect();
+          };
+          addEventListener('keydown', onKey, true);
+          btn.onclick = inspect;
+          function finish() {
+            if (done) return;
+            done = true;
+            cancelAnimationFrame(raf);
+            removeEventListener('keydown', onKey, true);
+            removeEventListener('resize', size);
+            root.remove();
+            if (count('boarding_pass') > 0) {
+              moveItem('boarding_pass', -1);
+              log('travel', 0, 'Train trip: ' + origin + ' → ' + dest);
+              save();
+            }
+            rideActive = false;
+            try {
+              sc.scene.resume();
+            } catch {}
+            sc.switchArea(zone.to, zone.spawn, zone.label);
+          }
+          function update(dt) {
+            pt += dt;
+            scroll += speed * dt * 140;
+            if (phase !== 'ask') prog = Math.min(1, prog + dt / 14);
+            if (phase === 'depart') {
+              speed = Math.min(1, pt / 1.2);
+              hdr.textContent = '🚆 Train leaving ' + origin + ' station' + '…';
+              if (pt > 1.4) {
+                hdr.textContent = '🚆 Train heading to ' + dest + ' station' + '…';
+                setPhase('walk');
+              }
+            } else if (phase === 'walk') {
+              const st = stops[si];
+              condX = Math.min(st.x, condX + 62 * dt);
+              if (condX >= st.x) {
+                if (st.you && !checked) {
+                  setPhase('ask');
+                  say(
+                    'Conductor',
+                    'Tickets, please!',
+                    'Ticket check! Press E to show your ticket.',
+                    true,
+                  );
+                  btn.hidden = false;
+                } else {
+                  if (st.l) say('Conductor', st.l, '', false);
+                  setPhase('pause');
+                }
+              }
+            } else if (phase === 'pause') {
+              if (pt > 1.1) nextStop();
+            } else if (phase === 'check') {
+              if (pt > 1.8) nextStop();
+            } else if (phase === 'exit') {
+              condX += 62 * dt;
+              if (condX > 430) setPhase('cruise');
+            } else if (phase === 'cruise') {
+              hdr.textContent = '🚉 Arriving at ' + dest + ' station' + '…';
+              if (pt > 2.4) {
+                setPhase('arrive');
+                root.classList.remove('on');
+              }
+            } else if (phase === 'arrive') {
+              speed = Math.max(0.15, speed - dt * 0.8);
+              if (pt > 0.7) finish();
+            }
+          }
+          const R = (x, y, w, h, c) => {
+            cx.fillStyle = c;
+            cx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+          };
+          const shade = (c, k) => mixColor(c, '#000000', k);
+          function seat(sx) {
+            R(sx - 17, 126, 8, 40, '#2a6670');
+            R(sx - 17, 126, 2, 40, '#3a8590');
+            R(sx - 18, 120, 10, 10, '#3a8590');
+            R(sx - 18, 120, 10, 2, '#52a3ad');
+            R(sx - 14, 160, 30, 7, '#2f7a85');
+            R(sx - 14, 160, 30, 2, '#4a9ba5');
+            R(sx - 12, 167, 26, 13, '#1f4f58');
+            R(sx - 20, 180, 44, 3, '#00000040');
+          }
+          function sitter(sx, o, now) {
+            const k = o.top,
+              kd = shade(k, 0.25),
+              sk = o.skin;
+            R(sx - 6, 156, 20, 8, o.pants);
+            R(sx - 6, 156, 20, 2, shade(o.pants, -0.2 > 0 ? 0 : 0.15));
+            R(sx + 9, 163, 5, 15, o.pants);
+            R(sx + 8, 177, 9, 3, o.shoes);
+            R(sx - 9, 132, 11, 26, k);
+            R(sx - 9, 132, 3, 26, kd);
+            R(sx - 2, 134, 3, 6, shade(k, -0.0));
+            R(sx - 5, 138, 5, 12, kd);
+            R(sx - 3, 148, 13, 4, kd);
+            R(sx + 10, 148, 3, 4, sk);
+            R(sx - 5, 128, 5, 4, sk);
+            R(sx - 7, 116, 11, 13, sk);
+            R(sx - 7, 116, 2, 13, shade(sk, 0.12));
+            if (o.long) {
+              R(sx - 10, 114, 9, 22, o.hair);
+              R(sx - 7, 113, 12, 5, o.hair);
+            } else {
+              R(sx - 8, 114, 12, 5, o.hair);
+              R(sx - 8, 117, 3, 6, o.hair);
+            }
+            if (o.hat) {
+              R(sx - 9, 111, 14, 4, o.hat);
+              R(sx + 3, 114, 7, 1, o.hat);
+            }
+            if (o.shut) {
+              R(sx + 1, 122, 3, 1, '#222');
+            } else {
+              R(sx + 1, 121, 3, 3, '#fff');
+              R(sx + 3, 122, 1, 2, o.eye || '#1b1b1b');
+            }
+            R(sx + 4, 123, 1, 2, shade(sk, 0.15));
+            if (o.glasses) {
+              R(sx, 120, 5, 1, '#222');
+              R(sx, 124, 5, 1, '#222');
+            }
+            if (o.item === 'book') {
+              R(sx + 7, 141, 10, 12, '#f1ead2');
+              R(sx + 7, 141, 10, 2, '#b33a3a');
+              R(sx + 8, 145, 8, 1, '#999');
+              R(sx + 8, 148, 8, 1, '#999');
+            } else if (o.item === 'paper') {
+              R(sx + 8, 132, 13, 22, '#ece9de');
+              R(sx + 10, 135, 9, 2, '#555');
+              R(sx + 10, 140, 9, 1, '#999');
+              R(sx + 10, 144, 9, 1, '#999');
+              R(sx + 10, 148, 9, 1, '#999');
+            } else if (o.item === 'phone') {
+              R(sx + 9, 142, 3, 6, '#1b1b1b');
+              R(sx + 9, 143, 3, 4, '#7fd6ff');
+            }
+            if (o.bag) R(sx - 20, 146, 8, 14, o.bag);
+          }
+          function conductor(x, y, step, now) {
+            const sw = step && Math.sin(step) > 0,
+              l = sw ? -1 : 0,
+              r = sw ? 0 : step ? -1 : 0;
+            cx.save();
+            cx.translate(Math.round(x), y);
+            cx.scale(1.4, 1.4);
+            R(-5, -1, 6, 2, '#151515');
+            R(0, -1, 6, 2, '#151515');
+            R(-4, -12 + l, 4, 12 - l, '#18263b');
+            R(1, -12 + r, 4, 12 - r, '#18263b');
+            R(-6, -25, 13, 14, '#1f3552');
+            R(-6, -25, 3, 14, '#162840');
+            R(0, -24, 1, 12, '#f3b94d');
+            R(-6, -13, 13, 2, '#0e0e0e');
+            R(3, -22, 3, 3, '#f3b94d');
+            R(-8, -24, 3, 11, '#162840');
+            R(-8, -13, 3, 2, '#d9a47c');
+            R(6, -24, 3, 11, '#162840');
+            R(6, -13, 3, 2, '#d9a47c');
+            R(-2, -29, 5, 4, '#d9a47c');
+            R(-5, -39, 11, 11, '#d9a47c');
+            R(-5, -39, 11, 3, '#2b2b2b');
+            R(-6, -43, 13, 5, '#1f3552');
+            R(-6, -40, 13, 1, '#f3b94d');
+            R(5, -40, 5, 1, '#1f3552');
+            R(2, -35, 3, 3, '#fff');
+            R(4, -34, 1, 2, '#1b1b1b');
+            R(8, -18, 6, 5, '#8c979c');
+            R(8, -18, 6, 1, '#c9d1d4');
+            cx.restore();
+          }
+          function scenery(wx, wy, ww, wh, now) {
+            cx.save();
+            cx.beginPath();
+            cx.rect(wx, wy, ww, wh);
+            cx.clip();
+            const g = cx.createLinearGradient(0, wy, 0, wy + wh);
+            g.addColorStop(0, mixColor(P0.sky, P1.sky, prog));
+            g.addColorStop(1, mixColor(P0.sky2, P1.sky2, prog));
+            cx.fillStyle = g;
+            cx.fillRect(wx, wy, ww, wh);
+            cx.fillStyle = '#fff6c8';
+            cx.beginPath();
+            cx.arc(170, wy + 16, 9, 0, 7);
+            cx.fill();
+            cx.fillStyle = '#fff6c855';
+            cx.beginPath();
+            cx.arc(170, wy + 16, 15, 0, 7);
+            cx.fill();
+            for (let k = 0; k < 6; k++) {
+              const x = ((((k * 83 - scroll * 0.06) % 498) + 498) % 498) - 40,
+                y = wy + 8 + (k % 3) * 9;
+              R(x, y, 28, 5, '#ffffffcc');
+              R(x + 7, y - 4, 14, 5, '#ffffffcc');
+            }
+            const far = mixColor(P0.far, P1.far, prog),
+              hill = mixColor(P0.hill, P1.hill, prog),
+              tc = mixColor(P0.tree, P1.tree, prog),
+              gr = mixColor(P0.ground, P1.ground, prog),
+              base = wy + wh - 12,
+              mf = toMine ? prog : 1 - prog;
+            for (let x = wx; x < wx + ww; x += 3) {
+              const ax = x + scroll * 0.12,
+                h = 16 + 13 * Math.abs(Math.sin(ax / 37)) + 5 * Math.sin(ax / 11);
+              R(x, base - h, 3, h + 4, far);
+            }
+            for (let x = wx; x < wx + ww; x += 3) {
+              const ax = x + scroll * 0.3,
+                h = 7 + 6 * Math.sin(ax / 26) + 3 * Math.sin(ax / 8);
+              R(x, base - h, 3, h + 6, hill);
+            }
+            R(wx, base, ww, 12, gr);
+            R(wx, base, ww, 2, mixColor(gr, '#ffffff', 0.25));
+            R(wx, base + 8, ww, 4, shade(gr, 0.2));
+            for (let k = 0; k < 14; k++) {
+              const x = ((((k * 31 - scroll * 0.7) % 434) + 434) % 434) - 24,
+                pine = (k * 0.137) % 1 < mf;
+              if (pine) {
+                R(x - 1, base - 7, 2, 7, '#3b3b3b');
+                R(x - 5, base - 12, 10, 5, tc);
+                R(x - 4, base - 17, 8, 5, tc);
+                R(x - 2, base - 21, 4, 4, tc);
+                R(x - 5, base - 8, 10, 1, shade(tc, 0.25));
+                if (k % 3 === 0) R(x + 5, base - 6, 2, 5, '#81f3df');
+              } else {
+                R(x - 1, base - 8, 2, 8, '#6b4a2e');
+                R(x - 5, base - 18, 10, 10, tc);
+                R(x - 3, base - 22, 6, 4, tc);
+                R(x - 5, base - 10, 10, 2, shade(tc, 0.25));
+              }
+            }
+            R(wx, base + 5, ww, 1, '#5b4630');
+            for (let m = 0; m < 20; m++) {
+              const x = ((((m * 23 - scroll * 1.3) % 460) + 460) % 460) - 30;
+              R(x, base + 2, 2, 9, '#5b4630');
+            }
+            for (let m = 0; m < 6; m++) {
+              const x = ((((m * 83 - scroll) % 498) + 498) % 498) - 30;
+              R(x, wy, 2, wh, '#2a2f35');
+              R(x - 4, wy + 7, 10, 2, '#2a2f35');
+            }
+            if (speed > 0.5)
+              for (let k = 0; k < 6; k++) {
+                const y = base + 3 + ((k * 5) % 9),
+                  x = ((((k * 57 - scroll * 2.2) % 420) + 420) % 420) - 20;
+                R(x, y, 20, 1, '#ffffff44');
+              }
+            cx.restore();
+            R(wx - 3, wy - 3, ww + 6, 3, '#22343a');
+            R(wx - 3, wy + wh, ww + 6, 4, '#22343a');
+            R(wx - 3, wy - 3, 3, wh + 7, '#22343a');
+            R(wx + ww, wy - 3, 3, wh + 7, '#22343a');
+            R(wx + 8, wy, 5, wh, '#ffffff12');
+            R(wx + 16, wy, 2, wh, '#ffffff0c');
+          }
+          const hexColor = (n) => '#' + (n >>> 0).toString(16).padStart(6, '0');
+          function playerSitter() {
+            const look = game() && game().rpg && game().rpg.look;
+            const base = {
+              skin: '#f1c6a0',
+              hair: '#5a3b2a',
+              top: '#3a63c8',
+              pants: '#2d3a55',
+              shoes: '#222',
+              hat: '#2f7de1',
+              bag: '#8a4b2a',
+            };
+            if (!look) return base;
+            return {
+              skin: hexColor(look.skin),
+              hair: hexColor(look.hair),
+              top: hexColor(look.outfit),
+              pants: hexColor(look.pants),
+              shoes: '#222',
+              eye: hexColor(look.eye),
+              hat: look.hat ? hexColor(look.hat.color) : undefined,
+              glasses: !!look.glasses,
+              long: ['long', 'bob', 'ponytail', 'longbun', 'flare', 'highpony'].includes(window.LQCharacter.appearance(look).style),
+              bag: look.backpack ? hexColor(look.backpack) : undefined,
+            };
+          }
+          const people = [
+            {
+              sx: 72,
+              o: {
+                skin: '#f0c8a0',
+                hair: '#3a2418',
+                top: '#b8433f',
+                pants: '#2f3e5a',
+                shoes: '#222',
+                long: true,
+                item: 'book',
+              },
+            },
+            {
+              sx: 142,
+              o: {
+                skin: '#e3b48c',
+                hair: '#d8d8d8',
+                top: '#6a6f4a',
+                pants: '#3b3b3b',
+                shoes: '#3a2a1c',
+                hat: '#4a4a3a',
+                glasses: true,
+                item: 'paper',
+              },
+            },
+            { sx: 212, o: playerSitter(), you: true },
+            {
+              sx: 282,
+              o: {
+                skin: '#f3cfae',
+                hair: '#1f1a16',
+                top: '#3f9b5a',
+                pants: '#444a5c',
+                shoes: '#e8e8e8',
+                item: 'phone',
+              },
+            },
+            {
+              sx: 352,
+              o: {
+                skin: '#c98f66',
+                hair: '#222',
+                top: '#e0a63a',
+                pants: '#33384a',
+                shoes: '#222',
+                shut: true,
+              },
+            },
+          ];
+          function draw(now) {
+            const W = cv.width,
+              H = cv.height,
+              s = Math.min(W / 400, H / 225),
+              sway = speed > 0.1 ? Math.sin(now / 60) * 0.5 * speed : 0;
+            cx.setTransform(1, 0, 0, 1, 0, 0);
+            cx.fillStyle = '#0b0f14';
+            cx.fillRect(0, 0, W, H);
+            const ox = (W - 400 * s) / 2,
+              oy = (H - 225 * s) / 2 + sway * s;
+            if (dir > 0) cx.setTransform(s, 0, 0, s, ox, oy);
+            else cx.setTransform(-s, 0, 0, s, ox + 400 * s, oy);
+            cx.imageSmoothingEnabled = false;
+            R(0, 0, 400, 225, '#5f8187');
+            R(0, 0, 400, 16, '#34484e');
+            R(0, 16, 400, 3, '#243438');
+            for (let x = 24; x < 400; x += 88) {
+              R(x, 6, 44, 4, '#fff6c2');
+              R(x - 4, 10, 52, 3, '#fff6c218');
+            }
+            R(0, 30, 400, 2, '#aab6ba');
+            R(0, 32, 400, 2, '#6f7c80');
+            for (const b of [
+              [40, 19, 22, 11, '#8a5a3b'],
+              [48, 12, 14, 7, '#c9a15a'],
+              [150, 20, 26, 10, '#4a6a8a'],
+              [250, 18, 20, 12, '#a64b4b'],
+              [320, 21, 24, 9, '#6b5b8a'],
+            ])
+              R(b[0], b[1], b[2], b[3], b[4]);
+            for (const wx of [14, 112, 210, 308]) scenery(wx, 38, 80, 64, now);
+            R(0, 102, 400, 63, '#4f7178');
+            for (let x = 0; x < 400; x += 10) R(x, 104, 1, 59, '#46666c');
+            R(0, 128, 400, 4, '#16b3a5');
+            R(0, 132, 400, 1, '#0f857d');
+            R(0, 165, 400, 20, '#6d5640');
+            R(0, 185, 400, 40, '#2e4f63');
+            R(0, 185, 400, 2, '#1f3a4a');
+            for (let x = 0; x < 400; x += 16) {
+              R(x, 205, 8, 2, '#436b82');
+              R(x + 8, 213, 8, 2, '#436b82');
+            }
+            for (const p of people) {
+              seat(p.sx);
+              sitter(p.sx, p.o, now);
+            }
+            for (const x of [100, 190, 280, 370]) {
+              const sw = Math.sin(now / 380 + x) * 2;
+              R(x, 19, 1, 12, '#cfd6d8');
+              R(x - 3 + sw, 31, 7, 2, '#cfd6d8');
+              R(x - 3 + sw, 31, 2, 5, '#cfd6d8');
+              R(x + 2 + sw, 31, 2, 5, '#cfd6d8');
+            }
+            const walking = phase === 'walk' || phase === 'exit',
+              bob = Math.sin(now / 170) * 1.5;
+            if (phase === 'ask' || phase === 'check') {
+              R(224, 166 + bob, 10, 6, '#ffd36b');
+              R(224, 168 + bob, 10, 1, '#c98a1c');
+              R(227, 170 + bob, 5, 1, '#c98a1c');
+            }
+            if (phase === 'ask') {
+              const b = Math.sin(now / 200) * 2;
+              R(207, 100 + b, 10, 2, '#ffd36b');
+              R(209, 102 + b, 6, 2, '#ffd36b');
+              R(211, 104 + b, 2, 2, '#ffd36b');
+            }
+            if (
+              condX > -28 &&
+              condX < 420 &&
+              phase !== 'cruise' &&
+              phase !== 'arrive' &&
+              phase !== 'depart'
+            )
+              conductor(condX, 214, walking ? now / 130 : 0, now);
+            const v = cx.createLinearGradient(0, 0, 0, 225);
+            v.addColorStop(0, 'rgba(0,0,0,.28)');
+            v.addColorStop(0.15, 'rgba(0,0,0,0)');
+            v.addColorStop(0.85, 'rgba(0,0,0,0)');
+            v.addColorStop(1, 'rgba(0,0,0,.3)');
+            cx.fillStyle = v;
+            cx.fillRect(0, 0, 400, 225);
+          }
+          function frame(now) {
+            if (done) return;
+            const dt = Math.min(0.05, (now - last) / 1000);
+            last = now;
+            update(dt);
+            if (!done) {
+              draw(now);
+              raf = requestAnimationFrame(frame);
+            }
+          }
+          raf = requestAnimationFrame(frame);
+        }
+
+        function onNpcConversation(id, message) {
+          const rail = railFlow(id, message);
+          if (rail.length) return rail;
+          const s = state(),
+            g = game();
+          if (
+            !s ||
+            !g ||
+            id !== 'postman' ||
+            !canShop('Post Office') ||
+            (Number(s.flags.pendingMail) || 0) < 1
+          )
+            return [];
+          const text = norm(message);
+          if (!/(letter|parcel|post|mail|stamp|gui thu|gui hang|send)/.test(text)) return [];
+          s.flags.pendingMail -= 1;
+          s.flags.sentLetters = (Number(s.flags.sentLetters) || 0) + 1;
+          log('mail', 0, 'Sent a letter/parcel at the post office');
+          save();
+          return ['📮 Sam has received your parcel! “Your parcel has been sent.”'];
+        }
+        function mineAction() {
+          const sc = scene(),
+            s = state(),
+            g = game();
+          if (!s || !sc) return 'The game has not finished loading.';
+          if (!context().inside?.includes('Great Mine'))
+            return 'Go down to the Great Mine to mine.';
+          if (count('pickaxe') < 1) return 'Buy a pickaxe at the Smithy or Tool Shop first.';
+          const key = `mine:${g.day}`;
+          const n = Number(s.jobs[key]) || 0;
+          if (n >= 2) return 'You have already mined 2 samples today.';
+          if (usedSpace() >= capacity()) return 'Your bag is full.';
+          s.jobs[key] = n + 1;
+          inventory().ore = (Number(inventory().ore) || 0) + 1;
+          log('earn-item', 0, 'Mined 1 ore sample');
+          save();
+          return '⛏️ You found ore! Take it to the Smithy to trade for tools (it cannot be sold for unlimited cash).';
+        }
+        function jobAction(english) {
+          const c = context(),
+            s = state(),
+            g = game();
+          if (!s || !g) return 'The game has not finished loading.';
+          const role = Object.entries(shops).find(([name]) => c.inside === name)?.[0];
+          if (
+            !role ||
+            !['Sunny Cafe', 'Library', 'Post Office', 'Smithy', 'Tool Shop'].includes(role)
+          )
+            return 'Go to Sunny Cafe, Library, Post Office or Smithy to get a job.';
+          const spoken = String(english || '').trim();
+          if (
+            !/\b(i (?:can|would like to|want to|have|will)|could i|may i|let me|please)\b/i.test(
+              spoken,
+            ) ||
+            spoken.length < 10
+          )
+            return 'Say a full sentence in English. For example: “Could I help you with your work, please?”';
+          const key = `job:${role}:${g.day}`;
+          if (s.jobs[key])
+            return 'You already worked here today. Come back tomorrow.';
+          if (role === 'Smithy' && count('ore') < 1)
+            return 'At the Smithy, you need 1 ore sample to finish the job.';
+          if (role === 'Smithy') {
+            inventory().ore -= 1;
+          }
+          const payout = {
+            'Sunny Cafe': 25,
+            Library: 30,
+            'Post Office': 35,
+            'Smithy': 45,
+            'Tool Shop': 28,
+          }[role];
+          s.jobs[key] = true;
+          g.money += payout;
+          g.rpg.xp = (Number(g.rpg.xp) || 0) + 10;
+          log('job', payout, `Job at ${role}`);
+          save();
+          return `✅ Finished the job at ${role}! +$${payout}, +10 XP. Practice the sentence “I have finished my work.”`;
+        }
+        const visualHome = {
+          lamp: [1, 1, 0xffdf85],
+          home_plant: [2, 2, 0x6ad29d],
+          rug: [3, 3, 0xd685b3],
+          bookshelf: [4, 1, 0xe8bf73],
+          sofa: [5, 3, 0x7e8ddc],
+          fancy_bed: [1, 5, 0xf8bfcc],
+          study_corner: [7, 2, 0xaacfea],
+        };
+        function renderHomeDecor() {
+          const sc = scene();
+          if (decorationGraphics) {
+            try {
+              decorationGraphics.destroy();
+            } catch {}
+            decorationGraphics = null;
+          }
+          if (
+            !sc?.inside ||
+            sc.inside.b.name !== "Hero's Home" ||
+            typeof sc.add?.graphics !== 'function'
+          )
+            return;
+          const s = state();
+          const k = sc.inside.k,
+            unit = 32 * k;
+          const bounds = sc.inside.spec;
+          const g = sc.add.graphics().setDepth(2);
+          decorationGraphics = g;
+          for (const [id, v] of Object.entries(visualHome)) {
+            if (count(id) < 1) continue;
+            const offset = Number(s.homeSlots[id] || 0),
+              x = v[0] + (offset % 3),
+              y = v[1] + (offset === 2 ? 1 : 0);
+            if (x >= bounds.w - 1 || y >= bounds.h - 1) continue;
+            const baseX = sc.inside.objs?.[0]?.x ?? 20000,
+              baseY = sc.inside.objs?.[0]?.y ?? 0;
+            const X = baseX + x * unit,
+              Y = baseY + y * unit;
+            g.fillStyle(0x0e2030, 0.19).fillEllipse(
+              X + unit / 2,
+              Y + unit * 0.8,
+              unit * 0.78,
+              unit * 0.33,
+            );
+            g.fillStyle(v[2], 0.92).fillRoundedRect(
+              X + unit * 0.14,
+              Y + unit * 0.26,
+              unit * 0.72,
+              unit * 0.52,
+              Math.max(2, k * 2),
+            );
+            g.lineStyle(Math.max(1, k), 0xffffff, 0.35).strokeRoundedRect(
+              X + unit * 0.17,
+              Y + unit * 0.29,
+              unit * 0.65,
+              unit * 0.44,
+              Math.max(2, k * 2),
+            );
+            if (id === 'lamp')
+              g.fillStyle(0xffe9a4, 0.17).fillCircle(X + unit * 0.5, Y + unit * 0.46, unit * 0.8);
+          }
+        }
+        function show(tab = 'shop', specific = null) {
+          const p = $('v10-panel');
+          if (!p) return;
+          if (specific && shops[specific]) chosenShop = specific;
+          openTab = tab;
+          p.hidden = false;
+          render();
+        }
+        function close() {
+          const p = $('v10-panel');
+          if (p) p.hidden = true;
+        }
+        function render() {
+          const root = $('v10-content'),
+            p = $('v10-panel');
+          if (!root || !p || p.hidden) return;
+          const g = game(),
+            s = state();
+          if (!s) {
+            root.innerHTML = '<p>Game is loading, please wait…</p>';
+            return;
+          }
+          const c = context();
+          $('v10-balance').textContent =
+            `Wallet $${g.money} · Savings $${s.bank} · 🎒 ${usedSpace()}/${capacity()}`;
+          document
+            .querySelectorAll('[data-v10-tab]')
+            .forEach((b) => b.classList.toggle('active', b.dataset.v10Tab === openTab));
+          if (openTab === 'shop') {
+            const shopsList = Object.keys(shops)
+              .map(
+                (name) =>
+                  `<option value="${esc(name)}" ${chosenShop === name ? 'selected' : ''}>${shops[name].emoji} ${esc(name)}</option>`,
+              )
+              .join('');
+            const located = canShop(chosenShop),
+              intro = shops[chosenShop].intro;
+            root.innerHTML = `<div class="v10-row"><label>📍 Shop <select id="v10-shop-select">${shopsList}</select></label><b>${located ? '🟢 At the shop' : '⚪ Not at a location'}</b></div><p class="v10-help">💬 ${esc(intro)}<br>🗣️ “How much is it?” · “Could I buy this, please?”</p><div class="v10-grid">${
+              shopItems(chosenShop)
+                .map(
+                  ([id, it]) =>
+                    `<article class="v10-item"><strong>${esc(it.name)}</strong><p>${esc(it.desc)}</p><div class="v10-row"><b>$${it.price}</b><button data-v10-buy="${esc(id)}" ${!located || (it.unique && count(id) > 0) ? 'disabled' : ''}>Mua</button></div></article>`,
+                )
+                .join('') || '<p>No products.</p>'
+            }</div><p class="v10-help">You must be at the right building or its entrance to buy. There are no automatic payments.</p>`;
+          } else if (openTab === 'bag') {
+            const list = Object.entries(inventory()).filter(([id, n]) => catalog[id] && n > 0);
+            root.innerHTML = `<h3>🎒 Inventory (${usedSpace()}/${capacity()})</h3><div class="v10-grid">${list.length ? list.map(([id, n]) => `<article class="v10-item"><strong>${esc(catalog[id].name)} ×${n}</strong><p>${esc(catalog[id].desc)}</p><button data-v10-use="${esc(id)}">${catalog[id].effect === 'gift' ? '🎁 Give' : catalog[id].effect === 'decorate' ? '🏠 Place / move' : 'Use / view'}</button></article>`).join('') : '<p>Go to a shop to buy items. Your old quest and RPG items are still in the inventory (R).</p>'}</div><div class="v10-row"><button data-v10-action="mine">⛏️ Mine in the Great Mine</button><button data-v10-action="job">💼 Work here</button><button data-v10-action="rest">😴 Rest at the inn</button></div>`;
+          } else if (openTab === 'bank') {
+            root.innerHTML = `<h3>🏦 Savings account</h3><div class="v10-summary"><span>Cash <b>$${g.money}</b></span><span>Savings <b>$${s.bank}</b></span><span>Total <b>$${g.money + s.bank}</b></span></div><p>You can only deposit and withdraw while standing at the Bank. There is no fake interest or hidden fees.</p><label>Amount <input id="v10-bank-amount" type="number" inputmode="numeric" min="1" max="1000000" value="20"></label><div class="v10-row"><button data-v10-action="deposit" ${!canShop('Bank') ? 'disabled' : ''}>⬇ Deposit</button><button data-v10-action="withdraw" ${!canShop('Bank') ? 'disabled' : ''}>⬆ Withdraw</button></div><hr><h3>🎯 Savings goal</h3><label>Name <input id="v10-goal-name" maxlength="60" value="${esc(s.goal.name || '')}"></label><label>Goal ($) <input id="v10-goal-amount" type="number" min="1" max="1000000" value="${Number(s.goal.amount) || 200}"></label><button data-v10-action="goal">Save goal</button><p>${Math.min(100, Math.floor((s.bank / Math.max(1, Number(s.goal.amount))) * 100))}% of your goal “${esc(s.goal.name)}” reached</p>`;
+          } else if (openTab === 'home') {
+            const homeItems = Object.entries(catalog).filter(([id, it]) => it.category === 'home');
+            root.innerHTML = `<h3>🏠 Upgrade Hero’s Home</h3><p>Buy items at the Corner Shop or Market, then go home, open your Inventory and press “Place / move”. Items appear on the house graphic.</p><div class="v10-grid">${homeItems.map(([id, it]) => `<article class="v10-item"><strong>${esc(it.name)} ${count(id) ? '✅' : ''}</strong><p>${esc(it.desc)}</p><small>Price $${it.price} · ${count(id) ? 'Owned' : 'Not owned'}</small></article>`).join('')}</div><button data-v10-action="refresh-home">🔁 Refresh furniture</button>`;
+          } else if (openTab === 'learning') {
+            root.innerHTML = `<h3>🎓 Learn financial English</h3><p>10 short free lessons. Books bought in the game unlock extra vocabulary and advanced material.</p><div class="v10-grid">${financeLessons.map(([id, title, correct, wrong]) => `<article class="v10-item"><b>${s.jobs['lesson-' + id] ? '✅' : '📖'} ${esc(title)}</b><p>${esc(correct)}</p><button data-v10-lesson="${id}">Practice</button></article>`).join('')}</div><h3>📚 Purchased lessons</h3><p>${
+              Object.keys(s.unlocked)
+                .filter((x) => s.unlocked[x])
+                .map((x) => esc(x))
+                .join(', ') || 'No advanced lessons unlocked yet.'
+            }</p>`;
+          } else if (openTab === 'ledger') {
+            root.innerHTML = `<h3>🧾 Transaction history</h3><p>The ledger keeps up to ${MAX_HISTORY} recent transactions and does not include your API key.</p><div class="v10-ledger">${s.ledger.length ? s.ledger.map((tx) => `<div><span><b>${esc(tx.label)}</b><small>Day ${tx.day} · ${esc(tx.type)}</small></span><b class="${tx.amount < 0 ? 'expense' : 'income'}">${tx.amount > 0 ? '+' : ''}${tx.amount}$</b></div>`).join('') : '<p>No transactions yet.</p>'}</div><button data-v10-action="export">⬇ Download spending history CSV</button>`;
+          }
+          $('v10-status').textContent = msg;
+        }
+        function openLesson(id) {
+          const it = financeLessons.find((x) => x[0] === id);
+          if (!it) return;
+          active = { id, correct: it[2], wrong: it[3], picked: null };
+          const pane = $('v10-quiz');
+          pane.hidden = false;
+          pane.innerHTML = `<h3>📖 ${esc(it[1])}</h3><p>Choose the more natural English sentence:</p>${[
+            it[2],
+            it[3],
+          ]
+            .sort((a, b) => (id.length % 2 ? a.localeCompare(b) : b.localeCompare(a)))
+            .map((t) => `<button data-v10-answer="${esc(t)}">${esc(t)}</button>`)
+            .join('')}<button data-v10-action="quiz-close">Close</button>`;
+        }
+        function answerLesson(text) {
+          if (!active) return;
+          const s = state(),
+            g = game();
+          const ok = text === active.correct;
+          if (ok && !s.jobs['lesson-' + active.id]) {
+            s.jobs['lesson-' + active.id] = true;
+            g.rpg.xp = (Number(g.rpg.xp) || 0) + 12;
+            log('lesson', 0, `Lesson ${active.id}: +12 XP`);
+            save();
+          }
+          notice(
+            ok
+              ? '✅ Correct! ' + active.correct + ' · +12 XP the first time.'
+              : '💡 Try again. A better sentence: ' + active.correct,
+          );
+          $('v10-quiz').hidden = true;
+          active = null;
+        }
+        function exportCsv() {
+          const s = state();
+          if (!s) return;
+          const csv = [
+            ['day', 'minutes', 'type', 'amount', 'label'],
+            ...s.ledger.map((t) => [t.day, t.minutes, t.type, t.amount, t.label]),
+          ]
+            .map((row) => row.map((v) => '"' + String(v ?? '').replace(/"/g, '""') + '"').join(','))
+            .join('\r\n');
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(
+            new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }),
+          );
+          a.download = 'LIFEQUEST_V10_CHI_TIEU.csv';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }
+        function afterSceneChange() {
+          if (decorationGraphics) {
+            try {
+              decorationGraphics.destroy();
+            } catch {}
+            decorationGraphics = null;
+          }
+          renderHomeDecor();
+        }
+        function aiShopping(text) {
+          const t = norm(text),
+            ctx = context(),
+            nearShop = ctx.inside && shops[ctx.inside] ? ctx.inside : null;
+          const m = t.match(/(?:mua|buy|order|purchase)\s+(?:cho toi|me|a|an|mot|one)?\s*(.*)/);
+          if (m) {
+            const id = Object.entries(catalog).find(
+              ([key, it]) =>
+                norm(it.name).includes(m[1]) ||
+                norm(m[1]).includes(norm(it.name).replace(/^[^\p{L}]+/u, '')) ||
+                key === norm(m[1]).replace(/\s+/g, '_'),
+            )?.[0];
+            if (id) {
+              const it = catalog[id],
+                where = nearShop || it.shops[0];
+              chosenShop = where;
+              show('shop', where);
+              return `🛒 ${it.name} costs $${it.price}, available at ${it.shops.join(', ')}. ${canShop(where) ? 'Pick the item and press Buy to confirm the purchase.' : 'Go to the shop first; the AI never deducts money by itself.'}`;
+            }
+          }
+          if (
+            /(toi co|i have|ngan sach|budget|afford|mua duoc gi)/.test(t) &&
+            /(\$|\b\d+\b|mua|buy|budget)/.test(t)
+          ) {
+            const n = Number(t.match(/\d+/)?.[0]) || money();
+            const results = Object.values(catalog)
+              .filter((x) => x.price <= n)
+              .slice(0, 8)
+              .map((x) => `${x.name} $${x.price}`)
+              .join(' · ');
+            return `💰 With $${n} you could consider: ${results}. Cash in your wallet: $${money()}. Open the Shop (B) to check prices and confirm a purchase.`;
+          }
+          if (/(kiem tien|lam viec|earn money|find a job)/.test(t))
+            return '💼 Earn money from NPC quests or a once-a-day job at Sunny Cafe, Library, Post Office or Smithy. Go to the matching building and open the Economy window (B), then Inventory → Work.';
+          if (/(tiet kiem|ngan hang|bank|deposit|withdraw|saving)/.test(t)) {
+            show('bank');
+            return `🏦 You have $${money()} in your wallet and $${state()?.bank || 0} in savings. Go to the Bank to deposit/withdraw. Saving does not create extra virtual money.`;
+          }
+          if (/(gia|bao nhieu|how much|price|cheaper|discount)/.test(t)) {
+            const sample = Object.values(catalog)
+              .slice(0, 4)
+              .map((x) => `${x.name}: $${x.price}`)
+              .join(', ');
+            return `🛍️ Prices are fixed in shops, for example: ${sample}. Try asking “How much does it cost?” or “Do you have anything cheaper?”`;
+          }
+          return null;
+        }
+        function init() {
+          const panel = $('v10-panel');
+          if (!panel) return;
+          ensureRailUi();
+          $('v10-open').addEventListener('click', () => show('shop'));
+          $('v10-close').addEventListener('click', close);
+          panel.addEventListener('click', (e) => {
+            if (e.target === panel) {
+              close();
+              return;
+            }
+            const b = e.target.closest('button');
+            if (!b) return;
+            if (b.dataset.v10Tab) {
+              openTab = b.dataset.v10Tab;
+              render();
+              return;
+            }
+            if (b.dataset.v10Buy) {
+              const id = b.dataset.v10Buy;
+              if (!confirm(`Buy ${catalog[id].name} for $${catalog[id].price}?`)) return;
+              notice(transactBuy(chosenShop, id, 1).message);
+              return;
+            }
+            if (b.dataset.v10Use) {
+              notice(consume(b.dataset.v10Use));
+              return;
+            }
+            if (b.dataset.v10Lesson) {
+              openLesson(b.dataset.v10Lesson);
+              return;
+            }
+            if (b.dataset.v10Answer) {
+              answerLesson(b.dataset.v10Answer);
+              return;
+            }
+            const a = b.dataset.v10Action;
+            if (!a) return;
+            if (a === 'deposit' || a === 'withdraw') {
+              const value = $('v10-bank-amount')?.value;
+              notice(bankAction(a, Number(value)));
+            } else if (a === 'goal') {
+              const n = Number($('v10-goal-amount').value);
+              if (!validInt(n, 1, 1e6)) {
+                notice('The goal must be a valid amount.');
+                return;
+              }
+              state().goal = { name: $('v10-goal-name').value.slice(0, 60), amount: n };
+              save();
+              notice('🎯 Savings goal saved.');
+            } else if (a === 'mine') notice(mineAction());
+            else if (a === 'job') {
+              const english = prompt(
+                'To get a job, say a sentence in English (for example: Could I help you with your work, please?)',
+              );
+              if (english !== null) notice(jobAction(english));
+            } else if (a === 'rest') notice(restAction());
+            else if (a === 'refresh-home') {
+              renderHomeDecor();
+              notice('Room updated.');
+            } else if (a === 'export') exportCsv();
+            else if (a === 'quiz-close') $('v10-quiz').hidden = true;
+          });
+          panel.addEventListener('change', (e) => {
+            if (e.target.id === 'v10-shop-select') {
+              chosenShop = e.target.value;
+              render();
+            }
+          });
+          for (const node of [panel, $('v10-quiz')]) {
+            node.addEventListener('keydown', (e) => {
+              e.stopPropagation();
+              if (e.key === 'Escape') {
+                close();
+                if ($('v10-quiz')) $('v10-quiz').hidden = true;
+              }
+            });
+            node.addEventListener('keyup', (e) => e.stopPropagation());
+          }
+          document.addEventListener('keydown', (e) => {
+            if (
+              ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName) ||
+              e.altKey ||
+              e.ctrlKey ||
+              e.metaKey
+            )
+              return;
+            if (e.key.toLowerCase() === 'b' && !e.repeat) {
+              e.preventDefault();
+              panel.hidden ? show('shop') : close();
+            } else if (e.key === 'Escape') close();
+          });
+          const npcButton = $('v10-npc-shop');

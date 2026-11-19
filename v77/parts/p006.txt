@@ -1,0 +1,1000 @@
+    man: [
+      ['We built this wall last spring.', 'Mùa xuân năm ngoái chúng tôi đã xây bức tường này.'],
+      ['I worked in the rice fields all day.', 'Tôi đã làm ngoài ruộng cả ngày.'],
+      ['My brother went north with the knights.', 'Anh trai tôi đã đi về phía bắc cùng các kỵ sĩ.'],
+    ],
+    woman: [
+      ['I carried water from the well this morning.', 'Sáng nay tôi đã gánh nước từ giếng.'],
+      ['We shared our rice with the neighbours.', 'Chúng tôi đã chia gạo cho hàng xóm.'],
+      ['Lord Gusest sent us bread yesterday.', 'Hôm qua Lãnh chúa Gusest đã gửi bánh mì cho chúng tôi.'],
+      ['The children planted rice with us all morning.', 'Bọn trẻ đã cấy lúa cùng chúng tôi cả buổi sáng.'],
+    ],
+    kid: [
+      ['I saw a knight yesterday!', 'Hôm qua cháu đã thấy một kỵ sĩ!'],
+      ['We planted rice with Mother this morning.', 'Sáng nay bọn cháu đã cấy lúa cùng mẹ.'],
+      ['We played by the well before the war.', 'Trước chiến tranh bọn cháu đã chơi bên giếng.'],
+      ['Mother told me a story last night.', 'Tối qua mẹ đã kể chuyện cho cháu nghe.'],
+    ],
+    mother: [['My son went to the wall. I waited for him every day.', 'Con trai tôi đã ra bức tường. Ngày nào tôi cũng đợi nó.']],
+    peace: [
+      ['The war ended! We were so happy.', 'Chiến tranh đã kết thúc! Chúng tôi đã rất vui.'],
+      ['The colours came back on the Day of Glory.', 'Màu sắc đã trở lại vào Ngày Vinh Quang.'],
+    ],
+    motherPeace: [['My son came home with the flag. I cried all day.', 'Con trai tôi đã về nhà với lá cờ. Tôi đã khóc cả ngày.']],
+    gusest: [
+      ['I sent bread and rice to every family this week.', 'Tuần này ta đã gửi bánh mì và gạo cho mọi gia đình.'],
+      ['Yesterday I wrote a letter to our knights in the north.', 'Hôm qua ta đã viết thư cho các kỵ sĩ của chúng ta ở phương bắc.'],
+    ],
+    gusestPeace: [['Our knights came home. I was so proud of this village.', 'Các kỵ sĩ của chúng ta đã trở về. Ta đã rất tự hào về ngôi làng này.']],
+    soldierPeace: [
+      ['I ran all the way home with the flag!', 'Tôi đã chạy một mạch về nhà với lá cờ!'],
+      ['My mother waited for me every day. I missed her so much.', 'Mẹ tôi đã đợi tôi mỗi ngày. Tôi đã nhớ mẹ rất nhiều.'],
+    ],
+  };
+  const isKid = (k) => k === 'girl' || k === 'boy' || k === 'kid';
+  function folkLook(v, r) {
+    const pick2 = (arr) => arr[Math.floor(r() * arr.length)];
+    const female = v.kind === 'woman' || v.kind === 'girl' || !!v.dress;
+    // Always draw the random picks (even when overridden) so the other villagers keep the same looks.
+    const skin = pick2(OLD_SKIN);
+    const hair = pick2(OLD_HAIR);
+    const outfit = female ? pick2(GOWN) : pick2(TUNIC);
+    const pants = pick2(BREECHES);
+    return {
+      gender: female ? 'female' : 'male',
+      skin: v.skin != null ? v.skin : skin,
+      hair: v.hair != null ? v.hair : hair,
+      style: v.style || 'short',
+      eye: 0x3a2a1e,
+      outfit: v.outfit != null ? v.outfit : outfit,
+      pants: v.pants != null ? v.pants : pants,
+      hat: null,
+      dress: female,
+    };
+  }
+  // Plate armour (no helmet) for Lord Gusest. The game's character art has no armour, so we draw him with marker colours
+  // and repaint every frame: magenta top -> steel (same light and shade), green legs -> dark steel greaves,
+  // a gold crest on the chest, and from behind a red cloak over the back.
+  const ARMOR_DIRS = ['down', 'up', 'side', 'uside', 'dside'];
+  function armorize(sc, key, inPlace) {
+    const out = inPlace ? key : `${key}_armor`;
+    for (const dir of ARMOR_DIRS) {
+      for (let f = 0; f < 3; f++) {
+        const src = `ch_${key}_${dir}_${f}`;
+        const dst = `ch_${out}_${dir}_${f}`;
+        if (!sc.textures.exists(src) || (!inPlace && sc.textures.exists(dst))) continue;
+        const img = sc.textures.get(src).getSourceImage();
+        const cv = document.createElement('canvas');
+        cv.width = img.width;
+        cv.height = img.height;
+        const cx = cv.getContext('2d');
+        cx.drawImage(img, 0, 0);
+        const id = cx.getImageData(0, 0, cv.width, cv.height);
+        const px = id.data;
+        let x0 = 1e9;
+        let x1 = -1;
+        let y0 = 1e9;
+        let y1 = -1;
+        const back = dir === 'up';
+        for (let k = 0; k < px.length; k += 4) {
+          const R = px[k];
+          const G = px[k + 1];
+          const B = px[k + 2];
+          if (!px[k + 3]) continue;
+          const top = R > G + 60 && B > G + 60; // magenta marker (any shade)
+          const leg = G > R + 60 && G > B + 60; // green marker
+          if (!top && !leg) continue;
+          const l = (top ? (R + B) / 2 : G) / 255; // keep the shading of the original
+          if (top && back) {
+            // the cloak, seen from behind
+            px[k] = 60 + l * 90;
+            px[k + 1] = 22 + l * 26;
+            px[k + 2] = 24 + l * 26;
+          } else if (top) {
+            // darker steel than white cloth, so it still reads as metal under the sepia filter of the village
+            px[k] = 58 + l * 78;
+            px[k + 1] = 64 + l * 82;
+            px[k + 2] = 78 + l * 92;
+          } else {
+            px[k] = 46 + l * 60;
+            px[k + 1] = 50 + l * 62;
+            px[k + 2] = 60 + l * 68;
+          }
+          if (top) {
+            const x = (k / 4) % cv.width;
+            const y = Math.floor(k / 4 / cv.width);
+            x0 = Math.min(x0, x);
+            x1 = Math.max(x1, x);
+            y0 = Math.min(y0, y);
+            y1 = Math.max(y1, y);
+          }
+        }
+        cx.putImageData(id, 0, 0);
+        if (x1 >= 0) {
+          const w = x1 - x0 + 1;
+          if (!back) {
+            // the red cloak shows behind the arms, from the shoulders down to the knees
+            cx.fillStyle = '#7d2e2e';
+            cx.fillRect(x0 - 1, y0 + 1, 1, y1 - y0 + 4);
+            cx.fillRect(x1 + 1, y0 + 1, 1, y1 - y0 + 4);
+            // plate lines across the breastplate (lames), and a bright rim on top
+            cx.fillStyle = '#2b3038';
+            for (let y = y0 + 4; y < y1; y += 3) cx.fillRect(x0 + 1, y, w - 2, 1);
+            cx.fillStyle = '#e6ebf2';
+            cx.fillRect(x0 + 1, y0 + 1, w - 2, 1);
+          }
+          // pauldrons: round steel plates a little wider than the shoulders
+          cx.fillStyle = '#8d96a3';
+          cx.fillRect(x0 - 1, y0, 3, 3);
+          cx.fillRect(x1 - 1, y0, 3, 3);
+          cx.fillStyle = '#dfe5ec';
+          cx.fillRect(x0 - 1, y0, 3, 1);
+          cx.fillRect(x1 - 1, y0, 3, 1);
+          cx.fillStyle = '#2b3038';
+          cx.fillRect(x0 - 1, y0 + 3, 3, 1);
+          cx.fillRect(x1 - 1, y0 + 3, 3, 1);
+          const mx = Math.round((x0 + x1) / 2);
+          if (dir === 'down' || dir === 'dside') {
+            // the Oriaris crest: a little gold shield with a brown tower
+            cx.fillStyle = '#e0b440';
+            cx.fillRect(mx - 1, y0 + 2, 3, 3);
+            cx.fillRect(mx, y0 + 5, 1, 1);
+            cx.fillStyle = '#6b4a2a';
+            cx.fillRect(mx, y0 + 3, 1, 2);
+          } else if (back) {
+            // the cloak hangs down over the legs
+            cx.fillStyle = '#5c2224';
+            cx.fillRect(x0, y1 + 1, x1 - x0 + 1, 4);
+            cx.fillStyle = '#7d2e2e';
+            cx.fillRect(x0 + 1, y1 + 1, x1 - x0 - 1, 3);
+          }
+        }
+        if (inPlace) sc.textures.remove(src);
+        sc.textures.addCanvas(dst, cv);
+      }
+    }
+    return out;
+  }
+  // Lord Gusest is a chat NPC (game/02 + Nr.gusest in game/10, drawn in marker colours): put his armour on once.
+  function armorNpc(sc) {
+    const n = (sc.npcs || []).find((x) => x.def && x.def.id === 'gusest');
+    if (!n || !sc.textures.exists('ch_gusest_down_0')) return;
+    if (sc.textures.get('ch_gusest_down_0').__lqArmor) return;
+    try {
+      armorize(sc, 'gusest', true);
+      sc.textures.get('ch_gusest_down_0').__lqArmor = true;
+      n.sprite.setTexture(n.sprite.texture.key);
+    } catch (e) {
+      console.warn('Gusest armour failed', e);
+    }
+  }
+  function makeFolk(sc) {
+    const C = window.LQCharacter;
+    if (!C || !C.ensure) return [];
+    const r = rnd(1970);
+    const pad = C.pad || 0;
+    const oy = (35 + pad) / (38 + pad); // origin at the feet, so a smaller person still stands on the ground
+    return FOLK.map((v, i) => {
+      let key = C.ensure(sc, folkLook(v, r));
+      if (v.armor) {
+        try {
+          key = armorize(sc, key);
+        } catch (e) {
+          console.warn('armour failed', e);
+        }
+      }
+      const start = v.home || (v.path && v.path[0]) || FOLK[v.follow].home;
+      const p = {
+        v, i, key,
+        x: start[0] * T, y: start[1] * T, tx: start[0] * T, ty: start[1] * T,
+        dir: v.still || 'down', flip: false, walking: false, anim: r() * 1, t: r() * 2,
+        leg: 0, it: null, chaser: false, freeze: 0, said: false, bubble: null,
+      };
+      p.img = sc.add.image(p.x, p.y + FEET, `ch_${key}_down_0`).setOrigin(0.5, oy).setScale(HEIGHT[v.kind] || 1);
+      return p;
+    });
+  }
+  function faceTo(p, dx, dy) {
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    if (ax < 0.01 && ay < 0.01) return;
+    if (ay < ax * 0.4) {
+      p.dir = 'side';
+      p.flip = dx < 0;
+    } else if (ax < ay * 0.4) p.dir = dy < 0 ? 'up' : 'down';
+    else {
+      p.dir = dy < 0 ? 'uside' : 'dside';
+      p.flip = dx < 0;
+    }
+  }
+  function folkSpot(st, home) {
+    for (let k = 0; k < 30; k++) {
+      const ang = st.r() * Math.PI * 2;
+      const d = Math.sqrt(st.r()) * home[2] * T;
+      const x = home[0] * T + Math.cos(ang) * d;
+      const y = home[1] * T + Math.sin(ang) * d;
+      if (st.free(x, y)) return { x, y };
+    }
+    return { x: home[0] * T, y: home[1] * T };
+  }
+  // Move p toward (tx, ty). Returns true when it got there (or is stuck).
+  function folkStep(st, p, sp, px, py) {
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= sp) {
+      p.x = p.tx;
+      p.y = p.ty;
+      return true;
+    }
+    const nx = p.x + (dx / d) * sp;
+    const ny = p.y + (dy / d) * sp;
+    faceTo(p, dx, dy);
+    if (Math.hypot(nx - px, ny - py) < 14) return false; // never walk through the player: wait
+    if (!st.free(nx, ny)) return true;
+    p.x = nx;
+    p.y = ny;
+    p.walking = true;
+    return false;
+  }
+  // ---- the working day: children worked too in those days ---------------------------------------------------------------
+  // Village clock (game minutes): 05:30–11:30 and 13:00–17:30 planting rice in the south paddies, back in the village at
+  // noon and in the evening, and from 19:30 home: they walk to their own door and go inside (hidden) until morning.
+  // They go out through the south gate and along the dike, so the routes never cross the wall.
+  const HUB = [18.5, 30.5]; // just inside the south gate
+  const DOOR_Y = 28.8; // in front of the cottage doors
+  function workMode(min) {
+    const m = ((min % 1440) + 1440) % 1440;
+    if (m < 330 || m >= 1170) return 'home';
+    if (m < 690 || (m >= 780 && m < 1050)) return 'field';
+    return 'village';
+  }
+  function workBase(v) {
+    if (v.home) return v.home;
+    if (v.path) return v.path[0];
+    return FOLK[v.follow].home;
+  }
+  function workRoute(p, from, to) {
+    const [door, sx, sy] = p.v.work;
+    const base = workBase(p.v);
+    const low = (y) => y > 26.5; // south of the cottages: go along the lane behind them
+    const out = [];
+    if (from === 'field') out.push([sx, 41.5], [18.5, 41.5], [18.5, 33], HUB);
+    else if (from === 'home') out.push([door + 0.5, 30.5], HUB);
+    else out.push(low(p.y / T) ? [p.x / T, 30.5] : [18.5, 20.5], HUB);
+    if (to === 'field') out.push([18.5, 33], [18.5, 41.5], [sx, 41.5], [sx, sy]);
+    else if (to === 'home') out.push([door + 0.5, 30.5], [door + 0.5, DOOR_Y]);
+    else out.push(low(base[1]) ? [base[0], 30.5] : [18.5, 20.5], [base[0], base[1]]);
+    return out;
+  }
+  // Like folkStep, but on a planned route (gates, dikes): no wall check. Still never walks through the player.
+  function workStep(p, sp, px, py) {
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= sp) {
+      p.x = p.tx;
+      p.y = p.ty;
+      return true;
+    }
+    faceTo(p, dx, dy);
+    const nx = p.x + (dx / d) * sp;
+    const ny = p.y + (dy / d) * sp;
+    if (Math.hypot(nx - px, ny - py) < 14) return false;
+    p.x = nx;
+    p.y = ny;
+    p.walking = true;
+    return false;
+  }
+  // Returns true when the schedule moved this villager (their usual village life is skipped this frame).
+  function workTick(sc, p, dt, px, py) {
+    const v = p.v;
+    if (!v.work) return false;
+    const g = sc.store && sc.store.game;
+    const want = workMode(g && typeof g.minutes === 'number' ? g.minutes : 480);
+    const [door, sx, sy] = v.work;
+    if (!p.mode) {
+      // First frame in the village: put them where the clock says, without walking there.
+      p.mode = want;
+      if (want === 'field') {
+        p.x = p.tx = sx * T;
+        p.y = p.ty = sy * T;
+      } else if (want === 'home') {
+        p.x = p.tx = (door + 0.5) * T;
+        p.y = p.ty = DOOR_Y * T;
+        p.gone = true;
+      }
+    }
+    if (!p.route && p.mode !== want) {
+      p.route = workRoute(p, p.mode, want);
+      p.goal = want;
+      p.gone = false; // morning: they come out of their door
+      p.chaser = false;
+    }
+    p.away = !!p.route || p.mode !== 'village';
+    if (p.route) {
+      const pt = p.route[0];
+      p.tx = pt[0] * T;
+      p.ty = pt[1] * T;
+      if (workStep(p, (WALK[v.kind] || 32) * dt, px, py)) {
+        p.route.shift();
+        if (!p.route.length) {
+          p.route = null;
+          p.mode = p.goal;
+          if (p.mode === 'home') p.gone = true;
+          if (p.mode === 'village') {
+            p.away = false;
+            p.leg = 0;
+            p.t = 0;
+          }
+        }
+      }
+      return true;
+    }
+    if (p.mode === 'home') return true;
+    if (p.mode === 'field') {
+      // Planting: step slowly along the row, bending down again and again to push the seedlings in.
+      p.plant = (p.plant || 0) + dt;
+      p.x = sx * T + Math.sin(p.plant * 0.25 + p.i) * 0.9 * T;
+      p.y = sy * T;
+      p.dir = 'down';
+      p.planting = true;
+      return true;
+    }
+    return false;
+  }
+
+  function folkTick(st, sc, dt) {
+    const px = sc.player.x;
+    const py = sc.player.y;
+    const folk = st.folk;
+    const taggers = folk.filter((p) => p.v.play === 'tag' && !p.away);
+    if (taggers.length && !taggers.some((p) => p.chaser)) taggers[0].chaser = true;
+    for (const p of folk) {
+      const v = p.v;
+      p.walking = false;
+      p.planting = false;
+      if (v.after) {
+        // Only home after the Day of Glory (the young soldier).
+        const d = data();
+        p.gone = !(d && d.done);
+        if (p.gone) continue;
+      }
+      p.t -= dt;
+      p.freeze = Math.max(0, p.freeze - dt);
+      if (p.gone && p.mode === 'home' && workMode(sc.store.game.minutes) === 'home') continue;
+      const dp = Math.hypot(p.x - px, p.y - py);
+      // Grown-ups stop and look at the player who comes close; children keep playing.
+      if (!isKid(v.kind) && dp < 48) {
+        faceTo(p, px - p.x, py - p.y);
+        continue;
+      }
+      if (workTick(sc, p, dt, px, py)) continue;
+      if (v.play === 'tag') {
+        const home = v.home;
+        const sp = TAG_RUN * dt;
+        if (p.freeze > 0) continue;
+        if (p.chaser) {
+          // Run after the nearest other child; touching them makes them "it".
+          let best = null;
+          let bd = 1e9;
+          for (const o of taggers) {
+            if (o === p || o.freeze > 0) continue;
+            const d = Math.hypot(o.x - p.x, o.y - p.y);
+            if (d < bd) {
+              bd = d;
+              best = o;
+            }
+          }
+          if (!best) continue;
+          if (bd < 11) {
+            p.chaser = false;
+            best.chaser = true;
+            best.freeze = 1.1; // the new "it" counts a little before running
+            p.freeze = 0.4;
+            continue;
+          }
+          p.tx = best.x;
+          p.ty = best.y;
+          folkStep(st, p, sp * 0.92, px, py);
+        } else {
+          const ch = taggers.find((o) => o.chaser);
+          const dc = ch ? Math.hypot(ch.x - p.x, ch.y - p.y) : 1e9;
+          if (ch && dc < 56 && ch.freeze <= 0) {
+            // Run away from "it", but stay in the square.
+            let tx = p.x + ((p.x - ch.x) / Math.max(1, dc)) * 40;
+            let ty = p.y + ((p.y - ch.y) / Math.max(1, dc)) * 40;
+            if (Math.hypot(tx - home[0] * T, ty - home[1] * T) > home[2] * T || !st.free(tx, ty)) {
+              const s = folkSpot(st, home);
+              tx = s.x;
+              ty = s.y;
+            }
+            if (p.t <= 0 || Math.hypot(p.tx - p.x, p.ty - p.y) < 4) {
+              p.tx = tx;
+              p.ty = ty;
+              p.t = 0.6;
+            }
+            folkStep(st, p, sp, px, py);
+          } else {
+            if (p.t <= 0 || Math.hypot(p.tx - p.x, p.ty - p.y) < 3) {
+              const s = folkSpot(st, home);
+              p.tx = s.x;
+              p.ty = s.y;
+              p.t = 1 + st.r() * 1.5;
+            }
+            folkStep(st, p, sp * 0.55, px, py);
+          }
+        }
+        continue;
+      }
+      const sp = (WALK[v.kind] || 32) * dt;
+      if (v.follow != null) {
+        // A little one next to her mother: a step behind and to the side.
+        const m = folk[v.follow];
+        p.tx = m.x + 10;
+        p.ty = m.y + 6;
+        if (Math.hypot(p.tx - p.x, p.ty - p.y) > 6) folkStep(st, p, sp * 1.3, px, py);
+        else faceTo(p, m.x - p.x, m.y - p.y);
+        continue;
+      }
+      if (v.path) {
+        if (p.leg == null) p.leg = 0;
+        if (p.t > 0) continue; // a short pause at each point
+        const pt = v.path[p.leg];
+        p.tx = pt[0] * T;
+        p.ty = pt[1] * T;
+        if (folkStep(st, p, sp, px, py)) {
+          p.leg = (p.leg + 1) % v.path.length;
+          p.t = 0.6 + st.r() * 1.8;
+        }
+        continue;
+      }
+      if (v.still) {
+        // Stands at the spot (comes back to it if it was pushed away) and looks the same way.
+        p.tx = v.home[0] * T;
+        p.ty = v.home[1] * T;
+        if (Math.hypot(p.tx - p.x, p.ty - p.y) > 2) folkStep(st, p, sp, px, py);
+        else p.dir = v.still;
+        continue;
+      }
+      // Wander around home, with pauses.
+      if (p.t > 0 && Math.hypot(p.tx - p.x, p.ty - p.y) < 1) continue;
+      if (p.t <= 0 && Math.hypot(p.tx - p.x, p.ty - p.y) < 1) {
+        const s = folkSpot(st, v.home);
+        p.tx = s.x;
+        p.ty = s.y;
+        p.t = 8;
+      }
+      if (folkStep(st, p, sp, px, py)) p.t = 1.5 + st.r() * 4;
+    }
+  }
+  // Depth: in front of / behind the player, and behind a house or tree when standing north of its base.
+  function folkDepth(sc, p) {
+    let dep = (p.y < sc.player.y ? PLAYER_DEPTH - 0.1 : PLAYER_DEPTH + 0.1) + p.y * 1e-5;
+    const tall = sc.__lqPastTall && sc.__lqPastTall.items;
+    if (tall) {
+      for (const it of tall) {
+        const im = it.img;
+        if (p.x < im.x || p.x > im.x + im.width || p.y + FEET < im.y || p.y > it.base + 24) continue;
+        if (p.y < it.base) dep = Math.min(dep, im.depth - 0.05);
+        else dep = Math.max(dep, im.depth + 0.05);
+      }
+    }
+    return dep;
+  }
+  function folkSay(sc, st, p) {
+    const d = data();
+    const peace = !!(d && d.done);
+    const v = p.v;
+    const set = v.say
+      ? (peace && SAY[v.say + 'Peace']) || SAY[v.say]
+      : v.mother
+        ? peace
+          ? SAY.motherPeace
+          : SAY.mother
+        : peace
+          ? SAY.peace
+          : SAY[isKid(v.kind) ? 'kid' : v.kind];
+    const line = set[(p.i + (st.talks = (st.talks || 0) + 1)) % set.length];
+    if (p.bubble) p.bubble.destroy();
+    p.bubble = sc.add
+      .text(p.x, p.y - 30, `${v.name ? v.name + ': ' : ''}${line[0]}\n${line[1]}`.normalize('NFC'), {
+        // not Georgia: it has no Vietnamese tone marks, the browser then stacks them apart ("chiê ́n")
+        fontFamily: "'Segoe UI', Arial, sans-serif",
+        fontSize: '10px',
+        color: '#2a241d',
+        align: 'center',
+        backgroundColor: '#f3ead8',
+        padding: { x: 6, y: 4 },
+        wordWrap: { width: 190 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(PLAYER_DEPTH + 2)
+      .setResolution(2);
+    p.bubbleT = 4.5;
+  }
+  function folkUpdate(sc, delta) {
+    let st = sc.__lqPastFolk;
+    const kill = () => {
+      if (!st) return;
+      st.folk.forEach((p) => {
+        p.img.destroy();
+        if (p.bubble) p.bubble.destroy();
+      });
+      sc.__lqPastFolk = null;
+    };
+    if (!here(sc) || sc.switching || !sc.player) return kill();
+    if (!st || st.area !== sc.area) {
+      kill();
+      const a = sc.area;
+      st = sc.__lqPastFolk = { area: a, folk: [], r: rnd(29), free: (x, y) => !a.isTileBlocked(Math.floor(x / T), Math.floor(y / T)) };
+      try {
+        st.folk = makeFolk(sc);
+      } catch (e) {
+        console.warn('past villagers failed', e);
+      }
+    }
+    const hide = !!sc.inside || filming;
+    const dt = Math.min(0.05, (delta || 16) / 1000);
+    if (!hide) folkTick(st, sc, dt);
+    for (const p of st.folk) {
+      p.img.setVisible(!hide && !p.gone);
+      if (hide || p.gone) {
+        if (p.bubble) p.bubble.setVisible(false);
+        continue;
+      }
+      // Planting rice: bend down and up (origin is at the feet, so they stay on the ground).
+      const h = HEIGHT[p.v.kind] || 1;
+      p.img.setScale(h, p.planting ? h * (0.9 + 0.06 * Math.sin(p.plant * 2.4 + p.i)) : h);
+      // Walk frames: 1 and 2 while moving (children step faster), 0 when standing.
+      p.anim += dt * (p.walking ? (isKid(p.v.kind) ? 9 : 6) : 0);
+      const frame = p.walking ? 1 + (Math.floor(p.anim) % 2) : 0;
+      const tex = `ch_${p.key}_${p.dir}_${frame}`;
+      if (p.img.texture.key !== tex) p.img.setTexture(tex);
+      p.img.setFlipX(p.flip && p.dir !== 'down' && p.dir !== 'up');
+      p.img.setPosition(p.x, p.y + FEET);
+      p.img.setDepth(folkDepth(sc, p));
+      // Talk once each time the player comes close (and stays a moment).
+      const dp = Math.hypot(p.x - sc.player.x, p.y - sc.player.y);
+      if (dp < 48) {
+        p.near = (p.near || 0) + dt;
+        if (!p.said && p.near > 0.5) {
+          p.said = true;
+          folkSay(sc, st, p);
+        }
+      } else if (dp > 70) {
+        p.said = false;
+        p.near = 0;
+      }
+      if (p.bubble) {
+        p.bubbleT -= dt;
+        if (p.bubbleT <= 0) {
+          p.bubble.destroy();
+          p.bubble = null;
+        } else p.bubble.setVisible(true).setPosition(p.x, p.y + FEET - 38 * (HEIGHT[p.v.kind] || 1)).setAlpha(Math.min(1, p.bubbleT * 2));
+      }
+    }
+  }
+  // Children (and the player) scare the hens.
+  function scarers(sc) {
+    const out = [{ x: sc.player.x, y: sc.player.y }];
+    const st = sc.__lqPastFolk;
+    if (st) st.folk.forEach((p) => isKid(p.v.kind) && p.walking && out.push({ x: p.x, y: p.y }));
+    return out;
+  }
+
+  // ---- runtime ----------------------------------------------------------------------------------------------------------
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const toast = (title, sub, hint) => {
+    try {
+      window.LQAchievements && window.LQAchievements.toast && window.LQAchievements.toast(title, sub, hint);
+    } catch (e) {}
+  };
+  function data() {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') g.ach = { steps: {}, done: {} };
+    if (!g.ach.past || typeof g.ach.past !== 'object') g.ach.past = { visits: 0, read: {} };
+    if (!g.ach.past.read) g.ach.past.read = {};
+    return g.ach.past;
+  }
+  const save = () => {
+    try {
+      const sc = getScene();
+      sc && sc.store && sc.store.save();
+    } catch (e) {}
+  };
+  const here = (sc) => !!(sc && sc.area && sc.area.id === ID);
+  // The village, or the North Trail / North Camp (js/front.js): same time period, same pale filter, same calendar.
+  const inPast = (sc) => here(sc) || !!(sc && sc.area && window.LQFront && window.LQFront.ids.includes(sc.area.id));
+
+  // Pale colours while the player is in the past.
+  // The game canvas and the minimap (and any other small canvas the HUD draws), not the cutscene canvases.
+  let filtered = false;
+  const PALE = 'grayscale(.62) sepia(.32) saturate(.9) contrast(1.02) brightness(1.03)';
+  function applyFilter(sc, seconds) {
+    const cv = sc && sc.game && sc.game.canvas;
+    if (!cv) return;
+    const want = inPast(sc) && !colorBack;
+    if (want === filtered) return;
+    filtered = want;
+    document.querySelectorAll('canvas').forEach((c) => {
+      if (c.closest('#lq-oldmap, #lq-intro, #lq-shrine')) return;
+      c.style.transition = `filter ${seconds || 1.2}s ease`;
+      c.style.filter = want ? PALE : '';
+    });
+  }
+  let colorBack = false;
+  // Colours back (Day 14 ending, and every visit after the chapter is done). `seconds`: how slowly they come back.
+  function setColor(on, seconds) {
+    colorBack = !!on;
+    const sc = getScene();
+    if (!sc) return;
+    filtered = !(inPast(sc) && !colorBack);
+    applyFilter(sc, seconds);
+  }
+
+  // Signs: walking up to one shows its text (again after you walk away).
+  // Inside a room the same works with NOTES (room tiles are scaled by ins.k, like fingers.js / tenshadows.js).
+  let near = null;
+  function nearestText(sc) {
+    const ins = sc.inside;
+    if (!ins) return SIGNS.find((s) => Math.hypot(sc.player.x - (s.x * 32 + 16), sc.player.y - (s.y * 32 + 16)) < READ_RADIUS);
+    if (ins.floor !== 0 || !ins.objs || !ins.objs[0]) return null;
+    const unit = 32 * ins.k;
+    return NOTES.find((n) => {
+      if (n.room !== ins.b.name) return false;
+      const x = ins.objs[0].x + (n.x + 0.5) * unit;
+      const y = ins.objs[0].y + (n.y + 0.5) * unit;
+      return Math.hypot(sc.player.x - x, sc.player.y - y) < 1.9 * unit;
+    });
+  }
+  function checkSigns(sc) {
+    if (!here(sc) || filming || !sc.player) {
+      near = null;
+      return;
+    }
+    const s = nearestText(sc);
+    if (!s) {
+      near = null;
+      return;
+    }
+    if (near === s.id) return;
+    near = s.id;
+    const d = data();
+    if (d && !d.read[s.id]) {
+      d.read[s.id] = Date.now();
+      save();
+    }
+    const n = d ? [...SIGNS, ...NOTES].filter((x) => d.read[x.id]).length : 0;
+    toast(s.title, s.en, `${s.vi} · ${n}/${ALL_READ()}`);
+  }
+
+  // ---- lead-in film (in the real map) ----------------------------------------------------------------------------------
+  const CSS = `
+body.lq-filming>:not(#lq-past):not(:has(canvas)){visibility:hidden!important}
+body.lq-filming>:has(canvas) :not(canvas){visibility:hidden}
+body.lq-filming canvas:not(.lq-main){visibility:hidden!important}
+body.lq-filming canvas.lq-main{visibility:visible!important}
+#lq-past{position:fixed;inset:0;z-index:10040;pointer-events:none;font-family:system-ui,'Segoe UI',sans-serif}
+#lq-past .lb{position:absolute;left:0;right:0;height:10vh;background:#000;transition:transform .8s ease}
+#lq-past .lb.t{top:0}#lq-past .lb.b{bottom:0}
+#lq-past.out .lb.t{transform:translateY(-100%)}#lq-past.out .lb.b{transform:translateY(100%)}
+#lq-past .cap{position:absolute;left:50%;bottom:calc(10vh + 12px);transform:translateX(-50%);width:min(760px,calc(100vw - 32px));box-sizing:border-box;background:#1c1c1ce8;border:2px solid #b9b2a4;border-radius:14px;padding:12px 18px;color:#f2f2f2;opacity:0;transition:opacity .35s;pointer-events:auto;cursor:pointer}
+#lq-past .cap.show{opacity:1}
+#lq-past .who{font:800 12px system-ui,sans-serif;color:#e0c27a;letter-spacing:.04em;margin-bottom:3px}
+#lq-past .en{margin:0;font:600 clamp(16px,2.4vw,20px)/1.4 Georgia,'Times New Roman',serif}
+#lq-past .vi{margin:5px 0 0;font:14px/1.4 system-ui,sans-serif;color:#b8b8b8}
+#lq-past .hint{font-size:11px;color:#8d8d8d;text-align:right;margin-top:4px}
+#lq-past .skip{position:absolute;top:calc(10vh + 10px);right:14px;background:#0009;color:#fff;border:1px solid #ffffff55;border-radius:999px;padding:7px 14px;font:700 13px system-ui,sans-serif;cursor:pointer;pointer-events:auto}
+#lq-past .card{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;color:#eee;text-shadow:0 2px 12px #000;opacity:0;transition:opacity .8s;white-space:nowrap;padding:30px 60px;background:radial-gradient(closest-side,#000a,#0000)}
+#lq-past .card.show{opacity:1}
+#lq-past .card small{display:block;font:700 13px system-ui,sans-serif;letter-spacing:.35em;color:#d6d0c4;text-transform:uppercase}
+#lq-past .card b{display:block;font:800 clamp(28px,5.5vw,48px)/1.1 Georgia,'Times New Roman',serif;margin:6px 0}
+#lq-past .card span{font:600 14px system-ui,sans-serif;color:#cfcfcf}
+`;
+  // who: '' = narrator. cam: tile to look at. act: what happens in the scene at this line.
+  const FILM = [
+    { cam: [27, 15], zoom: 1, en: 'The village of Oriaris. The colors were pale, and the days were hard.', vi: 'Làng Oriaris. Màu sắc nhợt nhạt, và những ngày tháng thật vất vả.', act: 'crowd' },
+    { cam: [30, 9], zoom: 1.35, who: 'Lord Gusest', en: 'People of Oriaris! This war will pass. Peace will come back.', vi: 'Hỡi người dân Oriaris! Cuộc chiến này rồi sẽ qua. Hòa bình sẽ trở lại.', act: 'gusest' },
+    { cam: [30, 9], zoom: 1.35, who: 'Lord Gusest', en: 'Our knights are brave. They will win!', vi: 'Các kỵ sĩ của chúng ta rất dũng cảm. Họ sẽ chiến thắng!' },
+    { cam: [28, 12], zoom: 1.15, en: 'The people cheered. For a moment, nobody was afraid.', vi: 'Dân làng reo hò. Trong khoảnh khắc ấy, không ai còn sợ hãi.', act: 'cheer' },
+    { cam: [28, 18], zoom: 1, en: 'Lord Gusest left, but he sent food to every family.', vi: 'Lãnh chúa Gusest rời đi, nhưng ngài đã gửi lương thực cho từng gia đình.', act: 'leave' },
+    { cam: null, zoom: 1, en: 'Now the village waits. Live here, day by day, until the war is over.', vi: 'Giờ đây cả làng chờ đợi. Hãy sống ở đây, từng ngày một, cho đến khi chiến tranh kết thúc.', act: 'end' },
+  ];
+  let filming = false;
+  function drawPerson(g, x, y, cloth, hair, cape) {
+    g.fillStyle(0x000000, 0.25).fillEllipse(x, y + 13, 14, 5);
+    if (cape) g.fillStyle(cape, 1).fillRect(x - 7, y - 4, 14, 17);
+    g.fillStyle(cloth, 1).fillRect(x - 5, y - 4, 10, 14);
+    g.fillStyle(0x3b3127, 1).fillRect(x - 4, y + 10, 3, 4).fillRect(x + 1, y + 10, 3, 4);
+    g.fillStyle(0xe2c4a4, 1).fillCircle(x, y - 9, 5);
+    g.fillStyle(hair, 1).fillRect(x - 5, y - 15, 10, 4);
+  }
+  // ---- film player (shared by the lead-in and the Day 14 ending) ------------------------------------------------------
+  // opts: { card: {small, big, sub}, lines: [{cam, zoom, who, en, vi, act}], setup(sc, actors) -> {tick(time), act(name)} }
+  function ensureCss() {
+    if (document.getElementById('lq-past-css')) return;
+    const st = document.createElement('style');
+    st.id = 'lq-past-css';
+    st.textContent = CSS + DAY_CSS;
+    document.head.appendChild(st);
+  }
+  function runFilm(opts) {
+    const sc = getScene();
+    if (!sc || !here(sc) || filming) return Promise.resolve(false);
+    filming = true;
+    ensureCss();
+    closeDayCard();
+    return new Promise((resolve) => {
+      const cam = sc.cameras.main;
+      const zoom0 = cam.zoom;
+      const kb = sc.input && sc.input.keyboard;
+      if (kb) {
+        kb.enabled = false;
+        try {
+          kb.resetKeys();
+        } catch (e) {}
+      }
+      cam.stopFollow();
+      const actors = sc.add.graphics().setDepth(9.6);
+      const scene = opts.setup ? opts.setup(sc, actors) : {};
+      const tick = (time) => {
+        actors.clear();
+        if (scene.tick) scene.tick(time);
+      };
+      sc.events.on('update', tick);
+      const lines = opts.lines;
+      const root = document.createElement('div');
+      root.id = 'lq-past';
+      root.innerHTML =
+        '<div class="lb t"></div><div class="lb b"></div>' +
+        `<div class="card"><small>${opts.card.small}</small><b>${opts.card.big}</b><span>${opts.card.sub}</span></div>` +
+        '<div class="cap"><div class="who"></div><p class="en"></p><p class="vi"></p><div class="hint">Click / Space ▶</div></div>' +
+        '<button class="skip" type="button">Skip ⏭</button>';
+      document.body.appendChild(root);
+      if (sc.game && sc.game.canvas) sc.game.canvas.classList.add('lq-main');
+      document.body.classList.add('lq-filming');
+      const card = root.querySelector('.card');
+      const cap = root.querySelector('.cap');
+      const who = root.querySelector('.who');
+      const en = root.querySelector('.en');
+      const vi = root.querySelector('.vi');
+      let i = -1;
+      let typing = 0;
+      let full = '';
+      let ended = false;
+      const look = (shot, ms) => {
+        if (shot.cam) cam.pan(shot.cam[0] * 32 + 16, shot.cam[1] * 32 + 16, ms, 'Sine.easeInOut', true);
+        else cam.pan(sc.player.x, sc.player.y, ms, 'Sine.easeInOut', true);
+        cam.zoomTo(zoom0 * (shot.zoom || 1), ms, 'Sine.easeInOut', true);
+      };
+      const show = () => {
+        const s = lines[i];
+        look(s, i === 0 ? 1 : 1400);
+        if (s.act && scene.act) scene.act(s.act);
+        who.textContent = s.who || '';
+        who.style.display = s.who ? '' : 'none';
+        vi.textContent = s.vi;
+        full = s.en;
+        en.textContent = '';
+        clearInterval(typing);
+        let n = 0;
+        typing = setInterval(() => {
+          n += 1;
+          en.textContent = full.slice(0, n);
+          if (n >= full.length) clearInterval(typing);
+        }, 28);
+      };
+      const next = () => {
+        if (ended) return;
+        if (i >= 0 && en.textContent.length < full.length) {
+          clearInterval(typing);
+          en.textContent = full;
+          return;
+        }
+        i += 1;
+        if (i >= lines.length) return finish();
+        show();
+      };
+      const finish = () => {
+        if (ended) return;
+        ended = true;
+        clearInterval(typing);
+        window.removeEventListener('keydown', onKey, true);
+        // Skipping still runs every remaining action once (e.g. the colours come back), so the story state is right.
+        if (scene.act) for (let k = i + 1; k < lines.length; k++) if (lines[k].act) scene.act(lines[k].act, true);
+        root.classList.add('out');
+        document.body.classList.remove('lq-filming');
+        cap.classList.remove('show');
+        card.classList.remove('show');
+        sc.events.off('update', tick);
+        actors.destroy();
+        cam.zoomTo(zoom0, 600, 'Sine.easeInOut', true);
+        cam.startFollow(sc.player, true, 0.1, 0.1);
+        if (kb) kb.enabled = true;
+        setTimeout(() => {
+          root.remove();
+          filming = false;
+          resolve(true);
+        }, 850);
+      };
+      const onKey = (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          next();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          finish();
+        }
+      };
+      window.addEventListener('keydown', onKey, true);
+      cap.addEventListener('click', next);
+      root.querySelector('.skip').addEventListener('click', finish);
+      const first = lines[0].cam || [sc.player.x / 32, sc.player.y / 32];
+      cam.centerOn(first[0] * 32 + 16, first[1] * 32 + 16);
+      if (scene.act && lines[0].act) scene.act(lines[0].act);
+      card.classList.add('show');
+      setTimeout(() => {
+        if (ended) return;
+        card.classList.remove('show');
+        cap.classList.add('show');
+        next();
+      }, 2600);
+    });
+  }
+
+  // ---- lead-in film --------------------------------------------------------------------------------------------------
+  function play() {
+    return runFilm({
+      card: { small: 'Chapter 2', big: '70 Years Ago', sub: 'Chương 2 · 70 năm trước' },
+      lines: FILM,
+      setup(sc, actors) {
+        const RC = rnd(42);
+        const crowd = [];
+        for (let i = 0; i < 16; i++)
+          crowd.push({
+            x: (22.5 + (i % 8) * 1.25 + RC() * 0.5) * 32,
+            y: (11.6 + Math.floor(i / 8) * 1.3 + RC() * 0.4) * 32,
+            c: [0x7a6a58, 0x6b7280, 0x8a7a5a, 0x5d6b5a][i % 4],
+            h: [0x3b2a1e, 0x6b5a45, 0x2a2a2a, 0x8a7a6a][(i * 3) % 4],
+          });
+        const gus = { x: 30.5 * 32, y: 8.1 * 32, on: false, away: 0, t0: 0 };
+        let cheer = 0;
+        let showCrowd = false;
+        return {
+          tick(time) {
+            if (showCrowd)
+              crowd.forEach((p, i) => drawPerson(actors, p.x, p.y - (cheer ? Math.abs(Math.sin(time * 0.012 + i)) * 5 : 0), p.c, p.h));
+            if (gus.t0) gus.away = Math.min(1, (performance.now() - gus.t0) / 1600);
+            if (gus.on && gus.away < 1) {
+              const gy = gus.y - gus.away * 64;
+              drawPerson(actors, gus.x, gy, 0x2f3540, 0x4a2e1c, 0x7d2e2e); // dark brown hair: Gusest was only 20
+              crest(actors, gus.x, gy - 1, 0.9);
+            }
+          },
+          act(a, skipping) {
+            if (a === 'crowd') showCrowd = true;
+            if (a === 'gusest') gus.on = true;
+            if (a === 'cheer') cheer = 1;
+            if (a === 'leave') {
+              cheer = 0;
+              gus.t0 = performance.now();
+              if (!skipping) toast('🍞 Food for every family', 'Bread and rice', 'Bánh mì và gạo cho mọi nhà');
+            }
+            if (a === 'end') showCrowd = false;
+          },
+        };
+      },
+    }).then((ran) => {
+      if (!ran) return;
+      startChapter();
+      const t = todayTask();
+      toast('📜 Day 1 / 14', t ? 'Follow the golden light: ' + t.where + '.' : 'Oriaris Village', 'Mỗi ngày đi tới ánh sáng vàng, đọc chuyện hôm nay, rồi về ngủ ở Brown Family Home.');
+    });
+  }
+
+  // ---- the fourteen days -------------------------------------------------------------------------------------------
+  // Each day (1–13): a golden light appears somewhere; there the player reads what happened that day (past tense),
+  // learns its past verbs and answers one question. Then they sleep in the Brown Family Home (bed, E) to start the
+  // next day. Waking up on day 14 plays the ending (the young soldier runs in with the flag, the colours come back).
+  // opts[0] is the right answer (the card shuffles them).
+  const DAYS = [
+    { at: [25, 17], where: 'the village well', en: 'On the first day, the women carried water from the well to every house.', vi: 'Ngày đầu tiên, các bà các chị gánh nước từ giếng về từng nhà.', verbs: [['carried', 'carry']], q: 'Where did the water come from?', opts: ['the well', 'the river', 'the lake'] },
+    { at: [45, 17], where: 'the east rice fields', en: 'On day two, the children helped in the rice fields. They worked until noon.', vi: 'Ngày thứ hai, bọn trẻ ra đồng giúp cấy lúa. Chúng làm đến trưa.', verbs: [['helped', 'help'], ['worked', 'work']], q: 'When did the children stop working?', opts: ['at noon', 'at night', 'early in the morning'] },
+    { at: [18, 29], where: 'the south gate', en: 'On day three, the men repaired the south wall. They carried big stones all day.', vi: 'Ngày thứ ba, đàn ông sửa bức tường phía nam. Họ khiêng đá lớn cả ngày.', verbs: [['repaired', 'repair'], ['carried', 'carry']], q: 'What did the men repair?', opts: ['the south wall', 'the well', 'the hall'] },
+    { at: [8, 8], where: 'the granary', en: "On day four, Lord Gusest's soldiers brought rice to the granary.", vi: 'Ngày thứ tư, lính của Lãnh chúa Gusest chở gạo đến kho thóc.', verbs: [['brought', 'bring']], q: 'What did the soldiers bring?', opts: ['rice', 'bread', 'water'] },
+    { at: [45, 11], where: 'the east gate', en: 'On day five, a guard saw smoke in the north. Everyone was afraid.', vi: 'Ngày thứ năm, một lính gác thấy khói ở phía bắc. Ai cũng sợ hãi.', verbs: [['saw', 'see'], ['was', 'be']], q: 'What did the guard see?', opts: ['smoke', 'a bird', 'a horse'] },
+    { at: [29, 17], where: 'the market stall', en: 'On day six, the baker made bread for everyone. Nobody paid for it.', vi: 'Ngày thứ sáu, bác thợ bánh làm bánh mì cho mọi người. Không ai phải trả tiền.', verbs: [['made', 'make'], ['paid', 'pay']], q: 'Who made the bread?', opts: ['the baker', 'the farmer', 'the guard'] },
+    { at: [30, 8], where: 'Oriaris Hall', en: 'On day seven, a messenger came with a letter. The knights were still fighting.', vi: 'Ngày thứ bảy, một người đưa tin mang thư đến. Các kỵ sĩ vẫn đang chiến đấu.', verbs: [['came', 'come'], ['were', 'be']], q: 'What did the messenger bring?', opts: ['a letter', 'a flag', 'some food'] },
+    { at: [18, 41], where: 'the south rice fields', en: 'On day eight, it rained all day. The rice fields were full of water.', vi: 'Ngày thứ tám, trời mưa suốt cả ngày. Ruộng lúa ngập đầy nước.', verbs: [['rained', 'rain'], ['were', 'be']], q: 'What was the weather like?', opts: ['rainy', 'sunny', 'snowy'] },
+    { at: [31, 18], where: 'the market', en: 'On day nine, the market had only potatoes. People shared them.', vi: 'Ngày thứ chín, chợ chỉ còn khoai tây. Mọi người chia nhau ăn.', verbs: [['had', 'have'], ['shared', 'share']], q: 'What did the market have?', opts: ['only potatoes', 'a lot of fish', 'only rice'] },
+    { at: [7, 22], where: 'the hen house', en: 'On day ten, a little girl found three eggs and gave them to the guards.', vi: 'Ngày thứ mười, một cô bé tìm được ba quả trứng và đem cho lính gác.', verbs: [['found', 'find'], ['gave', 'give']], q: 'How many eggs did she find?', opts: ['three', 'two', 'ten'] },
+    { at: [17, 29], where: 'the south watchtower', en: 'On day eleven, the guards lit more torches. The night was long and cold.', vi: 'Ngày thứ mười một, lính gác thắp thêm đuốc. Đêm dài và lạnh.', verbs: [['lit', 'light'], ['was', 'be']], q: 'What did the guards light?', opts: ['torches', 'candles', 'the houses'] },
+    { at: [25, 29], where: 'the Brown Family Home', en: 'On day twelve, Mrs. Brown waited at the door all evening. Her son did not come.', vi: 'Ngày thứ mười hai, bà Brown đứng đợi ở cửa suốt buổi tối. Con trai bà không về.', verbs: [['waited', 'wait'], ['did not come', 'not come']], q: 'Who waited at the door?', opts: ['Mrs. Brown', 'Lord Gusest', 'the baker'] },
+    { at: [31, 8], where: 'Oriaris Hall', en: 'On day thirteen, everyone went to Oriaris Hall and prayed for peace.', vi: 'Ngày thứ mười ba, mọi người đến Oriaris Hall và cầu nguyện cho hòa bình.', verbs: [['went', 'go'], ['prayed', 'pray']], q: 'Where did everyone go?', opts: ['Oriaris Hall', 'the rice fields', 'the well'] },
+  ];
+  const LAST_DAY = 14;
+
+  function chapter() {
+    const d = data();
+    return d && d.ch ? d.ch : null;
+  }
+  function startChapter() {
+    const d = data();
+    if (!d || d.ch || d.done) return;
+    d.ch = { day: 1, ok: {}, started: Date.now() };
+    save();
+  }
+  function todayTask() {
+    const d = data();
+    const ch = d && d.ch;
+    if (!ch || d.done || ch.day >= LAST_DAY) return null;
+    return Object.assign({ day: ch.day }, DAYS[ch.day - 1]);
+  }
+  // The golden-light reading card of the day.
+  const cardDone = () => {
+    const ch = chapter();
+    return !!(ch && ch.ok[ch.day]);
+  };
+  // The whole day: the reading card and the letters of the messenger (js/front.js).
+  const todayDone = () => cardDone() && (!window.LQFront || window.LQFront.dayDone());
+
+  const DAY_CSS = `
+#lq-day-hud{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9040;background:#1d1a14ee;border:2px solid #c9a24a;border-radius:999px;padding:7px 16px;color:#f4ecd6;font:650 13px/1.3 system-ui,'Segoe UI',sans-serif;box-shadow:0 6px 18px #0008;max-width:calc(100vw - 32px);text-align:center;pointer-events:none}
+#lq-day-hud[hidden]{display:none}
+#lq-day-hud b{color:#f3c14b}
+#lq-day{position:fixed;inset:0;z-index:10030;display:grid;place-items:center;background:#0007;font-family:system-ui,'Segoe UI',sans-serif}
+#lq-day .box{width:min(560px,calc(100vw - 32px));box-sizing:border-box;background:linear-gradient(170deg,#2a251c,#1b1813);border:2px solid #c9a24a;border-radius:16px;padding:16px 18px 14px;color:#f4ecd6;box-shadow:0 14px 40px #000b}
+#lq-day .tag{font:800 12px system-ui,sans-serif;letter-spacing:.08em;color:#e0c27a;text-transform:uppercase}
+#lq-day .en{margin:8px 0 4px;font:600 19px/1.45 Georgia,'Times New Roman',serif}
+#lq-day .en b{color:#f3c14b;font-weight:800}
+#lq-day .vi{margin:0 0 10px;font:14px/1.4 system-ui,sans-serif;color:#bfb6a0}
+#lq-day .verbs{font:13px/1.5 system-ui,sans-serif;background:#ffffff0d;border-radius:10px;padding:7px 10px;margin-bottom:12px}
+#lq-day .verbs span{display:inline-block;margin-right:12px;white-space:nowrap}
+#lq-day .verbs b{color:#f3c14b}
+#lq-day .q{font:700 15px system-ui,sans-serif;margin-bottom:8px}
+#lq-day .opts{display:grid;gap:7px}
+#lq-day .opts button{background:#3a3226;color:#f4ecd6;border:1px solid #6b5a3a;border-radius:10px;padding:9px 12px;font:600 15px system-ui,sans-serif;text-align:left;cursor:pointer}
+#lq-day .opts button:hover{border-color:#e0c27a}
+#lq-day .opts button.no{border-color:#b5523b;background:#4a2a22;animation:lqShake .3s}
+#lq-day .opts button.yes{border-color:#7fae5a;background:#2f4126}
+@keyframes lqShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#lq-day .fb{min-height:20px;margin-top:9px;font:600 14px/1.4 system-ui,sans-serif}
+#lq-day .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+#lq-day .row button{background:#c9a24a;color:#1d1a14;border:0;border-radius:8px;padding:7px 14px;font:800 14px system-ui,sans-serif;cursor:pointer}
+#lq-day .row button.later{background:none;color:#bfb6a0;text-decoration:underline;font-weight:600}
+`;
+  const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  // Bold the day's past verbs inside the sentence.
+  function markVerbs(text, verbs) {
+    let html = escHtml(text);
+    verbs.forEach(([past]) => {
+      html = html.replace(new RegExp('\\b(' + past.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b', 'g'), '<b>$1</b>');
+    });
+    return html;
+  }
+  let dayCard = null;
+  function closeDayCard() {
+    if (!dayCard) return;
+    dayCard.remove();
+    dayCard = null;
+    const sc = getScene();
+    const kb = sc && sc.input && sc.input.keyboard;
+    if (kb) kb.enabled = true;
+  }
+  function openDayCard(t) {
+    if (dayCard || filming) return;
+    ensureCss();
+    const sc = getScene();
+    const kb = sc && sc.input && sc.input.keyboard;
+    if (kb) {
+      kb.enabled = false;
+      try {
+        kb.resetKeys();
+      } catch (e) {}
+    }
+    const opts = t.opts.map((o, i) => ({ o, right: i === 0 })).sort(() => Math.random() - 0.5);
+    const root = document.createElement('div');
+    root.id = 'lq-day';

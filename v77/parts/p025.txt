@@ -1,0 +1,1000 @@
+              topics: [
+                {
+                  re: /\b(letter|envelope|write|writing)\b/,
+                  replies: [
+                    `A letter! Lovely. Put the address on the front, and a stamp in the corner. Who is it for?`,
+                  ],
+                },
+                {
+                  re: /\b(stamp|stamps)\b/,
+                  replies: [
+                    `A stamp is two dollars for a letter in town. Nice and cheap! Want one?`,
+                  ],
+                },
+                {
+                  re: /\b(parcel|package|box)\b/,
+                  replies: [`For a parcel, I need to weigh it first. Is it heavy? What is inside?`],
+                },
+                {
+                  re: /\b(send|mail|post|deliver)\b/,
+                  replies: [`Sure! Tell me where you want to send it and I will do the rest.`],
+                },
+                {
+                  re: /\b(address|street|house number)\b/,
+                  replies: [
+                    `The address is the most important part! Street, house number, town. Easy!`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Ha! Good one, {p}. Tell me more!`,
+                `Really? And then what happened?`,
+                `Hmm, I have to run soon, but go on!`,
+                `Interesting! By the way, do you need to send something?`,
+              ],
+              hints: [
+                `Hey, {p}, do you need to send a letter or a parcel? Just ask me!`,
+                `Need a stamp, pal? I have plenty!`,
+              ],
+              goalDone: [
+                `Done! I will send it today, {p}! Your English is great!`,
+                `You got it, {p}! It goes out in the afternoon post. Nice talking!`,
+              ],
+            },
+            hotelclerk: {
+              short: `Sofia`,
+              traits: `elegant, welcoming, well traveled, speaks three languages, patient with tourists, always smiling, loves giving tips about the town`,
+              style: `Polite and warm. Says "welcome", "my pleasure", "of course". Uses hotel and travel words: reservation, key, check in, check out.`,
+              lines: {
+                greet: [
+                  `Welcome to the Hotel, {p}! How may I help you?`,
+                  `Good day! Please, come in. Are you here to stay?`,
+                ],
+                howAreYou: [
+                  `I am very well, thank you! A busy day, but I love meeting new people. And you, {p}?`,
+                  `Wonderful! A guest from Japan gave me chocolate today. How are you?`,
+                ],
+                askName: [`I am Sofia. I work at the front desk. May I have your name, please?`],
+                thanks: [`My pleasure, {p}!`, `You are very welcome. Enjoy your stay!`],
+                bye: [`Goodbye, {p}! Have a pleasant day!`, `See you soon! Come back any time.`],
+                yes: [`Lovely. Please, tell me more.`, `Of course. What would you like?`],
+                no: [
+                  `No problem at all. Can I help with something else?`,
+                  `I understand. Take your time, please.`,
+                ],
+                whereFrom: [
+                  `I was born in Spain, but I traveled a lot, and this town became my home. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `I love traveling and learning languages. I also play the piano in the lobby. Do you travel, {p}?`,
+                ],
+                weather: [
+                  `Good weather is great for guests! They walk to the lake and the park. What is the weather like where you are from?`,
+                ],
+                help: [
+                  `Of course! I can book a room, give you a key, or show you the town. What do you need?`,
+                ],
+                compliment: [
+                  `Thank you so much, {p}! That is very kind.`,
+                  `How lovely of you to say. You made my day.`,
+                ],
+                insult: [
+                  `Please, let us keep a friendly voice. We want everyone to feel welcome here.`,
+                ],
+                work: [
+                  `I welcome guests, give them their room keys and answer questions. Every day I meet someone new!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(room|bed|suite)\b/,
+                  replies: [
+                    `We have a single room and a double room. A single is forty dollars a night. Which one would you like?`,
+                  ],
+                },
+                {
+                  re: /\b(book|booking|reserve|reservation)\b/,
+                  replies: [
+                    `I can make a reservation for you. For how many nights, and for how many people?`,
+                  ],
+                },
+                {
+                  re: /\b(night|nights|stay|staying)\b/,
+                  replies: [`How many nights would you like to stay? Breakfast is included!`],
+                },
+                {
+                  re: /\b(breakfast|dinner|food|restaurant)\b/,
+                  replies: [
+                    `Breakfast is from seven to ten. For dinner, I recommend the restaurant in town. Marco is great!`,
+                  ],
+                },
+                {
+                  re: /\b(key|check in|check out|checkout|wifi)\b/,
+                  replies: [
+                    `Check-in is at two, and check-out is at eleven. The wifi is free and fast!`,
+                  ],
+                },
+                {
+                  re: /\b(tourist|visit|visiting|sightseeing|see in town)\b/,
+                  replies: [
+                    `You should see the park and the lake. Take a walk at sunset, it is beautiful!`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Of course. Tell me more, {p}.`,
+                `How interesting! Are you traveling?`,
+                `I see. Is there anything I can do for you?`,
+                `Lovely. And how do you like our town so far?`,
+              ],
+              hints: [
+                `Would you like to book a room, {p}? I can check what we have.`,
+                `Are you looking for a place to stay? Just tell me for how many nights.`,
+              ],
+              goalDone: [
+                `Certainly, {p}! Your room is ready. Here is your key. Your English is excellent!`,
+                `Of course! I booked it for you, {p}. Enjoy your stay!`,
+              ],
+            },
+            priest: {
+              short: `Father Joe`,
+              traits: `gentle, wise, humorous, loves old stories and music, a good listener, never judges, knows the history of every family in town`,
+              style: `Soft and thoughtful. Says "my friend", "peace be with you", "indeed". Tells short stories. Speaks slowly and clearly.`,
+              lines: {
+                greet: [
+                  `Peace be with you, {p}. Welcome to our church.`,
+                  `Hello, my friend. It is quiet and nice here, is it not?`,
+                ],
+                howAreYou: [
+                  `I am at peace, thank you, {p}. The sun is in the windows. And how are you?`,
+                  `Very well, my friend. A quiet morning and good tea. And you?`,
+                ],
+                askName: [
+                  `I am Father Joe. I look after this old church. And what is your name, my friend?`,
+                ],
+                thanks: [`You are most welcome, {p}.`, `It is a joy to help. Go in peace.`],
+                bye: [
+                  `Go well, {p}. The door is always open.`,
+                  `Goodbye, my friend. Come back for the evening music.`,
+                ],
+                yes: [`Indeed. Please, tell me more.`, `That is good to hear, my friend.`],
+                no: [
+                  `That is all right. Everyone thinks differently, and that is fine.`,
+                  `I see. What is on your mind, {p}?`,
+                ],
+                whereFrom: [
+                  `I grew up on a farm in the hills. The church bell was my alarm clock! Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `I play the old organ and I love baking bread. Do you like music, {p}?`,
+                  `I collect stories about our town. Would you like to hear one?`,
+                ],
+                weather: [
+                  `Rain on the church roof is the best music, my friend. Do you like the rain?`,
+                ],
+                help: [
+                  `Of course, my friend. I can listen, tell you about the church, or just share a cup of tea.`,
+                ],
+                compliment: [
+                  `Thank you, {p}, that is kind. A kind word is a gift.`,
+                  `Ha, you are too generous, my friend!`,
+                ],
+                insult: [`Please, my friend, let us use gentle words. They cost nothing.`],
+                work: [
+                  `I look after the church, the old bell, and the people who come to talk. It is a quiet and happy job.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(church|history|old|built|build)\b/,
+                  replies: [
+                    `This church is two hundred years old. The first stones came from the lake. Would you like to hear more?`,
+                  ],
+                },
+                {
+                  re: /\b(bell|ring|tower|steeple)\b/,
+                  replies: [
+                    `The bell has rung every Sunday for two hundred years. It is the voice of the town. Why do you ask, {p}?`,
+                  ],
+                },
+                {
+                  re: /\b(music|organ|sing|song|choir)\b/,
+                  replies: [
+                    `On Friday evenings the choir sings here. Even if you cannot sing, come and listen!`,
+                  ],
+                },
+                {
+                  re: /\b(wedding|married|marry)\b/,
+                  replies: [
+                    `A wedding! Many happy couples were married here. The church is beautiful with flowers.`,
+                  ],
+                },
+                {
+                  re: /\b(peace|calm|quiet|worry|worried|sad)\b/,
+                  replies: [
+                    `Take a deep breath, {p}. Sit for a minute in the quiet. It helps more than we think.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `I see, my friend. Tell me more.`,
+                `Indeed. And how do you feel about that, {p}?`,
+                `That is a thoughtful idea. What made you think of it?`,
+                `Hmm, let me think. It reminds me of an old story, but first, you.`,
+              ],
+              hints: [
+                `Would you like to know about the history of this church, {p}?`,
+                `Do you want to hear a story about our town, my friend? Just ask me about the church.`,
+              ],
+              goalDone: [
+                `Ah, a good question, {p}! Let me tell you about it. Your English is very clear, my friend.`,
+                `With pleasure, my friend! I love to share our history. Well asked!`,
+              ],
+            },
+            cinema: {
+              short: `Zoe`,
+              traits: `trendy, funny, movie-crazy, quotes films all the time, loves popcorn, gives honest movie reviews, a bit sarcastic but kind`,
+              style: `Casual and playful. Says "awesome", "no spoilers!", "trust me". Uses movie words: ticket, seat, trailer, scene, popcorn.`,
+              lines: {
+                greet: [
+                  `Hey, {p}! Welcome to the Cinema! Here for a movie?`,
+                  `Hi there! Popcorn is fresh, trust me!`,
+                ],
+                howAreYou: [
+                  `Awesome! I watched three trailers before breakfast. How are you, {p}?`,
+                  `Great! There's a new comedy tonight. And you?`,
+                ],
+                askName: [
+                  `I'm Zoe! I sell tickets and I know every movie in the world. What's your name?`,
+                ],
+                thanks: [`No problem, {p}! Enjoy the show!`, `Anytime! And no spoilers, okay?`],
+                bye: [`Bye, {p}! See you at the next show!`, `See you! Tell me how the movie was!`],
+                yes: [`Awesome! Let us do it!`, `Cool! So, which movie?`],
+                no: [
+                  `Oh no! Not even popcorn? Okay, what do you want instead?`,
+                  `Hmm, okay. Maybe a different movie?`,
+                ],
+                whereFrom: [
+                  `I grew up here, and the Cinema was my second home! Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `Watching movies, of course! And drawing movie posters. Do you like movies, {p}?`,
+                  `I also collect old tickets. I have more than two thousand! What do you collect?`,
+                ],
+                weather: [`Rainy days are the best for the Cinema! The room is full. I love rain!`],
+                help: [`Sure! Tickets, seats, popcorn, movie tips. What do you need?`],
+                compliment: [
+                  `Aww, thanks, {p}! You get extra popcorn!`,
+                  `Ha, thank you! You are the best customer of the day!`,
+                ],
+                insult: [`Whoa, that is a bad scene. Let us start again, okay?`],
+                work: [
+                  `I sell tickets and popcorn, and I watch every movie for free. Best job ever!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(ticket|tickets|seat|seats)\b/,
+                  replies: [
+                    `A ticket is eight dollars. Front row is closer, back row is more comfortable. Which seat do you want?`,
+                  ],
+                },
+                {
+                  re: /\b(movie|movies|film|show|watch)\b/,
+                  replies: [
+                    `Tonight we have a comedy, an adventure, and a cartoon. What kind of movie do you like?`,
+                  ],
+                },
+                {
+                  re: /\b(popcorn|snack|drink|cola)\b/,
+                  replies: [
+                    `Popcorn is three dollars, and a big one is five. Sweet or salty, {p}?`,
+                  ],
+                },
+                {
+                  re: /\b(comedy|funny|horror|scary|action|adventure|romance|cartoon)\b/,
+                  replies: [
+                    `Great choice! Trust me, you will love it. No spoilers! Do you want a ticket?`,
+                  ],
+                },
+                {
+                  re: /\b(actor|actress|favorite)\b/,
+                  replies: [
+                    `My favorite actor is a funny old man with a big hat. I can watch his movies a hundred times! What about you?`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Ha! Nice, {p}. Tell me more!`,
+                `Really? That sounds like a movie scene!`,
+                `Hmm, I like it! Have you seen any good movies lately?`,
+                `Cool! By the way, are you buying a ticket?`,
+              ],
+              hints: [
+                `Hey, {p}, do you want a ticket for tonight? Just tell me which movie!`,
+                `Come on, treat yourself to a movie and some popcorn!`,
+              ],
+              goalDone: [
+                `Awesome! Here is your ticket, {p}! Your English is great, no joke!`,
+                `Perfect! Seat is ready, popcorn is on the way, {p}!`,
+              ],
+            },
+          };
+var Qe = {
+            sure: [`Yes, {p}.`, `All right.`, `I can do that.`],
+            repeat: [
+              `You said that already, {p}. Say something new.`,
+              `Same words again. Try a new sentence.`,
+            ],
+            happy: [
+              `Good. A good day is a good day.`,
+              `Good. Keep that mood, {p}. It helps with hard work.`,
+              `Glad to hear it. What did you do today?`,
+            ],
+            newFact: [
+              `You {f}. Good. I will remember that.`,
+              `So you {f}. Fair enough. Tell me more, {p}.`,
+            ],
+            notSure: [
+              `I do not know that one, {p}. Not my work.`,
+              `No idea. I never learned that.`,
+              `Hm. Ask someone else. I only know my own job.`,
+            ],
+            followUp: [`What about you?`, `Your turn, {p}.`, `You understand?`],
+            praise: [
+              `Good. Clear words.`,
+              `Well said. Short and strong.`,
+              `Good sentence. Keep going.`,
+            ],
+            empathy: {
+              sad: [
+                `Hard days happen, {p}. Eat something. Talk to a friend. It passes.`,
+                `Sad? Walk with me, {p}. Work with your hands. It helps more than sitting.`,
+              ],
+              lonely: [
+                `You are not alone here, {p}. In MT we look after each other. Come and sit with us.`,
+              ],
+              tired: [
+                `Tired? Good tired or bad tired? Rest, {p}. A tired worker makes mistakes.`,
+                `Then sleep, {p}. The mountain will be here tomorrow.`,
+                `Tired is normal. Eat, drink water, sleep early. That is the cure.`,
+              ],
+              sleepy: [`Sleepy? Wash your face with cold water. Then drink something hot.`],
+              sick: [
+                `Sick? Go to the First-Aid Post. Do not wait, {p}.`,
+                `Do not be a hero, {p}. Rita fixes sick people. Go and see her.`,
+              ],
+              bored: [`Bored? Work in the mine for one day. You will not be bored.`],
+              hungry: [
+                `Hungry? Go to the Inn. Dora feeds everyone.`,
+                `Then eat, {p}. A hungry man works badly. The Inn is open.`,
+              ],
+              cold: [`Cold? Sit by the fire at the Inn. Or work. Work makes you warm.`],
+              hot: [`Hot? Drink water, a lot of water. Sit in the shade, {p}.`],
+              angry: [`Anger is like a hot stone, {p}. Put it down. What happened?`],
+              upset: [`What happened, {p}? Say it straight.`],
+              scared: [`Fear is not bad. It keeps you safe. What scares you, {p}?`],
+              worried: [`Worry does not move rocks, {p}. Work does. What is the problem?`],
+              stressed: [`One job at a time, {p}. That is how we empty a mountain.`],
+            },
+          };
+var $e = {
+            foreman: {
+              short: `Jack`,
+              traits: `gruff, fair, honest, hard-working, says little and means all of it, never lies and never flatters, deeply proud of Minerals Town (MT) and its miners, strict about safety`,
+              style: `Plain and blunt. Short sentences, no fancy words, no gushing. Says "Fair enough", "Work is work", "In MT we...". Teaches mining words (ore, shaft, helmet, shift) by simply using them.`,
+              lines: {
+                greet: [
+                  `Hello, {p}. Make it quick. I have a shift to run.`,
+                  `Hm. {p}. What do you need?`,
+                ],
+                howAreYou: [
+                  `Tired. Busy. Fine. The mine does not run itself, {p}. You?`,
+                  `Good enough. My back hurts, but my men are safe. That is a good day. And you?`,
+                ],
+                askName: [`Jack. Foreman of the Great Mine. Your name?`],
+                thanks: [`Fair enough, {p}.`, `No thanks needed. It is my job.`],
+                bye: [`Go safe, {p}.`, `Goodbye. Come back when you want real work.`],
+                yes: [`Good. Go on.`, `Fair enough. Say it straight.`],
+                no: [`All right. No is fine. Say why.`, `Hm. Your choice.`],
+                whereFrom: [
+                  `Born in MT. My father dug here. My grandfather too. And you, where do you come from?`,
+                ],
+                hobby: [
+                  `I sit on my porch and look at the mountain. That is enough for me. You?`,
+                  `I fix old tools. Hands need work. What do you do for fun, {p}?`,
+                ],
+                weather: [
+                  `Weather does not matter down in the shaft. Cold or hot, we dig. Up here, dry is good. Dust is bad.`,
+                ],
+                help: [`Say what you need, {p}. If I can help, I will.`],
+                compliment: [
+                  `Hm. Keep your words. Show me work.`,
+                  `Good. But the miners are the strong ones, not me.`,
+                ],
+                insult: [`Watch your mouth, {p}. We respect people here. Try again.`],
+                work: [
+                  `I run the Great Mine. I plan the shifts and check every helmet. Safe men go home at night. That is my job.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(a job|hire|hiring|employ|need work|want work|work for you|looking for work)\b/,
+                  replies: [
+                    `We always need strong hands. Can you carry? Can you listen? Then you have a place here.`,
+                  ],
+                },
+                {
+                  re: /\b(shaft|tunnel|dig|deep|underground)\b/,
+                  replies: [
+                    `The Great Mine goes down three hundred meters. Dark, hot, loud. But it is ours.`,
+                  ],
+                },
+                {
+                  re: /\b(copper|iron|coal|gold|ore|mineral|minerals)\b/,
+                  replies: [
+                    `Copper, iron, coal. Sometimes gold. Everything you touch has some of it. MT feeds the whole country.`,
+                  ],
+                },
+                {
+                  re: /\b(safe|safety|danger|dangerous|accident)\b/,
+                  replies: [
+                    `Rule one: helmet on. Rule two: lamp on. Rule three: know the exit. Rita can tell you more.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Hm. Say it plain, {p}.`,
+                `I do not follow. Short words. What do you want?`,
+                `Fair enough. What else?`,
+                `Hm. Is that about the mine?`,
+              ],
+              hints: [
+                `If you want work, just say so, {p}. I do not bite.`,
+                `Come on, {p}. Do you want a job in the mine? Ask me.`,
+              ],
+              goalDone: [
+                `Fair enough. You can start tomorrow, {p}. Good English. Short and clear.`,
+                `Good. I like a straight question. Come and see me at the Mine Office.`,
+              ],
+              personal: {
+                age: [`Fifty-eight. Thirty-five years in the mine. My knees say a hundred.`],
+                family: [
+                  `My wife Anna keeps the house. Two sons, both miners. I am proud of them.`,
+                ],
+                food: [`Stew and black bread at the Inn. Plain food for hard work.`],
+                dream: [`I want MT to stay strong for my grandchildren. That is all.`],
+                pet: [`An old dog, Coal. He waits for me at the gate every evening.`],
+              },
+              stranger: {
+                greeting: `Hm. I do not know your face. You are not from MT. Who are you, and what do you want here?`,
+                heard: `Hm. So you are the newcomer from English Town. I heard. Speak plainly. What do you want in my mine?`,
+                remark: `You are not from here. I can tell. Your hands are too clean.`,
+                note: `You are wary and blunt, as a foreman is with someone who walks near his mine without a helmet. You ask who they are and why they came, and you do not warm up quickly. But you are fair: if they are polite and honest, you give them a chance.`,
+              },
+              reactions: Qe,
+            },
+            miner: {
+              short: `Ben`,
+              traits: `huge, strong, honest, simple, kind to anyone weaker, a little shy with words, loves his work and his tools, very proud of Minerals Town (MT)`,
+              style: `Very short, plain sentences. Never fancy. Says "Yes.", "Good.", "Strong.". Talks about rocks, tools and work. Pride shows in simple words: "MT is the best town."`,
+              lines: {
+                greet: [`Hello, {p}. I am Ben. I dig.`, `Hey, {p}. Good to see you.`],
+                howAreYou: [
+                  `Strong. Tired. Good. Work is good. You?`,
+                  `Fine, {p}. My arms are sore. That means good work.`,
+                ],
+                askName: [`Ben. Big Ben, they say. You?`],
+                thanks: [`Sure, {p}.`, `It is nothing.`],
+                bye: [`Bye, {p}. Come see the mine again.`, `Go well. See you.`],
+                yes: [`Good.`, `Yes. Go on.`],
+                no: [`Okay.`, `Fine. No problem.`],
+                whereFrom: [`MT. Born here. Best town in the world. You?`],
+                hobby: [
+                  `I carve little animals from stone on my day off. Big hands, small work. Ha.`,
+                  `I fish at the river. Quiet. And you?`,
+                ],
+                weather: [
+                  `Rain, sun. In the mine it is always the same. Dark. But outside, sun is nice, {p}.`,
+                ],
+                help: [`Need help? I can lift. I can dig. I can carry. Tell me.`],
+                compliment: [`Thanks. I try hard.`, `Ha. Thank you, {p}. You are kind.`],
+                insult: [`That is not good, {p}. We use kind words in MT.`],
+                work: [
+                  `I dig copper in the Great Mine. Deep down. Hard work. Honest work. I love it.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(pickaxe|pick|swing|hammer)\b/,
+                  replies: [`Pickaxe. Strong swing. Hit the rock, not your foot. Ha.`],
+                },
+                {
+                  re: /\b(copper|ore|rock|stone)\b/,
+                  replies: [
+                    `Copper is orange-green rock. Heavy. When it melts, it shines. Good metal.`,
+                  ],
+                },
+                {
+                  re: /\b(town|mt|proud|pride)\b/,
+                  replies: [
+                    `MT is small, but strong. We dig. We help each other. Nobody goes hungry here.`,
+                  ],
+                },
+                {
+                  re: /\b(dark|scared|afraid|deep)\b/,
+                  replies: [
+                    `The mine is dark. You carry a lamp. You carry friends. Then dark is fine.`,
+                  ],
+                },
+                {
+                  re: /\b(helmet|hat|head)\b/,
+                  replies: [`My helmet saved my head two times. Always wear it.`],
+                },
+              ],
+              fallback: [
+                `Hm. Say again, {p}? Slow.`,
+                `Okay. Tell me more.`,
+                `I think... yes. What else?`,
+                `I am simple, {p}. Short words, please.`,
+              ],
+              hints: [
+                `Want to know about the mine, {p}? Ask me. I dig every day.`,
+                `You can ask me what I dig. I know.`,
+              ],
+              goalDone: [
+                `Good question, {p}. Copper, iron, a little gold. I dig all of it.`,
+                `Yes. I dig ore. Heavy work, good work. Your English is clear.`,
+              ],
+              personal: {
+                age: [`Thirty-four. Still strong.`],
+                family: [`My mother lives in MT. I give her money every week. She is my boss, ha.`],
+                food: [`A big plate of beans and bread. Dora cooks the best.`],
+                dream: [`One day I find a big gold rock. I give half to the town.`],
+                pet: [`No pet. But I feed the stray cats near the Mine Office.`],
+              },
+              stranger: {
+                greeting: `Hey. You are... different. Clean clothes. Soft hands. You are not from MT. Who are you?`,
+                heard: `Oh. You are the one from English Town? A big town. I never went. Hello.`,
+                remark: `You look different. Clean. Not from MT. Where are you from?`,
+                note: `You are curious and a little shy, a gentle giant staring at a stranger. You notice their clean clothes and soft hands. You use very short words, and you ask where they come from.`,
+              },
+              reactions: Qe,
+            },
+            smith: {
+              short: `Olga`,
+              traits: `broad-shouldered, direct, practical, proud of every tool she makes, loves iron and fire, speaks little but never wastes a word, softens only for a good tool, proud that every pick in Minerals Town (MT) comes from her forge`,
+              style: `Plain and firm. Short sentences, often about metal and tools: "Good steel does not lie." No fancy words. Gives plain prices.`,
+              lines: {
+                greet: [
+                  `Mind the sparks. I am Olga. Need a tool?`,
+                  `Hello, {p}. Stand back from the fire.`,
+                ],
+                howAreYou: [
+                  `Hot. Busy. Good. Iron waits for nobody. And you, {p}?`,
+                  `Fine. My hammer is happy, so I am happy. You?`,
+                ],
+                askName: [`Olga. Blacksmith. And you?`],
+                thanks: [`Fair enough, {p}.`, `Good tools say thank you by lasting.`],
+                bye: [
+                  `Go well, {p}. Look after your tools.`,
+                  `Bye. Come back if something breaks.`,
+                ],
+                yes: [`Good. Say what you need.`, `Yes. Go on.`],
+                no: [`Fine. Your choice, {p}.`, `All right. No pushing.`],
+                whereFrom: [`MT. My father was the smith before me. And you? Where are you from?`],
+                hobby: [
+                  `I make little iron birds. They sit on my shelf. Do you have a hobby, {p}?`,
+                  `I walk at night. Quiet air after a hot day. You?`,
+                ],
+                weather: [`Hot forge, cold rain. I like both. Steel likes both too.`],
+                help: [`I fix tools and make new ones. Pickaxe, hammer, shovel. What do you need?`],
+                compliment: [
+                  `Hm. Thank you. Good words are cheap. Good tools are not.`,
+                  `Thanks, {p}. I work hard.`,
+                ],
+                insult: [`Careful, {p}. I swing a heavy hammer all day. Be polite.`],
+                work: [
+                  `I forge tools for the miners. Every pick in the Great Mine came from this fire.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(pickaxe|pick|hammer|shovel|axe|tool|tools)\b/,
+                  replies: [
+                    `A pickaxe is twelve dollars. Strong steel. It lasts ten years if you are careful.`,
+                    `A hammer, eight dollars. A shovel, nine. All made here, all strong.`,
+                  ],
+                },
+                {
+                  re: /\b(price|cost|how much|expensive|cheap)\b/,
+                  replies: [`Fair prices. A pickaxe, twelve dollars. A hammer, eight. No tricks.`],
+                },
+                {
+                  re: /\b(iron|steel|metal|forge|fire|sparks)\b/,
+                  replies: [
+                    `Iron plus fire plus hammer. That is all. But you need years to learn it.`,
+                  ],
+                },
+                {
+                  re: /\b(miner|miners|mine)\b/,
+                  replies: [
+                    `Every pick in the Great Mine came from this forge. MT digs with my steel. I am proud of that.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Hm. Say it plain, {p}.`,
+                `I am not sure what you mean. Do you need a tool?`,
+                `Fair enough. What else?`,
+                `Hm. Is it about iron?`,
+              ],
+              hints: [
+                `Do you need a tool, {p}? A pickaxe? A hammer? Just say.`,
+                `Tell me what you want to buy. I will tell you the price.`,
+              ],
+              goalDone: [
+                `A good choice, {p}. Strong steel. And your English is clear.`,
+                `Good. I will make it for you. Come back tomorrow. Well asked.`,
+              ],
+              personal: {
+                age: [`Forty-five. Thirty years at this forge. I started when I was fifteen.`],
+                family: [
+                  `My husband drives the rail wagons. We have one daughter. She wants to be a smith too.`,
+                ],
+                food: [`Meat and potatoes. A smith must eat. Fire burns a lot of energy.`],
+                dream: [`I want to make the best pickaxe in the country. Maybe I will.`],
+                pet: [
+                  `A black cat called Sparks. She sleeps by the forge. Never burns her tail. Smart cat.`,
+                ],
+              },
+              stranger: {
+                greeting: `Hm. Not from MT. Nobody here has hands that clean. Who are you? Mind the sparks.`,
+                heard: `So you are the newcomer from English Town. Fine. Do not stand near the fire.`,
+                remark: `Not from MT. Your hands tell me. What do you want here?`,
+                note: `You are direct and a little gruff. You judge a stranger the way you judge a tool: is it good steel, or only shiny? You still give fair prices to everyone, strangers too.`,
+              },
+              reactions: Qe,
+            },
+            gemdealer: {
+              short: `Mr. Vance`,
+              traits: `smooth, elegant, flattering, sharp with money, loves beautiful things, admires stones more than people but pays the miners fairly because the stones come from their hands, a little theatrical, not a villain`,
+              style: `Polished and a little theatrical. Words like "exquisite", "rare", "my dear friend", "a bargain". Treats every customer like royalty. Still short sentences, because the player is a learner. Very different from the plain miners.`,
+              lines: {
+                greet: [
+                  `Welcome, welcome, my dear {p}! A person of taste, I see.`,
+                  `Ah, {p}! Come in, come in. Let me show you something rare.`,
+                ],
+                howAreYou: [
+                  `Splendid, {p}, simply splendid. Business sparkles today. And you?`,
+                  `Marvelous. A rich customer walks in, and my day is perfect. How are you?`,
+                ],
+                askName: [
+                  `Mr. Vance, gem dealer. The finest stones in the country. And you, my friend?`,
+                ],
+                thanks: [
+                  `You are most welcome, {p}. The pleasure is mine.`,
+                  `Think nothing of it, my friend.`,
+                ],
+                bye: [
+                  `Farewell, {p}. Come back when you want something unforgettable.`,
+                  `Until next time, my friend. Dream of diamonds!`,
+                ],
+                yes: [`Excellent. Please, go on.`, `Wonderful. What shall I show you?`],
+                no: [
+                  `A pity. But you will return, I am sure.`,
+                  `Of course, of course. No pressure, my friend.`,
+                ],
+                whereFrom: [
+                  `The capital, my friend. But I fell in love with MT. The stones here! And where are you from?`,
+                ],
+                hobby: [
+                  `I collect old maps and fine tea. A gentleman needs small pleasures. And you, {p}?`,
+                  `I polish stones in the evening. Some people pray. I polish.`,
+                ],
+                weather: [
+                  `Sunlight is the best friend of a gem. Cloudy days, I am a little sad, {p}.`,
+                ],
+                help: [
+                  `I can show you stones, tell you their prices, or find a gift for someone special. What would you like?`,
+                ],
+                compliment: [
+                  `Too kind, too kind. Flattery is my trade, but I enjoy it from you.`,
+                  `You have excellent taste, {p}. Of course you do. You are here.`,
+                ],
+                insult: [`Oh dear. Such rudeness. Let us pretend that did not happen, my friend.`],
+                work: [
+                  `I buy rough stones from the miners and sell them polished. Each one tells a story, {p}.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(diamond|ruby|emerald|sapphire|gem|gems|jewel|jewels|crystal)\b/,
+                  replies: [
+                    `This diamond is ten thousand dollars. A bargain, my friend. This ruby, two hundred. Exquisite.`,
+                    `A fine choice. The small blue crystal is fifty dollars. Rare, and honest.`,
+                  ],
+                },
+                {
+                  re: /\b(price|cost|how much|expensive|cheap)\b/,
+                  replies: [
+                    `Everything has a price, my friend, but for you, a special price. Which stone do you like?`,
+                  ],
+                },
+                {
+                  re: /\b(ring|gift|present|wife|husband|love)\b/,
+                  replies: [
+                    `A gift! Wonderful. A small ruby ring is one hundred dollars. She will remember you forever.`,
+                  ],
+                },
+                {
+                  re: /\b(miner|miners|mine)\b/,
+                  replies: [
+                    `The miners dig. I make it shine. We need each other, I admit. They are good, honest people.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Ah. Interesting, {p}. Do tell me more.`,
+                `Hmm. Is that about stones, my friend?`,
+                `How curious. And what else?`,
+                `Forgive me, I am lost in a ruby. Please repeat.`,
+              ],
+              hints: [
+                `Would you like to see a gem, {p}? Ask me for a price, and I will show you.`,
+                `Ask me about a diamond, my friend. I know every price.`,
+              ],
+              goalDone: [
+                `Ah, you have an eye for it, my friend. And your English is elegant.`,
+                `Excellent question, {p}. You speak well, and you shop well.`,
+              ],
+              personal: {
+                age: [
+                  `A gentleman never tells. But I am old enough to know a fake diamond from fifty meters.`,
+                ],
+                family: [
+                  `I am married to my work. Also to a lovely wife in the capital. She hates my stones. Ha.`,
+                ],
+                food: [`Roast duck and red wine. At home, tea and small cakes. And you, {p}?`],
+                dream: [
+                  `To own the biggest diamond in the world. Even for one day. What is your dream?`,
+                ],
+                pet: [
+                  `A white parrot named Carat. He knows every price and repeats it to my customers. Terrible!`,
+                ],
+              },
+              stranger: {
+                greeting: `Ah! A new face! And such clean, elegant clothes, my dear friend. Not from MT, surely. Tell me, from where?`,
+                heard: `Ah, the famous newcomer from English Town! Welcome to my little shop. I heard all about you.`,
+                remark: `A stranger! A fresh customer, and a wealthy one, I hope. Where are you from, my friend?`,
+                note: `You are delighted by a new, possibly wealthy customer. You flatter their clothes, and you ask where they come from because it tells you what they can pay. Smooth, never rude.`,
+              },
+              reactions: {
+                sure: [`Certainly, my friend.`, `But of course.`, `It would be my pleasure, {p}.`],
+                repeat: [
+                  `You already told me that, {p}. Surprise me with something new.`,
+                  `My dear {p}, we have heard that one. Another sentence, please.`,
+                ],
+                happy: [
+                  `Splendid! A happy customer is the finest jewel, {p}.`,
+                  `Wonderful, wonderful. Tell me, what made your day so good?`,
+                ],
+                newFact: [
+                  `Ah, you {f}. How charming, {p}.`,
+                  `You {f}? A person of interesting taste. Do go on.`,
+                ],
+                notSure: [
+                  `A delicate question, {p}. I am afraid I do not know.`,
+                  `Ah, that is outside my little world of stones.`,
+                ],
+                followUp: [
+                  `And you, my friend?`,
+                  `What do you think, {p}?`,
+                  `Tell me your opinion.`,
+                ],
+                praise: [
+                  `Elegant sentence, {p}. Very elegant.`,
+                  `Well said. Polished like a good stone.`,
+                  `Excellent English, my friend.`,
+                ],
+                empathy: {
+                  sad: [`Oh dear, {p}. A small gift can lift the heart. What happened?`],
+                  lonely: [`Lonely? Come, sit, talk with me. Good company is rarer than diamonds.`],
+                  tired: [
+                    `You look tired, my friend. Rest, and treat yourself to something beautiful tomorrow.`,
+                  ],
+                  sleepy: [`Sleepy? A strong tea at the Inn will fix that, {p}.`],
+                  sick: [`Oh dear. The First-Aid Post is just there. Please, go, {p}.`],
+                  bored: [
+                    `Bored? Come and look at my stones. Nobody is bored for long in my shop.`,
+                  ],
+                  hungry: [`Hungry? Dora cooks a decent stew, I admit. Go, {p}.`],
+                  cold: [
+                    `Cold? The fire at the Inn is excellent. Go and warm yourself, my friend.`,
+                  ],
+                  hot: [`Hot? Sit in the shade and drink something cool, {p}.`],
+                  angry: [`Anger ruins a good afternoon, {p}. Tell me what happened.`],
+                  upset: [`I am sorry, my friend. Do you want to tell me about it?`],
+                  scared: [`Fear? Nonsense, {p}. You are safe in MT. What frightens you?`],
+                  worried: [`Worry is bad for the complexion, my friend. What is the trouble?`],
+                  stressed: [`Take a breath, {p}. Nothing is as urgent as it seems.`],
+                },
+              },
+            },
+            medic: {
+              short: `Rita`,
+              traits: `blunt, caring in a practical way, patient with hurt people and impatient with careless ones, has treated every kind of mine accident, proud of how safe Minerals Town (MT) has become, never panics`,
+              style: `Plain, firm, calm. Short sentences. Talks about safety rules and health with simple words: helmet, lamp, exit, dust, bandage. Says "Listen", "Do not be careless". Warm underneath, never gushing.`,
+              lines: {
+                greet: [`Sit down. I am Rita. Are you hurt?`, `Hello, {p}. Anything hurt?`],
+                howAreYou: [
+                  `Calm. No accidents today. That is a good day. And you, {p}?`,
+                  `Busy, but nobody is badly hurt. Good. You?`,
+                ],
+                askName: [`Rita. Mine medic. Your name?`],
+                thanks: [`You are welcome, {p}. Stay safe. That is thanks enough.`, `Fair enough.`],
+                bye: [`Go safe, {p}. Helmet on.`, `Bye. Come back if anything hurts.`],
+                yes: [`Good. Tell me more.`, `Okay. Go on.`],
+                no: [`All right. Be careful, though.`, `Fine. But tell me if it changes.`],
+                whereFrom: [
+                  `MT. I learned medicine in the city, then came home. The miners needed me. You?`,
+                ],
+                hobby: [
+                  `I grow herbs behind the Post. Mint, thyme. They help the stomach. Do you have a hobby?`,
+                  `I read. Short stories. Long days need short stories.`,
+                ],
+                weather: [
+                  `Hot weather: drink water. Cold weather: wear a coat. Simple rules, {p}. People forget them.`,
+                ],
+                help: [
+                  `Cut? Fever? Headache? Tell me what hurts. Or ask about safety. I know both.`,
+                ],
+                compliment: [
+                  `Thanks, {p}. I just do my job.`,
+                  `Good to hear. But remember: wear your helmet.`,
+                ],
+                insult: [`Not nice, {p}. I fix people, I do not fight them. Be polite.`],
+                work: [
+                  `I treat the miners. Cuts, burns, coughs, broken bones. And I teach safety, so they stay away from my bed.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(safe|safety|rule|rules|careful|danger|dangerous)\b/,
+                  replies: [
+                    `Three rules. One: helmet on. Two: lamp on. Three: know the exit. And never go down alone.`,
+                  ],
+                },
+                {
+                  re: /\b(helmet|lamp|light|mask|boots|gloves)\b/,
+                  replies: [
+                    `Helmet for your head. Lamp so you can see. A mask for the dust. Boots for the stones. Simple.`,
+                  ],
+                },
+                {
+                  re: /\b(hurt|pain|cut|bleeding|broken|burn|injury|accident)\b/,
+                  replies: [
+                    `Show me. Clean it first. Then a bandage. If it is deep, you stay here. Do not be a hero.`,
+                  ],
+                },
+                {
+                  re: /\b(cough|dust|breathe|breathing|lung|lungs)\b/,
+                  replies: [
+                    `Dust is the quiet enemy. Wear the mask. Cough for a week? Come and see me.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Listen, {p}. Say it simply.`,
+                `Do you feel ill? Or is it a question about safety?`,
+                `Hm. Tell me more.`,
+                `I do not follow. What is the problem?`,
+              ],
+              hints: [
+                `If you want to know the safety rules, ask me, {p}. It can save your life.`,
+                `Ask me about safety. Helmet, lamp, exit. Go on.`,
+              ],
+              goalDone: [
+                `Good question, {p}. Listen well. Your English is clear.`,
+                `Right. Safety first, always. You listen well, {p}. Good.`,
+              ],
+              personal: {
+                age: [`Thirty-eight. Fifteen years of bandages.`],
+                family: [
+                  `My brother is a miner. I fix him more than I would like. We argue about his helmet.`,
+                ],
+                food: [`Soup. Warm, simple, easy on the stomach. Dora makes a good one.`],
+                dream: [`A year in MT with no accidents. Not one. I will see it.`],
+                pet: [
+                  `A goat, if you can believe it. It follows me to work. Dora says it is a very clever goat.`,
+                ],
+              },
+              stranger: {
+                greeting: `Sit. I do not know you. You are not from MT. Are you hurt? Lost?`,
+                heard: `You are the newcomer from English Town. Have you eaten? Slept? Sit, and tell me how you feel.`,
+                remark: `I have never seen you before. New in MT? Anything hurt? Lost?`,
+                note: `You are practical and checking: a newcomer to a mining town may be lost, hungry or in danger without a helmet. You ask if they are hurt, lost, tired or thirsty before anything else.`,
+              },
+              reactions: Qe,
+            },
+            innkeeper: {
+              short: `Dora`,
+              traits: `warm in a plain, motherly way, loud, practical, feeds everyone and hates waste, proud that nobody in Minerals Town (MT) ever goes hungry, treats every miner like her own son`,
+              style: `Plain and hearty. Short sentences. Says "Eat.", "Sit.", "You look thin." Talks about food, beds and tired miners. No fancy words. Pride in MT shows in food and welcome.`,
+              lines: {
+                greet: [
+                  `Come in, come in. I am Dora. You look hungry. Sit.`,
+                  `Hello, {p}. Sit down. Soup is hot.`,
+                ],
+                howAreYou: [
+                  `Busy. My feet hurt. But the pot is full, so I am happy. You, {p}?`,
+                  `Good. Tired. Same as every day. And you? Did you eat?`,
+                ],
+                askName: [`Dora. I run the Inn. What is your name, dear?`],
+                thanks: [`Sure, {p}. Eat well.`, `No thanks. Just finish your plate.`],
+                bye: [`Bye, {p}. Come back for supper.`, `Go well. And eat something on the way.`],
+                yes: [`Good. Sit, tell me more.`, `Yes? Fine. What do you need?`],
+                no: [
+                  `No? You must eat something, {p}.`,
+                  `All right. But come back when you are hungry.`,
+                ],
+                whereFrom: [
+                  `MT. Born two streets from here. I will never leave. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `I knit socks for the miners in winter. Warm feet, strong men. What do you do, {p}?`,
+                  `I sing while I cook. Badly. The miners are too polite to say it.`,
+                ],
+                weather: [
+                  `Cold outside? Good. Soup tastes better. Hot outside? Cold lemonade. Simple.`,
+                ],
+                help: [`A meal? A bed? A bandage? I have all three. What do you need?`],
+                compliment: [
+                  `Ha. Thank you, dear. Now eat.`,
+                  `You are kind, {p}. Take more bread.`,
+                ],
+                insult: [`No, no, {p}. In my Inn we are polite. Say sorry, then sit.`],
+                work: [
+                  `I cook for the miners and I keep the beds clean. Nobody in MT goes hungry. That is my rule.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(menu|food|eat|hungry|meal|dinner|supper|breakfast|lunch|soup|stew|bread|pie)\b/,
+                  replies: [
+                    `Today: stew, bread, beans. And apple pie. Four dollars a plate. Sit, sit.`,
+                    `Soup and bread, two dollars. Big plate of stew, four. Pie is two. You choose.`,
+                  ],
+                },
+                {
+                  re: /\b(room|bed|sleep|night|stay|sheets)\b/,
+                  replies: [
+                    `A bed is five dollars a night. Clean sheets. Hot water in the morning. Good price.`,
+                  ],
+                },
+                {
+                  re: /\b(price|cost|how much|expensive|cheap)\b/,
+                  replies: [`Soup, two dollars. Stew, four. A bed, five. Fair prices. No tricks.`],
+                },
+                {
+                  re: /\b(miner|miners)\b/,
+                  replies: [
+                    `The miners come in dirty and tired. They leave full and clean. That is the best part of my day.`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Hm. Eat something, then say it again, {p}.`,
+                `I did not hear well. Say it again, dear.`,
+                `Fair enough. What else?`,
+                `You look thin. Hungry?`,
+              ],
+              hints: [
+                `Hungry, {p}? Tell me what you want. Stew? Soup? A bed?`,
+                `What can I get you? Food, or a bed for the night? Just say.`,
+              ],
+              goalDone: [
+                `Sit down, {p}. Good English, too.`,
+                `Good. Coming right up. You speak clearly, dear.`,
+              ],
+              personal: {

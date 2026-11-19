@@ -1,0 +1,1000 @@
+          let i = r ? 1 + (Math.floor(n.phase / (e.lqSlow ? 24 : 10)) % 2) : 0,
+            a = `ch_${t}_${n.dir}_${i}`;
+          (e.texture.key !== a && e.setTexture(a),
+            e.setFlipX(n.flip && n.dir !== `down` && n.dir !== `up`));
+        }
+        var Wr = 34;
+var Gr = 0.68;
+var Kr = 1;
+var qr = 6;
+var Jr = 90;
+var Yr = 2e4;
+var Xr = 0;
+var Zr = (e) => e >= 1140 || e < 300;
+var Qr = class extends Y.Scene {
+            area;
+            player;
+            playerKey = `player0`;
+            pFace = Or();
+            pMoving = !1;
+            badge;
+            keys;
+            npcs = [];
+            chat;
+            journal;
+            settings;
+            helper;
+            briefing;
+            quests;
+            store = new Be();
+            walls = [];
+            areaObjs = [];
+            switching = !1;
+            dimAlpha = 0;
+            groupBtn = document.getElementById(`group-btn`);
+            groupMenu = document.getElementById(`group-menu`);
+            hud;
+            prompt;
+            dim;
+            ticks = 0;
+            inside = null;
+            doorCooldown = 0;
+            sleeping = !1;
+            constructor() {
+              super(`Town`);
+            }
+            create() {
+              this.store.load();
+              // Free exploration build: Art District is available on every save (old or new).
+              // Only the map access flag changes; NPC missions and achievements are untouched.
+              if (!this.store.game.artDistrictUnlocked) {
+                this.store.game.artDistrictUnlocked = true;
+                this.store.save();
+              }
+              let e = this.store.game;
+              // Development-only map preview (?preview=art-district). It changes the in-memory starting scene, not the saved unlocks.
+              try {
+                this.artDistrictPreview = new URLSearchParams(location.search).get(`preview`) === `art-district`;
+              } catch { this.artDistrictPreview = !1; }
+              this.area = this.artDistrictPreview ? we(`art-district`) : we(e.area);
+              if (!this.artDistrictPreview) e.area = this.area.id;
+              for (let e of De()) console.warn(`[area]`, e);
+              this.chat = new ft(new lr(), this.store, (t) => {
+                let n = this.npcs.find((e) => e.def.id === t.id),
+                  r =
+                    n &&
+                    (n.inside
+                      ? this.area.places[n.slot.place]
+                      : { x: Math.floor(n.sprite.x / 32), y: Math.floor(n.sprite.y / 32) });
+                return {
+                  day: e.day,
+                  minutes: e.minutes,
+                  activity: n?.slot.label ?? `in town`,
+                  rep: e.rep,
+                  here: r,
+                };
+              });
+              let t = () =>
+                void Promise.resolve(window.__lqModelReady)
+                  .catch(() => {})
+                  .then(() => pr())
+                  .then((e) => {
+                    this.chat.setProvider(e);
+                  });
+              (t(),
+                (this.helper = new ut(this.store, () => this.chat.currentProvider)),
+                (this.briefing = new Bt()),
+                (this.settings = new zt(this.store)),
+                (this.settings.onSaved = t),
+                (this.chat.onGoalDone = (e) => this.gain(e.goal.reward, e.goal.rep)),
+                (this.journal = new gt(this.store)),
+                (this.quests = new un(this.store, this.area)),
+                (this.quests.onReward = (e) => this.gain(e.reward.money, e.reward.rep)),
+                (this.chat.onSaid = (e, t) => {
+                  const oldMessages = this.quests.onSaid(e.id, t);
+                  this.checkArtDistrictAccess();
+                  const extra = adventure.onNpcMessage(e.id, t);
+                  // Ten Shadows quest (tenshadows.js): legends and clues; runs before the quest panel hears about this message.
+                  let shadowLines = [];
+                  try {
+                    shadowLines = (window.LQTenShadows && window.LQTenShadows.onNpcMessage(e.id, t, this.area.id)) || [];
+                  } catch (err) {
+                    console.warn('Ten Shadows hook', err);
+                  }
+                  // The Old Map (oldmap.js): Ms. Green's map, the three relics and the past-tense report (Chapter 2).
+                  try {
+                    shadowLines = shadowLines.concat(
+                      (window.LQOldMap && window.LQOldMap.onNpcMessage(e.id, t, this.area.id)) || [],
+                    );
+                  } catch (err) {
+                    console.warn('Old Map hook', err);
+                  }
+                  try {
+                    window.LQV8?.onEvent('npc', { npc: e.id, text: t, area: this.area.id });
+                    window.LQStory?.onNpc?.(e.id, t, this.area.id);
+                  } catch (err) {
+                    console.warn('V8 NPC event', err);
+                  }
+                  return [...oldMessages, ...extra, ...shadowLines];
+                }));
+              let n = mt(e.rep);
+              ((this.playerKey = `player${n.idx}`), Vr(this, this.playerKey, Pr(n.color)));
+              let r = ce(this.area.spawn.x, this.area.spawn.y);
+              ((this.player = this.add
+                .image(r.x, r.y, `ch_${this.playerKey}_down_0`)
+                .setOrigin(0.5, Gr)
+                .setDepth(10)),
+                (this.badge = this.add
+                  .text(0, 0, ``, { fontSize: `16px` })
+                  .setOrigin(0.5, 1)
+                  .setDepth(11)),
+                this.applyRankLook(),
+                this.buildArea(),
+                adventure.restorePosition(this),
+                this.unstick(),
+                this.fitCamera(),
+                this.cameras.main.startFollow(this.player, !0, 0.1, 0.1),
+                this.scale.on(`resize`, () => {
+                  this.inside || this.fitCamera();
+                }),
+                (this.keys = this.input.keyboard.addKeys(`W,A,S,D,UP,DOWN,LEFT,RIGHT`)),
+                this.input.keyboard.on(`keydown-E`, () => this.tryTalk()),
+                window.addEventListener(`keydown`, (e) => {
+                  this.chat.isOpen ||
+                    this.settings.isOpen ||
+                    this.briefing.isOpen ||
+                    this.helper.isOpen ||
+                    this.journal.isOpen ||
+                    this.quests.isOpen ||
+                    (e.key === `h` || e.key === `H`
+                      ? this.act(`helper`)
+                      : e.key === `j` || e.key === `J`
+                        ? this.act(`journal`)
+                        : e.key === `k` || e.key === `K`
+                          ? this.act(`settings`)
+                          : e.key === `q` || e.key === `Q`
+                            ? this.act(`quests`)
+                            : e.key === `F8`
+                              ? this.act(`reset`)
+                              : e.key === `g` || e.key === `G`
+                                ? this.toggleGroup()
+                                : e.key === `Escape` && this.toggleGroup(!1));
+                }),
+                this.groupBtn.addEventListener(`click`, () => {
+                  (this.toggleGroup(), this.groupBtn.blur());
+                }),
+                this.groupMenu.querySelectorAll(`button[data-act]`).forEach((e) => {
+                  e.addEventListener(`click`, () => {
+                    (e.blur(), this.toggleGroup(!1), this.act(e.dataset.act));
+                  });
+                }),
+                window.addEventListener(`beforeunload`, () => {
+                  if (this.inside && this.store.game.rpg) {
+                    this.store.game.rpg.lastInterior = {
+                      area: this.area.id,
+                      building: this.inside.b.name,
+                      floor: this.inside.floor || 0,
+                      tx: +((this.player.x - Yr) / (32 * this.inside.k)).toFixed(3),
+                      ty: +((this.player.y - Xr) / (32 * this.inside.k)).toFixed(3),
+                    };
+                  }
+                  this.store.save();
+                }),
+                (this.hud = this.add
+                  .text(8, 8, ``, {
+                    fontSize: `15px`,
+                    color: `#fff`,
+                    backgroundColor: `#000a`,
+                    padding: { x: 6, y: 4 },
+                  })
+                  .setScrollFactor(0)
+                  .setDepth(100)
+                  .setVisible(!1)),
+                (this.prompt = this.add
+                  .text(0, 0, ``, { fontSize: `13px`, color: `#ffd36b`, backgroundColor: `#000b` })
+                  .setOrigin(0.5)
+                  .setDepth(12)
+                  .setVisible(!1)),
+                this.time.addEvent({ delay: 1e3, loop: !0, callback: () => this.tickClock() }),
+                attachTownScene(this),
+                __lqV7RestoreInterior(this),
+                this.events.once(`shutdown`, () => detachTownScene(this)));
+            }
+            toggleGroup(e = !this.groupMenu.classList.contains(`open`)) {
+              (this.groupMenu.classList.toggle(`open`, e), this.groupBtn.classList.toggle(`on`, e));
+            }
+            act(e) {
+              if (!(this.chat.isOpen || this.settings.isOpen || this.briefing.isOpen)) {
+                if (e === `helper`) {
+                  this.sleeping || this.helper.toggle();
+                  return;
+                }
+                this.helper.isOpen ||
+                  (e === `journal`
+                    ? this.journal.toggle()
+                    : e === `settings`
+                      ? this.settings.toggle()
+                      : e === `quests`
+                        ? this.quests.toggle()
+                        : e === `reset`
+                          ? confirm(`Erase ALL progress and NPC memories?`) &&
+                            (this.store.reset(), location.reload())
+                          : e === `talk` &&
+                            (!this.inside && this.doorAhead() && this.doorCooldown <= 0
+                              ? this.enterBuilding(this.doorAhead())
+                              : this.nearestNpc(this.inside ? 56 * this.inside.k : 48) ||
+                                  this.bedNear() ||
+                                  this.portalNear()
+                                ? this.tryTalk()
+                                : this.quests.toast([
+                                    `💬 Nobody is close enough.`,
+                                    `Walk up to someone, or stand at a door, then press Talk (E).`,
+                                  ])));
+              }
+            }
+            // Chapter 2 (js/past.js) counts as the historical requirement: the village of 70 years ago has no
+            // per-NPC missions (its npcs list is empty), so finishing the chapter is what is checked.
+            artHistoryDone() {
+              if (window.LQPast && typeof window.LQPast.isDone === `function`) return !!window.LQPast.isDone();
+              return !0;
+            }
+            checkArtDistrictAccess() {
+              const game = this.store.game;
+              if (game.artDistrictUnlocked || this.artDistrictPreview) return !0;
+
+              // These are the original progression quotas. The wandering artists do not count as town missions.
+              const countDone = (areaId, excluded = []) =>
+                Te(we(areaId)).filter((npc) => !excluded.includes(npc.id) && this.store.get(npc.id).goalDone).length;
+              const englishDone = countDone(`english-town`, [`rook`]);
+              const mineralsDone = countDone(`mining-town`, [`vex`, `morrow`]);
+              const historyDone = this.artHistoryDone();
+              const guideIds = [`rook`, `vex`, `morrow`];
+              const marksDone = guideIds.filter((id) => this.store.get(id).goalDone).length;
+              const unlocked = englishDone >= 4 && mineralsDone >= 3 && marksDone === 3 && historyDone;
+
+              if (unlocked) {
+                game.artDistrictUnlocked = !0;
+                this.store.save();
+                this.quests?.toast([
+                  `🎨 THE THREE MARKS ARE COMPLETE`,
+                  `Rook, Vex and Morrow have revealed the forgotten freight route.`,
+                  `The hidden tunnel in Minerals Town is now open.`,
+                ]);
+                // The entrance label was intentionally hidden until now; reveal it without rebuilding the map.
+                const warp = this.area?.id === `mining-town`
+                  ? this.area.warps.find((item) => item.requiresArtDistrict)
+                  : null;
+                if (warp && this.add && this.areaObjs) {
+                  const label = this.add.text((warp.x + warp.w / 2) * 32, warp.y * 32 - 8, warp.label, {
+                    fontSize: `12px`, color: `#ffda72`, backgroundColor: `#18202beF`, padding: { x: 5, y: 3 },
+                  }).setOrigin(0.5, 1).setDepth(12);
+                  this.areaObjs.push(label);
+                }
+              }
+              return unlocked;
+            }
+            gain(e, t) {
+              let n = this.store.game,
+                r = mt(n.rep);
+              ((n.money += e), (n.rep += t));
+              let i = mt(n.rep);
+              (i.idx > r.idx &&
+                (this.quests.toast([`${i.icon} NEW TITLE: ${i.title}!`, i.perk]),
+                this.cameras.main.flash(500, 255, 230, 120)),
+                this.applyRankLook(),
+                this.store.save());
+            }
+            applyRankLook() {
+              let e = mt(this.store.game.rep);
+              const __look = this.store.game.rpg && this.store.game.rpg.look;
+              this.player.lqSlow = !!(__look && __look.kimono);
+              if (__look) {
+                this.playerKey = window.LQCharacter.ensure(this, __look);
+                this.player.setOrigin(0.5, (Gr * 38 + window.LQCharacter.pad) / (38 + window.LQCharacter.pad));
+              } else {
+                this.playerKey = `player${e.idx}`;
+                Vr(this, this.playerKey, Pr(e.color));
+                this.player.setOrigin(0.5, Gr);
+              }
+              (Ur(this.player, this.playerKey, this.pFace, this.pMoving),
+                this.badge.setText(e.icon).setVisible(!!e.icon));
+            }
+            placeLabel(e) {
+              let short = nt[e.def.id]?.short || e.def.name;
+              let done = this.store?.get(e.def.id)?.goalDone;
+              let sleeping = e.slot?.kind === `sleep`;
+              let badge = sleeping ? `💤 ` : !done ? `⭐ ` : ``;
+              let targetText = badge + short;
+              if (e.label.text !== targetText) {
+                e.label.setText(targetText);
+                if (!done && !sleeping) {
+                  e.label.setColor(`#ffd36b`);
+                } else if (sleeping) {
+                  e.label.setColor(`#8fd3ff`);
+                } else {
+                  e.label.setColor(`#ffffff`);
+                }
+              }
+              e.label.setPosition(e.sprite.x, e.sprite.y - Wr * e.sprite.scaleX);
+            }
+            buildArea() {
+              this.drawWorld();
+              window.LQWorldUpgrade?.attach(this);
+              window.LQCareerWorlds?.attach(this);
+              let e = this.store.game.minutes;
+              for (let t of Te(this.area)) {
+                let n = ae(t.id, e),
+                  r = this.area.places[n.place],
+                  i = ce(r.x, r.y);
+                Vr(this, t.id, Nr[t.id]);
+                let a = this.add
+                  .image(i.x, i.y, `ch_${t.id}_down_0`)
+                  .setOrigin(0.5, Gr)
+                  .setDepth(9)
+                  .setInteractive({ cursor: `pointer` });
+                a.on(`pointerdown`, () => {
+                  let dist = Y.Math.Distance.Between(this.player.x, this.player.y, a.x, a.y);
+                  if (dist < 72 * (this.inside?.k ?? 1)) {
+                    this.tryTalk();
+                  } else {
+                    this.quests.toast([`Walk a bit closer to ${nt[t.id].short} to talk (E)`]);
+                  }
+                });
+                let o = this.add
+                    .text(i.x, i.y - Wr, nt[t.id].short, {
+                      fontSize: `12px`,
+                      color: `#fff`,
+                      backgroundColor: `#0008`,
+                    })
+                    .setOrigin(0.5)
+                    .setDepth(11),
+                  s = {
+                    def: t,
+                    sprite: a,
+                    face: Or(),
+                    label: o,
+                    slot: n,
+                    path: [],
+                    idleTimer: Y.Math.Between(2, 6),
+                    inside: !1,
+                  };
+                (this.setHidden(s, n.kind === `sleep`), this.npcs.push(s));
+              }
+              this.dim = this.add
+                .rectangle(0, 0, this.area.w * 32, this.area.h * 32, 659504, this.dimAlpha)
+                .setOrigin(0)
+                .setDepth(50);
+            }
+            unstick() {
+              if (this.inside || !this.blocked(this.player.x, this.player.y)) return;
+              let e = Math.floor(this.player.x / 32),
+                t = Math.floor(this.player.y / 32);
+              for (let n = 1; n < 10; n++)
+                for (let r = -n; r <= n; r++)
+                  for (let i = -n; i <= n; i++) {
+                    if (Math.max(Math.abs(i), Math.abs(r)) !== n) continue;
+                    let a = ce(e + i, t + r);
+                    if (!this.blocked(a.x, a.y)) {
+                      this.player.setPosition(a.x, a.y);
+                      return;
+                    }
+                  }
+            }
+            fitCamera() {
+              let e = this.scale.width,
+                t = this.scale.height,
+                n = this.area.w * 32,
+                r = this.area.h * 32,
+                i = Math.max(n, e),
+                a = Math.max(r, t);
+              this.cameras.main.setBounds(Math.min(0, (n - i) / 2), Math.min(0, (r - a) / 2), i, a);
+            }
+            clearArea() {
+              window.LQ52?.detach?.(this);
+              window.LQWorldUpgrade?.detach(this);
+              for (let e of this.areaObjs) e.destroy();
+              this.areaObjs = [];
+              this.artDistrictWarpLabel = null;
+              for (let e of this.walls) e.destroy();
+              this.walls = [];
+              for (let e of this.npcs) (e.sprite.destroy(), e.label.destroy());
+              ((this.npcs = []),
+                (this.dimAlpha = this.dim.fillAlpha),
+                this.dim.destroy(),
+                this.prompt.setVisible(!1));
+            }
+            drawWorld() {
+              let e = `world_${this.area.id}`;
+              if (!this.textures.exists(e)) {
+                let t = this.add.graphics();
+                if (window.LQCareerWorlds?.isNew(this.area.id)) {
+                  window.LQCareerWorlds.paint(t, this.area);
+                } else if (this.area.theme === `past` && window.LQPast) {
+                  // Chapter 2 village (js/past.js) has its own ground, buildings and props.
+                  window.LQPast.paint(t, this.area);
+                  window.LQWorldUpgrade?.ground(t, this.area);
+                  window.LQWorldV15?.ground(t, this.area);
+                  window.LQWorldUpgrade?.details(t, this.area);
+                  window.LQWorldV15?.landmark(t, this.area);
+                } else {
+                  (hn(t, this.area),
+                    LQ9.drawTerrain(t, this.area),
+                    Rn(t, this.area),
+                    LQ9.drawLandscape(t, this.area));
+                  window.LQWorldUpgrade?.ground(t, this.area);
+                  window.LQWorldV15?.ground(t, this.area);
+                  for (let e of this.area.buildings) {
+                    Zt(t, e, this.area);
+                  }
+                  LQ9.drawStation(t, this.area);
+                  window.LQWorldUpgrade?.details(t, this.area);
+                  window.LQWorldV15?.landmark(t, this.area);
+                }
+                (t.generateTexture(e, this.area.w * 32, this.area.h * 32), t.destroy());
+              }
+              this.areaObjs.push(this.add.image(0, 0, e).setOrigin(0).setDepth(0));
+              for (let e of this.area.obstacles)
+                this.walls.push(
+                  this.add
+                    .rectangle(e.x * 32, e.y * 32, e.w * 32, e.h * 32)
+                    .setOrigin(0)
+                    .setVisible(!1),
+                );
+              for (let e of this.area.buildings)
+                ( (e.collisionRects || [e]).forEach(part=>
+                  this.walls.push(
+                    this.add
+                      .rectangle(part.x * 32, part.y * 32, part.w * 32, part.h * 32)
+                      .setOrigin(0)
+                      .setVisible(!1),
+                  )),
+                  this.areaObjs.push(
+                    this.add
+                      .text((e.x + e.w) * 32, e.y * 32 - 36, e.name, {
+                        fontSize: `11px`,
+                        color: `#fff`,
+                        backgroundColor: `#000a`,
+                        padding: { x: 3, y: 1 },
+                      })
+                      .setOrigin(1, 0)
+                      .setDepth(12),
+                  ));
+              for (let e of this.area.warps) {
+                if (e.hiddenUntilArtUnlock && !this.store.game.artDistrictUnlocked && !this.artDistrictPreview) continue;
+                this.areaObjs.push(
+                  this.add
+                    .text((e.x + e.w / 2) * 32, e.y * 32 - 8, e.label, {
+                      fontSize: `12px`,
+                      color: `#bff4ff`,
+                      backgroundColor: `#000a`,
+                      padding: { x: 4, y: 2 },
+                    })
+                    .setOrigin(0.5, 1)
+                    .setDepth(12),
+                );
+              }
+              LQ9.stationLabels(this);
+            }
+            switchArea(e, t, n) {
+              if (window.LQCareerWorlds && !window.LQCareerWorlds.allowed(e)){window.LQCareerWorlds.feedback(this,e);return;}
+              if (this.switching) return;
+              cancelTownAutopilot();
+              this.switching = !0;
+              let r = this.cameras.main;
+              (r.fadeOut(500, 0, 0, 0),
+                r.once(`camerafadeoutcomplete`, () => {
+                  let i = this.inside;
+                  if (i) {
+                    LQ57.onLeave();
+              LQ58.onLeave(); LQ59.onLeave(); LQ60.onLeave(); LQ61.onLeave(); LQ62.onLeave(); LQ63.onLeave(); LQ64.onLeave();
+                    for (let e of i.objs) e.destroy();
+                    this.inside = null;
+                  }
+                  (this.clearArea(), (this.area = we(e)), (this.store.game.area = this.area.id));
+                  if (this.store.game.rpg) delete this.store.game.rpg.lastInterior;
+                  let a = !this.store.game.visited.includes(this.area.id);
+                  (a && this.store.game.visited.push(this.area.id),
+                    this.quests.setArea(this.area),
+                    this.buildArea());
+                  LQ57.decorateExterior(this);
+                  let o = ce(t.x, t.y);
+                  (this.player.setScale(1).setPosition(o.x, o.y),
+                    this.unstick(),
+                    (this.doorCooldown = 1),
+                    this.fitCamera(),
+                    r.startFollow(this.player, !0, 0.1, 0.1),
+                    r.centerOn(o.x, o.y),
+                    this.store.save(),
+                    r.fadeIn(500, 0, 0, 0),
+                    this.quests.toast([
+                      `📍 ${this.area.name}`,
+                      n,
+                      ...(a ? [`💡 Tip: stuck on a word? Press H to open the word helper.`] : []),
+                    ]),
+                    (this.switching = !1));
+                }));
+            }
+            setHidden(e, t) {
+              (e.sprite.setVisible(!t), e.label.setVisible(!t));
+            }
+            blockedInside(e, t) {
+              let n = this.inside,
+                r = n.k,
+                i = 32 * r,
+                a = 7 * r;
+              return (
+                e < Yr + 6 * r + a ||
+                e > Yr + n.spec.w * i - 6 * r - a ||
+                t < Xr + 2 * i + a ||
+                t > Xr + n.spec.h * i - 4 * r - a ||
+                n.rects.some(
+                  (n) => e > n.x - a && e < n.x + n.w + a && t > n.y - a && t < n.y + n.h + a,
+                )
+              );
+            }
+            blocked(e, t) {
+              if (this.inside) return this.blockedInside(e, t);
+              if(this.area?.__lqPrecise)return LQPrecisePhysics.playerBlocked(this.area,e,t);
+              // Defensive fallback for a map without precision geometry.
+              return !Number.isFinite(e)||!Number.isFinite(t)||e<8||t<8||
+                e>this.area.w*32-8||t>this.area.h*32-8||
+                this.walls.some(n=>e>n.x-7&&e<n.x+n.width+7&&t>n.y-7&&t<n.y+n.height+7);
+            }
+            nearestNpc(e = 48) {
+              let t = null,
+                n = e;
+              for (let e of this.npcs) {
+                if (!e.sprite.visible) continue;
+                let r = Y.Math.Distance.Between(
+                  this.player.x,
+                  this.player.y,
+                  e.sprite.x,
+                  e.sprite.y,
+                );
+                r < n && ((n = r), (t = e));
+              }
+              return t;
+            }
+            tryTalk() {
+              if (
+                this.chat.isOpen ||
+                this.journal.isOpen ||
+                this.settings.isOpen ||
+                this.quests.isOpen ||
+                this.helper.isOpen ||
+                this.briefing.isOpen ||
+                this.sleeping ||
+                this.switching
+              )
+                return;
+              let e = this.nearestNpc(this.inside ? 56 * this.inside.k : 48);
+              if (!this.inside && this.doorCooldown <= 0 && this.doorAhead()) {
+                this.enterBuilding(this.doorAhead());
+                return;
+              }
+              if (e)
+                (Hr(e.face, this.player.x - e.sprite.x, this.player.y - e.sprite.y),
+                  Hr(this.pFace, e.sprite.x - this.player.x, e.sprite.y - this.player.y),
+                  this.chat.open(e.def));
+              else if (this.bedNear()) this.trySleep();
+              else if (this.useStairs()) return;
+              else {
+                let gate = this.portalNear();
+                if (gate) this.useGate(gate);
+                else if (!this.inside && window.LQ52?.tryInteract?.(this)) return;
+                else this.inspectObject();
+              }
+            }
+            gateKeeper(e) {
+              return e.guard
+                ? (this.npcs.find((t) => t.def.id === e.guard && t.inside) ?? null)
+                : null;
+            }
+            gateOpen(e) {
+              return !e.guard || this.gateKeeper(e) !== null;
+            }
+            useGate(e) {
+              let t = this.store.game;
+              if (!this.gateOpen(e)) {
+                let t = nt[e.guard].short,
+                  n = Vt(e.guard, `hall`);
+                this.quests.toast([
+                  `🚪 The gate is closed.`,
+                  `${t} opens it during office hours${n ? `: ${n}` : ``}.`,
+                ]);
+                return;
+              }
+              let n = this.gateKeeper(e);
+              if (!n) {
+                this.switchArea(e.to, e.spawn, e.label);
+                return;
+              }
+              Hr(n.face, this.player.x - n.sprite.x, this.player.y - n.sprite.y);
+              let r = Ut(e.to, {
+                minutes: t.minutes,
+                playerName: this.store.get(n.def.id).playerName,
+                first: !t.visited.includes(e.to),
+              });
+              this.briefing.show(n.def.name, r, (t) => {
+                t && this.switchArea(e.to, e.spawn, e.label);
+              });
+            }
+            portalNear() {
+              let e = this.inside;
+              if (!e) return null;
+              let t = this.area.portals[e.b.name],
+                n = e.spec.items.find((e) => e.k === `portal`);
+              if (!t || !n) return null;
+              let r = 32 * e.k,
+                i = Yr + (n.x + n.w / 2) * r,
+                a = Xr + (n.y + n.h / 2) * r;
+              return Y.Math.Distance.Between(this.player.x, this.player.y, i, a) < 2.4 * r
+                ? t
+                : null;
+            }
+            doorAhead() {
+              return LQ56Doors.find(this);
+            }
+            enterBuilding(e, floor = 0, preserved = null) {
+              cancelTownAutopilot();
+              if (!e) return;
+              LQ56Doors.ensure(this.area, e);
+              if (!_r[e.name]) return;
+              const chosen = floor === 1 && _r[e.name + '::2'] ? 1 : 0;
+              const t = chosen ? _r[e.name + '::2'] : _r[e.name];
+              LQ53.prepare(this.area.id, e.name, t, chosen);
+              window.LQInteriorV55?.enrichRoom?.(t);
+              LQ57.preEnter(this,this.area.id,e.name,t,chosen);
+              LQ58.preEnter(this,this.area.id,e.name,t,chosen);
+              LQ60.preEnter(this,this.area.id,e.name,t,chosen);
+              if (this.inside) {
+                for (const obj of this.inside.objs) obj.destroy();
+                for (const npc of this.npcs)
+                  if (npc.inside) {
+                    npc.inside = false;
+                    npc.sprite.setScale(1);
+                    const pos = this.area.places[npc.slot.place];
+                    if (pos) npc.sprite.setPosition(pos.x * 32 + 16, pos.y * 32 + 16);
+                    this.placeLabel(npc);
+                  }
+              }
+              const bounds = { x: e.door * 32 + 16, y: (e.y + e.h) * 32 + 26 };
+              const out = preserved?.out || this.inside?.out || bounds;
+              const width = this.scale.width,
+                height = this.scale.height;
+              const k = t.w * 64 <= width * 0.92 && t.h * 64 <= height * 0.82 ? 2 : 1;
+              const unit = 32 * k,
+                key = 'int_v7_' + this.area.id + '_' + e.name + '_' + chosen;
+              if (!this.textures.exists(key)) {
+                const gfx = this.add.graphics();
+                Dr(gfx, t);
+                gfx.generateTexture(key, t.w * 32, t.h * 32);
+                gfx.destroy();
+                this.textures.get(key).setFilter(Y.Textures.FilterMode.NEAREST);
+              }
+              const objs = [this.add.image(Yr, Xr, key).setOrigin(0).setScale(k).setDepth(0)];
+              const center = Yr + (t.w / 2) * unit;
+              objs.push(
+                this.add
+                  .text(center, Xr + (t.h - 0.5) * unit, 'EXIT ▼', {
+                    fontSize: '12px',
+                    color: '#ffe7ae',
+                    backgroundColor: '#1b263ac0',
+                    padding: { x: 6, y: 3 },
+                  })
+                  .setOrigin(0.5)
+                  .setDepth(4),
+              );
+              for (const label of t.labels || []) {
+                objs.push(
+                  this.add
+                    .text(Yr + (label.x + 0.5) * unit, Xr + (label.y + 0.32) * unit, label.text, {
+                      fontSize: k === 2 ? '12px' : '10px',
+                      fontFamily: 'monospace',
+                      color: '#e5f8ff',
+                      backgroundColor: '#152034bb',
+                      padding: { x: 3, y: 2 },
+                    })
+                    .setOrigin(0.5)
+                    .setDepth(3),
+                );
+              }
+              const rects = t.items
+                .filter(gr)
+                .map((item) => ({
+                  x: Yr + item.x * unit,
+                  y: Xr + item.y * unit,
+                  w: item.w * unit,
+                  h: item.h * unit,
+                }));
+              this.inside = { b: e, spec: t, k, rects, objs, out, floor: chosen };
+              LQ57.onEnter(this);
+              LQ58.onEnter(this);
+              LQ59.onEnter(this); LQ60.onEnter(this); LQ61.onEnter(this); LQ62.onEnter(this); LQ63.onEnter(this); LQ64.onEnter(this);
+              window.LQCareerWorlds?.onInteriorEnter?.(this);
+              if (!chosen) {
+                let guest = 0;
+                for (const npc of this.npcs) {
+                  const place = this.area.places[npc.slot.place];
+                  if (
+                    vr[npc.slot.place] !== e.name ||
+                    npc.slot.kind === 'sleep' ||
+                    !npc.sprite.visible ||
+                    !place
+                  )
+                    continue;
+                  const pt = t.spots[npc.def.id] ||
+                    t.guests[guest++] || [Math.floor(t.w / 2), Math.max(3, t.h - 4)];
+                  npc.inside = true;
+                  npc.path = [];
+                  npc.sprite
+                    .setScale(k)
+                    .setPosition(Yr + (pt[0] + 0.5) * unit, Xr + (pt[1] + 0.5) * unit);
+                  npc.face.dir = 'down';
+                  this.placeLabel(npc);
+                }
+              }
+              const entranceX = Yr + Math.floor(t.w / 2) * unit;
+              const entranceY = Xr + (t.h - 1.55) * unit;
+              let targetX = entranceX,
+                targetY = entranceY;
+              if (chosen) {
+                const stair = t.items.find((z) => z.k === 'stairs');
+                if (stair) {
+                  targetX = Yr + (stair.x + stair.w / 2) * unit;
+                  targetY = Xr + (stair.y + stair.h + 1) * unit;
+                }
+              }
+              this.player.setScale(k).setPosition(targetX, targetY);
+              // Avoid spawning in furniture or beyond the interior collision margin.
+              if (this.blocked(targetX, targetY)) {
+                for (let y = t.h - 2; y >= 3; y--) {
+                  let found = false;
+                  for (let dx = 0; dx < t.w - 2; dx++)
+                    for (const x of [Math.floor(t.w / 2) + dx, Math.floor(t.w / 2) - dx]) {
+                      if (x < 1 || x >= t.w - 1) continue;
+                      const px = Yr + (x + 0.5) * unit,
+                        py = Xr + (y + 0.5) * unit;
+                      if (!this.blocked(px, py)) {
+                        this.player.setPosition(px, py);
+                        found = true;
+                        break;
+                      }
+                    }
+                  if (found) break;
+                }
+              }
+              const cam = this.cameras.main;
+              cam.stopFollow();
+              cam.removeBounds();
+              cam.centerOn(Yr + (t.w * unit) / 2, Xr + (t.h * unit) / 2);
+              this.prompt?.setVisible(false);
+              this.doorCooldown = 0.8;
+              this.quests.toast([
+                '🏠 ' + e.name + (chosen ? ' · Floor 2' : ''),
+                'E: interact · WASD: move · Go down to the door to exit',
+              ]);
+              const rpg = this.store.game?.rpg;
+              if (rpg)
+                rpg.lastInterior = {
+                  area: this.area.id,
+                  building: e.name,
+                  floor: chosen,
+                  x: Math.round(this.player.x),
+                  y: Math.round(this.player.y),
+                };
+              this.store.save();
+            }
+            nearStairs() {
+              if (!this.inside) return null;
+              const stair = this.inside.spec.items.find((v) => v.k === 'stairs');
+              if (!stair) return null;
+              const size = 32 * this.inside.k;
+              const x = Yr + (stair.x + stair.w / 2) * size,
+                y = Xr + (stair.y + stair.h / 2) * size;
+              return Y.Math.Distance.Between(this.player.x, this.player.y, x, y) < size * 2.25
+                ? stair
+                : null;
+            }
+            useStairs() {
+              const inside = this.inside;
+              if (!inside || !this.nearStairs()) return false;
+              if (!_r[inside.b.name + '::2']) return false;
+              this.enterBuilding(inside.b, inside.floor === 0 ? 1 : 0, { out: inside.out });
+              return true;
+            }
+            mysteryInspect(item) {
+              if (!this.inside || !item) return false;
+              const game = this.store.game || (this.store.game = {});
+              if (!game.rpg || typeof game.rpg !== `object`) game.rpg = {};
+              const rpg = game.rpg;
+              if (
+                !rpg.inventory ||
+                typeof rpg.inventory !== `object` ||
+                Array.isArray(rpg.inventory)
+              )
+                rpg.inventory = { note: 1 };
+              if (!rpg.mystery || typeof rpg.mystery !== `object` || Array.isArray(rpg.mystery))
+                rpg.mystery = {};
+              const m = rpg.mystery;
+              const addItem = (id, count = 1) =>
+                (rpg.inventory[id] = Math.max(0, (Number(rpg.inventory[id]) || 0) + count));
+              const award = (key, title, body, money = 0, rep = 0, itemId = ``, itemName = ``) => {
+                if (m[key]) {
+                  this.store.save();
+                  return true;
+                }
+                m[key] = 1;
+                if (itemId) addItem(itemId, 1);
+                if (money || rep) this.gain(money, rep);
+                this.store.save();
+                const rewards = [];
+                if (itemName) rewards.push(`Received item: ${itemName}`);
+                if (money) rewards.push(`+$${money}`);
+                if (rep) rewards.push(`+${rep} reputation`);
+                this.quests.toast([
+                  `🗝️ ${title}`,
+                  body + (rewards.length ? ` · ` + rewards.join(' · ') : ``),
+                ]);
+                return true;
+              };
+              if (
+                this.inside.b.name === `Library` &&
+                this.inside.floor === 1 &&
+                [`board`, `desk`, `shelf`].includes(item.k)
+              ) {
+                if (m.archiveNote) {
+                  this.quests.toast([
+                    `📚 The Secret Archive is already cleared.`,
+                    `You keep the old note for the next clue.`,
+                  ]);
+                  return true;
+                }
+                return award(
+                  `archiveNote`,
+                  `Mystery Quest: Forgotten Archive`,
+                  `You found an old archive note pointing to a hidden attic workshop.`,
+                  35,
+                  2,
+                  `archive_note`,
+                  `Old Archive Note`,
+                );
+              }
+              if (
+                this.inside.b.name === `Hero's Home` &&
+                this.inside.floor === 1 &&
+                [`crate`, `desk`, `board`].includes(item.k)
+              ) {
+                if (!m.archiveNote) {
+                  this.quests.toast([
+                    `🔐 Something is hidden here.`,
+                    `Search the Secret Archive in the Library first.`,
+                  ]);
+                  return true;
+                }
+                if (m.atticKey) {
+                  this.quests.toast([
+                    `🧰 This attic has already been searched.`,
+                    `The rusty key and map fragment are in your inventory.`,
+                  ]);
+                  return true;
+                }
+                return award(
+                  `atticKey`,
+                  `Mystery Quest: Attic Workshop`,
+                  `Behind the crates you discover a rusty mine key and a torn map fragment.`,
+                  55,
+                  3,
+                  `rusty_key`,
+                  `Rusty Mine Key`,
+                );
+              }
+              if (
+                this.inside.b.name === `Great Mine` &&
+                this.inside.floor === 1 &&
+                item.k === `crystal`
+              ) {
+                if (!m.atticKey) {
+                  this.quests.toast([
+                    `⛏️ The crystal wall hums softly.`,
+                    `A hidden key from another mysterious place may be important.`,
+                  ]);
+                  return true;
+                }
+                if (m.crystalHeart) {
+                  this.quests.toast([
+                    `💎 The Crystal Chamber has already been solved.`,
+                    `The Crystal Heart is safe in your inventory.`,
+                  ]);
+                  return true;
+                }
+                return award(
+                  `crystalHeart`,
+                  `Mystery Quest: Crystal Chamber`,
+                  `The chamber reacts to the rusty key. You uncover the Crystal Heart and finish the mystery trail.`,
+                  90,
+                  5,
+                  `crystal_heart`,
+                  `Crystal Heart`,
+                );
+              }
+              return false;
+            }
+            inspectObject() {
+              if (!this.inside) return false;
+              if (LQ58.inspect(this)) return true;
+              const size = 32 * this.inside.k;
+              let nearest = null,
+                dist = Infinity;
+              for (const item of this.inside.spec.items) {
+                if (!__lqV7ObjectHints[item.k]) continue;
+                const x = Yr + (item.x + item.w / 2) * size,
+                  y = Xr + (item.y + item.h / 2) * size;
+                const d = Y.Math.Distance.Between(this.player.x, this.player.y, x, y);
+                if (d < dist) {
+                  dist = d;
+                  nearest = item;
+                }
+              }
+              if (!nearest || dist > size * 2.25) return false;
+              try {
+                const inspection = {
+                  building: this.inside.b.name,
+                  object: nearest.k,
+                  floor: this.inside.floor || 0,
+                  area: this.area.id,
+                };
+                window.LQV8?.onEvent('inspect', inspection);
+                window.LQStory?.onEvent?.('inspect', inspection);
+              } catch (_) {}
+              if (this.mysteryInspect(nearest)) return true;
+              if (window.LQ52?.interiorInteract?.(this, nearest)) return true;
+              if (LQ57.inspect(this)) return true;
+              const msg = __lqV7ObjectHints[nearest.k];
+              if (msg)
+                this.quests.toast(['🔎 ' + msg, 'Practice: describe this object in English!']);
+              return !!msg;
+            }
+            leaveBuilding() {
+              LQ57.onLeave();
+              LQ58.onLeave(); LQ59.onLeave(); LQ60.onLeave(); LQ61.onLeave(); LQ62.onLeave(); LQ63.onLeave(); LQ64.onLeave();
+              let e = this.inside;
+              if (!e) return;
+              for (let t of e.objs) t.destroy();
+              for (let e of this.npcs) {
+                if (!e.inside) continue;
+                ((e.inside = !1), e.sprite.setScale(1));
+                let t = this.area.places[e.slot.place],
+                  n = ce(t.x, t.y);
+                (e.sprite.setPosition(n.x, n.y), this.placeLabel(e));
+              }
+              ((this.inside = null),
+                (this.doorCooldown = 0.7),
+                this.player.setScale(1).setPosition(e.out.x, e.out.y));
+              const rpg = this.store.game?.rpg;
+              if (rpg) {
+                delete rpg.lastInterior;
+                rpg.lastPosition = {
+                  area: this.area.id,
+                  x: Math.round(e.out.x),
+                  y: Math.round(e.out.y),
+                };
+              }
+              LQ57.decorateExterior(this);
+              window.LQCareerWorlds?.onInteriorLeave?.(this);
+              this.store.save();
+              let t = this.cameras.main;
+              (this.fitCamera(),
+                t.centerOn(this.player.x, this.player.y),
+                t.startFollow(this.player, !0, 0.1, 0.1));
+            }
+            tickClock() {
+              let e = this.store.game;
+              ((e.minutes += Zr(e.minutes) ? qr : Kr),
+                !this.sleeping &&
+                  (e.minutes >= 1440 && ((e.minutes -= 1440), this.newDay()),
+                  this.updateSchedules(),
+                  ++this.ticks % 5 == 0 && this.store.save()));
+            }
+            newDay() {
+              let e = this.store.game;

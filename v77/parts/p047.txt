@@ -1,0 +1,1000 @@
+        });
+      }
+      // Keyboard events originating in AI panels must not issue movement/game shortcuts.
+      for (const panel of [
+        $('ai-panel'),
+        $('lq-toolbar'),
+        $('lq-guide'),
+        $('lq-levels'),
+        $('lq-voice'),
+      ]) {
+        panel.addEventListener('keydown', (e) => e.stopPropagation());
+        panel.addEventListener('keyup', (e) => e.stopPropagation());
+      }
+      $('guide-open').addEventListener('click', () => show('lq-guide'));
+      $('guide-close').addEventListener('click', () => hide('lq-guide'));
+      $('level-open').addEventListener('click', () => show('lq-levels'));
+      $('level-close').addEventListener('click', () => hide('lq-levels'));
+      $('level-select').value = cefrService.getLevel();
+      $('level-current').textContent = cefrService.getLevel();
+      $('level-select').addEventListener('change', (e) => {
+        cefrService.setLevel(e.target.value);
+        $('level-current').textContent = e.target.value;
+      });
+      $('voice-open').addEventListener('click', () => {
+        show('lq-voice');
+        drawVoices();
+      });
+      $('voice-close').addEventListener('click', () => hide('lq-voice'));
+      const voiceBox = $('voice-enabled'),
+        autoBox = $('voice-auto'),
+        voiceRate = $('voice-rate'),
+        voiceList = $('voice-list');
+      voiceBox.checked = speechService.settings.voiceEnabled;
+      autoBox.checked = speechService.settings.autoSpeak;
+      voiceRate.value = speechService.settings.rate;
+      $('voice-rate-value').textContent = Number(voiceRate.value).toFixed(1);
+      voiceBox.addEventListener('change', (e) => {
+        speechService.setVoiceEnabled(e.target.checked);
+      });
+      autoBox.addEventListener('change', (e) => speechService.setAutoSpeak(e.target.checked));
+      voiceRate.addEventListener('input', (e) => {
+        $('voice-rate-value').textContent = (+e.target.value).toFixed(1);
+        speechService.setRate(+e.target.value);
+      });
+      function drawVoices() {
+        const voices = speechService.getVoices();
+        voiceList.innerHTML = '<option value="">Auto-pick the best English voice</option>';
+        for (const voice of voices) {
+          const opt = document.createElement('option');
+          opt.value = voice.name;
+          opt.textContent = voice.name + ' (' + voice.lang + ')';
+          voiceList.appendChild(opt);
+        }
+        voiceList.value = speechService.settings.preferredVoice || '';
+      }
+      voiceList.addEventListener('change', (e) => speechService.setPreferredVoice(e.target.value));
+      $('voice-test').addEventListener('click', () =>
+        speechService.speak(
+          'Hello! Welcome to English Town. Let us practice speaking English together.',
+        ),
+      );
+      speechService.subscribe(() => {
+        if (!$('lq-voice').hidden) drawVoices();
+      });
+      for (const b of document.querySelectorAll('[data-menu-shortcut]'))
+        b.addEventListener('click', () => {
+          const action = b.dataset.menuShortcut;
+          const el = document.querySelector('#group-menu button[data-act="' + action + '"]');
+          if (el) el.click();
+        });
+      for (const modal of document.querySelectorAll('.lq-modal'))
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.hidden = true;
+        });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape')
+          for (const modal of document.querySelectorAll('.lq-modal')) modal.hidden = true;
+      });
+      // For standalone file:// mode a server proxy is absent. Personal key can be entered under K.
+      updateConnectionStatus();
+
+      /* LIFEQUEST V10 — Smart Economy Engine. Integration with V9 Phaser scene/save. */
+      const LQ10 = (() => {
+        'use strict';
+        const $ = (id) => document.getElementById(id);
+        const esc = (v) =>
+          String(v ?? '').replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+          );
+        const norm = (v) =>
+          String(v ?? '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .toLowerCase()
+            .trim();
+        const scene = () => window.__lifequestGetScene?.() || null;
+        const game = () => scene()?.store?.game || null;
+        const money = () => Number(game()?.money) || 0;
+        const clock = () => {
+          const g = game();
+          return g
+            ? `${window.LQPast?.dayLabel ? window.LQPast.dayLabel(g.day) : `Day ${g.day}`} · ${String(Math.floor(g.minutes / 60) % 24).padStart(2, '0')}:${String(g.minutes % 60).padStart(2, '0')}`
+            : '';
+        };
+        // Pricing is authoritative; the AI and DOM never determine costs.
+        const catalog = {
+          boarding_pass: {
+            name: '✅ Ticket checked',
+            price: 0,
+            category: 'ticket',
+            effect: 'pass',
+            desc: 'Your ticket was checked by the conductor on the train.',
+            shops: [],
+          },
+          tea: {
+            name: '🍵 Hot tea',
+            price: 8,
+            category: 'food',
+            effect: 'energy',
+            energy: 10,
+            desc: 'A warm cup of tea. Restores 10 energy.',
+            shops: ['Sunny Cafe'],
+          },
+          coffee: {
+            name: '☕ Coffee',
+            price: 12,
+            category: 'food',
+            effect: 'energy',
+            energy: 15,
+            desc: 'Fragrant coffee. Restores 15 energy.',
+            shops: ['Sunny Cafe'],
+          },
+          cake: {
+            name: '🍰 Pastry',
+            price: 15,
+            category: 'food',
+            effect: 'energy',
+            energy: 12,
+            desc: 'Eat it or give it to Lily and Mia.',
+            shops: ['Sunny Cafe', 'Restaurant'],
+            gift: 1,
+          },
+          cafe_combo: {
+            name: '🥐 Breakfast combo',
+            price: 22,
+            category: 'food',
+            effect: 'energy',
+            energy: 28,
+            desc: 'A tasty breakfast. Restores 28 energy.',
+            shops: ['Sunny Cafe'],
+          },
+          bread: {
+            name: '🥖 Bread',
+            price: 10,
+            category: 'food',
+            effect: 'energy',
+            energy: 14,
+            desc: 'Simple food.',
+            shops: ['Corner Shop', 'Market'],
+          },
+          apple: {
+            name: '🍎 Apple',
+            price: 8,
+            category: 'food',
+            effect: 'energy',
+            energy: 8,
+            desc: 'Nutritious fruit.',
+            shops: ['Corner Shop', 'Market'],
+          },
+          battery: {
+            name: '🔋 Pin',
+            price: 15,
+            category: 'tool',
+            effect: 'energy',
+            energy: 5,
+            desc: 'Spare batteries for your devices.',
+            shops: ['Corner Shop', 'Tool Shop'],
+          },
+          flashlight: {
+            name: '🔦 Flashlight',
+            price: 40,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Extra light for exploring the mine.',
+            shops: ['Corner Shop', 'Tool Shop'],
+          },
+          notebook: {
+            name: '📓 Notebook',
+            price: 25,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'vocab',
+            desc: 'Unlocks shopping vocabulary exercises.',
+            shops: ['Corner Shop', 'Library'],
+          },
+          backpack: {
+            name: '🎒 Large backpack',
+            price: 120,
+            category: 'tool',
+            effect: 'upgrade',
+            desc: 'Increases capacity from 24 to 48 items.',
+            shops: ['Corner Shop', 'Tool Shop'],
+            unique: true,
+          },
+          soup: {
+            name: '🥣 Hot soup',
+            price: 18,
+            category: 'food',
+            effect: 'energy',
+            energy: 25,
+            desc: 'A restaurant meal.',
+            shops: ['Restaurant'],
+          },
+          salad: {
+            name: '🥗 Salad',
+            price: 22,
+            category: 'food',
+            effect: 'energy',
+            energy: 20,
+            desc: 'A meal rich in greens.',
+            shops: ['Restaurant'],
+          },
+          pizza: {
+            name: '🍕 Pizza',
+            price: 30,
+            category: 'food',
+            effect: 'energy',
+            energy: 30,
+            desc: 'Can be used as a gift.',
+            shops: ['Restaurant'],
+            gift: 1,
+          },
+          dinner: {
+            name: '🍽️ Special dinner',
+            price: 55,
+            category: 'food',
+            effect: 'energy',
+            energy: 50,
+            desc: 'A high-energy dinner.',
+            shops: ['Restaurant'],
+          },
+          flashcards: {
+            name: '🃏 Flashcard set',
+            price: 20,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'vocab',
+            desc: 'Practice vocabulary with cards.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          book_a1: {
+            name: '📗 English Book A1',
+            price: 25,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'A1',
+            desc: 'Unlocks A1 lessons and questions.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          book_a2: {
+            name: '📘 English Book A2',
+            price: 35,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'A2',
+            desc: 'Unlocks A2 lessons and questions.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          book_b1: {
+            name: '📙 English Book B1',
+            price: 55,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'B1',
+            desc: 'Unlocks B1 lessons and questions.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          life_skills: {
+            name: '📕 Life Skills Book',
+            price: 60,
+            category: 'study',
+            effect: 'lesson',
+            lesson: 'budget',
+            desc: 'Practice planning your spending.',
+            shops: ['Library', 'School'],
+            unique: true,
+          },
+          hotel_room: {
+            name: '🛏️ Inn room',
+            price: 45,
+            category: 'service',
+            effect: 'room',
+            desc: 'Rest for 1 night (by in-game day).',
+            shops: ['Hotel', 'Mining Inn'],
+          },
+          hotel_suite: {
+            name: '🏨 Deluxe room',
+            price: 100,
+            category: 'service',
+            effect: 'room',
+            desc: 'Rest in a deluxe room for 1 night.',
+            shops: ['Hotel', 'Mining Inn'],
+          },
+          rail_ticket: {
+            name: '🎫 Train ticket',
+            price: 25,
+            category: 'ticket',
+            effect: 'travel',
+            desc: 'A train ticket to travel to the other town.',
+            shops: ['Rail Station'],
+            stack: 10,
+          },
+          stamp: {
+            name: '✉️ Postage stamp',
+            price: 10,
+            category: 'service',
+            effect: 'mail',
+            desc: 'Used to send a letter from the post office.',
+            shops: ['Post Office'],
+          },
+          shipping: {
+            name: '📦 Parcel service',
+            price: 30,
+            category: 'service',
+            effect: 'mail',
+            desc: 'Send one parcel.',
+            shops: ['Post Office'],
+          },
+          pickaxe: {
+            name: '⛏️ Mining pickaxe',
+            price: 90,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Used in the Great Mine to collect ore.',
+            shops: ['Smithy', 'Tool Shop'],
+            unique: true,
+          },
+          miner_lamp: {
+            name: '🏮 Mine lamp',
+            price: 55,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Light for the mine.',
+            shops: ['Tool Shop', 'Smithy'],
+            unique: true,
+          },
+          gloves: {
+            name: '🧤 Gloves',
+            price: 40,
+            category: 'tool',
+            effect: 'equip',
+            desc: 'Safe work gear.',
+            shops: ['Tool Shop'],
+            unique: true,
+          },
+          tool_kit: {
+            name: '🧰 Repair kit',
+            price: 80,
+            category: 'tool',
+            effect: 'repair',
+            desc: 'Use at the smithy to gain craft progress.',
+            shops: ['Smithy', 'Tool Shop'],
+          },
+          crystal: {
+            name: '💎 Decorative crystal',
+            price: 95,
+            category: 'collectible',
+            effect: 'display',
+            desc: 'Display it in your room.',
+            shops: ['Gem Shop'],
+          },
+          ruby: {
+            name: '❤️ Ruby',
+            price: 180,
+            category: 'collectible',
+            effect: 'display',
+            desc: 'A collectible gem.',
+            shops: ['Gem Shop'],
+          },
+          emerald: {
+            name: '💚 Emerald',
+            price: 240,
+            category: 'collectible',
+            effect: 'display',
+            desc: 'A unique gemstone.',
+            shops: ['Gem Shop'],
+          },
+          flower: {
+            name: '💐 Bouquet',
+            price: 28,
+            category: 'gift',
+            effect: 'gift',
+            desc: 'Give to an NPC to improve your relationship.',
+            shops: ['Market', 'Gem Shop'],
+          },
+          souvenir: {
+            name: '🎁 Souvenir',
+            price: 38,
+            category: 'gift',
+            effect: 'gift',
+            desc: 'Give to a townsperson.',
+            shops: ['Gem Shop', 'Market'],
+          },
+          lamp: {
+            name: '💡 Desk lamp',
+            price: 50,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'Room decoration with warm light.',
+            shops: ['Corner Shop', 'Tool Shop'],
+            unique: true,
+          },
+          home_plant: {
+            name: '🪴 Potted plant',
+            price: 60,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'Bring some greenery into your home.',
+            shops: ['Market', 'Corner Shop'],
+            unique: true,
+          },
+          rug: {
+            name: '🧶 Nice rug',
+            price: 80,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A soft rug for your home.',
+            shops: ['Market', 'Corner Shop'],
+            unique: true,
+          },
+          bookshelf: {
+            name: '📚 Bookshelf',
+            price: 120,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A book corner for your home.',
+            shops: ['Corner Shop'],
+            unique: true,
+          },
+          sofa: {
+            name: '🛋️ Sofa',
+            price: 230,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A sofa with a soft shadow.',
+            shops: ['Corner Shop'],
+            unique: true,
+          },
+          fancy_bed: {
+            name: '🛌 New bed',
+            price: 300,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'A nice bed for Hero’s Home.',
+            shops: ['Corner Shop'],
+            unique: true,
+          },
+          study_corner: {
+            name: '🖥️ Study corner',
+            price: 500,
+            category: 'home',
+            effect: 'decorate',
+            desc: 'Unlocks extra English practice.',
+            shops: ['Corner Shop', 'Library'],
+            unique: true,
+          },
+        };
+        const shops = {
+          'Sunny Cafe': {
+            npc: 'barista',
+            emoji: '☕',
+            intro: 'Welcome to Sunny Cafe! What would you like to order?',
+          },
+          'Corner Shop': {
+            npc: 'shopkeeper',
+            emoji: '🛒',
+            intro: 'Welcome! Would you like to see our prices?',
+          },
+          'Market': {
+            npc: 'shopkeeper',
+            emoji: '🥬',
+            intro: 'Fresh goods today. What are you looking for?',
+          },
+          'Restaurant': {
+            npc: 'chef',
+            emoji: '🍽️',
+            intro: 'Welcome! Would you like to order a meal?',
+          },
+          'Library': {
+            npc: 'librarian',
+            emoji: '📚',
+            intro: 'Would you like an English learning book?',
+          },
+          'School': { npc: 'teacher', emoji: '🏫', intro: 'We have books for all English levels.' },
+          'Hotel': {
+            npc: 'hotelclerk',
+            emoji: '🏨',
+            intro: 'How many nights would you like to stay?',
+          },
+          'Mining Inn': { npc: 'innkeeper', emoji: '🛏️', intro: 'Welcome! Would you like a room?' },
+          'Bank': {
+            npc: 'banker',
+            emoji: '🏦',
+            intro: 'Would you like to deposit or withdraw money?',
+          },
+          'Smithy': { npc: 'smith', emoji: '🔨', intro: 'What tool do you need today?' },
+          'Tool Shop': { npc: 'smith', emoji: '🧰', intro: 'Need safety equipment for the mine?' },
+          'Gem Shop': {
+            npc: 'gemdealer',
+            emoji: '💎',
+            intro: 'Would you like to see our gemstones?',
+          },
+          'Rail Station': { npc: 'carter', emoji: '🚂', intro: 'Where would you like to travel?' },
+          'Post Office': {
+            npc: 'postman',
+            emoji: '📮',
+            intro: 'Would you like to send a letter or parcel?',
+          },
+        };
+        const financeLessons = [
+          [
+            'asking',
+            'Asking prices',
+            'How much is this book?',
+            'How much this book?',
+            'How much is this book?',
+          ],
+          [
+            'compare',
+            'Comparing prices',
+            'The tea is cheaper than coffee.',
+            'The tea is expensive than coffee.',
+            'The tea is cheaper than coffee.',
+          ],
+          [
+            'budget',
+            'Making a budget',
+            'I have $50. I will save $20.',
+            'I have $50. I can spend $80.',
+            'I have $50. I will save $20.',
+          ],
+          [
+            'change',
+            'Getting change',
+            'My change is $5.',
+            'My money change $5.',
+            'My change is $5.',
+          ],
+          [
+            'receipt',
+            'Asking for a receipt',
+            'Could I have a receipt, please?',
+            'Give I a receipt.',
+            'Could I have a receipt, please?',
+          ],
+          [
+            'saving',
+            'Saving money',
+            'I save money for a new book.',
+            'I am save money to a book.',
+            'I save money for a new book.',
+          ],
+          [
+            'hotel',
+            'Booking a room',
+            'I would like to book a room.',
+            'I like book room.',
+            'I would like to book a room.',
+          ],
+          [
+            'ticket',
+            'Buying a ticket',
+            'One ticket to Minerals Town, please.',
+            'One ticket in Minerals Town.',
+            'One ticket to Minerals Town, please.',
+          ],
+          [
+            'return',
+            'Returning items',
+            'Can I return this unopened item?',
+            'Can I returned this item?',
+            'Can I return this unopened item?',
+          ],
+          [
+            'plan',
+            'Managing spending',
+            'I need to compare prices before buying.',
+            'I should buy everything now.',
+            'I need to compare prices before buying.',
+          ],
+        ];
+        const MAX_HISTORY = 120;
+        let openTab = 'shop',
+          chosenShop = 'Sunny Cafe',
+          active = null,
+          busy = false,
+          decorationGraphics = null,
+          msg = '',
+          lastPurchase = { signature: '', at: 0 };
+        const validInt = (v, min = 0, max = 1e9) => Number.isSafeInteger(v) && v >= min && v <= max;
+        function state() {
+          const g = game();
+          if (!g) return null;
+          if (!g.rpg || typeof g.rpg !== 'object') g.rpg = {};
+          if (!g.rpg.inventory || typeof g.rpg.inventory !== 'object') g.rpg.inventory = {};
+          let s = g.economy;
+          if (!s || typeof s !== 'object' || Array.isArray(s)) s = g.economy = {};
+          if (!validInt(s.bank)) s.bank = 0;
+          if (!Array.isArray(s.ledger)) s.ledger = [];
+          if (!s.unlocked || typeof s.unlocked !== 'object') s.unlocked = {};
+          if (!s.flags || typeof s.flags !== 'object') s.flags = {};
+          if (!s.gifts || typeof s.gifts !== 'object') s.gifts = {};
+          if (!s.homeSlots || typeof s.homeSlots !== 'object') s.homeSlots = {};
+          if (!s.jobs || typeof s.jobs !== 'object') s.jobs = {};
+          if (!s.goal || typeof s.goal !== 'object')
+            s.goal = { name: 'English Book B1', amount: 200 };
+          s.version = 10;
+          return s;
+        }
+        function inventory() {
+          return game()?.rpg?.inventory || {};
+        }
+        function count(id) {
+          return Number(inventory()[id]) || 0;
+        }
+        function capacity() {
+          return count('backpack') ? 48 : 24;
+        }
+        function usedSpace() {
+          return Object.entries(inventory()).reduce(
+            (sum, [id, v]) => sum + (catalog[id] ? Math.max(0, Math.trunc(Number(v) || 0)) : 0),
+            0,
+          );
+        }
+        function log(type, amount, label, extra = {}) {
+          const s = state();
+          const g = game();
+          if (!s) return;
+          const time = Date.now();
+          const tx = `${g.day}-${g.minutes}-${time}-${s.ledger.length}`;
+          s.ledger.unshift({
+            id: tx,
+            type,
+            amount,
+            label,
+            day: g.day,
+            minutes: g.minutes,
+            ...extra,
+          });
+          s.ledger = s.ledger.slice(0, MAX_HISTORY);
+        }
+        function save() {
+          scene()?.store?.save?.();
+          adventure.refresh?.();
+          window.dispatchEvent(new Event('lifequest:status'));
+          render();
+        }
+        function notice(text) {
+          msg = String(text);
+          const n = $('v10-status');
+          if (n) n.textContent = msg;
+          const toast = $('rpg-toast');
+          if (toast && typeof toast.textContent === 'string') toast.textContent = msg;
+        }
+        function context() {
+          const sc = scene();
+          if (!sc) return { inside: '', near: [], area: '', day: 1 };
+          const p = sc.player;
+          return {
+            inside: sc.inside?.b?.name || '',
+            area: sc.area?.id || '',
+            day: sc.store.game.day,
+            near: (sc.npcs || [])
+              .filter(
+                (n) =>
+                  n.sprite?.visible &&
+                  Boolean(n.inside) === Boolean(sc.inside) &&
+                  Math.hypot(n.sprite.x - p.x, n.sprite.y - p.y) < 74,
+              )
+              .map((n) => n.def.id),
+          };
+        }
+        function canShop(shop) {
+          const c = context();
+          if (c.inside === shop) return true;
+          const sc = scene();
+          if (!sc || sc.inside) return false;
+          if (
+            shop === 'Rail Station' &&
+            ['english-town', 'mining-town'].includes(sc.area?.id) &&
+            sc.player.x >= 4 * 32 &&
+            sc.player.x < 56 * 32 &&
+            sc.player.y >= 47 * 32 &&
+            sc.player.y < 72 * 32
+          )
+            return true;
+          const b = sc.area?.buildings?.find((x) => x.name === shop);
+          if (!b) return false;
+          return (
+            Math.hypot(sc.player.x - (b.door * 32 + 16), sc.player.y - ((b.y + b.h) * 32 + 12)) < 70
+          );
+        }
+        function checkShop(shop) {
+          if (!shops[shop]) return 'Shop not found.';
+          if (!canShop(shop))
+            return `You need to be at the entrance of or inside ${shop} to trade. Press M for the map or ask the AI for directions.`;
+          return '';
+        }
+        function amount(n) {
+          const v = Number(n);
+          return validInt(v, 1, 999) ? v : NaN;
+        }
+        function shopItems(shop) {
+          return Object.entries(catalog).filter(([, def]) => def.shops.includes(shop));
+        }
+        function transactBuy(shop, id, qty) {
+          const sc = scene(),
+            s = state(),
+            def = catalog[id],
+            g = game();
+          if (!sc || !s || !g) return { ok: false, message: 'The game is not ready yet.' };
+          if (busy) return { ok: false, message: 'A transaction is already being processed.' };
+          const problem = checkShop(shop);
+          if (problem) return { ok: false, message: problem };
+          if (!def || !def.shops.includes(shop))
+            return { ok: false, message: 'This item is not sold at this shop.' };
+          const n = amount(qty);
+          if (!Number.isFinite(n) || n > 10)
+            return { ok: false, message: 'You can only buy 1–10 items at a time.' };
+          if (def.effect === 'room' && n !== 1)
+            return { ok: false, message: 'You can only rent one room at a time.' };
+          const sig = `${shop}:${id}:${n}`;
+          if (lastPurchase.signature === sig && Date.now() - lastPurchase.at < 700)
+            return {
+              ok: false,
+              message: 'Your previous transaction was received. Please wait a moment before buying again.',
+            };
+          const total = def.price * n;
+          if (!validInt(total) || !validInt(g.money) || g.money < total)
+            return {
+              ok: false,
+              message: `You need $${Math.max(0, total - g.money)} more. Complete quests to earn money.`,
+            };
+          if (def.unique && count(id) > 0)
+            return { ok: false, message: 'You already own this item.' };
+          if (def.unique && n !== 1)
+            return { ok: false, message: 'Upgrade items can only be bought one at a time.' };
+          if (def.category !== 'service' && usedSpace() + n > capacity())
+            return {
+              ok: false,
+              message: `Your bag only has ${Math.max(0, capacity() - usedSpace())} free slots. Use some items or buy a backpack.`,
+            };
+          busy = true;
+          try {
+            g.money -= total;
+            if (def.category === 'service' && def.effect === 'room') {
+              s.flags.roomUntilDay = g.day;
+              s.flags.roomShop = shop;
+              s.flags.roomName = id;
+            } else if (def.category === 'service' && def.effect === 'mail') {
+              s.flags.pendingMail = (Number(s.flags.pendingMail) || 0) + n;
+            } else if (def.category !== 'service') {
+              inventory()[id] = count(id) + n;
+            }
+            if (def.effect === 'lesson') s.unlocked[def.lesson] = true;
+            log('purchase', -total, `${def.name} ×${n}`, { shop, item: id, qty: n });
+            lastPurchase = { signature: sig, at: Date.now() };
+            save();
+            return {
+              ok: true,
+              message: `✅ Bought ${def.name} ×${n} at ${shop}. -$${total}. “Could I have a receipt, please?”`,
+            };
+          } finally {
+            busy = false;
+          }
+        }
+        function bankAction(kind, raw) {
+          const c = context(),
+            g = game(),
+            s = state();
+          if (!g || !s) return 'The game is not ready yet.';
+          if (!canShop('Bank')) return 'You must go to the Bank to deposit or withdraw money.';
+          const n = Number(raw);
+          if (!validInt(n, 1, 1000000)) return 'Enter a whole amount from 1 to 1,000,000.';
+          if (kind === 'deposit') {
+            if (!validInt(g.money) || g.money < n) return 'You do not have enough cash in your wallet.';
+            if (s.bank + n > 1000000000) return 'This exceeds the account limit.';
+            g.money -= n;
+            s.bank += n;
+            log('deposit', -n, `Savings deposit $${n}`);
+          } else if (kind === 'withdraw') {
+            if (s.bank < n || g.money + n > 1000000000)
+              return 'Insufficient balance or over the safe limit.';
+            s.bank -= n;
+            g.money += n;
+            log('withdraw', n, `Savings withdrawal $${n}`);
+          } else return 'Invalid command.';
+          save();
+          return `🏦 Success! Wallet $${g.money}; savings $${s.bank}. Your total assets are unchanged because money just moved between two accounts.`;
+        }
+        function moveItem(id, delta) {
+          const n = count(id);
+          if (n + delta < 0) return false;
+          inventory()[id] = n + delta;
+          return true;
+        }
+        function consume(id) {
+          const def = catalog[id],
+            sc = scene(),
+            g = game(),
+            s = state();
+          if (!def || !sc || count(id) < 1) return 'You do not own this item.';
+          if (def.effect === 'energy') {
+            g.rpg.energy = Math.min(100, (Number(g.rpg.energy) || 0) + def.energy);
+            moveItem(id, -1);
+            log('use', 0, `Used ${def.name}`);
+            save();
+            return `✨ ${def.name}: +${def.energy} energy (max 100).`;
+          }
+          if (def.effect === 'equip') {
+            s.flags[id + 'Equipped'] = !s.flags[id + 'Equipped'];
+            save();
+            return s.flags[id + 'Equipped'] ? `✅ Equipped ${def.name}.` : `Put away ${def.name}.`;
+          }
+          if (def.effect === 'lesson') {
+            openTab = 'learning';
+            show('learning');
+            return `📖 Opened lesson ${def.lesson || 'English'}.`;
+          }
+          if (def.effect === 'upgrade') {
+            s.flags.largeBag = true;
+            save();
+            return '🎒 Large backpack: 48 inventory slots.';
+          }
+          if (def.effect === 'gift') {
+            const npc = context().near[0];
+            if (!npc) return 'Go near an NPC and open your inventory to give a gift.';
+            const day = sc.store.game.day;
+            const key = `${npc}_${day}`;
+            if (s.gifts[key]) return 'You already gave this NPC a gift today.';
+            s.gifts[key] = true;
+            moveItem(id, -1);
+            if (g.rpg.relationships?.[npc])
+              g.rpg.relationships[npc].trust = Math.min(
+                100,
+                (Number(g.rpg.relationships[npc].trust) || 0) + 5,
+              );
+            sc.store.get(npc).affinity = Math.min(100, (sc.store.get(npc).affinity || 0) + 4);
+            log('gift', 0, `Gave ${def.name} to ${npc}`);
+            save();
+            return `🎁 Gave ${def.name}! Your relationship with ${npc} improved.`;
+          }
+          if (def.effect === 'travel') {
+            return 'Go to platform 1 and step onto the front of the train. The conductor will check your ticket on board.';
+          }
+          if (false) {
+            const c = context();
+            if (!canShop('Rail Station')) return 'Go to the Rail Station to use your train ticket.';
+            const portals = sc.area?.portals || {};
+            const trainRoutes = {
+              'english-town': {
+                to: 'mining-town',
+                spawn: { x: 30, y: 50 },
+                label: 'Minerals Central Station',
+              },
+              'mining-town': {
+                to: 'english-town',
+                spawn: { x: 30, y: 50 },
+                label: 'English Town Central Station',
+              },
+            };
+            const target =
+              trainRoutes[sc.area?.id] ||
+              (sc.area?.warps || []).find((p) => p?.to && p.to !== sc.area.id) ||
+              Object.values(portals).find((p) => p?.to && p.to !== sc.area.id);
+            if (!target) return 'The station has no valid route from this area; your ticket is kept.';
+            moveItem(id, -1);
+            log('travel', 0, `Train trip: ${sc.area?.name || ''}`);
+            save();
+            try {
+              sc.switchArea(target.to, target.spawn, target.label || 'Rail Station');
+              return '🚂 Traveling to the next town.';
+            } catch {
+              moveItem(id, 1);
+              save();
+              return 'Travel failed; your ticket was refunded.';
+            }
+          }
+          if (def.effect === 'repair') {
+            if (context().inside !== 'Smithy') return 'Go to the Smithy to use the repair kit.';
+            moveItem(id, -1);
+            const day = g.day;
+            const key = `repair-${day}`;
+            if (!s.jobs[key]) {
+              s.jobs[key] = true;
+              g.rpg.xp = (Number(g.rpg.xp) || 0) + 20;
+              log('work', 0, 'Repair practice +20 XP');
+            }
+            save();
+            return '🧰 You practiced repairing tools. +20 XP if this is your first time today.';
+          }
+          if (def.effect === 'decorate') {
+            if (context().inside !== "Hero's Home")
+              return 'Go to Hero’s Home to place the items you bought.';
+            const slots = [0, 1, 2];
+            const index = Number(s.homeSlots[id] ?? 0);
+            s.homeSlots[id] = slots[(index + 1) % slots.length];
+            renderHomeDecor();
+            save();
+            return `🏠 Moved ${def.name} (position ${s.homeSlots[id] + 1}/3).`;
+          }
+          if (def.effect === 'display') {
+            return `💎 ${def.name} is kept as a collectible. You can show it off to NPCs.`;
+          }
+          return `${def.name}: find the right place to use it.`;
+        }
+        function restAction() {
+          const sc = scene(),
+            s = state(),
+            g = game();
+          const place = context().inside;
+          if (!['Hotel', 'Mining Inn'].includes(place))
+            return 'Go inside the Hotel or Mining Inn to rest overnight.';
+          if (!s || s.flags.roomShop !== place || Number(s.flags.roomUntilDay) !== g.day)
+            return 'You need to rent a valid room at the inn desk first.';
+          if (sc.sleeping) return 'You are already resting.';
+          sc.sleeping = true;
+          try {
+            g.minutes = 420;
+            sc.newDay();
+            sc.snapNpcs();
+            s.flags.roomUntilDay = -1;
+            s.flags.roomShop = '';
+            log('rest', 0, `Overnight rest at ${place}`);
+            save();
+            return '🌅 Good morning! You rested overnight at the inn.';
+          } finally {
+            sc.sleeping = false;
+          }
+        }
+
+        const RAIL_CLERKS = ['ticketclerk', 'etclerk'],
+          RAIL_CHECKERS = ['stationmaster', 'etmaster'];
+        function railPop(icon, text) {
+          let n = $('lq-rail-pop');
+          if (!n) {
+            n = document.createElement('div');
+            n.id = 'lq-rail-pop';
+            document.body.appendChild(n);
+          }
+          n.innerHTML = '<span>' + icon + '</span><b>' + esc(text) + '</b>';
+          n.classList.add('shown');
+          clearTimeout(railPop.t);
+          railPop.t = setTimeout(() => n.classList.remove('shown'), 4200);
+          railBadge();
+        }
+        function railBadge() {
+          const b = $('lq-rail-badge');
+          if (!b) return;
+          const p = count('boarding_pass'),
+            k = count('rail_ticket');
+          if (p > 0) {
+            b.hidden = false;
+            b.className = 'ok';
+            b.textContent = '✅ Ticket checked · have a safe trip';
+          } else if (k > 0) {
+            b.hidden = false;
+            b.className = '';
+            b.textContent = '🎫 Train ticket · go to platform 1 and step onto the front of the train to board';
+          } else b.hidden = true;
+        }
+        function ensureRailUi() {
+          if ($('lq-rail-badge')) return;
+          const st = document.createElement('style');
+          st.textContent =
+            '#lq-rail-badge{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:26;background:#1b2a3aee;color:#ffe9a8;border:2px solid #f3b94d;border-radius:999px;padding:6px 14px;font:600 13px system-ui,sans-serif;box-shadow:0 6px 18px #0008;pointer-events:none}#lq-rail-badge.ok{background:#12372aee;color:#c9ffdd;border-color:#58c26a}#lq-rail-pop{position:fixed;left:50%;top:38%;transform:translate(-50%,-30%) scale(.9);z-index:120;display:flex;align-items:center;gap:14px;background:#101a28f2;color:#fff;border:2px solid #f3b94d;border-radius:16px;padding:14px 22px;font:700 18px system-ui,sans-serif;box-shadow:0 14px 40px #000a;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}#lq-rail-pop span{font-size:42px}#lq-rail-pop.shown{opacity:1;transform:translate(-50%,-50%) scale(1)}';
+          st.textContent += TRAIN_CSS;
+          document.head.appendChild(st);
+          const b = document.createElement('div');
+          b.id = 'lq-rail-badge';
+          b.hidden = true;
+          document.body.appendChild(b);
+          setInterval(railBadge, 700);
+        }
+        function railFlow(id, message) {
+          const g = game();
+          if (!g || !state()) return [];
+          const clerk = RAIL_CLERKS.includes(id),
+            checker = RAIL_CHECKERS.includes(id);
+          if (!clerk && !checker) return [];
+          if (!canShop('Rail Station')) return [];
+          const text = norm(message);
+          if (clerk) {
+            if (!/(ticket|tickets|travel|train|go to|trip|minerals|english town)/.test(text))

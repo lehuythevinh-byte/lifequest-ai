@@ -1,0 +1,1000 @@
+              (e.day++, (e.money += 10 + e.rep * 3));
+              for (let t of Object.keys(e.quests)) t.startsWith(`fav-`) && delete e.quests[t];
+              this.quests.toast([`☀ A new day! Press Q to see today's favors.`]);
+            }
+            bedNear() {
+              let e = this.inside;
+              // Chapter 2 (js/past.js): the player also sleeps in the Brown Family Home in the village of 70 years ago.
+              if (
+                !e ||
+                (e.b.name !== `Hero's Home` &&
+                  !(window.LQPast && window.LQPast.canSleepIn && window.LQPast.canSleepIn(e.b.name)))
+              )
+                return !1;
+              let t = e.spec.items.find((e) => e.k === `bed`);
+              if (!t) return !1;
+              let n = 32 * e.k,
+                r = Yr + (t.x + t.w / 2) * n,
+                i = Xr + (t.y + t.h / 2) * n;
+              return Y.Math.Distance.Between(this.player.x, this.player.y, r, i) < 2.3 * n;
+            }
+            trySleep() {
+              // Chapter 2 days are counted by js/past.js (it handles the whole night when it returns true).
+              if (window.LQPast && window.LQPast.sleep && window.LQPast.sleep(this)) return;
+              let e = this.store.game;
+              if (!Zr(e.minutes)) {
+                this.quests.toast([`😴 You are not sleepy yet.`, `Come back to bed after 19:00.`]);
+                return;
+              }
+              ((this.sleeping = !0), this.store.save());
+              let t = this.cameras.main;
+              (t.fadeOut(900, 0, 0, 0),
+                t.once(`camerafadeoutcomplete`, () => {
+                  let n = e.minutes >= 1140;
+                  ((e.minutes = 420),
+                    n && this.newDay(),
+                    this.snapNpcs(),
+                    this.store.save(),
+                    t.fadeIn(900, 0, 0, 0),
+                    this.quests.toast([
+                      `💤 You slept well. Day ${e.day}, ${se(e.minutes)}.`,
+                      `The town is waking up!`,
+                    ]),
+                    (this.sleeping = !1));
+                }));
+            }
+            snapNpcs() {
+              for (let e of this.npcs) {
+                if (e.inside) continue;
+                e.slot = ae(e.def.id, this.store.game.minutes);
+                let t = ce(this.area.places[e.slot.place].x, this.area.places[e.slot.place].y);
+                (e.sprite.setPosition(t.x, t.y),
+                  this.placeLabel(e),
+                  (e.path = []),
+                  this.setHidden(e, e.slot.kind === `sleep`));
+              }
+            }
+            updateSchedules() {
+              for (let e of this.npcs) {
+                let t = ae(e.def.id, this.store.game.minutes);
+                if (t === e.slot) continue;
+                if (e.inside) {
+                  let t = this.inside;
+                  ((e.inside = !1),
+                    e.sprite.setScale(1).setPosition(t.out.x, t.out.y),
+                    this.placeLabel(e));
+                }
+                ((e.slot = t), this.setHidden(e, !1));
+                let n = this.area.places[t.place];
+                e.path = this.area.findPath({ x: e.sprite.x, y: e.sprite.y }, n);
+              }
+            }
+            wanderIdle(e, t) {
+              if (
+                ((e.idleTimer -= t / 1e3),
+                e.idleTimer > 0 || ((e.idleTimer = Y.Math.Between(3, 8)), e.slot.kind === `sleep`))
+              )
+                return;
+              let n = this.area.places[e.slot.place],
+                r = n.x + Y.Math.Between(-1, 1),
+                i = n.y + Y.Math.Between(-1, 1);
+              !this.area.isTileBlocked(r, i) && !this.area.warpAt(r,i) && (e.path=this.area.findPath({x:e.sprite.x,y:e.sprite.y},{x:r,y:i}));
+            }
+            update(e, t) {
+              LQ57.update(this,t);
+              LQ58.update(this,t); LQ59.update(this,t); LQ60.update(this,t); LQ61.update(this,t); LQ62.update(this,t); LQ63.update(this,t); LQ64.update(this,t);
+              window.LQWorldUpgrade?.update(this, t);
+              window.LQCareerWorlds?.update(this, this.time.now);
+              window.LQ52?.update?.(this, t);
+              if(window.LQCareerWorlds?.isDialogOpen()){this.pMoving=false;return;}
+              if(window.LQOrigins?.isPlaying?.(this)){ this.pMoving=false; return; }
+              if (this.sleeping || this.switching) return;
+              let n =
+                this.chat.isOpen ||
+                this.journal.isOpen ||
+                this.settings.isOpen ||
+                this.quests.isOpen ||
+                this.helper.isOpen ||
+                this.briefing.isOpen;
+              if (
+                (this.inside ||
+                  this.quests.onTile(
+                    Math.floor(this.player.x / 32),
+                    Math.floor(this.player.y / 32),
+                  ),
+                (this.doorCooldown -= t / 1e3),
+                !this.inside && !n && this.doorCooldown <= 0)
+              ) {
+                let e = this.area.warpAt(
+                  Math.floor(this.player.x / 32),
+                  Math.floor(this.player.y / 32),
+                );
+                if (e) {
+                  if (window.LQCareerWorlds && !window.LQCareerWorlds.gate(this,e)){this.doorCooldown=1.8;return;}
+                  if (e.requiresArtDistrict && !this.checkArtDistrictAccess()) {
+                    this.doorCooldown = 1.8;
+                    const done = (id) => Te(we(id)).filter((npc) => this.store.get(npc.id).goalDone).length;
+                    const marks = [`rook`, `vex`, `morrow`].filter((id) => this.store.get(id).goalDone).length;
+                    this.quests.toast([
+                      `🔒 THE FREIGHT TUNNEL IS STILL LOCKED`,
+                      `English Town: ${done(`english-town`)}/4 missions · Minerals Town: ${done(`mining-town`)}/3 missions.`,
+                      `Artist clues completed: ${marks}/3 (Rook, Vex, Morrow) · Chapter 2: ${this.artHistoryDone() ? `done` : `not yet`}.`,
+                    ]);
+                    return;
+                  }
+                  if (e.needsPass) {
+                    this.doorCooldown = 2;
+                    window.LQ10_ECONOMY?.boardTrain?.(e, this);
+                  } else {
+                    this.switchArea(e.to, e.spawn, e.label);
+                    return;
+                  }
+                }
+              }
+              let r = this.inside || n ? null : this.doorAhead();
+              if (
+                !this.chat.isOpen &&
+                !this.settings.isOpen &&
+                !this.helper.isOpen &&
+                !this.briefing.isOpen
+              ) {
+                let ctrl = window.__townControls || {};
+                if (ctrl.actionRequested) {
+                  ctrl.actionRequested = false;
+                  if (r && this.doorCooldown <= 0) {
+                    this.enterBuilding(r);
+                    return;
+                  }
+                  this.act(`talk`);
+                }
+                let e = this.keys;
+                let right = e.D.isDown || e.RIGHT.isDown || !!ctrl.right;
+                let left = e.A.isDown || e.LEFT.isDown || !!ctrl.left;
+                let down = e.S.isDown || e.DOWN.isDown || !!ctrl.down;
+                let up = e.W.isDown || e.UP.isDown || !!ctrl.up;
+                let n = (right ? 1 : 0) - (left ? 1 : 0);
+                let i = (down ? 1 : 0) - (up ? 1 : 0);
+                // Keyboard and touchscreen input always override AI-assisted walking.
+                if (n || i) {
+                  cancelTownAutopilot();
+                } else {
+                  const aiSteering = updateTownAutopilot(this, t);
+                  if (aiSteering) {
+                    n = aiSteering.x;
+                    i = aiSteering.y;
+                  }
+                }
+                if (r && (ctrl.action || (i < 0 && LQ56Doors.nearAuto(this, r))) && this.doorCooldown <= 0) {
+                  this.enterBuilding(r);
+                  return;
+                }
+                if (((this.pMoving = !1), n || i)) {
+                  let e = Math.hypot(n, i),
+                    r = Math.min(22 * (this.inside?.k ?? 1), (160 * t * (this.inside?.k ?? 1)) / 1e3),
+                    a = this.player.x + (n / e) * r,
+                    o = this.player.y + (i / e) * r,
+                    s = this.player.x,
+                    c = this.player.y;
+                  (this.blocked(a, this.player.y) || (this.player.x = a),
+                    this.blocked(this.player.x, o) || (this.player.y = o),
+                    Hr(this.pFace, n, i),
+                    (this.player.x !== s || this.player.y !== c) &&
+                      ((this.pMoving = !0), (this.pFace.phase += r / (this.inside?.k ?? 1))));
+                }
+              } else this.pMoving = !1;
+              Ur(this.player, this.playerKey, this.pFace, this.pMoving);
+              let i = this.inside;
+              if (i && this.doorCooldown <= 0) {
+                let e = 32 * i.k;
+                if (
+                  this.player.y > Xr + (i.spec.h - 1) * e + e / 2 &&
+                  Math.abs(this.player.x - (Yr + (i.spec.w >> 1) * e)) < e
+                ) {
+                  this.leaveBuilding();
+                  return;
+                }
+              }
+              for (let e of this.npcs) {
+                if (e.inside) {
+                  LQ58.resident(this,e,t);
+                  (this.placeLabel(e), Ur(e.sprite, e.def.id, e.face, !1));
+                  continue;
+                }
+                if (this.chat.currentId === e.def.id) {
+                  Ur(e.sprite, e.def.id, e.face, !1);
+                  continue;
+                }
+                let n = !1;
+                const lq52PreviousPosition = { x: e.sprite.x, y: e.sprite.y };
+                if (e.path.length) {
+                  let r = e.path[0],
+                    i = Y.Math.Distance.Between(e.sprite.x, e.sprite.y, r.x, r.y),
+                    a = Math.min(20, (Jr * t) / 1e3);
+                  if (
+                    ((n = !0),
+                    Hr(e.face, r.x - e.sprite.x, r.y - e.sprite.y),
+                    (e.face.phase += Math.min(i, a)),
+                    i <= a)
+                  )
+                    (e.sprite.setPosition(r.x, r.y),
+                      e.path.shift(),
+                      !e.path.length && e.slot.kind === `sleep` && this.setHidden(e, !0));
+                  else {
+                    let t = Math.atan2(r.y - e.sprite.y, r.x - e.sprite.x);
+                    ((e.sprite.x += Math.cos(t) * a), (e.sprite.y += Math.sin(t) * a));
+                  }
+                } else e.sprite.visible && this.wanderIdle(e, t);
+                (window.LQ52?.guardNpc?.(this, e, lq52PreviousPosition, t), Ur(e.sprite, e.def.id, e.face, n), this.placeLabel(e));
+              }
+              let a = n ? null : this.nearestNpc(this.inside ? 56 * this.inside.k : 48),
+                o = !n && !a && this.bedNear(),
+                s = !n && !a && !o ? this.portalNear() : null,
+                stair = !n && !a && !o && !s ? this.nearStairs() : null;
+              (this.prompt.setVisible(!!a || !!r || o || !!s || !!stair),
+                stair
+                  ? (this.prompt.setText(this.inside.floor ? 'E: go to floor 1' : 'E: go to floor 2'),
+                    this.prompt.setPosition(this.player.x, this.player.y - 44 * this.player.scaleX))
+                  : o
+                    ? (this.prompt.setText(
+                        Zr(this.store.game.minutes)
+                          ? `E: go to sleep until morning`
+                          : `E: bed (you can sleep after 19:00)`,
+                      ),
+                      this.prompt.setPosition(
+                        this.player.x,
+                        this.player.y - 48 * this.player.scaleX,
+                      ))
+                    : s
+                      ? (this.prompt.setText(
+                          this.gateOpen(s)
+                            ? `E: use the gate (${s.label})`
+                            : `E: the gate is closed (${nt[s.guard].short} is away)`,
+                        ),
+                        this.prompt.setPosition(
+                          this.player.x,
+                          this.player.y - 48 * this.player.scaleX,
+                        ))
+                      : a
+                        ? (this.prompt.setText(
+                            `E: talk to ${nt[a.def.id].short} (${a.slot.label})`,
+                          ),
+                          this.prompt.setPosition(a.sprite.x, a.sprite.y - 50 * a.sprite.scaleX))
+                        : r &&
+                          (this.prompt.setText(`E / W: enter ${r.name}`),
+                          this.prompt.setPosition(this.player.x, this.player.y - 46)));
+              let c = this.store.game,
+                l = mt(c.rep),
+                u = ht(c.rep);
+              this.badge
+                .setPosition(this.player.x, this.player.y - 28 * this.player.scaleX)
+                .setScale(this.player.scaleX);
+              let d = !this.chat.providerLabel.startsWith(`Offline`);
+              this.hud
+                .setText(`${this.area.name}${this.inside ? ' · ' + this.inside.b.name + (this.inside.floor ? ' · Floor 2' : '') : ''}  · ${window.LQPast?.dayLabel ? window.LQPast.dayLabel(c.day) : `Day ${c.day}`}  ${se(c.minutes)}  · $${c.money}  · ${l.icon} ${l.title}
+${this.quests.hudLine()}`);
+              let f = c.minutes < 300 || c.minutes > 1200 ? 0.45 : 0;
+              (Math.abs(this.dim.fillAlpha - f) > 0.002
+                ? this.dim.setFillStyle(659504, Y.Math.Linear(this.dim.fillAlpha, f, 0.05))
+                : this.dim.fillAlpha !== f && this.dim.setFillStyle(659504, f),
+                this.dim.setVisible(this.dim.fillAlpha > 0.002));
+            }
+          };
+        function __lqV7RestoreInterior(scene) {
+          try {
+            const saved = scene.store.game?.rpg?.lastInterior;
+            if (
+              !saved ||
+              saved.area !== scene.area.id ||
+              !_r[saved.building] ||
+              !scene.area.buildings.some((b) => b.name === saved.building)
+            )
+              return;
+            const b = scene.area.buildings.find((v) => v.name === saved.building);
+            const floor = Number(saved.floor) === 1 && _r[b.name + '::2'] ? 1 : 0;
+            scene.enterBuilding(b, floor);
+            const k = scene.inside?.k || 1;
+            const sx = Number.isFinite(saved.tx) ? Yr + saved.tx * 32 * k : Number(saved.x),
+              sy = Number.isFinite(saved.ty) ? Xr + saved.ty * 32 * k : Number(saved.y);
+            if (Number.isFinite(sx) && Number.isFinite(sy) && !scene.blocked(sx, sy))
+              scene.player.setPosition(sx, sy);
+            scene.quests.toast(['🏠 Keep exploring ' + b.name + (floor ? ' · Floor 2' : '')]);
+          } catch (err) {
+            console.warn('Could not restore room:', err);
+          }
+        }
+        // V9 effect lifecycle: keep Phaser world engine authoritative and all V7/V8 saves intact.
+        const __lq9BuildArea = Qr.prototype.buildArea;
+        Qr.prototype.buildArea = function (...a) {
+          const result = __lq9BuildArea.apply(this, a);
+          LQ9.createLights(this);
+          return result;
+        };
+        const __lq9Enter = Qr.prototype.enterBuilding;
+        Qr.prototype.enterBuilding = function (...a) {
+          const result = __lq9Enter.apply(this, a);
+          if (this.inside) LQ9.createLights(this);
+          return result;
+        };
+        const __lq9Leave = Qr.prototype.leaveBuilding;
+        Qr.prototype.leaveBuilding = function (...a) {
+          const result = __lq9Leave.apply(this, a);
+          LQ9.createLights(this);
+          return result;
+        };
+        const __lq9Clear = Qr.prototype.clearArea;
+        Qr.prototype.clearArea = function (...a) {
+          LQ9.destroy(this);
+          return __lq9Clear.apply(this, a);
+        };
+        const __lq9Update = Qr.prototype.update;
+        Qr.prototype.update = function (time, delta) {
+          __lq9Update.call(this, time, delta);
+          LQ9.tick(this, delta);
+        };
+        const __lqOriginalNpcOpen = ft.prototype.open;
+        ft.prototype.open = function (npc) {
+          const answer = __lqOriginalNpcOpen.call(this, npc);
+          try {
+            adventure.onNpcOpen(npc.id);
+          } catch (e) {
+            console.warn('NPC enhancement', e);
+          }
+          return answer;
+        };
+        window.__lifequestNpcSchedules = () => ie;
+        // V8 hooks are observers: original Phaser mechanics remain authoritative.
+        for (const [method, eventKind] of [
+          ['enterBuilding', 'enter'],
+          ['useStairs', 'stairs'],
+          ['leaveBuilding', 'exit'],
+          ['switchArea', 'area'],
+        ]) {
+          const original = Qr.prototype[method];
+          if (typeof original !== 'function') continue;
+          Qr.prototype[method] = function (...args) {
+            const before = this.inside
+              ? { building: this.inside.b.name, floor: this.inside.floor }
+              : null;
+            const result = original.apply(this, args);
+            if (eventKind === 'enter' && this.inside) {
+              // Large interiors must track the player; static centering can otherwise hide movement.
+              const inside = this.inside,
+                cam = this.cameras?.main;
+              const realWidth = inside.spec.w * 32 * inside.k,
+                realHeight = inside.spec.h * 32 * inside.k;
+              if (
+                cam &&
+                (realWidth > this.scale.width * 0.94 || realHeight > this.scale.height * 0.92)
+              ) {
+                cam.setBounds(20000, 0, realWidth, realHeight);
+                cam.startFollow(this.player, true, 0.12, 0.12);
+              }
+              window.LQV8?.onEvent('enter', {
+                area: this.area.id,
+                building: this.inside.b.name,
+                floor: this.inside.floor || 0,
+              });
+              window.LQV8?.onEvent('floor', {
+                area: this.area.id,
+                building: this.inside.b.name,
+                floor: this.inside.floor || 0,
+              });
+              window.LQV8?.sound('door');
+            }
+            if (eventKind === 'stairs' && result && this.inside) {
+              window.LQV8?.onEvent('floor', {
+                area: this.area.id,
+                building: this.inside.b.name,
+                floor: this.inside.floor || 0,
+              });
+              window.LQV8?.sound('door');
+            }
+            if (eventKind === 'exit' && before) window.LQV8?.sound('door');
+            return result;
+          };
+        }
+        const __v8BaseUpdate = Qr.prototype.update;
+        Qr.prototype.update = function (time, delta) {
+          if (window.LQMineIntro?.isPlaying?.(this)) { this.pMoving = false; return; }
+          if (window.LQV8?.isPanelOpen?.()) {
+            this.pMoving = false;
+            return;
+          }
+          const result = __v8BaseUpdate.call(this, time, delta);
+          try {
+            window.LQV8?.onFrame(this, delta);
+          } catch (e) {
+            console.warn('V8 HUD render', e);
+          }
+          return result;
+        };
+        const __v8BaseCreate = Qr.prototype.create;
+        Qr.prototype.create = function (...args) {
+          const result = __v8BaseCreate.apply(this, args);
+          window.dispatchEvent(new Event('lifequest:worldready'));
+          return result;
+        };
+
+        let __gameInstance = null;
+        function startGame() {
+          if (__gameInstance) {
+            try {
+              __gameInstance.destroy(true);
+            } catch (e) {}
+            __gameInstance = null;
+          }
+          const el = document.getElementById('game');
+          if (!el) return null;
+          el.innerHTML = '';
+          __gameInstance = new Y.Game({
+            type: Y.AUTO,
+            parent: 'game',
+            backgroundColor: '#1b1b1b',
+            scale: {
+              mode: Y.Scale.RESIZE,
+              width: window.innerWidth,
+              height: window.innerHeight,
+            },
+            scene: [Qr],
+          });
+          return __gameInstance;
+        }
+
+        function stopGame() {
+          if (__gameInstance) {
+            try {
+              __gameInstance.destroy(true);
+            } catch (e) {}
+            __gameInstance = null;
+          }
+        }
+
+        return { startGame, stopGame };
+      })();
+
+      const Yr = 20000,
+        Xr = 0; // shared interior origin for V8 save/restore adapters
+      const studyLab = (() => {
+        const STORE = 'lifequest_study_lab_v1',
+          today = () => new Date().toLocaleDateString('en-CA');
+        const starter = [
+          ['library', 'thư viện'],
+          ['borrow', 'mượn'],
+          ['appointment', 'cuộc hẹn'],
+          ['receipt', 'hóa đơn'],
+          ['directions', 'chỉ đường'],
+          ['polite', 'lịch sự'],
+          ['healthy', 'khỏe mạnh'],
+          ['ticket', 'vé'],
+          ['recommend', 'giới thiệu'],
+          ['confidence', 'sự tự tin'],
+          ['breakfast', 'bữa sáng'],
+          ['careful', 'cẩn thận'],
+        ];
+        let data;
+        try {
+          data = JSON.parse(localStorage.getItem(STORE) || 'null');
+        } catch {}
+        if (!data || typeof data !== 'object' || !Array.isArray(data.words))
+          data = { words: [], quizzes: 0, correct: 0, practice: 0, byDay: {} };
+        data.words = data.words
+          .filter((x) => x && typeof x.en === 'string' && typeof x.vi === 'string')
+          .slice(0, 300);
+        data.quizzes = Number(data.quizzes) || 0;
+        data.correct = Number(data.correct) || 0;
+        data.practice = Number(data.practice) || 0;
+        data.byDay = data.byDay && typeof data.byDay === 'object' ? data.byDay : {};
+        let card = null;
+        function save() {
+          try {
+            localStorage.setItem(STORE, JSON.stringify(data));
+          } catch {}
+          window.dispatchEvent(new Event('lifequest:studyupdate'));
+        }
+        function day() {
+          let d = data.byDay[today()];
+          if (!d || typeof d !== 'object')
+            d = data.byDay[today()] = { quiz: 0, correct: 0, review: 0 };
+          return d;
+        }
+        function summary() {
+          return `📊 Quiz: ${data.correct}/${data.quizzes} correct · Saved words: ${data.words.length} · Cards reviewed: ${data.practice}`;
+        }
+        function registerQuiz(ok) {
+          data.quizzes++;
+          day().quiz++;
+          if (ok) {
+            data.correct++;
+            day().correct++;
+          }
+          save();
+        }
+        function ensureStarter() {
+          if (data.words.length) return;
+          for (const [en, vi] of starter) data.words.push({ en, vi, box: 0, due: 0 });
+          save();
+        }
+        function handle(message, level = 'B1') {
+          const raw = String(message || '').trim(),
+            s = raw
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/đ/g, 'd')
+              .replace(/\s+/g, ' ')
+              .trim();
+          const matched = raw.match(
+            /^(?:lưu từ|lưu từ vựng|save word|add word)\s*[:：]\s*([^=:\n]{2,40})\s*(?:=|:)\s*(.{1,90})$/i,
+          );
+          if (matched) {
+            const en = matched[1].trim(),
+              vi = matched[2].trim();
+            if (!/^[\p{L}\s'-]+$/u.test(en)) return '📒 The word to save can only contain letters and spaces.';
+            const i = data.words.findIndex((w) => w.en.toLowerCase() === en.toLowerCase());
+            const word = { en, vi, box: 0, due: 0 };
+            if (i >= 0) data.words[i] = word;
+            else data.words.push(word);
+            data.words = data.words.slice(-300);
+            save();
+            return `📒 Saved “${en}” — ${vi}. Type “flashcard” to review.`;
+          }
+          if (/^(so tu vung|danh sach tu|tu da luu|saved words|my words)$/.test(s)) {
+            if (!data.words.length)
+              return '📒 Your word book is empty. Try “save word: explore = khám phá” or “flashcard” to get a sample card.';
+            return (
+              `📒 Word book (${data.words.length}):\n` +
+              data.words
+                .slice(-18)
+                .map((w, i) => `${i + 1}. ${w.en} — ${w.vi}`)
+                .join('\n') +
+              '\nYou can export everything with the 📒 button below.'
+            );
+          }
+          if (/^(flashcard|the ghi nho|the tu vung|on tu|review words|review cards)$/.test(s)) {
+            ensureStarter();
+            const now = Date.now();
+            const due = data.words.filter((w) => (w.due || 0) <= now);
+            const list = due.length ? due : data.words;
+            card = list[Math.floor(Math.random() * list.length)];
+            return `🃏 FLASHCARD — ${card.en}\nDo you remember the meaning? Type “flip card” to check, then type “remember” or “forgot” to schedule your review. (${due.length} words due)`;
+          }
+          if (/^(lat the|show answer|flip card|xem dap an)$/.test(s))
+            return card
+              ? `🔎 ${card.en} = ${card.vi}.\nType “remember” if you know it or “forgot” if not.`
+              : 'Type “flashcard” to pick a card first.';
+          if (/^(nho|quen|remember|forgot|kho nho|da thuoc)$/.test(s) && card) {
+            const ok = /^(nho|remember|da thuoc)$/.test(s);
+            card.box = ok ? Math.min(4, (card.box || 0) + 1) : 0;
+            const days = [0, 1, 3, 7, 14][card.box];
+            card.due = Date.now() + days * 86400000;
+            data.practice++;
+            day().review++;
+            const word = card.en;
+            card = null;
+            save();
+            return `${ok ? '✅ Remembered' : '🔁 Needs review'}: ${word}. ${days ? 'Review again in ' + days + ' day(s).' : 'It will come up again right away.'}\nType “flashcard” to keep practicing.`;
+          }
+          if (/^(thong ke|tien do|study stats|my progress|ket qua hoc tap)$/.test(s)) {
+            const rate = data.quizzes ? Math.round((100 * data.correct) / data.quizzes) : 0;
+            return `${summary()}\n🎯 Accuracy: ${rate}%\n📅 Today: ${day().quiz} quiz questions, ${day().review} cards reviewed.\nTip: do 3 quizzes and review 5 flashcards every day.`;
+          }
+          if (/^(thu thach hom nay|nhiem vu hom nay|daily challenge|daily quest)$/.test(s)) {
+            const d = day(),
+              tasks = [
+                ['Answer 3 quiz questions', d.quiz, 3],
+                ['Review 5 flashcards', d.review, 5],
+              ];
+            return (
+              '🏆 TODAY\'S CHALLENGE\n' +
+              tasks
+                .map(
+                  ([label, value, total]) =>
+                    `${value >= total ? '✅' : '▫️'} ${label}: ${Math.min(total, value)}/${total}`,
+                )
+                .join('\n') +
+              '\nType “quiz” or “flashcard” to complete the challenge.'
+            );
+          }
+          if (/^(lo trinh hoc|ke hoach hoc|study plan|learning plan|hoc gi hom nay)$/.test(s)) {
+            const advice =
+              level === 'A1' || level === 'A2'
+                ? 'focus on short sentence patterns, vocabulary and pronunciation'
+                : level === 'B1'
+                  ? 'focus on situational conversations and verb tenses'
+                  : 'focus on natural expression, reasoning and vocabulary nuance';
+            return `🎯 PERSONAL STUDY PLAN (${level}) — 15 minutes/day\n1. 3 min: flashcards (5 words).\n2. 4 min: quiz (3 questions).\n3. 5 min: scenario: cafe / library / hospital.\n4. 3 min: write one sentence and use “fix: …”.\nFocus: ${advice}.\n${summary()}`;
+          }
+          if (/^(kich ban|scenario)\s*[:：]/.test(s)) {
+            const t = s.split(/[:：]/).slice(1).join(':').trim();
+            if (/ca phe|cafe|coffee/.test(t))
+              return '🎬 CAFE\nYou are ordering a drink at Sunny Cafe. Start the conversation with: “Could I have a cup of tea, please?”\nTo rehearse over several turns, type “practice conversation”.';
+            if (/thu vien|library|book/.test(t))
+              return '🎬 LIBRARY\nYou need to find an English book. Start with: “Excuse me, could you recommend a book for me?”\nTry visiting the librarian, Green, in town.';
+            if (/benh vien|hospital|doctor/.test(t))
+              return '🎬 HOSPITAL\nYou need to describe your symptoms: “I have a headache. Could you help me?”\nPractice using these words: appointment, healthy, careful.';
+            return '🎬 Choose a scenario: “scenario: cafe”, “scenario: library” or “scenario: hospital”.';
+          }
+          return null;
+        }
+        function exportWords() {
+          const rows = [
+            'English,Vietnamese,Level,Next review',
+            ...data.words.map((w) =>
+              [w.en, w.vi, w.box || 0, new Date(w.due || 0).toLocaleDateString('en-CA')]
+                .map((v) => '"' + String(v).replace(/"/g, '""') + '"')
+                .join(','),
+            ),
+          ];
+          const blob = new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' }),
+            url = URL.createObjectURL(blob),
+            a = document.createElement('a');
+          a.href = url;
+          a.download = 'LIFEQUEST_SO_TU_VUNG.csv';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        return { handle, registerQuiz, summary, exportWords };
+      })();
+
+      /* LIFEQUEST AI V7: additive progression, story, NPC memory and safe quest generation.
+   The original Phaser art, atlas, maps, layouts and character animation are untouched. */
+      const adventure = (() => {
+        const $ = (id) => document.getElementById(id);
+        const fold = (value) =>
+          String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .toLowerCase()
+            .trim();
+        const escape = (value) =>
+          String(value ?? '').replace(
+            /[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+          );
+        const items = {
+          note: {
+            name: '📝 English Study Notebook',
+            desc: 'Use to gain 18 XP',
+            price: 30,
+            bonus: 18,
+          },
+          tea: { name: '🍵 Energy Tea', desc: 'Use to gain 8 XP', price: 15, bonus: 8 },
+          map: { name: '🗺️ Souvenir Map', desc: 'Collectible item', price: 45, bonus: 0 },
+          letter: {
+            name: '✉️ Lily\'s Letter',
+            desc: 'Proof of the story',
+            price: 0,
+            bonus: 0,
+            quest: true,
+          },
+          guide: {
+            name: '📘 The Lost Guidebook',
+            desc: 'Story reward',
+            price: 0,
+            bonus: 0,
+            quest: true,
+          },
+          medal: {
+            name: '🏅 Volunteer Badge',
+            desc: 'Completed the festival storyline',
+            price: 0,
+            bonus: 0,
+            quest: true,
+          },
+          token: {
+            name: '🎟️ Friendship Ticket',
+            desc: 'A keepsake from an AI quest',
+            price: 0,
+            bonus: 0,
+            quest: true,
+          },
+        };
+        const chapters = [
+          {
+            id: 'letter',
+            title: 'Chapter 1 · The Letter at Sunny Cafe',
+            summary: 'An important message needs to reach Town Hall.',
+            steps: [
+              'Talk to Lily at Sunny Cafe with a meaningful English sentence.',
+              'Decide how to deliver Lily\'s letter.',
+              'Meet Mayor Mr. Brown; speak English about the letter / message / Lily.',
+            ],
+            rewards: { xp: 65, money: 40, item: 'letter' },
+            target: ['barista', 'mayor'],
+          },
+          {
+            id: 'guide',
+            title: 'Chapter 2 · The Missing Book',
+            summary: 'Ms. Green needs you to find an English book.',
+            steps: [
+              'Ask the librarian, Ms. Green, in English.',
+              'Choose a clue to investigate.',
+              'Ask Tom at the Corner Shop about the book or library.',
+              'Return to the library and report to Ms. Green in English.',
+            ],
+            rewards: { xp: 100, money: 65, item: 'guide' },
+            target: ['librarian', 'shopkeeper'],
+          },
+          {
+            id: 'festival',
+            title: 'Chapter 3 · The Town Festival',
+            summary: 'Help the mayor organize a meaningful event.',
+            steps: [
+              'Make a proposal to Mr. Brown in English.',
+              'Choose your festival theme.',
+              'Talk with Mia or Lily in English.',
+              'Present the plan to Mr. Brown in English.',
+            ],
+            rewards: { xp: 150, money: 100, item: 'medal' },
+            target: ['mayor', 'kid', 'barista'],
+          },
+        ];
+        const generatedTemplates = [
+          {
+            title: 'A friendly introduction',
+            summary: 'Introduce yourself naturally.',
+            instruction: 'Say hello and introduce yourself in English.',
+            keywords: ['hello', 'hi', 'name', 'my', 'meet'],
+            xp: 28,
+            money: 16,
+          },
+          {
+            title: 'Ask a thoughtful question',
+            summary: 'Ask a question to start the conversation.',
+            instruction: 'Ask a polite English question (what / how / could / do).',
+            keywords: ['what', 'how', 'could', 'would', 'do', 'can', 'where'],
+            xp: 30,
+            money: 18,
+          },
+          {
+            title: 'A kind thank you',
+            summary: 'Practice expressing gratitude and speaking politely.',
+            instruction: 'Thank the NPC naturally in English.',
+            keywords: ['thank', 'thanks', 'appreciate', 'grateful'],
+            xp: 26,
+            money: 15,
+          },
+          {
+            title: 'Share an idea',
+            summary: 'Share an opinion or suggestion with a reason.',
+            instruction: 'Share an idea in English (I think / because / should / could).',
+            keywords: ['think', 'because', 'should', 'could', 'suggest', 'idea'],
+            xp: 36,
+            money: 22,
+          },
+          {
+            title: 'Ask for recommendations',
+            summary: 'Ask an NPC to recommend something useful.',
+            instruction: 'Ask for a recommendation in English.',
+            keywords: ['recommend', 'suggest', 'best', 'advice', 'help'],
+            xp: 32,
+            money: 18,
+          },
+        ];
+        let manualMessage = '',
+          visibleTab = 'story',
+          hintTimer = null,
+          lastPositionSave = 0;
+        const getScene = () => window.__lifequestGetScene?.() || null;
+        const game = () => getScene()?.store?.game || null;
+        function state() {
+          const g = game();
+          if (!g) return null;
+          let v = g.rpg;
+          if (!v || typeof v !== 'object' || Array.isArray(v)) v = g.rpg = {};
+          if (!Number.isFinite(v.xp) || v.xp < 0) v.xp = 0;
+          if (!Number.isFinite(v.totalChats) || v.totalChats < 0) v.totalChats = 0;
+          if (!v.inventory || typeof v.inventory !== 'object' || Array.isArray(v.inventory))
+            v.inventory = { note: 1 };
+          if (
+            !v.relationships ||
+            typeof v.relationships !== 'object' ||
+            Array.isArray(v.relationships)
+          )
+            v.relationships = {};
+          if (!v.story || typeof v.story !== 'object')
+            v.story = { index: 0, step: 0, choice: '', done: [] };
+          if (!Array.isArray(v.story.done)) v.story.done = [];
+          v.story.index = Math.max(0, Math.min(chapters.length, Number(v.story.index) || 0));
+          v.story.step = Math.max(0, Number(v.story.step) || 0);
+          if (!Array.isArray(v.playerFacts)) v.playerFacts = [];
+          if (!Array.isArray(v.generated)) v.generated = [];
+          if (!v.daily || typeof v.daily !== 'object') v.daily = {};
+          if (!Number.isFinite(v.energy)) v.energy = 100;
+          return v;
+        }
+        const save = () => getScene()?.store?.save?.();
+        function levelInfo(xp) {
+          let lv = 1,
+            required = 0;
+          while (lv < 30) {
+            const next = required + Math.round(55 + 27 * lv + 10 * Math.sqrt(lv));
+            if (xp < next) break;
+            required = next;
+            lv++;
+          }
+          return {
+            level: lv,
+            start: required,
+            next: required + Math.round(55 + 27 * lv + 10 * Math.sqrt(lv)),
+          };
+        }
+        function notify(message) {
+          manualMessage = message;
+          const toast = $('rpg-toast');
+          if (!toast) return;
+          toast.textContent = message;
+          toast.classList.add('shown');
+          clearTimeout(hintTimer);
+          hintTimer = setTimeout(() => toast.classList.remove('shown'), 4300);
+        }
+        function giveXP(amount, reason) {
+          const r = state();
+          if (!r) return;
+          const before = levelInfo(r.xp).level;
+          r.xp += Math.max(0, Math.round(amount));
+          const after = levelInfo(r.xp).level;
+          save();
+          refresh();
+          notify(
+            after > before
+              ? `🎉 Level up ${after}! +${amount} XP · ${reason}`
+              : `✨ +${amount} XP · ${reason}`,
+          );
+        }
+        function changeItem(id, count) {
+          const s = state();
+          if (!s || !items[id]) return;
+          s.inventory[id] = Math.max(0, (Number(s.inventory[id]) || 0) + count);
+          save();
+        }
+        function relationship(id) {
+          const s = state();
+          if (!s) return { talks: 0, trust: 0, lastDay: 0, lastMessage: '' };
+          if (!s.relationships[id])
+            s.relationships[id] = { talks: 0, trust: 0, lastDay: 0, lastMessage: '', dailyXP: 0 };
+          return s.relationships[id];
+        }
+        function adjustRelationship(id, amount) {
+          const a = relationship(id);
+          a.trust = Math.max(0, Math.min(100, Number(a.trust || 0) + amount));
+        }
+        const chapter = () => chapters[state()?.story?.index] || null;
+        const step = () => state()?.story?.step || 0;
+        function storyText() {
+          const s = state();
+          if (!s) return 'Opening the town…';
+          if (s.story.index >= chapters.length)
+            return '🏆 You have completed all 3 story chapters! You can now take on more AI quests.';
+          const c = chapter();
+          return `${c.title}\n${c.steps[s.story.step] || 'Processing…'}`;
+        }
+        function advance(text) {
+          const s = state(),
+            c = chapter();
+          if (!s || !c) return [];
+          s.story.step++;
+          if (s.story.step < c.steps.length) {
+            save();
+            refresh();
+            notify(text || '📜 Quest updated');
+            return [`📜 ${text || 'Step completed!'}  ${c.steps[s.story.step]}`];
+          }
+          const decision = s.story.choice;
+          s.story.done.push(c.id);
+          s.story.index++;
+          s.story.step = 0;
+          s.story.choice = '';
+          const rewardXP = c.rewards.xp + (c.id === 'letter' && decision === 'Carefully' ? 12 : 0);
+          const rewardCash =
+            c.rewards.money + (c.id === 'letter' && decision === 'Quickly' ? 12 : 0);
+          const g = game();
+          g.money += rewardCash;
+          changeItem(c.rewards.item, 1);
+          giveXP(rewardXP, `Completed ${c.title}`);
+          save();
+          refresh();
+          notify(`🏆 ${c.title} complete · +$${rewardCash}`);
+          return [
+            `🏆 Chapter complete! +${rewardXP} XP, +$${rewardCash}, ${items[c.rewards.item].name}`,
+          ];
+        }
+        function isEnglishMessage(message) {
+          return (
+            /^[\x20-\x7E]+$/.test(message.trim()) &&
+            /[a-zA-Z]+/.test(message) &&
+            message.trim().split(/\s+/).length >= 3
+          );
+        }
+        function onNpcOpen(id) {
+          const s = state();
+          if (!s) return;
+          const r = relationship(id);
+          r.lastSeen = s?.story?.index;
+          refresh();
+        }
+        function onNpcMessage(id, message) {
+          const scene = getScene(),
+            s = state();
+          if (!scene || !s) return [];
+          const npc = scene.npcs?.find((n) => n.def.id === id)?.def;
+          const day = scene.store.game.day;
+          const rel = relationship(id);
+          if (rel.lastDay !== day) {
+            rel.lastDay = day;
+            rel.dailyXP = 0;
+          }
+          rel.talks++;
+          rel.lastMessage = String(message).slice(0, 250);
+          rel.trust = Math.min(100, rel.trust + (isEnglishMessage(message) ? 2 : 1));
+          s.totalChats++;
+          const result = [];
+          if (isEnglishMessage(message) && rel.dailyXP < 16) {
+            rel.dailyXP += 4;
+            s.xp += 4;
+            result.push('✨ +4 XP conversation practice');
+          }
+          const c = chapter(),
+            st = step(),
+            m = fold(message),
+            en = isEnglishMessage(message);
+          if (c?.id === 'letter') {
+            if (st === 0 && id === 'barista' && en) {
+              result.push(...advance('Lily gave you the message.'));
+            } else if (
+              st === 2 &&
+              id === 'mayor' &&
+              en &&
+              /\b(letter|message|lily|cafe|help|town)\b/.test(m)
+            )
+              result.push(...advance('The mayor received the message.'));
+          }
+          if (c?.id === 'guide') {
+            if (st === 0 && id === 'librarian' && en)
+              result.push(...advance('The librarian needs you to find the book.'));
+            else if (
+              st === 2 &&
+              s.story.choice === 'Ask Tom' &&
+              id === 'shopkeeper' &&
+              en &&
+              /\b(book|library|guide|lost|find|shop)\b/.test(m)
+            )
+              result.push(...advance('Tom gave you a clue.'));
+            else if (
+              st === 3 &&
+              id === 'librarian' &&
+              en &&
+              /\b(book|found|shop|tom|guide|help)\b/.test(m)
+            )
+              result.push(...advance('You brought the news back to the librarian.'));
+          }
+          if (c?.id === 'festival') {
+            if (
+              st === 0 &&
+              id === 'mayor' &&
+              en &&
+              /\b(festival|town|party|idea|event|help|plan)\b/.test(m)
+            )
+              result.push(...advance('The mayor agreed to consider the plan.'));
+            else if (
+              st === 2 &&
+              id === (s.story.choice === 'Green garden' ? 'barista' : 'kid') &&
+              en
+            )
+              result.push(...advance('You consulted a resident.'));
+            else if (
+              st === 3 &&
+              id === 'mayor' &&
+              en &&
+              /\b(festival|plan|music|garden|party|event|help)\b/.test(m)
+            )
+              result.push(...advance('The plan has been approved.'));
+          }
+          for (const quest of s.generated.filter((q) => q.status === 'active')) {
+            if (quest.npc === id && en && quest.keywords.some((w) => m.includes(fold(w)))) {
+              quest.status = 'done';
+              quest.completedDay = day;
+              scene.store.game.money += quest.money;
+              s.xp += quest.xp;
+              changeItem('token', 1);

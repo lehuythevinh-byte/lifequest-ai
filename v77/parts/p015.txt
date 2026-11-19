@@ -1,0 +1,1000 @@
+      fill(g,0xf1e3bf,x+45*S,y+27*S,13*S,10*S,.92);
+    } else if (k === 'hallcrest') {
+      const S=Math.max(1,Math.min(2.1,r/130));
+      col(0x252419,x,y+28*S,127*S,34*S,.22);
+      fill(g,0x99856b,x-51*S,y-23*S,102*S,61*S,.98);
+      for(let k=-2;k<=2;k++) {
+        fill(g,0x564838,x+(k*19-3)*S,y-22*S,6*S,58*S,.88);
+        fill(g,0xc1ac87,x+k*19*S,y+14*S,12*S,7*S,.76);
+      }
+      g.fillStyle(0x644b38,.98).fillTriangle(x-59*S,y-25*S,x+59*S,y-25*S,x,y-65*S);
+      g.fillStyle(0xa38459,.85).fillTriangle(x-51*S,y-28*S,x+51*S,y-28*S,x,y-55*S);
+      fill(g,0x382d26,x-12*S,y+12*S,24*S,26*S,.98);
+      fill(g,0xc8a77a,x-15*S,y+9*S,30*S,4*S,.85);
+      for(let k=-1;k<=1;k++){
+        fill(g,0x59432e,x+(k*31-9)*S,y-12*S,18*S,20*S,.94);
+        fill(g,0xf1d19c,x+(k*31-5)*S,y-8*S,10*S,8*S,.58);
+      }
+      fill(g,0x6f4e3a,x+31*S,y-67*S,7*S,44*S,.98);
+      fill(g,0x8b3737,x+38*S,y-64*S,23*S,15*S,.95);
+      stroke(g,0xd6bc8a,x-53*S,y-26*S,x+53*S,y-26*S,2*S,.86);
+    } else if (k === 'valleybridge') {
+      const S=Math.max(1,Math.min(2,r/130));
+      // A green gorge and shallow waterfall crossed by a layered timber bridge.
+      for(let k=-7;k<=7;k++){
+        const py=y+k*8*S,px=x+Math.sin(k*.43)*17*S;
+        col(0x467977,px,py,32*S,12*S,.86);
+        fill(g,0x98d2c0,px-9*S,py-1*S,16*S,2*S,.63);
+      }
+      col(0x304f3f,x,y+10*S,126*S,26*S,.35);
+      for(let k=-5;k<=5;k++){
+        const xx=x+k*11*S;
+        fill(g,0x6e4e31,xx-4*S,y-13*S,9*S,33*S,.97);
+        fill(g,0xb18b58,xx-4*S,y-13*S,9*S,6*S,.8);
+      }
+      for(let t of [-1,1]) {
+        fill(g,0x5b412c,x+t*58*S,y-32*S,6*S,49*S,.92);
+        stroke(g,0xd9c096,x+t*58*S,y-27*S,x,y-26*S,2*S,.85);
+      }
+      for(let k=0;k<11;k++) dot(g,k%2?0xa7c477:0x54764c,x-65*S+k*13*S,y+25*S,3*S,.66);
+    } else if (k === 'regrowth') {
+      const S=Math.max(1,Math.min(2,r/130));
+      col(0x3d4b39,x,y+19*S,116*S,30*S,.27);
+      for(let k=-1;k<=1;k++){
+        const xx=x+k*21*S,ht=(51+Math.abs(k)*9)*S;
+        fill(g,0x65533d,xx-4*S,y+22*S-ht,8*S,ht,.97);
+        for(let j=0;j<3;j++) col(j?0x607b51:0x90a46b,xx+(j-1)*13*S,y-32*S+(j%2)*6*S,32*S,27*S,.84);
+      }
+      for(let k=0;k<19;k++) {
+        const xx=x+(hash(k,24,seed)-.5)*94*S, yy=y+(hash(k,43,seed)-.5)*29*S+18*S;
+        dot(g,[0xe2d59d,0xa4c283,0xc5a7a3][k%3],xx,yy,2*S,.84);
+      }
+    } else if (k === 'ancienttree') {
+      const S=Math.max(1,Math.min(2.1,r/130));
+      col(0x20372b,x+7*S,y+25*S,121*S,30*S,.3);
+      fill(g,0x4e392d,x-13*S,y-49*S,26*S,91*S,.97);
+      fill(g,0x765641,x-9*S,y-45*S,7*S,77*S,.88);
+      stroke(g,0x4f382c,x-2*S,y+24*S,x-49*S,y+43*S,7*S,.92);
+      stroke(g,0x4f382c,x+6*S,y+24*S,x+51*S,y+41*S,7*S,.92);
+      for(let k=-2;k<=2;k++) for(let j=0;j<3;j++) {
+        const xx=x+k*24*S+(j%2)*10*S, yy=y-65*S+j*15*S;
+        col([0x355b49,0x4d7654,0x759b64][j],xx,yy,55*S,38*S,.9);
+        dot(g,0xb6ca8b,xx-13*S,yy-11*S,3*S,.35);
+      }
+    } else if (k === 'campstandard') {
+      const S=Math.max(1,Math.min(2,r/130));
+      col(0x392f24,x,y+27*S,125*S,33*S,.27);
+      // The camp's prominent canvas-and-wood communal shelter, with a bright central beacon.
+      for(let side of [-1,1]){
+        fill(g,0x674d35,x+side*39*S-3*S,y-38*S,6*S,73*S,.96);
+        fill(g,0xcdb487,x+side*39*S-2*S,y-12*S,4*S,4*S,.76);
+      }
+      g.fillStyle(0xcab68c,.97).fillTriangle(x-54*S,y-38*S,x+54*S,y-38*S,x,y-77*S);
+      g.fillStyle(0x9e815d,.93).fillTriangle(x-46*S,y-38*S,x+46*S,y-38*S,x,y-64*S);
+      fill(g,0x86674b,x-43*S,y-37*S,86*S,9*S,.91);
+      fill(g,0x423125,x-32*S,y-27*S,64*S,62*S,.49);
+      fill(g,0x64482e,x-6*S,y-95*S,6*S,43*S,.96);
+      fill(g,0x8d3333,x,y-91*S,27*S,19*S,.94);
+      dot(g,0xffe4ae,x+15*S,y-81*S,3*S,.86);
+      col(0xf3ad53,x,y+19*S,29*S,11*S,.25);
+      g.fillStyle(0xffd47c,.92).fillTriangle(x-7*S,y+24*S,x+7*S,y+24*S,x+2*S,y+4*S);
+    } else if (k === 'market') {
+      col(0x3a332b, x, y + 6, r * 1.6, r * .66, .18);
+      fill(g, 0x7a6040, x - 24, y - 10, 48, 22, .95);
+      g.fillStyle(0xb77d5a, .96).fillTriangle(x - 28, y - 10, x + 28, y - 10, x, y - 28);
+      for (let i = -2; i <= 2; i++) fill(g, i % 2 ? 0xe9c476 : 0xd9966f, x - 22 + i * 11, y - 2, 8, 7, .92);
+      fill(g, 0xcbb490, x - 24, y + 11, 48, 4, .82);
+    } else if (k === 'trench') {
+      col(0x3a332b, x, y + 4, r * 1.8, r * .66, .2);
+      col(0x6a5e49, x, y, r * 1.7, r * .55, .96);
+      col(0x2c2a24, x, y + 1, r * 1.23, r * .29, .98);
+      for (let i = -4; i <= 4; i++) fill(g, i % 2 ? 0x8d7e66 : 0x665a4a, x - 26 + i * 7, y - 13 + (i % 3), 6, 3, .9);
+    } else if (k === 'tentline') {
+      col(0x3a3024, x, y + 8, r * 1.8, r * .8, .18);
+      for (let i = -1; i <= 1; i++) {
+        const ox = x + i * 21;
+        g.fillStyle(0xc9b48b, .96).fillTriangle(ox - 12, y + 8, ox, y - 16, ox + 12, y + 8);
+        fill(g, 0x836b4d, ox - 5, y + 2, 10, 7, .9);
+      }
+      fill(g, 0x8d7a5a, x - 34, y + 10, 68, 4, .8);
+    }
+  }
+  function details(g, a) {
+    const p = PLAN[a.id]; if (!p) return;
+    const seed = seedFor(a.id);
+    for (let i = 0; i < p.marks.length; i++) {
+      const [kind, tx, ty, scale] = p.marks[i];
+      // Fixed monuments have an authored location; floor details do not change the walkable graph.
+      vignette(g, kind, (tx + .5) * T, (ty + .5) * T, scale * (kind === 'crater' ? 19 : 32), p.tone, seed + i * 137);
+    }
+  }
+
+  // V15 scene direction: each fly-through has a distinct micro-story, not just generic panning.
+  const CINEMA_V15 = Object.freeze({
+    'english-town': {name:'A NEW BEGINNING', accent:'#f6cd86', shots:['The Clocktower Awakens','A City Full of Stories','Where Your Journey Begins'], text:'Every street has a story.'},
+    'mining-town': {name:'THE HEART OF THE MOUNTAIN', accent:'#85e7d0', shots:['Over the Crystal Frontier','A Town Built by Hand','Beyond the Railway'], text:'Discover what shines beneath the surface.'},
+    'art-district': {name:'CONCRETE DREAMS', accent:'#f5a3ca', shots:['Through the Dream Gate','The Streets Become a Canvas','Imagination Without Borders'], text:'Every colour begins a story.'},
+    'english-town-past': {name:'70 YEARS AGO', accent:'#e8c899', shots:['A Village in Another Time','Lives Around the Old Market','The Northern Path'], text:'The past lives in the smallest details.'},
+    'oriaris-trail-1': {name:'BEYOND THE VILLAGE', accent:'#b4db9f', shots:['The Wooden Stream Crossing','Toward the Wild Orchard'], text:'Follow the path where the forest begins.'},
+    'oriaris-trail-2': {name:'NATURE REMEMBERS', accent:'#becb94', shots:['The Forest Reclaims the Trail','Traces Along the Path','A Quiet Sign of Renewal'], text:'New life grows where time has passed.'},
+    'oriaris-trail-3': {name:'THE FORGOTTEN FOREST', accent:'#b9dfbe', shots:['A Tree Beyond Time','Under the Ancient Canopy'], text:'Some stories are whispered by the trees.'},
+    'oriaris-camp': {name:'A LIGHT OF HOPE', accent:'#f9cb88', shots:['The Warmth of the Beacon','Stories by the Camp','The Road Ahead'], text:'Even a small light can guide the way.'}
+  });
+
+/* LIFEQUEST AI V16 · ET-only intro configuration.
+   Only English Town plays an automatic origin/location intro. The remaining seven
+   maps retain all geography, visual effects, quests, and existing story films. */
+const INTRO_ENABLED_MAPS = new Set(['english-town']);
+const ORIGIN_STORIES = Object.freeze({
+ 'english-town': {
+  title:'ENGLISH TOWN',film:'THE CITY THAT GREW',tagline:'From a Small Village to a City of Dreams.',
+  before:'The First Houses',foundation:'A Growing Community',reveal:'The Clocktower Rises',
+  narration:['A quiet settlement stood here long ago.','Families built streets, schools and a library.','Together, they created English Town.'],
+  history:'Long ago, this land held a few small homes beside dirt roads. As more families arrived, neighbours widened the streets and built schools, a library and shops. In the central square they raised the Clocktower, which became the symbol of knowledge, shared time and the growing city.',
+  emblem:'Clocktower',art:'city',palette:[0x203c4b,0x558b7a,0x91b78b,0xf1c879,0xd97f63],accent:'#f8d388'
+ },
+ 'mining-town': {
+  title:'MINERALS TOWN',film:'THE CRYSTAL DISCOVERY',tagline:'Built from the Wonders Beneath the Earth.',
+  before:'The Hidden Crystal',foundation:'The First Discovery',reveal:'The Industrial Town',
+  narration:['Blue light gleamed beneath the rock.','Workers opened a mine and built workshops.','A railway connected the new town.'],
+  history:'At first this was a rocky mountain landscape hiding rich veins of crystal. Early explorers spotted a strange glow and began to open paths to the deposits. Workers built a mine, smithy and storehouses; then a railway carried goods beyond the mountains. Families settled nearby, and Minerals Town grew around the Crystal Spine.',
+  emblem:'Crystal Spine',art:'mines',palette:[0x182d3d,0x4b6173,0x697b88,0x5edbca,0xc28d63],accent:'#8ae5d6'
+ },
+ 'art-district': {
+  title:'ART DISTRICT',film:'FROM FORGOTTEN RAILS TO LIVING ART',tagline:'Where Forgotten Places Become Art.',
+  before:'The Forgotten Tunnel',foundation:'The First Artists',reveal:'Art Comes Alive',
+  narration:['Trains once passed abandoned warehouses.','Artists turned the old walls into canvases.','The Dream Gate welcomed a new district.'],
+  history:'This district began as a freight area with rail tunnels and storage warehouses. Over time, traffic moved elsewhere and the buildings fell quiet. A group of artists restored the warehouses, painted the old walls and opened galleries. Their Dream Gate and the district’s star, eye and wave motifs became emblems of a lively creative community.',
+  emblem:'Dream Gate',art:'art',palette:[0x292b49,0x66637a,0x998bae,0xff9d78,0x6ed8d0],accent:'#ffc1d7'
+ },
+ 'english-town-past': {
+  title:'ORIARIS VILLAGE',film:'THE FIRST SETTLEMENT',tagline:'Seventy Years Before English Town.',
+  before:'The First Families',foundation:'The Village Was Built',reveal:'The Oriaris Legacy',
+  narration:['Families first settled among the fields.','They built homes, a market and a great hall.','The village of Oriaris took shape.'],
+  history:'Seventy years before the present-day city, families settled beside rice fields. They built wooden homes, cultivated the land, dug a well and established a market. The Oriaris family built the Great Hall. During difficult times the villagers raised a protective stone wall, standing together to protect the place they called home.',
+  emblem:'Oriaris Great Hall',art:'village',palette:[0x42443a,0x8c9764,0xb6a574,0xe6bc78,0x8e644c],accent:'#edd1a0'
+ },
+ 'oriaris-trail-1': {
+  title:'NORTH TRAIL I',film:'THE FIRST NORTHERN PASSAGE',tagline:'The Path That Connected Two Worlds.',
+  before:'The Untouched Forest',foundation:'Building the Crossing',reveal:'The New Passage',
+  narration:['A stream divided the northern forest.','Villagers built a bridge and cleared a path.','A new northern passage was opened.'],
+  history:'The forests north of Oriaris were once crossed only by streams and wild growth. To transport food, letters and everyday supplies, villagers cleared a narrow trail. They built a timber bridge across the water, making the passage safe for messengers and travellers. This crossing became North Trail I.',
+  emblem:'Wooden Stream Crossing',art:'bridge',palette:[0x204652,0x4b9c88,0x84bd74,0xbdd8a4,0x9f704d],accent:'#c3e6ab'
+ },
+ 'oriaris-trail-2': {
+  title:'NORTH TRAIL II',film:'THE ROAD OF RENEWAL',tagline:'Where Nature Finds a Way.',
+  before:'The Old Road',foundation:'The Passage of Time',reveal:'Nature Returns',
+  narration:['The old northern road kept many memories.','Over time, new grass covered its traces.','Trees and flowers gave the land new life.'],
+  history:'This stretch of the northern route held memories of difficult years. Its old earth road and weathered marks remained even as the landscape changed. As time passed, grass, flowers and young trees returned, and travellers cared for the remaining path. Today Regrowth Grove stands for memory and renewal.',
+  emblem:'Regrowth Grove',art:'regrowth',palette:[0x333f44,0x6b7770,0x97816d,0x9aba75,0xd0ca9a],accent:'#d6e0ad'
+ },
+ 'oriaris-trail-3': {
+  title:'NORTH TRAIL III',film:'THE ANCIENT GREEN',tagline:'The Forest That Time Remembered.',
+  before:'Before the Roads',foundation:'The Forest Through Time',reveal:'The Ancient Light',
+  narration:['An ancient tree grew here before the village.','The people built their path around its roots.','The forest keeps their promise.'],
+  history:'Long before Oriaris was founded, a magnificent tree stood in this northern forest. Its roots spread wide and its canopy sheltered the woodland. When villagers came to extend the path, they protected the tree and routed the trail around it. A little mossy bridge followed; the Ancient Green remained a symbol of the forest and the passage of time.',
+  emblem:'The Ancient Green',art:'ancient',palette:[0x182f35,0x345b50,0x4f8260,0x89b17b,0xd7dc9a],accent:'#c7e5b5'
+ },
+ 'oriaris-camp': {
+  title:'THE NORTH CAMP',film:'THE CAMP OF HOPE',tagline:'Built on Courage, Kept Alive by Hope.',
+  before:'An Empty Clearing',foundation:'The First Camp',reveal:'Letters of Hope',
+  narration:['A small clearing became a resting place.','Families built shelters and a beacon.','Letters kept loved ones connected.'],
+  history:'When Oriaris needed a place to rest, resupply and communicate along the northern road, a small team established a woodland camp. They raised cloth tents, stored food and drinking water, and built a beacon that guided travellers. Messengers brought letters between the camp and families in Oriaris, making the North Camp a place of connection and hope.',
+  emblem:'North Camp Beacon',art:'camp',palette:[0x172f3a,0x3d655c,0x577868,0xe6ba76,0x9b7552],accent:'#ffe1a4'
+ }
+});
+
+// Pixel-precise illustration primitives: intentionally low resolution and deterministic.
+const ORIGIN_PIXELS = (()=>{
+ const rect=(g,c,x,y,w,h,a=1)=>{if(w<=0||h<=0)return;g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h));};
+ const tri=(g,c,ax,ay,bx,by,cx,cy,a=1)=>{g.fillStyle(c,a);g.fillTriangle(Math.round(ax),Math.round(ay),Math.round(bx),Math.round(by),Math.round(cx),Math.round(cy));};
+ const line=(g,c,x1,y1,x2,y2,w=2,a=1)=>{g.lineStyle(w,c,a).lineBetween(x1,y1,x2,y2);};
+ const rr=(g,c,x,y,w,h,a=1)=>{rect(g,0x15272b,x+3,y+5,w,h,.36*a);rect(g,c,x,y,w,h,a);};
+ const reveal=(g,v,when,fn)=>{const alpha=Math.max(0,Math.min(1,(v-when)/.20));if(alpha>0)fn(alpha);};
+ const roof=(g,x,y,w,h,c,a=1)=>{tri(g,0x2a2f35,x-3,y+4,x+w+3,y+4,x+w/2,y-h-4,a);tri(g,c,x-3,y,x+w+3,y,x+w/2,y-h,a);line(g,0xe5cba5,x-3,y,x+w+3,y,2,.5*a);};
+ const home=(g,x,y,w,h,wall,rc,a=1)=>{rr(g,wall,x,y,w,h,a);roof(g,x,y,w,19,rc,a);rect(g,0x344d50,x+w*.17,y+12,10,12,a);rect(g,0xf4c988,x+w*.17+2,y+14,6,8,.68*a);rect(g,0x493f37,x+w*.64,y+h-19,13,19,a);rect(g,0xe8d5a7,x+w*.64+10,y+h-10,2,2,a);rect(g,0x483b33,x,y+h-4,w,4,.4*a);};
+ const tree=(g,x,y,s=1,a=1,p=0)=>{rect(g,0x584536,x-4*s,y,8*s,32*s,a);for(let i=0;i<3;i++){rect(g,[0x294e45,0x3a7358,0x568568][i],x-(22-i*3)*s,y-(36-i*11)*s,(44-i*6)*s,(30-i*4)*s,a);rect(g,0xa1b983,x+(-7+i*9)*s,y-(32-i*9)*s,5*s,3*s,.34*a);}if(p)rect(g,0xc2b86d,x-2*s,y-26*s,3*s,3*s,.7*a);};
+ const rock=(g,x,y,w,h,a=1)=>{tri(g,0x3d4c57,x,y+h,x+w/2,y-5,x+w,y+h,a);tri(g,0x798e98,x+1,y+h,x+w/2,y-5,x+w/2,y+h,a);line(g,0xb3b7ad,x+w/2,y-4,x+w*.72,y+h,1,.36*a);};
+ const crystal=(g,x,y,s,a=1)=>{tri(g,0x287e93,x-s*.6,y+s*.3,x,y-s,x+s*.6,y+s*.3,a);tri(g,0x63e1d6,x-s*.25,y+s*.1,x,y-s,x,y+s*.3,.88*a);tri(g,0xb0f9df,x+s*.05,y+s*.15,x,y-s,x+s*.3,y+s*.24,.72*a);};
+ const path=(g,start=0,end=1,deep=false)=>{rect(g,deep?0x655b48:0x9e875f,270,188,76,172,.82);for(let i=0;i<13;i++)rect(g,deep?0x877960:0xc0a775,279+(i*11)%53,190+i*13,18,3,.55);};
+ const bridge=(g,v=1)=>{rect(g,0x483e32,170,226,305*v,12,.72);for(let j=0;j<11;j++){if(j/11>v)return;rect(g,j%2?0xb48b5c:0xd1a978,175+j*27,222,23,37);rect(g,0x7c6248,178+j*27,248,19,3);rect(g,0xf0d3a1,182+j*27,230,3,3,.52);}for(let i=0;i<5;i++){if(i/5>v)break;rect(g,0x866b4d,178+i*69,210,6,48);}};
+ const tent=(g,x,y,s,a=1)=>{rect(g,0x202d2b,x-7*s,y+18*s,94*s,17*s,.4*a);tri(g,0xb79f79,x,y+25*s,x+75*s,y+25*s,x+37*s,y-28*s,a);tri(g,0xe0c8a0,x,y+25*s,x+37*s,y-28*s,x+37*s,y+25*s,a);tri(g,0x7f6a54,x+37*s,y+25*s,x+75*s,y+25*s,x+37*s,y-28*s,.8*a);rect(g,0x54443a,x+29*s,y+5*s,16*s,20*s,a);line(g,0x9f8969,x+37*s,y-24*s,x+87*s,y+33*s,1,.8*a);};
+ const glyph=(g,x,y,c=0xffd9a0)=>{rect(g,c,x,y,3,3);rect(g,c,x+7,y,2,2,.9);rect(g,c,x+3,y-6,2,2,.7)};
+ function paint(g,d,t,lowMotion){
+   const a=d.art, P=d.palette;
+   const prog=Math.max(0,Math.min(1,(t-1400)/2200));
+   const sec=t/1000;
+   rect(g,P[0],0,0,640,360);rect(g,P[1],0,107,640,100);rect(g,P[2],0,174,640,186);
+   // Staggered pixel skyline, distance haze and foreground edges.
+   for(let i=0;i<14;i++){
+     const x=i*49-4,dy=(i*31)%39;
+     rect(g,P[1],x,142-dy,57,62,.94);rect(g,P[2],x-2,182-dy/4,56,15,.45);
+   }
+   for(let i=0;i<38;i++){
+     const x=(i*97)%640, y=200+(i*31)%143;
+     rect(g,i%3?0xb3bc81:0xdfc68d,x,y,6+(i%4)*3,2,i%3?.25:.33);
+   }
+   rect(g,0x121f2b,0,337,640,23,.30);
+   if(a==='city'){
+     path(g);
+     home(g,65,169,75,79,0xc7b38c,0xa86556);home(g,498,168,65,78,0xd2bca0,0x7c9a9b);
+     tree(g,48,205,1.0);tree(g,578,211,1.15);
+     reveal(g,prog,.07,al=>{rect(g,0xa1a09b,270,190,75,170,al);for(let i=0;i<16;i++)rect(g,0xd7cbb2,278+(i%3)*20,190+i*12,16,2,.7*al);});
+     reveal(g,prog,.23,al=>{home(g,170,165,95,90,0xe8d9b8,0x6c8b90,al);rect(g,0xf6dc97,186,215,64,7,al);});
+     reveal(g,prog,.43,al=>{home(g,358,155,107,102,0xe0d3a9,0xb66e5b,al);rect(g,0x5a756a,371,183,80,4,al);});
+     reveal(g,prog,.65,al=>{rect(g,0xcbb899,281,94,57,127,al);rect(g,0x8d7761,279,94,62,9,al);rect(g,0xe7d3a1,288,67,43,33,al);roof(g,282,67,55,34,0xa86c56,al);rect(g,0x384a52,299,117,21,24,al);rect(g,0xf4e2b8,301,119,17,18,al);rect(g,0x564d47,309,121,2,10,al);rect(g,0x3b4547,297,178,26,43,al);});
+   } else if(a==='mines'){
+     for(let i=0;i<10;i++)rock(g,15+i*68,160+(i%3)*17,78,88,.75);
+     crystal(g,257,189,25,.54);rock(g,355,180,119,101);
+     reveal(g,prog,.05,al=>{crystal(g,257,193,49,al);crystal(g,295,185,29,.8*al);glyph(g,275,130,0xa2f4e6);});
+     reveal(g,prog,.28,al=>{rect(g,0x554837,89,154,13,103,al);rect(g,0x554837,169,154,13,103,al);roof(g,70,156,134,39,0x9c7259,al);rect(g,0x292f34,111,177,48,75,al);line(g,0xc1b397,89,160,175,251,4,al);});
+     reveal(g,prog,.49,al=>{home(g,400,185,122,84,0x957967,0x645d59,al);for(let i=0;i<3;i++)rect(g,0xe7a366,435+i*11,215,8,9,al);});
+     reveal(g,prog,.7,al=>{for(let i=0;i<11;i++){rect(g,0x665c4c,160+i*30,294,22,8,al);}line(g,0xaab9b9,155,296,485,296,3,al);line(g,0xaab9b9,155,314,485,314,3,al);crystal(g,290,192,79,al);});
+   } else if(a==='art'){
+     rect(g,0x6c6871,0,214,640,79,.55);rect(g,0x515862,93,129,180,146);rect(g,0x72717a,360,139,172,135);rect(g,0x28343e,123,201,120,58);
+     for(let j=0;j<7;j++)rect(g,0x3c4754,378+j*20,166,12,54,.6);
+     for(let i=0;i<14;i++){rect(g,0x67727a,0,267+i*6,640,2,.3);}
+     reveal(g,prog,.08,al=>{const cols=[0xeebc7c,0xe38497,0x80cdd2,0xc7acdf];for(let i=0;i<10;i++)rect(g,cols[i%4],113+i*13,168+(i%3)*8,10,42-i%3*4,al);});
+     reveal(g,prog,.33,al=>{rect(g,0xf0cc9c,374,178,130,62,al);for(let i=0;i<6;i++)rect(g,[0x68bbbf,0xc77ca5,0xeea973][i%3],382+i*19,189+(i%2)*12,15,28,al);});
+     reveal(g,prog,.56,al=>{rect(g,0x6f5386,255,105,22,160,al);rect(g,0x6f5386,383,105,22,160,al);rect(g,0xf39b7d,254,103,151,20,al);rect(g,0xf2d8a3,279,103,101,8,al);rect(g,0x88d6d5,276,132,20,13,al);});
+     reveal(g,prog,.73,al=>{for(let i=0;i<16;i++){const xx=50+(i*37)%548;rect(g,[0xffb0af,0xf7c579,0x79d9ce][i%3],xx,108+(i*23)%148,5,5,al);}});
+   } else if(a==='village'){
+     for(let i=0;i<8;i++){rect(g,0xb39e70,6+i*80,227,64,43,.5);line(g,0xe5cc8e,6+i*80,235,66+i*80,235,2,.6);}
+     home(g,54,172,72,72,0xaa8e72,0x8b7050);home(g,478,178,70,75,0xb49a78,0x82654a);
+     rect(g,0x776447,249,210,28,8);rect(g,0xa3a291,258,190,11,25);rect(g,0x362f28,258,194,10,9);
+     reveal(g,prog,.12,al=>{for(let i=0;i<7;i++)rect(g,0xa5916a,160+i*50,235,16,37,al);});
+     reveal(g,prog,.30,al=>{home(g,340,170,86,78,0xbaa081,0xa58d65,al);rect(g,0x8f714f,150,185,63,58,al);roof(g,149,185,65,25,0xc9ac76,al);});
+     reveal(g,prog,.50,al=>{rect(g,0xc9b9a0,239,123,140,123,al);rect(g,0x836e56,235,123,147,10,al);roof(g,229,120,160,48,0x735842,al);for(let i=0;i<3;i++)rect(g,0x604b42,261+i*39,158,22,40,al);rect(g,0x604b42,299,209,28,37,al);});
+     reveal(g,prog,.75,al=>{for(let i=0;i<9;i++)rect(g,0x8f8974,18+i*68,283+(i%2)*2,57,29,al);rect(g,0x9e9180,10,281,620,7,al);rect(g,0xaa7558,315,67,4,56,al);rect(g,0xa64c46,319,72,31,21,al);});
+   } else if(a==='bridge'){
+     rect(g,0x4f9ca3,0,231,640,103,.93);rect(g,0x81c5ae,0,250,640,12,.45);rect(g,0x96c4ab,0,301,640,9,.5);
+     rect(g,0x5c9667,0,210,160,113);rect(g,0x639c6c,480,210,160,113);
+     tree(g,83,174,1.4);tree(g,563,177,1.4);
+     for(let i=0;i<7;i++){rect(g,0xd4e9d0,48+i*91,276+(i%3)*11,20,3,.38);}
+     reveal(g,prog,.15,al=>{rect(g,0x9c8b5b,0,212,210,27,al);rect(g,0x9c8b5b,441,212,198,27,al);});
+     reveal(g,prog,.34,al=>{bridge(g,Math.min(1,Math.max(0,(prog-.34)/.43)));});
+     reveal(g,prog,.72,al=>{for(let i=0;i<17;i++){rect(g,0xe9d598,(i*43)%640,219+i%5*13,5,4,.6*al);}line(g,0xe5b482,180,219,449,219,3,.7*al);});
+   } else if(a==='regrowth'){
+     path(g,0,1,true);for(let i=0;i<12;i++)rock(g,25+i*54,225+(i%3)*17,40,30,.85);
+     for(let i=0;i<8;i++)rect(g,0x554f46,55+i*74,277+(i%3)*12,33,7,.65);
+     reveal(g,prog,.13,al=>{for(let i=0;i<20;i++){const x=27+(i*31)%580,y=223+(i*19)%124;rect(g,0x719663,x,y,3,15*(.4+prog*.6),al);rect(g,0x86ae78,x+5,y+3,6,5,al);}});
+     reveal(g,prog,.46,al=>{for(let i=0;i<7;i++)tree(g,47+i*94,195+(i%2)*22,.45+(i%3)*.15,al);});
+     reveal(g,prog,.73,al=>{tree(g,409,191,1.23,al);tree(g,464,202,1.05,al);for(let i=0;i<16;i++)rect(g,0xe8d9a8,(i*43)%640,210+(i*29)%118,5,4,.68*al);});
+   } else if(a==='ancient'){
+     for(let i=0;i<8;i++)tree(g,10+i*92,182+(i%3)*17,1.1,.63);
+     rect(g,0x5d4939,300,146,42,122);rect(g,0x785c42,307,151,12,114,.85);tree(g,320,147,2.1);
+     reveal(g,prog,.11,al=>{line(g,0x513e34,305,258,218,292,10,al);line(g,0x513e34,339,258,422,290,10,al);for(let i=0;i<8;i++)rect(g,0x8eaa7b,174+i*40,295,7,9,al);});
+     reveal(g,prog,.35,al=>{rect(g,0x816f53,0,285,257,31,al);rect(g,0x816f53,385,285,255,31,al);for(let i=0;i<8;i++)rect(g,0x9e946b,30+i*78,289,33,8,al);});
+     reveal(g,prog,.6,al=>{rect(g,0x827963,370,270,140,31,al);for(let i=0;i<9;i++)rect(g,0x4c8f68,375+i*15,265,12,6,al);});
+     reveal(g,prog,.76,al=>{for(let i=0;i<18;i++)glyph(g,235+(i*37)%190,87+(i*11)%170,0xe5e6a8);});
+   } else if(a==='camp'){
+     for(let i=0;i<8;i++)tree(g,20+i*88,179+(i%2)*23,1.1,.81);
+     rect(g,0x907750,163,208,325,115,.55);rect(g,0x9b8b62,251,219,147,66,.42);
+     reveal(g,prog,.10,al=>{tent(g,162,208,1,al);});
+     reveal(g,prog,.33,al=>{tent(g,393,217,.85,al);rect(g,0x796048,280,250,45,28,al);rect(g,0xc9ad77,284,251,37,4,al);});
+     reveal(g,prog,.55,al=>{rect(g,0x80644d,339,135,12,137,al);rect(g,0xc9ac7e,314,111,65,30,al);roof(g,304,113,85,25,0x9e744f,al);rect(g,0xf9df98,331,145,30,22,al);rect(g,0xe9b86f,336,151,20,9,al);});
+     reveal(g,prog,.75,al=>{rect(g,0xefdbab,273,177,40,27,al);rect(g,0x917558,273,177,40,4,al);tri(g,0xab916d,273,177,293,194,313,177,al);rect(g,0xf6ce8a,299,267,15,13,.7*al);});
+   }
+   if(!lowMotion){
+     for(let i=0;i<6;i++){
+       const x=(89+i*93+sec*(i%2?3:-3))%640;
+       const y=39+(i*31)%83+Math.sin(sec*1.4+i)*2;
+       rect(g,i%2?0xebd8aa:0xe4f4e2,x,y,4,2,.2);
+     }
+   }
+   rect(g,0xe9e6cb,10,10,620,2,.16);rect(g,0xe9e6cb,10,348,620,2,.16);
+ }
+ return {paint};
+})();
+
+let __originUi=null, __originActive=null;
+function getOriginUi(){
+ if(__originUi)return __originUi;
+ const style=document.createElement('style');style.id='lq-origin-v16-css';
+ style.textContent=`
+ #lq-origin-v16{position:fixed;inset:0;z-index:10060;display:none;pointer-events:none;color:#f9f3de;font:500 14px system-ui, sans-serif;--oc:#f8d388}
+ #lq-origin-v16.play{display:block;pointer-events:auto}
+ #lq-origin-v16 .origin-bg{position:absolute;inset:0;background:linear-gradient(180deg,#0a182ecc 0%,transparent 21%,transparent 73%,#081422dd 100%);pointer-events:none}
+ #lq-origin-v16 .origin-header{position:absolute;top:clamp(14px,3vh,40px);left:4%;right:4%;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+ #lq-origin-v16 .origin-kicker{letter-spacing:.23em;font:800 10px system-ui;color:var(--oc);margin-bottom:7px}
+ #lq-origin-v16 .origin-film{font:800 clamp(18px,2.7vw,29px) Georgia,serif;line-height:1.13;max-width:75vw;text-shadow:0 3px 10px #0009}
+ #lq-origin-v16 .origin-skip{cursor:pointer;background:#102438e8;border:1px solid var(--oc);color:#fff;padding:9px 15px;border-radius:8px;font:800 12px system-ui;min-width:76px}
+ #lq-origin-v16 .origin-subtitle{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);text-align:center;background:#071625d9;border:1px solid #ffffff35;box-shadow:0 7px 25px #0007;padding:12px 20px;width:min(610px,82vw);border-radius:9px;box-sizing:border-box}
+ #lq-origin-v16 .origin-beat{font:800 11px system-ui;letter-spacing:.15em;color:var(--oc);margin-bottom:6px}
+ #lq-origin-v16 .origin-line{font:500 clamp(13px,1.6vw,17px)/1.4 system-ui;color:#f7f1e0}
+ #lq-origin-v16 .origin-bar{margin-top:9px;height:3px;background:#ffffff31;overflow:hidden;border-radius:8px}
+ #lq-origin-v16 .origin-fill{height:100%;background:var(--oc);width:0}
+ #lq-origin-v16 .origin-map{font:800 18px Georgia,serif;color:#fff3d4;letter-spacing:.07em;margin-bottom:4px}
+ #lq-origin-v16 .origin-tag{color:#e2e5d8;font:500 12px/1.3 system-ui}
+ #journal .lq-origin-journal{border-top:1px solid #8a9da750;margin:14px 0 10px;padding-top:10px}
+ #journal .lq-origin-journal h4{margin:5px 0 10px;color:#f5dda9;font-size:16px}
+ #journal .lq-origin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:9px}
+ #journal .lq-origin-card{padding:11px;border:1px solid #7b8c877d;background:#0b2537dd;border-radius:9px;min-height:91px}
+ #journal .lq-origin-card.locked{opacity:.65}
+ #journal .lq-origin-card .emblem{font-size:11px;color:#b2d8cb;margin:4px 0 7px}
+ #journal .lq-origin-card p{font-size:12px;line-height:1.5;margin:6px 0;color:#e5ecdf}
+ #journal .lq-origin-card button{border:1px solid #a8c7b4;background:#213e4b;color:#fff;margin:5px 6px 0 0;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px}
+ @media(max-width:600px){#lq-origin-v16 .origin-header{left:4%;right:4%}#lq-origin-v16 .origin-film{font-size:17px}#lq-origin-v16 .origin-subtitle{bottom:7%;width:92vw;padding:10px}#lq-origin-v16 .origin-line{font-size:13px}}
+ @media(prefers-reduced-motion:reduce){#lq-origin-v16 *{transition:none!important}}
+ `;
+ document.head.appendChild(style);
+ const ui=document.createElement('div');ui.id='lq-origin-v16';ui.setAttribute('aria-label','Origin cinematic');
+ ui.innerHTML='<div class="origin-bg"></div><div class="origin-header"><div><div class="origin-kicker">WORLD ORIGINS · DISCOVERY</div><div class="origin-film"></div></div><button class="origin-skip" type="button">Skip »</button></div><div class="origin-subtitle" aria-live="off"><div class="origin-map" hidden></div><div class="origin-beat"></div><div class="origin-line"></div><div class="origin-tag" hidden></div><div class="origin-bar"><div class="origin-fill"></div></div></div>';
+ document.body.appendChild(ui);__originUi=ui;return ui;
+}
+function originSeen(scene,id){return scene?.store?.game?.originStoriesSeen?.[id]===true;}
+function commitOrigin(scene,id){if(!scene?.store?.game)return;const g=scene.store.game;if(!g.originStoriesSeen||typeof g.originStoriesSeen!=='object'||Array.isArray(g.originStoriesSeen))g.originStoriesSeen={};g.originStoriesSeen[id]=true;scene.store.save();}
+function originRestore(scene,active,mark){
+ if(!active||active.closed)return;
+ active.closed=true;
+ clearTimeout(active.wake);clearTimeout(active.deadline);
+ try{scene.events.off('update',active.onFrame);}catch(e){}
+ try{active.art?.destroy();}catch(e){}
+ // Camera return started at 6700ms. Snap on completion/Skip; never add a timer past 7500ms.
+ try{scene.cameras.main.setZoom(active.zoom0);scene.cameras.main.centerOn(scene.player.x,scene.player.y);}catch(e){}
+ try{scene.cameras.main.startFollow(scene.player,true,.12,.12);}catch(e){}
+ if(active.keyboard)active.keyboard.enabled=active.keyboardWasOn;
+ if(scene.__lqAreaCine===active)scene.__lqAreaCine=null;
+ if(__originActive===active)__originActive=null;
+ if(__originUi)__originUi.classList.remove('play');
+ if(active.keyHandler)window.removeEventListener('keydown',active.keyHandler,true);
+ if(active.skipBtn)active.skipBtn.removeEventListener('click',active.finish);
+ if(mark && !active.replay && scene.area?.id===active.id)commitOrigin(scene,active.id);
+}
+function drawOriginFrame(scene,active,elapsed){
+ if(active.closed||!scene.sys?.isActive?.())return;
+ const t=Math.min(7500,elapsed),d=ORIGIN_STORIES[active.id],ui=__originUi;
+ let beat=t<1400?0:t<3600?1:2;
+ if(active.beat!==beat){active.beat=beat;ui.querySelector('.origin-beat').textContent=[d.before,d.foundation,d.reveal][beat].toUpperCase();ui.querySelector('.origin-line').textContent=d.narration[beat];}
+ if(t>=5600){ui.querySelector('.origin-map').hidden=false;ui.querySelector('.origin-map').textContent=d.title;ui.querySelector('.origin-tag').hidden=false;ui.querySelector('.origin-tag').textContent=d.tagline;ui.querySelector('.origin-beat').textContent='ORIGIN REVEALED';}
+ ui.querySelector('.origin-fill').style.width=(t/75).toFixed(1)+'%';
+ if(t>=3600&&!active.panned&&scene.area?.id===active.id){
+   active.panned=true;
+   const spot=PLAN[active.id]?.marks?.[0],cam=scene.cameras.main;
+   if(spot){const x=Math.max(0,Math.min(scene.area.w*32,(spot[1]+.5)*32));const y=Math.max(0,Math.min(scene.area.h*32,(spot[2]+.5)*32));try{cam.pan(x,y,1050,'Sine.easeInOut',true);cam.zoomTo(active.zoom0*1.06,1050,'Sine.easeInOut',true);}catch(e){}}
+ }
+ if(t>=6700&&!active.returning){
+   active.returning=true;
+   try{scene.cameras.main.pan(scene.player.x,scene.player.y,760,'Sine.easeInOut',true);scene.cameras.main.zoomTo(active.zoom0,760,'Sine.easeInOut',true);}catch(e){}
+ }
+ const art=active.art;
+ if(!art)return;
+ const reduced=active.reduced;
+ // The illustrated before/foundation layers fade away to reveal the ACTUAL landmark on the current map.
+ const archiveReplay=active.replay&&scene.area?.id!==active.id;
+ const opacity=archiveReplay?(t<6700?1:Math.max(0,1-(t-6700)/800)):(t<=3600?1:Math.max(0,1-(t-3600)/1750));
+ art.setAlpha(opacity);
+ if(!opacity)return;
+ if(t-active.frameAt< (reduced?160:64))return;
+ active.frameAt=t;
+ art.clear();
+ ORIGIN_PIXELS.paint(art,d,t,reduced);
+}
+function startOrigin(scene,id,replay=false){
+ // Never play or replay an origin intro outside English Town.
+ if(!INTRO_ENABLED_MAPS.has(id))return false;
+ const d=ORIGIN_STORIES[id];if(!scene||!d||__originActive||!scene.player?.active)return false;
+ if(!replay && scene.area?.id!==id)return false;
+ const cam=scene.cameras.main,keyboard=scene.input?.keyboard;
+ const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ if(scene.__lqAreaCine)stopAreaCinematic(scene);
+ const ui=getOriginUi();ui.style.setProperty('--oc',d.accent);
+ ui.querySelector('.origin-film').textContent=d.film;
+ ui.querySelector('.origin-map').hidden=true;ui.querySelector('.origin-tag').hidden=true;
+ ui.classList.add('play');
+ const g=scene.add.graphics().setDepth(9000).setScrollFactor(0);
+ const w=scene.scale?.width||window.innerWidth||900,h=scene.scale?.height||window.innerHeight||580;
+ const scale=Math.max(w/640,h/360);
+ g.setPosition((w-640*scale)/2,(h-360*scale)/2).setScale(scale);
+ const active={id,replay,art:g,closed:false,zoom0:cam.zoom||1,keyboard,keyboardWasOn:keyboard?.enabled??true,
+   start:performance.now(),frameAt:-1000,beat:-1,reduced,panned:false,returning:false,onFrame:null,finish:null,wake:0,deadline:0};
+ __originActive=active;scene.__lqAreaCine=active;
+ if(keyboard){keyboard.enabled=false;try{keyboard.resetKeys();}catch(e){}}
+ try{cam.stopFollow();}catch(e){}
+ active.finish=()=>originRestore(scene,active,true);
+ active.keyHandler=e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.key==='Tab')return; e.preventDefault();e.stopImmediatePropagation();if(['Escape','Enter',' '].includes(e.key))active.finish();};
+ window.addEventListener('keydown',active.keyHandler,true);
+ const btn=ui.querySelector('.origin-skip');btn.addEventListener('click',active.finish);active.skipBtn=btn;
+ ui.querySelector('.origin-kicker').textContent=replay?'WORLD ORIGINS · ARCHIVE REPLAY':'WORLD ORIGINS · FIRST DISCOVERY';
+ // For cross-map Journal replays, camera remains on the actual current area; the illustration is still replayable.
+ if(replay&&scene.area?.id!==id)active.panned=true;
+ active.onFrame=()=>{
+   if(active.closed)return;
+   if(!scene.sys?.isActive?.()||scene.switching||scene.inside){originRestore(scene,active,false);return;}
+   if(!active.replay && (window.LQArtDistrict?.isFilming?.() || window.LQPast?.isFilming?.() || window.LQIntro?.isPlaying?.())){
+     originRestore(scene,active,false);queueAreaCinematic(scene,PLAN[active.id]);return;
+   }
+   const elapsed=performance.now()-active.start;
+   drawOriginFrame(scene,active,elapsed);
+   if(elapsed>=7500)active.finish();
+ };
+ scene.events.on('update',active.onFrame);
+ drawOriginFrame(scene,active,0);
+ active.deadline=setTimeout(()=>{if(!active.closed){drawOriginFrame(scene,active,7500);active.finish();}},7500);
+ return true;
+}
+function renderOriginJournal(root,store){
+ if(!root||!store)return;
+ const wrapper=document.createElement('section');wrapper.className='lq-origin-journal';
+ const head=document.createElement('h4');head.textContent='🌍 World Origins · English Town';wrapper.appendChild(head);
+ const sub=document.createElement('p');sub.textContent='Discover English Town to unlock its origin story and replay its intro.';wrapper.appendChild(sub);
+ const grid=document.createElement('div');grid.className='lq-origin-grid';
+ for(const [id,d] of Object.entries(ORIGIN_STORIES).filter(([id])=>INTRO_ENABLED_MAPS.has(id))){
+  const opened=store.game?.originStoriesSeen?.[id]===true;
+  const card=document.createElement('div');card.className='lq-origin-card'+(opened?'':' locked');
+  const name=document.createElement('b');name.textContent=opened?'✦ '+d.title:'🔒 Undiscovered Origin';card.appendChild(name);
+  if(opened){
+   const emblem=document.createElement('div');emblem.className='emblem';emblem.textContent='LANDMARK · '+d.emblem;card.appendChild(emblem);
+   const teaser=document.createElement('p');teaser.textContent=d.tagline;card.appendChild(teaser);
+   const read=document.createElement('button');read.type='button';read.textContent='Read Story';
+   read.addEventListener('click',()=>{const prev=card.querySelector('.lq-origin-history');if(prev){prev.remove();read.textContent='Read Story';return;}const p=document.createElement('p');p.className='lq-origin-history';p.textContent=d.history;card.appendChild(p);read.textContent='Close Story';});
+   const replay=document.createElement('button');replay.type='button';replay.textContent='Replay Cinematic';
+   replay.addEventListener('click',()=>{
+     const sc=window.LQOrigins?.currentScene?.();
+     if(!sc)return;
+     if(sc.journal?.root)sc.journal.root.style.display='none';
+     if(!canPlayCinematic(sc,sc.area?.id))return;
+     startOrigin(sc,id,true);
+   });
+   card.append(read,replay);
+  }else{
+   const info=document.createElement('p');info.textContent='ORIGIN STORY — UNDISCOVERED';card.appendChild(info);
+  }
+  grid.appendChild(card);
+ }
+ wrapper.appendChild(grid);root.appendChild(wrapper);
+}
+window.LQOrigins=Object.freeze({
+ version:'16.0-et-only-intro',catalog:()=>Array.from(INTRO_ENABLED_MAPS),stories:Object.freeze({'english-town':ORIGIN_STORIES['english-town']}),
+ isPlaying:scene=>!!(__originActive&&!__originActive.closed&&(!scene||scene.__lqAreaCine===__originActive)),
+ seen:(scene,id)=>originSeen(scene,id),renderJournal:renderOriginJournal,
+ currentScene:()=>{
+  const active=window.__lifequestGetScene?.();
+  if(active?.area&&active?.store&&active?.player)return active;
+  const scenes=window.game?.scene?.getScenes?.(true)||window.__lqTownGame?.scene?.getScenes?.(true)||[];
+  return scenes.find(s=>s?.area&&s?.store&&s?.player)||null;
+ },
+ replay:(scene,id)=>{if(!INTRO_ENABLED_MAPS.has(id)||!originSeen(scene,id)||!canPlayCinematic(scene,scene?.area?.id))return false;return startOrigin(scene,id,true);},
+ status:()=>({playing:!!(__originActive&&!__originActive.closed),id:__originActive?.id||null})
+});
+
+    let introRoot = null, introHideTimer = 0, introLast = { id: '', at: 0 };
+  function ensureIntroUi() {
+    if (introRoot) return introRoot;
+    const st = document.createElement('style');
+    st.id = 'lq-area-intro-css';
+    st.textContent = `#lq-area-intro{position:fixed;inset:0;pointer-events:none;z-index:10020;opacity:0;transition:opacity .45s ease;font-family:system-ui,'Segoe UI',sans-serif}#lq-area-intro.show{opacity:1}#lq-area-intro .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,8,14,.84),rgba(5,8,14,.22) 34%,rgba(5,8,14,0) 55%,rgba(5,8,14,.48));}#lq-area-intro .topline,#lq-area-intro .botline{position:absolute;left:50%;transform:translateX(-50%);height:2px;width:min(680px,76vw);background:linear-gradient(90deg,transparent,rgba(255,230,173,.88),transparent);box-shadow:0 0 12px rgba(255,230,173,.5)}#lq-area-intro .topline{top:16%}#lq-area-intro .botline{bottom:18%}#lq-area-intro .card{position:absolute;left:50%;top:19%;transform:translateX(-50%);width:min(720px,84vw);padding:20px 26px 24px;border:1px solid rgba(255,237,181,.42);border-radius:24px;background:linear-gradient(180deg,rgba(17,24,37,.86),rgba(17,24,37,.38));box-shadow:0 24px 70px rgba(0,0,0,.42);backdrop-filter:blur(3px);text-align:center;color:#fff}#lq-area-intro .eyebrow{font:800 12px/1.1 system-ui,sans-serif;letter-spacing:.38em;text-transform:uppercase;color:#ffe6ab;margin-bottom:10px}#lq-area-intro .title{font:800 clamp(28px,5vw,54px)/1.05 Georgia,'Times New Roman',serif;letter-spacing:.02em;text-shadow:0 8px 18px rgba(0,0,0,.4)}#lq-area-intro .subtitle{margin-top:10px;font:500 clamp(13px,2vw,16px)/1.6 system-ui,sans-serif;color:#dce7f6}#lq-area-intro .icon{display:inline-flex;align-items:center;justify-content:center;width:68px;height:68px;border-radius:18px;background:rgba(255,227,164,.12);border:1px solid rgba(255,227,164,.38);font-size:31px;margin-bottom:14px;box-shadow:0 0 22px rgba(255,206,108,.14)}#lq-area-intro .hint{margin-top:14px;font:600 12px/1.3 system-ui,sans-serif;color:#b8cde8}`;
+    st.textContent += `
+#lq-area-intro{--v15-accent:#f6cd86;transition:opacity .33s ease}
+#lq-area-intro .veil{background:linear-gradient(180deg,rgba(8,14,21,.30) 0%,transparent 27%,transparent 54%,rgba(8,14,21,.68) 100%)}
+#lq-area-intro .topline{top:5%;width:min(900px,88vw);opacity:.55}
+#lq-area-intro .botline{bottom:5%;width:min(900px,88vw);opacity:.55}
+#lq-area-intro .card{top:auto;bottom:11%;left:clamp(20px,5vw,70px);transform:none;width:min(470px,85vw);padding:19px 22px;border:1px solid color-mix(in srgb,var(--v15-accent),transparent 56%);background:linear-gradient(105deg,rgba(9,18,29,.93),rgba(11,20,31,.70));box-shadow:0 12px 45px #0008;border-radius:13px;text-align:left;backdrop-filter:blur(5px)}
+#lq-area-intro .icon{float:right;width:40px;height:40px;margin:0 0 4px 8px;border-radius:11px;font-size:22px}
+#lq-area-intro .eyebrow{font-size:10px;letter-spacing:.23em;margin-bottom:7px;color:var(--v15-accent)}
+#lq-area-intro .title{font:800 clamp(26px,4vw,40px)/1.04 Georgia,serif;letter-spacing:.01em}
+#lq-area-intro .subtitle{font:500 clamp(12px,1.4vw,14px)/1.5 system-ui,sans-serif;margin-top:7px;color:#eef1ef}
+#lq-area-intro .chapter{font:800 10px/1.45 system-ui,sans-serif;letter-spacing:.23em;color:var(--v15-accent);margin:12px 0 5px}
+#lq-area-intro .shot{font:600 12px/1.5 system-ui,sans-serif;color:#f2e6d1;min-height:18px}
+#lq-area-intro .progress{width:100%;height:2px;background:#ffffff33;margin-top:12px;overflow:hidden}
+#lq-area-intro .progress span{display:block;height:100%;width:0;background:var(--v15-accent);transition:width .4s ease}
+#lq-area-intro .hint{font:500 10px/1.3 system-ui,sans-serif;color:#cfdbdf;margin-top:10px}
+#lq-area-intro.revisit .chapter,#lq-area-intro.revisit .shot,#lq-area-intro.revisit .progress{display:none}
+@media(max-width:650px){#lq-area-intro .card{bottom:12%;left:5%;width:90%;box-sizing:border-box;padding:13px 15px}#lq-area-intro .subtitle{max-width:100%}#lq-area-intro .hint{display:none}#lq-area-intro .title{font-size:27px}#lq-area-intro .topline{top:3%}#lq-area-intro .botline{bottom:4%}}
+@media(prefers-reduced-motion:reduce){#lq-area-intro *{transition:none!important}}
+`;
+    document.head.appendChild(st);
+    introRoot = document.createElement('div');
+    introRoot.id = 'lq-area-intro';
+    introRoot.innerHTML = '<div class="veil"></div><div class="topline"></div><div class="card"><div class="icon">🗺️</div><div class="eyebrow"></div><div class="title"></div><div class="subtitle"></div><div class="chapter"></div><div class="shot"></div><div class="progress"><span></span></div><div class="hint">Press ESC / ENTER to skip · Control returns automatically</div></div><div class="botline"></div>';
+    document.body.appendChild(introRoot);
+    return introRoot;
+  }
+  function showIntro(areaId, meta, holdMs = 2850) {
+    if (!INTRO_ENABLED_MAPS.has(areaId) || !meta) return;
+    const now = Date.now();
+    if (introLast.id === areaId && now - introLast.at < 1200) return;
+    introLast = { id: areaId, at: now };
+    const root = ensureIntroUi();
+    root.querySelector('.icon').textContent = meta.icon || '🗺️';
+    root.querySelector('.eyebrow').textContent = meta.eyebrow || 'WORLD';
+    root.querySelector('.title').textContent = meta.title || areaId;
+    root.querySelector('.subtitle').textContent = (CINEMA_V15[areaId]?.text || meta.subtitle || '');
+    root.querySelector('.chapter').textContent = CINEMA_V15[areaId]?.name || '';
+    root.querySelector('.shot').textContent = CINEMA_V15[areaId]?.shots?.[0] || '';
+    root.querySelector('.progress span').style.width = '0%';
+    root.style.setProperty('--v15-accent', CINEMA_V15[areaId]?.accent || '#f6cd86');
+    root.classList.add('show');
+    clearTimeout(introHideTimer);
+    introHideTimer = setTimeout(() => root.classList.remove('show'), holdMs);
+  }
+
+  const cinematicSeen = new Map();
+  function canPlayCinematic(scene, areaId) {
+    if (!scene || scene.area?.id !== areaId || scene.switching || scene.inside || scene.sleeping) return false;
+    if (!scene.player?.active || !scene.cameras?.main || !scene.sys?.isActive?.()) return false;
+    if (scene.chat?.isOpen || scene.briefing?.isOpen || scene.settings?.isOpen || scene.quests?.isOpen) return false;
+    // Story films, boot tutorial and the title screen own the camera whenever present.
+    for(const id of ['lq-art','lq-past','lq-intro','lq-shrine']){const el=document.getElementById(id);if(el&&!el.hidden&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).opacity!=='0')return false;}
+    if(window.LQArtDistrict?.isFilming?.() || window.LQPast?.isFilming?.() || window.LQIntro?.isPlaying?.()) return false;
+    const lobby=document.getElementById('lq-title');
+    if(lobby && !lobby.hidden && getComputedStyle(lobby).display!=='none' && getComputedStyle(lobby).visibility!=='hidden') return false;
+    return true;
+  }
+  function stopAreaCinematic(scene) {
+    if(!scene)return;
+    const active=scene.__lqAreaCine;
+    if(!active)return;
+    if(active===__originActive){originRestore(scene,active,false);return;}
+    active.closed=true;
+    clearTimeout(active.timer);
+    if(active.keyHandler)window.removeEventListener('keydown',active.keyHandler,true);
+    if(active.skipBtn)active.skipBtn.remove();
+    scene.__lqAreaCine=null;
+    try{scene.cameras.main.pan(scene.player.x,scene.player.y,150,'Sine.easeOut',true);
+      scene.cameras.main.zoomTo(active.zoom0,150,'Sine.easeOut',true);
+      scene.cameras.main.startFollow(scene.player,true,.12,.12);}catch(e){}
+    if(active.keyboard)active.keyboard.enabled=active.keyboardWasOn;
+    if(introRoot)introRoot.classList.remove('show');
+  }
+  function queueAreaCinematic(scene,p){
+    if(!scene||!p)return;
+    clearTimeout(scene.__lqAreaCinePending);
+    // Seven non-ET maps enter gameplay immediately; no origin film and no V15 intro card.
+    if(!INTRO_ENABLED_MAPS.has(scene.area?.id))return;
+    const id=scene.area.id;
+    let checked=false;
+    const attempt=()=>{
+      if(scene.area?.id!==id || scene.__lqWorldFx?.id!==id || !scene.sys?.isActive?.())return;
+      if(scene.__lqAreaCine || !canPlayCinematic(scene,id)){
+        // Don't consume first-discovery state during a story film, title screen, or modal.
+        scene.__lqAreaCinePending=setTimeout(attempt,650);
+        return;
+      }
+      if(originSeen(scene,id)){
+        // Revisit: a short non-blocking location card; no long camera tour.
+        showIntro(id,p.intro,900);
+        ensureIntroUi().classList.add('revisit');
+        return;
+      }
+      startOrigin(scene,id,false);
+    };
+    scene.__lqAreaCinePending=setTimeout(attempt,600);
+  }
+  function attach(scene) {
+    const p = PLAN[scene.area?.id]; if (!p) return;
+    const cache = scene.__lqWorldFx;
+    if (cache) detach(scene);
+    const layer = scene.add.graphics().setDepth(7);
+    const nodes = [layer];
+    const labels = [];
+    p.marks.forEach(([kind, x, y, r, name, description], i) => {
+      // Labels are intentionally small and below NPC/player depth; click for a short world-building fact.
+      if (i > 5 || !name) return;
+      const discoveryId = scene.area.id + ':' + i;
+      const discovered = (scene.store?.game?.worldDiscoveries || []).includes(discoveryId);
+      const label = scene.add.text((x + .5) * T, (y - .8) * T, (discovered ? '✦ ' : '◇ ') + name, {
+        fontFamily: 'monospace', fontSize: '10px', color: discovered ? '#ffda81' : (p.tone === 'creative' ? '#ffe3a1' : '#fff0cf'),
+        backgroundColor: '#13212ad9', padding: { x: 5, y: 3 },
+      }).setOrigin(.5, .5).setDepth(8).setInteractive({ useHandCursor: true });
+      label.on('pointerdown', () => {
+        if (scene.inside || scene.switching) return;
+        const save = scene.store?.game;
+        let found = false;
+        if (save) {
+          if (!Array.isArray(save.worldDiscoveries)) save.worldDiscoveries = [];
+          if (!save.worldDiscoveries.includes(discoveryId)) {
+            save.worldDiscoveries.push(discoveryId); found = true;
+            scene.store.save();
+            label.setText('✦ ' + name).setColor('#ffda81');
+          }
+        }
+        scene.quests?.toast?.([`${found ? '✦ Location discovered' : '🧭 Landmark'} · ${name}`, description]);
+      });
+      labels.push(label); nodes.push(label);
+    });
+    const seed = seedFor(scene.area.id);
+    const motes = [];
+    const lowMotion = (window.innerWidth || 1280) <= 600 || !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const count = lowMotion ? (scene.area.theme === 'past' ? 9 : 7) : (scene.area.theme === 'past' ? 18 : 14);
+    for (let i = 0; i < count; i++) {
+      const x = 20 + hash(i * 9, 31, seed) * (scene.area.w * T - 40);
+      const y = 20 + hash(i * 7, 47, seed) * (scene.area.h * T - 40);
+      if (!walkable(scene.area, x / T, y / T)) continue;
+      motes.push({ x, y, p: hash(i, 23, seed) * TAU, vx: .3 + hash(i, 48, seed), type: p.particle });
+    }
+    scene.__lqWorldFx = { id: scene.area.id, layer, nodes, labels, motes, time: 0, frame: 0, effects: p.effects, lowMotion, reducedMotion: !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches };
+    queueAreaCinematic(scene, p);
+    // Since these items are in areaObjs they are destroyed by the existing area cleanup.
+    scene.areaObjs?.push(...nodes);
+  }
+  function detach(scene) {
+    if(!scene)return;
+    clearTimeout(scene.__lqAreaCinePending);
+    stopAreaCinematic(scene);
+    if(scene.__lqWorldFx) scene.__lqWorldFx=null;
+  }
+  function update(scene, ms) {
+    const fx = scene?.__lqWorldFx;
+    if (!fx || fx.id !== scene.area.id) return;
+    if (scene.inside || scene.switching) { fx.layer.setVisible(false); fx.labels.forEach(n => n.setVisible(false)); return; }
+    fx.layer.setVisible(true);
+    fx.labels.forEach(n => n.setVisible(true));
+    const dt = Math.min(100, ms || 16);
+    fx.time += dt / 1000; fx.frame += dt;
+    if (fx.frame < (fx.lowMotion ? 110 : 55)) return;
+    fx.frame = 0;
+    const g = fx.layer; g.clear();
+    if (fx.reducedMotion) return;
+    const left = scene.cameras.main.scrollX - 100, top = scene.cameras.main.scrollY - 100;
+    const right = left + scene.cameras.main.width + 200, bottom = top + scene.cameras.main.height + 200;
+    const visible = (x,y) => x > left && x < right && y > top && y < bottom;
+    const t = fx.time;
+    function animate(type, x, y, phase, amp = 1) {
+      if (!visible(x,y)) return;
+      const bob = Math.sin(t * 2.3 + phase);
+      if (type === 'clockhands') {
+        // The civic clock hand advances gently; a restrained warm light marks its face.
+        const cy=y-48, ang=t*.07+phase;
+        oval(g,0xffecb7,x,cy,24,24,.055);
+        stroke(g,0xfff1cf,x,cy,x+Math.sin(ang)*9,cy-Math.cos(ang)*9,1.8,.73);
+        stroke(g,0xfff1cf,x,cy,x+Math.sin(ang*.25)*6,cy-Math.cos(ang*.25)*6,1.6,.62);
+      } else if(type === 'crystalpulse') {
+        const beat=.35+.28*(1+Math.sin(t*1.7+phase))*.5;
+        for(let j=0;j<5;j++) {
+          const xx=x+(j-2)*15,yy=y-42-Math.abs(j-2)*6;
+          dot(g,0xa3fff5,xx,yy,1.7+j%2,beat);
+          stroke(g,0xf8ffff,xx-2,yy+3,xx+1,yy-4,1,beat*.58);
+        }
+      } else if(type === 'prismsweep') {
+        const sway=Math.sin(t*1.3+phase)*4;
+        for(let j=0;j<4;j++) {
+          const xx=x-33+j*22;
+          stroke(g,[0xffd37c,0x81efdc,0xf4a1cb,0xac9bff][j],xx,y-26+sway,
+            xx+4*Math.sin(t*1.4+j),y-8+sway,2.2,.65);
+        }
+      } else if(type === 'bannerflutter') {
+        const p=Math.sin(t*1.15+phase)*3;
+        fill(g,0x8a3f3c,x+10,y-65,20+p,10,.67);
+        stroke(g,0xe9ce9a,x+13,y-60,x+26+p,y-60,1,.58);
+      } else if(type === 'springmist') {
+        for(let j=0;j<3;j++) {
+          const tt=(t*.12+j/3)%1;
+          oval(g,0xd4f7e5,x-35+tt*70,y-8+j*6,22,5,(1-tt)*.21);
+          stroke(g,0xb7fff6,x-21+j*14,y+10+Math.sin(t+j)*2,x-4+j*14,y+10+Math.sin(t+j)*2,1,.3);
+        }
+      } else if(type === 'seedwind') {
+        for(let j=0;j<4;j++) {
+          const xx=x-25+Math.sin(t*.7+j*1.3)*32;
+          const yy=y-15+j*10+Math.sin(t*.95+j)*7;
+          oval(g,j%2?0xb6c48a:0xe8d8aa,xx,yy,4,2,.27);
+        }
+      } else if(type === 'forestmoon') {
+        for(let j=0;j<4;j++) {
+          const xx=x-34+j*24+Math.sin(t*.6+j)*6;
+          const yy=y-22+(j%3)*17+Math.cos(t*.8+j)*8;
+          dot(g,0xedf4bd,xx,yy,1.2,.18+.18*(1+Math.sin(t*2+j)));
+        }
+      } else if(type === 'canvasflutter') {
+        const sway=Math.sin(t*1.1+phase)*4;
+        stroke(g,0xdcc79e,x-38,y-30+sway,x+32,y-30-sway,1.8,.5);
+        for(let j=0;j<2;j++)dot(g,0xffd88c,x+(j?23:-23),y-22+Math.sin(t*1.6+j)*2,2,.46);
+      } else if (type === 'fire') {
+        oval(g, 0xf7a744, x, y + 1, 20 + bob * 3, 9, .31);
+        g.fillStyle(0xdc5c2b, .94).fillTriangle(x - 6, y + 6, x + 6, y + 6, x + bob * 4, y - 17 - bob * 3);
+        g.fillStyle(0xffd57e, .9).fillTriangle(x - 2, y + 5, x + 3, y + 5, x - 1 - bob * 2, y - 10);
+      } else if (type === 'smoke') {
+        for (let i = 0; i < 4; i++) {
+          const cycle = (t * .35 + i / 4 + phase / TAU) % 1;
+          oval(g, 0xa8aba6, x + Math.sin(t + i * 2) * (8 + cycle * 8), y - 13 - cycle * 42,
+            (8 + cycle * 11) * amp, (5 + cycle * 8) * amp, (.19 * (1 - cycle)));
+        }
+      } else if (type === 'water') {
+        for (let i = 0; i < 3; i++) {
+          let cycle = (t * .38 + i / 3 + phase / TAU) % 1;
+          g.lineStyle(1.4, 0xd7f8f0, .4 * (1 - cycle)).strokeEllipse(x, y + i * 4, 13 + cycle * 31, 4 + cycle * 12);
+        }
+      } else if (type === 'ore' || type === 'sparkle') {
+        const gl = (.5 + .5 * Math.sin(t * 3.9 + phase));
+        dot(g, type === 'ore' ? 0xb2fff1 : 0xffe0ad, x, y + bob * 3, 1.4 + 1.8 * gl, .3 + gl * .7);
+        stroke(g, 0xffffff, x - 4 * gl, y, x + 4 * gl, y, 1, .42 * gl);
+      } else if (type === 'lantern') {
+        const sway = Math.sin(t * 1.3 + phase) * 3;
+        oval(g, 0xffd899, x + sway, y, 24 + bob * 3, 19, .15);
+        dot(g, 0xffe6a0, x + sway, y, 3.4, .7);
+      } else if (type === 'ember') {
+        for (let i = 0; i < 5; i++) {
+          let cy = (t * (.31 + i * .05) + i * .17) % 1;
+          dot(g, i % 2 ? 0xffc26a : 0xff8753, x - 8 + Math.sin(t * 1.3 + i * 3) * 12,
+            y - cy * 44, 1.3 + (1 - cy), (1 - cy) * .65);
+        }
+      } else if (type === 'butterfly') {
+        let xx = x + Math.sin(t * 1.5 + phase) * 15, yy = y + Math.cos(t * 1.4 + phase) * 10;
+        oval(g, 0xffd8a8, xx - 2, yy, 3 + Math.abs(bob) * 5, 4, .79);
+        oval(g, 0xf6b8b9, xx + 3, yy, 3 + Math.abs(bob) * 5, 4, .8);
+      } else if (type === 'confetti') {
+        const xx = x + Math.sin(t * .9 + phase) * 13, yy = y + Math.cos(t * 1.2 + phase) * 8;
+        fill(g, [0xf6bb68, 0x69d5cb, 0xf48cc4][Math.floor(phase * 4) % 3], xx, yy, 3, 3, .83);
+      } else if (type === 'dust' || type === 'leaves' || type === 'firefly') {
+        const xx = x + Math.sin(t * .77 + phase) * 16;
+        const yy = y + Math.sin(t * 1.14 + phase) * 9;
+        if (type === 'leaves') oval(g, 0xb5be77, xx, yy, 5 + Math.abs(bob) * 2, 2.5, .53);
+        else dot(g, type === 'firefly' ? 0xffeda7 : 0xb9ab86, xx, yy, type === 'firefly' ? 1.7 : 1.2,
+          type === 'firefly' ? .25 + Math.max(0, bob) * .75 : .36);
+      }
+    }
+    fx.effects.forEach(([kind, tx, ty], i) => animate(kind, (tx + .5) * T, (ty + .5) * T, i * 2.03));
+    fx.motes.forEach((m, i) => animate(m.type, m.x, m.y, m.p, .65));
+  }
+  function diagnostics(a) {
+    const p = PLAN[a.id];
+    if (!p) return [];
+    return p.marks.map(([kind,x,y,r,name]) => ({ kind, x,y, name, inBounds:x>=0 && y>=0 && x<a.w && y<a.h }));
+  }
+  window.LQWorldUpgrade = Object.freeze({ ground, details, attach, detach, update, diagnostics, catalog: () => Object.keys(PLAN), information: (id) => PLAN[id] ? { density: PLAN[id].density, landmarks: PLAN[id].marks.map(a=>a[4]), particle: PLAN[id].particle } : null });
+})();
+
+</script>
+<script>
+/* LIFEQUEST AI V17 — Career Worlds
+ * Extra deterministic, non-solid painted details. Never edits the area's geometry,
+ * interactive objects, spawn locations, quests, saves or character animation.
+ */
+(function(){
+  'use strict';
+  const T=32, TAU=Math.PI*2;
+  const CONFIG=Object.freeze({
+    'english-town':    {mode:'city',     colors:[0xf7e4ae,0xe6b7b9,0xaed3bf], target:[30,5]},
+    'mining-town':     {mode:'mineral',  colors:[0x91c8ba,0xc0a57d,0x5c8790], target:[50,13]},
+    'art-district':    {mode:'art',      colors:[0xf9bb64,0xe68bbf,0x69d8c7], target:[36,18]},
+    'english-town-past': {mode:'village', colors:[0xc9b27a,0x90a36d,0x9c6c52], target:[30,5]},
+    'oriaris-trail-1': {mode:'stream',   colors:[0x96b585,0xd2dba0,0xa8dbd0], target:[20,8]},
+    'oriaris-trail-2': {mode:'renewal',  colors:[0x9d9473,0x80966f,0xc5bb90], target:[26,19]},
+    'oriaris-trail-3': {mode:'forest',   colors:[0x789b73,0x486d55,0xafd7ad], target:[22,10]},
+    'oriaris-camp':    {mode:'camp',     colors:[0xe1bd7d,0x8c9474,0xd49a77], target:[24,15]},
+  });
+  function hash(a,b,seed){let v=(Math.imul(a+37,0x45d9f3b)^Math.imul(b+47,0x27d4eb2d)^seed)|0;v=Math.imul(v^(v>>>16),0x7feb352d);v=Math.imul(v^(v>>>15),0x846ca68b);return ((v^(v>>>16))>>>0)/4294967296;}
+  function seedOf(str){return [...str].reduce((s,ch)=>Math.imul((s^ch.charCodeAt(0))|0,16777619),2166136261)|0;}
+  function rect(g,x,y,w,h,c,a=1){g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
+  function dot(g,x,y,r,c,a=1){g.fillStyle(c,a).fillCircle(x,y,r);}
+  function line(g,x,y,x2,y2,c,a=1,w=1){g.lineStyle(w,c,a).lineBetween(x,y,x2,y2);}
+  function oval(g,x,y,w,h,c,a=1){g.fillStyle(c,a).fillEllipse(x,y,w,h);}
+  function walkable(a,x,y){return x>1&&y>1&&x<a.w-2&&y<a.h-2&&!a.isTileBlocked(x,y)&&!(a.warpAt&&a.warpAt(x,y));}
+  const within=(a,x,y)=>x>=1&&y>=1&&x<a.w-1&&y<a.h-1;
+  function ground(g,a){
+    const p=CONFIG[a?.id]; if(!p)return;
+    const seed=seedOf(a.id), mode=p.mode, col=p.colors;
+    // Tiny fragments read as ground texture, not as new path-blocking objects.
+    for(let ty=2;ty<a.h-2;ty+=2){for(let tx=2;tx<a.w-2;tx+=2){
+      if(!walkable(a,tx,ty))continue;
+      const rnd=hash(tx,ty,seed);if(rnd>.54)continue;
+      const x=tx*T+5+Math.floor(hash(tx,ty,seed^125)*18);
+      const y=ty*T+8+Math.floor(hash(tx,ty,seed^217)*15);
+      const c=col[(rnd*37|0)%3];
+      if(mode==='city'){
+        rect(g,x,y,8,2,0xfff3d9,.13);rect(g,x+3,y+4,5,1,0x5d8491,.17);
+        if(rnd<.15){dot(g,x+11,y-4,2,c,.68);dot(g,x+13,y-5,1,0xfff8e3,.7);}
+      }else if(mode==='mineral'){
+        line(g,x-4,y+3,x+7,y,c,.35,2);line(g,x+2,y-3,x+9,y-5,0xcce9dc,.22,1);
+        if(rnd<.14){g.fillStyle(c,.64).fillTriangle(x,y-6,x+6,y+2,x-3,y+2);line(g,x,y-4,x,y+1,0xedfff8,.34);}
+      }else if(mode==='art'){
+        for(let j=0;j<3;j++)rect(g,x+j*5,y+(j%2)*3,5,2,col[(j+tx)%3],.44);
+        if(rnd<.22){rect(g,x+7,y-4,3,3,0xfff0ce,.7);rect(g,x-3,y+4,2,2,col[1],.68);}
+      }else if(mode==='village'){
+        rect(g,x,y+3,8,2,0x9d8463,.27);line(g,x,y-2,x+1,y-6,0x557248,.54);dot(g,x+2,y-6,1.5,0xc2b780,.65);
+      }else if(mode==='stream'){
+        line(g,x,y+4,x-2,y-3,0x4b875b,.5);line(g,x,y+4,x+4,y-4,0x92a970,.53);
+        if(rnd<.15){dot(g,x+5,y-4,2.1,c,.8);dot(g,x+2,y-6,1.3,0xffe5ba,.8);}
+      }else if(mode==='renewal'){
+        rect(g,x,y,7,2,0x4a4b42,.32);rect(g,x+2,y-1,3,1,0xb5a990,.32);
+        if(rnd<.28){line(g,x+10,y+3,x+10,y-5,0x577d4d,.65);dot(g,x+10,y-5,1.8,c,.76);}
+      }else if(mode==='forest'){
+        for(let j=0;j<3;j++){line(g,x+j*3,y+6,x+j*4-4,y-5,0x38644e,.48);dot(g,x+j*4-4,y-5,1.5,col[j],.6);}
+        if(rnd<.2)oval(g,x+8,y+2,7,3,0x415a4b,.44);
+      }else if(mode==='camp'){
+        rect(g,x,y+4,8,2,0x4b4236,.26);line(g,x+2,y,x+6,y-4,0xc3aa84,.48);
+        if(rnd<.14){dot(g,x+11,y-2,1.8,0xf8d4a1,.6);}
+      }
+    }}
+    // Soft authored wayfinding motifs around each region's principal destination.
+    const [tx,ty]=p.target;
+    if(within(a,tx,ty)){
+      const x=(tx+.5)*T,y=(ty+.5)*T;
+      for(let i=0;i<22;i++){
+        const theta=i*TAU/22,rad=65+(i%4)*10;
+        const xx=x+Math.cos(theta)*rad, yy=y+Math.sin(theta)*rad*.52;
+        const cx=Math.floor(xx/T),cy=Math.floor(yy/T);
+        if(!walkable(a,cx,cy))continue;
+        if(mode==='city'||mode==='art')rect(g,xx,yy,7,3,col[i%3],.29);
+        else if(mode==='mineral')rect(g,xx,yy,5,3,col[i%3],.39);
+        else if(mode==='stream'||mode==='forest'||mode==='renewal'){
+          line(g,xx,yy+3,xx+1,yy-4,0x406d4d,.7);dot(g,xx+1,yy-5,1.7,col[i%3],.8);
+        }else if(mode==='camp')rect(g,xx,yy,9,2,col[i%3],.21);
+        else rect(g,xx,yy,7,2,col[i%3],.3);
+      }
+    }
+  }
+  function landmark(g,a){
+    const p=CONFIG[a?.id];if(!p)return;
+    const [tx,ty]=p.target;if(!within(a,tx,ty))return;
+    const x=(tx+.5)*T,y=(ty+.5)*T,c=p.colors,m=p.mode;
+    // Architecture detailing stays attached to an existing painted monument, with NO new collision.
+    if(m==='city'){
+      for(let j=-2;j<=2;j++){
+        const px=x+j*13;
+        rect(g,px-4,y-16,8,2,0xffe9bb,.67);
+        rect(g,px-3,y+14,6,3,0x354f69,.42);
+      }
+      for(let i=0;i<12;i++){
+        const angle=i*TAU/12;dot(g,x+Math.cos(angle)*13,y-49+Math.sin(angle)*13,1.3,0xffe4a8,.85);
+      }
+      rect(g,x-29,y+33,58,2,0xffdfaa,.56);
+    }else if(m==='mineral'){
+      for(let j=-3;j<=3;j++){
+        const px=x+j*15,py=y+13-Math.abs(j%3)*7;
+        g.fillStyle(0x6fc4ba,.42).fillTriangle(px-4,py+6,px+2,py-10,px+7,py+7);
+        line(g,px+2,py-7,px+2,py+1,0xe0fff3,.6);
+      }
+    }else if(m==='art'){
+      for(let j=0;j<5;j++){
+        const xx=x-54+j*27,yy=y-45+(j%2)*6;
+        rect(g,xx,yy,19,5,[0xffd879,0x80e1d9,0xfaa1c8,0xbca0ff,0xffd879][j],.65);
+        dot(g,xx+10,yy+3,1,0xffffff,.8);
+      }
+      for(let i=0;i<11;i++)rect(g,x-52+i*10,y+22+(i%3)*3,7,2,c[i%3],.59);
+    }else if(m==='village'){
+      for(let j=-3;j<=3;j++){
+        rect(g,x+j*11-3,y+19,7,3,0xd5c39b,.46);
+        line(g,x+j*11,y-58,x+j*11+4,y-65,0x825f47,.55);
+      }
+      rect(g,x-31,y+29,62,3,0x513e32,.5);
+    }else if(m==='stream'){
+      for(let j=-3;j<=3;j++){
+        rect(g,x-31,y+j*9-2,62,2,0xe9d4a6,.45);
+        line(g,x-29,y+j*9+1,x+28,y+j*9+1,0x473c2b,.32);
+      }
+      for(let j=0;j<7;j++){
+        const xx=x-40+j*13;line(g,xx,y+52,xx+6,y+52,0xc8ece7,.36);
+      }
+    }else if(m==='renewal'){
+      for(let j=0;j<27;j++){
+        let xx=x-65+hash(j,8,107)*130,yy=y+4+hash(j,7,113)*35;
+        line(g,xx,yy,xx+2,yy-6,0x4c7d4e,.59);
+        dot(g,xx+2,yy-6,1.5,c[j%3],.73);
+      }
+    }else if(m==='forest'){
+      for(let j=-6;j<=6;j++){
+        let xx=x+j*8;
+        line(g,xx,y-50+(j%2)*8,xx+4,y-70+(j%3)*5,0x244c37,.45,2);
+      }
+      for(let j=0;j<7;j++){let yy=y-36+j*10;line(g,x-12,yy,x-4,yy+2,0xc1a27b,.32,2);}
+    }else if(m==='camp'){
+      for(let j=-3;j<=3;j++){
+        line(g,x+j*11,y-34,x+(j+1)*10,y-33,0xf5dfae,.35);
+        rect(g,x+j*12-3,y+23,7,2,0xe6c092,.47);
+      }
+      dot(g,x+2,y-85,4,0xffd87e,.83);
+      oval(g,x+2,y-85,25,18,0xffd16d,.13);
+    }
+  }
+  function facade(g,b,a){
+    if(!b || !b.w || !b.h)return;
+    const mode=CONFIG[a?.id]?.mode||'city';
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T;
+    if(w<80||h<64)return;
+    const roof=Math.round(h*((b.floors??1)===2?.4:.55));
+    const name=(b.name||'').toLowerCase();
+    const texture=mode==='mineral'?[0x94aaa7,0x667d85]:mode==='art'?[0xffd6d1,0xd6b3e7]:[0xffe7bd,0x827a72];
+    // Roof-edge craftsmanship is drawn inside the existing building bounds.
+    for(let j=13;j<w-12;j+=19){
+      rect(g,x+j,y+Math.max(7,roof-10),11,2,texture[0],.28);
+      rect(g,x+j+3,y+Math.max(11,roof-6),5,1,texture[1],.19);
+    }
+    const mid=x+w*.5,wallY=y+roof;
+    const display=(rgb)=>{
+      rect(g,mid-17,wallY+12,34,17,0x2b4352,.72);
+      rect(g,mid-14,wallY+14,28,11,rgb,.41);
+      rect(g,mid-17,wallY+12,34,2,0xeef4e9,.54);
+    };
+    if(/library/.test(name)){
+      for(let j=-1;j<=1;j++){rect(g,mid+j*9-4,wallY+17,7,10,[0xf7c279,0xa4c9c2,0xc78e9d][j+1],.83);rect(g,mid+j*9-4,wallY+23,7,1,0xffffff,.4);}
+      rect(g,mid-24,wallY+29,48,3,0x5a4f48,.7);
+    }else if(/cinema/.test(name)){
+      for(let j=0;j<9;j++)dot(g,mid-44+j*11,wallY+3,2.3,j%2?0xffdd76:0xf8af88,.76);
+    }else if(/town hall|school|bank/.test(name)){
+      rect(g,x+17,wallY+6,w-34,3,0xffebcc,.3);
+      for(let j=0;j<4;j++)rect(g,x+22+j*(w-44)/4,wallY+10,3,17,0xf1e2c5,.23);
+    }else if(/hospital|clinic/.test(name)){
+      rect(g,mid-4,wallY+11,8,24,0xe9f1f1,.31);rect(g,mid-11,wallY+19,22,8,0xe9f1f1,.31);
+    }else if(/great mine|smithy|forge/.test(name)){
+      for(let j=-2;j<=2;j++){
+        line(g,mid+j*17,wallY+5,mid+j*17+10,wallY+23,0x7c8f9b,.52,2);
+      }
+      rect(g,mid-23,wallY+23,46,4,0x293744,.45);
+    }else if(/rail station/.test(name)){
+      display(0x9cdad3);
+      for(let j=-2;j<=2;j++)rect(g,mid+j*12-3,wallY+30,7,2,0xf6d2a4,.47);
+    }else if(/gallery|studio|workshop/.test(name) && mode==='art'){
+      for(let j=0;j<5;j++)rect(g,x+15+j*Math.max(9,(w-36)/5),wallY+12,7,12,[0xead16e,0xf397bc,0x7fd7cb,0xa99cea,0xe8d08b][j],.53);
+    }else if(/house|home/.test(name)){
+      const seed=seedOf(name), variant=(seed>>>4)%4;
+      const c=[0x92b3a2,0xa9bad0,0xd0aaa2,0xccbc8f][variant];
+      for(const side of [-1,1]){
+        const wx=mid+side*w*.28;
+        rect(g,wx-10,wallY+10,20,3,c,.42);
+        rect(g,wx-9,wallY+14,18,12,0x2e4d57,.4);
+        rect(g,wx,wallY+14,2,12,0xf3e6bf,.56);
+        rect(g,wx-7,wallY+24,15,2,0xfff0ce,.32);
+      }
+    }else if(/cafe|restaurant|shop|market/.test(name)){
+      for(let j=0;j<5;j++)rect(g,mid-35+j*14,wallY+7,10,3,[0xffdb9b,0xe3a49c,0x9bcac2,0xffdb9b,0xe3a49c][j],.46);
+    }
+  }
+  function interior(g,s){
+    if(!s||!s.w||!s.h)return;
+    const W=s.w*T,items=s.items||[];
+    const types=new Set(items.map(i=>i.k));
+    const color=types.has('crystal')||types.has('forge')?0x9be5dd:types.has('bookshelf')||types.has('shelf')?0xc3d2af:0xf5d1a0;
+    for(let j=35;j<W-35;j+=88){
+      // Art on the back wall: purely ornamental; no interactive hitbox.
+      rect(g,j-15,12,30,27,0x5e493a,.73);
+      rect(g,j-12,15,24,21,0xe1cba2,.54);
+      rect(g,j-9,18,18,15,0x5f7984,.55);
+      g.fillStyle(color,.48).fillTriangle(j-8,32,j,21,j+9,32);
+      rect(g,j-10,35,20,2,0xfff1d4,.4);
+      dot(g,j,9,1.3,0xffe9af,.7);
+    }
+    // Wall-only details leave every existing furniture and passage tile untouched.
+    rect(g,9,61,W-18,2,color,.24);
+  }
+  window.LQWorldV15=Object.freeze({ground,landmark,facade,interior,
+    diagnostics:(area)=>({known:!!CONFIG[area?.id],bounds:!!CONFIG[area?.id]&&within(area,...CONFIG[area.id].target)}),
+    maps:()=>Object.keys(CONFIG),version:'15.0-world-reborn'});
+})();
+
+</script>
+    <!-- Art District: lead-in film on the first arrival through the freight tunnel. -->
+    <script>
+/*
+ * Art District · lead-in film ("Concrete Dreams").
+ * Plays once, the first time the player arrives in the Art District (through the hidden freight tunnel in
+ * Minerals Town). It runs in the real map with the game camera, like the Chapter 2 film in past.js:
+ * the dark tunnel → the three marks (star, eye, wave) → light and colour → four of the artists say hello.
+ * Saved as game.artIntroSeen (skipping counts as seen).
+ * Testing: index.html?artfilm=1 (goes to the Art District and plays the film), LQArtDistrict.play(), LQArtDistrict.reset().
+ */
+(function () {
+  'use strict';
+  const ID = 'art-district';
+  const SPAWN = { x: 35, y: 51 };
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const here = (sc) => !!(sc && sc.area && sc.area.id === ID);
+  const toast = (title, sub, hint) => {
+    try {
+      window.LQAchievements && window.LQAchievements.toast && window.LQAchievements.toast(title, sub, hint);
+    } catch (e) {}
+  };
+  const game = () => {
+    const sc = getScene();
+    return (sc && sc.store && sc.store.game) || null;
+  };
+  const save = () => {
+    try {
+      const sc = getScene();
+      sc && sc.store && sc.store.save();
+    } catch (e) {}
+  };
+
+  const PALETTE = [0xff4f87, 0x35c8d0, 0xffd447, 0x9470e8, 0x83c96b, 0xff893d];
+
+  const CSS = `
+body.lq-artfilm>:not(#lq-art):not(:has(canvas.lq-main)){visibility:hidden!important}
+body.lq-artfilm>:has(canvas.lq-main) :not(canvas){visibility:hidden}
+body.lq-artfilm canvas:not(.lq-main){visibility:hidden!important}
+body.lq-artfilm canvas.lq-main{visibility:visible!important}
+#lq-art{position:fixed;inset:0;z-index:10040;pointer-events:none;font-family:system-ui,'Segoe UI',sans-serif}
+#lq-art .lb{position:absolute;left:0;right:0;height:10vh;background:#0b0d12;transition:transform .8s ease}
+#lq-art .lb.t{top:0;border-bottom:3px solid transparent;border-image:linear-gradient(90deg,#ff4f87,#ffd447,#35c8d0,#9470e8) 1}
+#lq-art .lb.b{bottom:0;border-top:3px solid transparent;border-image:linear-gradient(90deg,#9470e8,#35c8d0,#ffd447,#ff4f87) 1}
+#lq-art.out .lb.t{transform:translateY(-100%)}#lq-art.out .lb.b{transform:translateY(100%)}
+#lq-art .cap{position:absolute;left:50%;bottom:calc(10vh + 12px);transform:translateX(-50%);width:min(760px,calc(100vw - 32px));box-sizing:border-box;background:#14161ce8;border:2px solid var(--acc,#d9d9d9);border-radius:14px;padding:12px 18px;color:#f4f4f4;opacity:0;transition:opacity .35s,border-color .4s;pointer-events:auto;cursor:pointer;box-shadow:0 0 0 1px #0008,0 10px 30px #000a}

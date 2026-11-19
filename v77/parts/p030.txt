@@ -1,0 +1,1000 @@
+            e.fillStyle(3817288, 1).fillCircle(o, C, 22),
+            e.lineStyle(3, d, 1).strokeCircle(o, C, 22),
+            e.lineStyle(2, 10133672, 1));
+          for (let t = 0; t < 6; t++)
+            e.lineBetween(
+              o,
+              C,
+              o + Math.cos((t * Math.PI) / 3) * 20,
+              C + Math.sin((t * Math.PI) / 3) * 20,
+            );
+          (e.fillStyle(14211296, 1).fillCircle(o, C, 4),
+            e.fillStyle(14694970, 1).fillCircle(o, C - 28, 4),
+            e
+              .lineStyle(2, 9080730, 0.8)
+              .lineBetween(o - 22, C + 4, n + i * 0.22, r - 4)
+              .lineBetween(o + 22, C + 4, n + i * 0.78, r - 4));
+          for (let t of [n + 20, n + i - 76])
+            (e.fillStyle(0, 0.25).fillEllipse(t + 28, s + 2, 76, 14),
+              e.fillStyle(6965816, 1).fillTriangle(t - 10, s, t + 66, s, t + 28, s - 36),
+              e
+                .fillStyle(13136943, 1)
+                .fillCircle(t + 20, s - 12, 7)
+                .fillCircle(t + 36, s - 8, 6)
+                .fillCircle(t + 28, s - 22, 5));
+        }
+        function $t(e, t) {
+          let n = t.x * 32,
+            r = t.y * 32,
+            i = t.w * 32,
+            a = t.h * 32,
+            o = r + 64,
+            s = a - 64,
+            c = n + i / 2,
+            l = t.wall ?? 12869706,
+            u = t.color,
+            d = 15787204;
+          (e.fillStyle(0, 0.22).fillRect(n + 8, r + 10, i, a),
+            e.fillStyle(l, 1).fillRect(n, o, i, s),
+            e.lineStyle(1, Wt(l, 0.82), 1));
+          for (let t = o + 6, s = 0; t < r + a; t += 8, s++) {
+            e.lineBetween(n, t, n + i, t);
+            for (let r = n + (s % 2 ? 8 : 0); r < n + i; r += 16) e.lineBetween(r, t, r, t + 8);
+          }
+          (e.fillStyle(0, 0.16).fillRect(n, o, i, 6),
+            e.fillStyle(d, 1).fillRect(n, o + 56, i, 5),
+            e.lineStyle(3, Z, 1).strokeRect(n, o, i, s));
+          for (let r = 0; r < t.w; r++) {
+            if (r >= 4 && r <= 8) continue;
+            let t = n + r * 32 + 16 - 8;
+            for (let n of [o + 14, o + 72])
+              (e.fillStyle(16777215, 1).fillRect(t - 3, n - 3, 22, 34),
+                e.fillStyle(qt, 1).fillRect(t, n, 16, 28),
+                e.fillStyle(16777215, 0.5).fillRect(t + 2, n + 2, 4, 6),
+                e
+                  .lineStyle(2, Z, 1)
+                  .strokeRect(t - 3, n - 3, 22, 34)
+                  .lineBetween(t + 8, n, t + 8, n + 28)
+                  .lineBetween(t, n + 14, t + 16, n + 14),
+                e.fillStyle(15260864, 1).fillRect(t - 4, n + 31, 24, 4));
+          }
+          for (let t = n + 20; t < n + i; t += 44)
+            (t > n + 160 && t < n + 256 + 24) ||
+              (e.fillStyle(2050602, 1).fillCircle(t, r + a - 2, 9),
+              e.fillStyle(3840584, 1).fillCircle(t - 1, r + a - 4, 7));
+          e.fillStyle(Wt(u, 0.8), 1).fillRect(n - 6, r, i + 12, 64);
+          for (let t = 0; t < 7; t++) {
+            let a = r + 6 + t * 9;
+            (e.fillStyle(t % 2 ? Wt(u, 0.95) : u, 1).fillRect(n - 6, a, i + 12, 9),
+              e.lineStyle(1, Wt(u, 0.6), 1).lineBetween(n - 6, a + 9, n + i + 6, a + 9));
+            for (let r = n - 6 + (t % 2 ? 6 : 0); r < n + i + 6; r += 12)
+              e.lineBetween(r, a, r, a + 9);
+          }
+          (e.fillStyle(Wt(u, 1.35), 1).fillRect(n - 6, r, i + 12, 6),
+            e.fillStyle(0, 0.18).fillRect(n - 6, r + 64 - 4, i + 12, 4),
+            e.lineStyle(3, Z, 1).strokeRect(n - 6, r, i + 12, 64));
+          for (let t of [n + 40, n + i - 60])
+            (e
+              .fillStyle(11031866, 1)
+              .fillRect(t, r - 12, 16, 24)
+              .fillStyle(4860450, 1)
+              .fillRect(t - 2, r - 16, 20, 6),
+              e
+                .lineStyle(2, Z, 1)
+                .strokeRect(t, r - 12, 16, 24)
+                .strokeRect(t - 2, r - 16, 20, 6));
+          let f = n + 128 - 8;
+          (e.fillStyle(d, 1).fillRect(f, r + 12, 176, a - 12), e.lineStyle(1, Wt(d, 0.85), 1));
+          for (let t = r + 20; t < r + a; t += 10) e.lineBetween(f, t, f + 176, t);
+          (e.lineStyle(3, Z, 1).strokeRect(f, r + 12, 176, a - 12),
+            e.fillStyle(Wt(u, 0.85), 1).fillRect(f - 6, r - 10, 188, 26),
+            e.fillStyle(Wt(u, 1.3), 1).fillRect(f - 6, r - 10, 188, 6));
+          for (let t = f - 6; t < f + 176 + 6; t += 12)
+            e.lineStyle(1, Wt(u, 0.6), 1).lineBetween(t, r - 4, t, r + 16);
+          e.lineStyle(3, Z, 1).strokeRect(f - 6, r - 10, 188, 26);
+          for (let t of [-60, 0, 60]) {
+            let n = c + t - 9,
+              r = o + 12;
+            (e
+              .fillStyle(16777215, 1)
+              .fillRect(n - 3, r - 3, 24, 40)
+              .fillCircle(n + 9, r - 3, 12),
+              e
+                .fillStyle(qt, 1)
+                .fillRect(n, r, 18, 34)
+                .fillCircle(n + 9, r, 9),
+              e
+                .lineStyle(2, Z, 1)
+                .strokeRect(n - 3, r - 3, 24, 40)
+                .lineBetween(n + 9, r - 9, n + 9, r + 34)
+                .lineBetween(n, r + 14, n + 18, r + 14));
+          }
+          (e.fillStyle(d, 1).fillRect(c - 30, r - 42, 60, 36),
+            e.lineStyle(3, Z, 1).strokeRect(c - 30, r - 42, 60, 36),
+            e.fillStyle(16777215, 1).fillCircle(c, r - 24, 14),
+            e
+              .lineStyle(2, Z, 1)
+              .strokeCircle(c, r - 24, 14)
+              .lineBetween(c, r - 24, c, r - 34)
+              .lineBetween(c, r - 24, c + 8, r - 20));
+          for (let t = 0; t < 12; t++) {
+            let n = (t * Math.PI) / 6;
+            e.fillStyle(Z, 1).fillRect(
+              c + Math.sin(n) * 11 - 1,
+              r - 24 - Math.cos(n) * 11 - 1,
+              2,
+              2,
+            );
+          }
+          (e.fillStyle(Wt(u, 0.9), 1).fillTriangle(c - 36, r - 42, c + 36, r - 42, c, r - 66),
+            e
+              .lineStyle(3, Z, 1)
+              .lineBetween(c - 36, r - 42, c, r - 66)
+              .lineBetween(c + 36, r - 42, c, r - 66)
+              .lineBetween(c - 36, r - 42, c + 36, r - 42),
+            e.lineStyle(2, 6710886, 1).lineBetween(c, r - 66, c, r - 76),
+            e.fillStyle(14694970, 1).fillTriangle(c, r - 76, c + 16, r - 72, c, r - 68),
+            e.fillStyle(0, 0.25).fillRect(c - 22 - 2, r + a - 56 - 1, 48, 57),
+            e
+              .fillStyle(Kt, 1)
+              .fillRect(c - 22, r + a - 56, 44, 56)
+              .fillCircle(c, r + a - 56, 22),
+            e
+              .fillStyle(Wt(Kt, 1.25), 1)
+              .fillRect(c - 22 + 3, r + a - 56 + 4, 17, 48)
+              .fillRect(c + 2, r + a - 56 + 4, 17, 48),
+            e
+              .fillStyle(qt, 1)
+              .fillRect(c - 22 + 6, r + a - 56 + 8, 11, 16)
+              .fillRect(c + 5, r + a - 56 + 8, 11, 16),
+            e
+              .lineStyle(2, Z, 1)
+              .strokeRect(c - 22, r + a - 56, 44, 56)
+              .lineBetween(c, r + a - 56, c, r + a),
+            e
+              .fillStyle(16765498, 1)
+              .fillCircle(c - 4, r + a - 24, 1.8)
+              .fillCircle(c + 4, r + a - 24, 1.8),
+            e.fillStyle(16777215, 1).fillRect(c - 52, r + a - 76, 104, 8),
+            e.lineStyle(2, Z, 1).strokeRect(c - 52, r + a - 76, 104, 8));
+          for (let t of [-46, 40])
+            (e.fillStyle(16777215, 1).fillRect(c + t, r + a - 68, 6, 68),
+              e.fillStyle(13619414, 1).fillRect(c + t + 4, r + a - 68, 2, 68),
+              e.lineStyle(1, Z, 1).strokeRect(c + t, r + a - 68, 6, 68));
+          for (let t = 0; t < 3; t++) {
+            let n = 84 - t * 8;
+            (e
+              .fillStyle(t % 2 ? 13158608 : 12105920, 1)
+              .fillRect(c - n / 2, r + a + t * 4 - 2, n, 5),
+              e.lineStyle(1, Z, 1).strokeRect(c - n / 2, r + a + t * 4 - 2, n, 5));
+          }
+        }
+        var en = [
+            {
+              id: `welcome`,
+              title: `A Warm Welcome`,
+              giver: `kid`,
+              intro: `Mia wants to show you around town. Meet some neighbors!`,
+              steps: [
+                {
+                  kind: `talk`,
+                  npc: `kid`,
+                  keywords: [`my name`, `i am`, `i'm`, `hello`, `hi`],
+                  text: `Say hello to Mia and tell her your name.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `barista`,
+                  keywords: [`coffee`, `tea`, `latte`, `cake`, `juice`, `hello`, `hi`],
+                  text: `Visit Lily at Sunny Cafe and say hello (or order a drink).`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `shopkeeper`,
+                  keywords: [`hello`, `hi`, `shop`, `buy`, `price`, `how much`, `nice to meet`],
+                  text: `Greet Tom at the Corner Shop.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `kid`,
+                  keywords: [`thank`, `nice`, `met`, `friend`, `good`, `great`],
+                  text: `Go back to Mia and tell her about your walk.`,
+                },
+              ],
+              reward: { money: 40, rep: 3 },
+              outro: `Mia: "Now you know the town! You are my friend!"`,
+            },
+            {
+              id: `bell`,
+              title: `The Missing Bell`,
+              giver: `mayor`,
+              requires: `welcome`,
+              intro: `The Town Hall bell has disappeared! The mayor needs a detective.`,
+              steps: [
+                {
+                  kind: `talk`,
+                  npc: `mayor`,
+                  keywords: [`help`, `problem`, `what happened`, `wrong`, `bell`, `matter`],
+                  text: `Ask Mr. Brown what the problem is and offer to help.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `police`,
+                  keywords: [`bell`, `missing`, `lost`, `stolen`, `seen`, `steal`],
+                  text: `Ask Officer Davis if he has seen the missing bell.`,
+                },
+                {
+                  kind: `visit`,
+                  place: `church`,
+                  text: `Officer Davis says to check the Church. Go there.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `kid`,
+                  keywords: [`bell`, `see`, `saw`, `seen`, `where`, `park`],
+                  text: `Ask Mia if she saw the bell. She plays near the park.`,
+                },
+                {
+                  kind: `visit`,
+                  place: `park`,
+                  text: `Mia saw it near the fountain in the park. Go and look!`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `mayor`,
+                  keywords: [`found`, `bell`, `park`, `fountain`, `here`],
+                  text: `Tell Mr. Brown where you found the bell.`,
+                },
+              ],
+              reward: { money: 120, rep: 8 },
+              outro: `Mr. Brown: "Wonderful work, detective! The town is in your debt."`,
+            },
+            {
+              id: `delivery`,
+              title: `Sweet Delivery`,
+              giver: `barista`,
+              requires: `welcome`,
+              intro: `Lily is too busy to deliver her cakes. Can you help?`,
+              steps: [
+                {
+                  kind: `talk`,
+                  npc: `barista`,
+                  keywords: [`help`, `deliver`, `cake`, `busy`, `can i`],
+                  text: `Offer to help Lily with her cake delivery.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `librarian`,
+                  keywords: [`cake`, `deliver`, `lily`, `sweet`, `here is`, `for you`],
+                  text: `Give a cake to Ms. Green at the Library.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `doctor`,
+                  keywords: [`cake`, `deliver`, `lily`, `sweet`, `here is`, `for you`],
+                  text: `Give a cake to Dr. Chen at the Hospital.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `barista`,
+                  keywords: [`done`, `delivered`, `finished`, `gave`, `happy`, `liked`],
+                  text: `Tell Lily that the cakes are delivered.`,
+                },
+              ],
+              reward: { money: 80, rep: 5 },
+              outro: `Lily: "You are a star! Free coffee for you anytime!"`,
+            },
+            {
+              id: `healthy`,
+              title: `Healthy Town`,
+              giver: `doctor`,
+              requires: `welcome`,
+              intro: `Dr. Chen wants everyone in town to stay healthy.`,
+              steps: [
+                {
+                  kind: `talk`,
+                  npc: `doctor`,
+                  keywords: [`healthy`, `health`, `help`, `advice`, `how`],
+                  text: `Ask Dr. Chen how to stay healthy.`,
+                },
+                { kind: `visit`, place: `gym`, text: `Exercise helps! Visit the Gym.` },
+                {
+                  kind: `talk`,
+                  npc: `firefighter`,
+                  keywords: [
+                    `exercise`,
+                    `gym`,
+                    `healthy`,
+                    `strong`,
+                    `train`,
+                    `workout`,
+                    `work out`,
+                  ],
+                  text: `Ask Carlos about exercise and staying strong.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `chef`,
+                  keywords: [`soup`, `healthy`, `vegetable`, `salad`, `fruit`, `fish`, `food`],
+                  text: `Ask Marco for a healthy meal (soup, salad, fish...).`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `doctor`,
+                  keywords: [`exercise`, `gym`, `healthy`, `soup`, `salad`, `done`, `did`],
+                  text: `Tell Dr. Chen what you did to be healthy.`,
+                },
+              ],
+              reward: { money: 100, rep: 6 },
+              outro: `Dr. Chen: "Excellent! Exercise, good food... you are a healthy citizen."`,
+            },
+            {
+              id: `feast`,
+              title: `Marco's Big Dinner`,
+              giver: `chef`,
+              requires: `healthy`,
+              intro: `Marco is cooking a feast for the whole town, but needs ingredients.`,
+              steps: [
+                {
+                  kind: `talk`,
+                  npc: `chef`,
+                  keywords: [`help`, `ingredient`, `dinner`, `feast`, `need`, `what`],
+                  text: `Ask Marco how you can help with his dinner.`,
+                },
+                {
+                  kind: `visit`,
+                  place: `market`,
+                  text: `Go to the Market to find fresh ingredients.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `shopkeeper`,
+                  keywords: [`tomato`, `cheese`, `flour`, `ingredient`, `buy`, `need`, `marco`],
+                  text: `Ask Tom for tomatoes, cheese or flour for Marco.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `chef`,
+                  keywords: [`here`, `brought`, `tomato`, `cheese`, `flour`, `ingredient`, `got`],
+                  text: `Bring the ingredients back to Marco.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `teacher`,
+                  keywords: [`dinner`, `invite`, `feast`, `marco`, `come`, `party`],
+                  text: `Invite Ms. Taylor to the dinner at the restaurant.`,
+                },
+              ],
+              reward: { money: 150, rep: 10 },
+              outro: `Marco: "Bravissimo! Tonight everyone eats like a king!"`,
+            },
+            {
+              id: `letters`,
+              title: `Special Delivery`,
+              giver: `postman`,
+              requires: `welcome`,
+              intro: `Sam has too many letters today. Help him deliver them!`,
+              steps: [
+                {
+                  kind: `talk`,
+                  npc: `postman`,
+                  keywords: [`help`, `letter`, `letters`, `deliver`, `busy`],
+                  text: `Offer to help Sam deliver letters.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `banker`,
+                  keywords: [`letter`, `deliver`, `for you`, `here is`, `mail`],
+                  text: `Give a letter to Ms. Park at the Bank.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `hotelclerk`,
+                  keywords: [`letter`, `deliver`, `for you`, `here is`, `mail`],
+                  text: `Give a letter to Sofia at the Hotel.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `postman`,
+                  keywords: [`done`, `delivered`, `finished`, `gave`, `all`],
+                  text: `Tell Sam that all the letters are delivered.`,
+                },
+              ],
+              reward: { money: 90, rep: 5 },
+              outro: `Sam: "You are faster than me! Thanks, partner!"`,
+            },
+            {
+              id: `movie`,
+              title: `Movie Night`,
+              giver: `cinema`,
+              requires: `welcome`,
+              intro: `Zoe wants to fill the Cinema tonight. Invite your friends!`,
+              steps: [
+                {
+                  kind: `talk`,
+                  npc: `cinema`,
+                  keywords: [`movie`, `ticket`, `tickets`, `film`, `night`, `help`],
+                  text: `Ask Zoe about the movie tonight.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `priest`,
+                  keywords: [`movie`, `film`, `cinema`, `invite`, `come`, `tonight`],
+                  text: `Invite Father Joe to the movie.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `banker`,
+                  keywords: [`movie`, `film`, `cinema`, `invite`, `come`, `tonight`],
+                  text: `Invite Ms. Park to the movie.`,
+                },
+                {
+                  kind: `talk`,
+                  npc: `cinema`,
+                  keywords: [`coming`, `come`, `yes`, `invited`, `said`, `friends`],
+                  text: `Tell Zoe that your friends are coming.`,
+                },
+              ],
+              reward: { money: 100, rep: 6 },
+              outro: `Zoe: "Full house! Popcorn is on me tonight!"`,
+            },
+          ];
+var tn = (e) => re.find((t) => t.id === e)?.name ?? e;
+var nn = (e) => nt[e]?.short ?? e;
+var rn = [
+            {
+              text: (e, t) => `Say hello to ${t} from ${e}.`,
+              keywords: [`hello`, `hi`, `greetings`, `regards`, `from`],
+            },
+            {
+              text: (e, t) => `Ask ${t} if they want to have lunch with ${e}.`,
+              keywords: [`lunch`, `eat`, `together`, `join`, `hungry`],
+            },
+            {
+              text: (e, t) => `Ask ${t} how they feel today, for ${e}.`,
+              keywords: [`how are you`, `feel`, `feeling`, `today`, `okay`],
+            },
+            {
+              text: (e, t) => `Tell ${t} that ${e} says thank you.`,
+              keywords: [`thank`, `thanks`, `grateful`],
+            },
+          ];
+var an = [
+            { place: `lake`, text: `Go to the lake and look at the water.` },
+            { place: `park`, text: `Go to the park and see the fountain.` },
+            { place: `plaza`, text: `Walk to the plaza and see who is there.` },
+            { place: `church`, text: `Visit the Church and look at the old bell tower.` },
+            { place: `market`, text: `Go to the Market and check the fresh food.` },
+            { place: `cinema`, text: `Walk to the Cinema and read the movie posters.` },
+            { place: `mine`, text: `Go to the Great Mine and look at the big gate.` },
+            { place: `station`, text: `Walk to the Rail Station and look at the rails.` },
+            { place: `square`, text: `Go to the square and see who is there.` },
+            { place: `smithy`, text: `Visit the Smithy and watch the fire.` },
+          ];
+var on = [`help`, `sure`, `okay`, `ok`, `favor`, `yes`, `message`, `can`, `happy`];
+var sn = [
+            `told`,
+            `said`,
+            `done`,
+            `delivered`,
+            `saw`,
+            `seen`,
+            `went`,
+            `visited`,
+            `beautiful`,
+            `nice`,
+            `there`,
+          ];
+        function cn(e) {
+          let t = (e * 2654435761) >>> 0;
+          return () => {
+            t = (t + 1831565813) >>> 0;
+            let e = Math.imul(t ^ (t >>> 15), 1 | t);
+            return (
+              (e = (e + Math.imul(e ^ (e >>> 7), 61 | e)) ^ e),
+              ((e ^ (e >>> 14)) >>> 0) / 4294967296
+            );
+          };
+        }
+        function ln(e, t) {
+          let n = cn(e + 7),
+            r = Te(t).map((e) => e.id);
+          if (r.length < 3) return [];
+          let i = an.filter((e) => t.places[e.place]),
+            a = (e) => e[Math.floor(n() * e.length)],
+            o = new Set(),
+            s = [];
+          for (let t = 0; t < 3; t++) {
+            let c = a(r);
+            for (; o.has(c);) c = a(r);
+            o.add(c);
+            let l = `fav-${e}-${t}`,
+              u = { money: 25 + Math.floor(n() * 20), rep: 2 };
+            if (t === 2 && i.length) {
+              let e = a(i);
+              s.push({
+                id: l,
+                title: `${nn(c)}'s errand`,
+                giver: c,
+                intro: `${nn(c)} would like you to check something for them.`,
+                steps: [
+                  { kind: `talk`, npc: c, keywords: on, text: `Tell ${nn(c)} that you can help.` },
+                  { kind: `visit`, place: e.place, text: e.text },
+                  { kind: `talk`, npc: c, keywords: sn, text: `Tell ${nn(c)} what you saw.` },
+                ],
+                reward: u,
+                outro: `${nn(c)}: "Thank you! You are a real helper."`,
+              });
+              continue;
+            }
+            let d = a(r);
+            for (; d === c;) d = a(r);
+            let f = a(rn);
+            s.push({
+              id: l,
+              title: `${nn(c)}'s message`,
+              giver: c,
+              intro: `${nn(c)} needs a favor today.`,
+              steps: [
+                { kind: `talk`, npc: c, keywords: on, text: `Tell ${nn(c)} that you can help.` },
+                { kind: `talk`, npc: d, keywords: f.keywords, text: f.text(nn(c), nn(d)) },
+                { kind: `talk`, npc: c, keywords: sn, text: `Tell ${nn(c)} that you did it.` },
+              ],
+              reward: u,
+              outro: `${nn(c)}: "Perfect, thank you so much!"`,
+            });
+          }
+          return s;
+        }
+        var un = class {
+            store;
+            area;
+            root = document.getElementById(`quests`);
+            toastEl = document.getElementById(`toast`);
+            toastTimer = 0;
+            onReward = () => {};
+            constructor(e, t) {
+              ((this.store = e), (this.area = t));
+            }
+            setArea(e) {
+              this.area = e;
+            }
+            progress(e) {
+              return this.store.game.quests[e.id] ?? 0;
+            }
+            isDone(e) {
+              return this.progress(e) >= e.steps.length;
+            }
+            unlocked(e) {
+              let t = en.find((t) => t.id === e.requires);
+              return !t || this.isDone(t);
+            }
+            all() {
+              return [
+                ...en.filter((e) => (e.area ?? Ce) === this.area.id),
+                ...ln(this.store.game.day, this.area),
+              ];
+            }
+            open_() {
+              return this.all().filter((e) => !this.isDone(e) && this.unlocked(e));
+            }
+            active() {
+              let e = this.open_();
+              return e.find((e) => this.progress(e) > 0) ?? e[0];
+            }
+            hudLine() {
+              let e = this.active();
+              if (!e)
+                return this.all().length ? `All quests complete!` : `No quests in this area yet.`;
+              let t = this.progress(e);
+              return t === 0
+                ? `Quest available: ${e.title} - talk to ${tn(e.giver)}`
+                : `Quest: ${e.title} - ${e.steps[t].text}`;
+            }
+            get isOpen() {
+              return this.root.style.display === `block`;
+            }
+            toggle() {
+              if (this.isOpen) {
+                this.root.style.display = `none`;
+                return;
+              }
+              (this.render(), (this.root.style.display = `block`));
+            }
+            advance(e) {
+              let t = this.store.game,
+                n = this.progress(e) + 1;
+              t.quests[e.id] = n;
+              let r = [];
+              return (
+                n >= e.steps.length
+                  ? (r.push(
+                      `★ Quest complete: ${e.title}! +$${e.reward.money}, +${e.reward.rep} reputation`,
+                      e.outro,
+                    ),
+                    this.onReward(e))
+                  : r.push(`✔ ${e.title} (${n}/${e.steps.length}) - next: ${e.steps[n].text}`),
+                this.store.save(),
+                r
+              );
+            }
+            onSaid(e, t) {
+              let n = [];
+              if (t.trim().split(/\s+/).length < 2) return n;
+              for (let r of this.open_()) {
+                let i = r.steps[this.progress(r)];
+                i.kind === `talk` && i.npc === e && Pe(t, i.keywords) && n.push(...this.advance(r));
+              }
+              return n;
+            }
+            onTile(e, t) {
+              for (let n of this.open_()) {
+                let r = n.steps[this.progress(n)];
+                if (r.kind !== `visit`) continue;
+                let i = this.area.places[r.place];
+                i &&
+                  Math.abs(i.x - e) <= 2 &&
+                  Math.abs(i.y - t) <= 2 &&
+                  this.toast(this.advance(n));
+              }
+            }
+            toast(e) {
+              this.toastEl.innerHTML = ``;
+              for (let t of e) {
+                let e = document.createElement(`div`);
+                ((e.textContent = t), this.toastEl.appendChild(e));
+              }
+              ((this.toastEl.style.display = `block`),
+                clearTimeout(this.toastTimer),
+                (this.toastTimer = window.setTimeout(() => {
+                  this.toastEl.style.display = `none`;
+                }, 5e3)));
+            }
+            render() {
+              this.root.innerHTML = `<h3>Quest log</h3>`;
+              let e = (e, t, n = this.root) => {
+                let r = document.createElement(`div`);
+                return ((r.className = e), (r.textContent = t), n.appendChild(r), r);
+              };
+              for (let t of this.all()) {
+                t.id.endsWith(`-0`) &&
+                  t.id.startsWith(`fav-`) &&
+                  e(`qt`, `☀ Today's favors (new every day)`);
+                let n = document.createElement(`div`);
+                n.className = `entry`;
+                let r = this.progress(t),
+                  i = this.isDone(t);
+                (!i && !this.unlocked(t)
+                  ? e(
+                      `meta`,
+                      `🔒 ??? (finish "${en.find((e) => e.id === t.requires).title}" first)`,
+                      n,
+                    )
+                  : (e(
+                      `qt`,
+                      `${i ? `✔` : `◆`} ${t.title}  (${Math.min(r, t.steps.length)}/${t.steps.length})`,
+                      n,
+                    ),
+                    e(`meta`, t.intro, n),
+                    i
+                      ? e(`meta`, `Completed. Reward: $${t.reward.money}, +${t.reward.rep} rep`, n)
+                      : (t.steps.forEach((i, a) => {
+                          a <= r &&
+                            e(
+                              a < r ? `sdone` : `scur`,
+                              `${a < r ? `✔` : `➤`} ${a === 0 && r === 0 ? `Talk to ${tn(t.giver)}: ` : ``}${i.text}`,
+                              n,
+                            );
+                        }),
+                        e(`meta`, `Reward: $${t.reward.money}, +${t.reward.rep} rep`, n))),
+                  this.root.appendChild(n));
+              }
+              e(`meta`, `Q: close`);
+            }
+          },
+          dn = 2046500,
+          fn = 2826800;
+        function pn(e) {
+          return () => {
+            e = (e + 1831565813) | 0;
+            let t = Math.imul(e ^ (e >>> 15), 1 | e);
+            return (
+              (t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t),
+              ((t ^ (t >>> 14)) >>> 0) / 4294967296
+            );
+          };
+        }
+        var mn = (e, t, n) => t >= e.x && t < e.x + e.w && n >= e.y && n < e.y + e.h;
+        function hn(e, t) {
+          if (t.theme === `art`) { __lqPaintArtBase(e, t); return; }
+          if (t.theme === `mine`) {
+            gn(e, t);
+            return;
+          }
+          let { w: n, h: r, roadsH: i, roadsV: a, park: o, campus: s } = t,
+            c = pn(1234),
+            l = (e, n) =>
+              t.buildings.some(
+                (t) => e >= t.x - 1 && e <= t.x + t.w && n >= t.y - 1 && n <= t.y + t.h + 1,
+              ),
+            u = new Set();
+          for (let e of t.obstacles)
+            for (let t = e.y; t < e.y + e.h; t++)
+              for (let r = e.x; r < e.x + e.w; r++) u.add(t * n + r);
+          let d = new Set(Object.values(t.places).map((e) => e.y * n + e.x));
+          e.fillStyle(5808206, 1).fillRect(0, 0, n * 32, r * 32);
+          for (let t = 0; t < r; t++)
+            for (let r = 0; r < n; r++)
+              if (
+                ((r + t) % 2 == 0 && e.fillStyle(6072402, 1).fillRect(r * 32, t * 32, 32, 32),
+                c() < 0.35)
+              ) {
+                let n = r * 32 + 4 + c() * 22,
+                  i = t * 32 + 6 + c() * 20;
+                e.lineStyle(1, 4164159, 1)
+                  .lineBetween(n, i, n - 2, i - 4)
+                  .lineBetween(n, i, n + 2, i - 4)
+                  .lineBetween(n, i, n, i - 5);
+              }
+          let f = 5922666,
+            p = [
+              ...i.map((e) => [0, e.y * 32, n * 32, e.h * 32]),
+              ...a.map((e) => [e.x * 32, 0, e.w * 32, r * 32]),
+            ];
+          for (let [t, n, r, i] of p) {
+            e.fillStyle(f, 1).fillRect(t, n, r, i);
+            for (let a = 0; a < (r * i) / 600; a++)
+              e.fillStyle(c() < 0.5 ? 5133149 : 6712182, 1).fillRect(
+                t + c() * r,
+                n + c() * i,
+                2,
+                2,
+              );
+          }
+          e.fillStyle(13225172, 1);
+          for (let [t, n, r, i] of p)
+            r > i
+              ? e.fillRect(t, n, r, 5).fillRect(t, n + i - 5, r, 5)
+              : e.fillRect(t, n, 5, i).fillRect(t + r - 5, n, 5, i);
+          for (let t of a)
+            for (let n of i)
+              e.fillStyle(f, 1)
+                .fillRect(t.x * 32 + 5, n.y * 32, t.w * 32 - 10, n.h * 32)
+                .fillRect(t.x * 32, n.y * 32 + 5, t.w * 32, n.h * 32 - 10);
+          let m = (e) => a.some((t) => e > (t.x - 1) * 32 && e < (t.x + t.w + 1) * 32),
+            h = (e) => i.some((t) => e > (t.y - 1) * 32 && e < (t.y + t.h + 1) * 32);
+          e.fillStyle(15914570, 1);
+          for (let t of i)
+            for (let r = 8; r < n * 32; r += 40) m(r) || e.fillRect(r, (t.y + 1.5) * 32 - 2, 22, 4);
+          for (let t of a)
+            for (let n = 8; n < r * 32; n += 40) h(n) || e.fillRect((t.x + 2) * 32 - 2, n, 4, 22);
+          e.fillStyle(16053492, 0.9);
+          for (let t of a)
+            for (let n of i) {
+              for (let r = 0; r < t.w * 2; r++)
+                e.fillRect(t.x * 32 + 6 + r * 15, (n.y - 1) * 32 + 6, 9, 20).fillRect(
+                  t.x * 32 + 6 + r * 15,
+                  (n.y + n.h) * 32 + 6,
+                  9,
+                  20,
+                );
+              for (let r = 0; r < n.h * 2; r++)
+                e.fillRect((t.x - 1) * 32 + 6, n.y * 32 + 6 + r * 15, 20, 9).fillRect(
+                  (t.x + t.w) * 32 + 6,
+                  n.y * 32 + 6 + r * 15,
+                  20,
+                  9,
+                );
+            }
+          (o && yn(e, o), s && bn(e));
+          for (let n of t.warps) vn(e, n);
+          let g = [16738954, 16769114, 16777215, 16751178, 12094207];
+          for (let i = 0; i < 420; i++) {
+            let i = Math.floor(c() * n),
+              a = Math.floor(c() * r),
+              f = a * n + i;
+            if (
+              t.isRoad(i, a) ||
+              t.warpAt(i, a) ||
+              l(i, a) ||
+              (o && mn(o, i, a)) ||
+              (s && mn(s, i, a)) ||
+              u.has(f) ||
+              d.has(f)
+            )
+              continue;
+            let p = i * 32 + 4 + c() * 24,
+              m = a * 32 + 4 + c() * 24,
+              h = g[Math.floor(c() * g.length)];
+            (e
+              .fillStyle(h, 1)
+              .fillCircle(p - 2, m, 2)
+              .fillCircle(p + 2, m, 2)
+              .fillCircle(p, m - 2, 2)
+              .fillCircle(p, m + 2, 2),
+              e.fillStyle(16765498, 1).fillCircle(p, m, 1.5));
+          }
+        }
+        function gn(e, t) {
+          let { w: n, h: r } = t,
+            i = pn(777);
+          e.fillStyle(10189397, 1).fillRect(0, 0, n * 32, r * 32);
+          for (let t = 0; t < r; t++)
+            for (let r = 0; r < n; r++) {
+              (r + t) % 2 == 0 && e.fillStyle(9728848, 1).fillRect(r * 32, t * 32, 32, 32);
+              for (let n = 0; n < 3; n++)
+                i() < 0.45 &&
+                  e
+                    .fillStyle(i() < 0.5 ? 8282692 : 12098164, 1)
+                    .fillRect(r * 32 + i() * 28, t * 32 + i() * 28, 2 + i() * 2, 2);
+            }
+          for (let t = 0; t < 40; t++)
+            e.fillStyle(8217672, 0.35).fillEllipse(
+              i() * n * 32,
+              i() * r * 32,
+              50 + i() * 90,
+              26 + i() * 40,
+            );
+          let a = [
+            ...t.roadsH.map((e) => [
+              (e.x0 ?? 0) * 32,
+              e.y * 32,
+              ((e.x1 ?? n) - (e.x0 ?? 0)) * 32,
+              e.h * 32,
+            ]),
+            ...t.roadsV.map((e) => [
+              e.x * 32,
+              (e.y0 ?? 0) * 32,
+              e.w * 32,
+              ((e.y1 ?? r) - (e.y0 ?? 0)) * 32,
+            ]),
+          ];
+          for (let [t, n, r, o] of a) {
+            e.fillStyle(11901556, 1).fillRect(t, n, r, o);
+            for (let a = 0; a < (r * o) / 500; a++)
+              e.fillStyle(i() < 0.5 ? 10651231 : 13151880, 1).fillRect(
+                t + i() * r,
+                n + i() * o,
+                2,
+                2,
+              );
+          }
+          e.fillStyle(9072463, 1);
+          for (let [t, n, r, i] of a)
+            r > i
+              ? e.fillRect(t, n, r, 4).fillRect(t, n + i - 4, r, 4)
+              : e.fillRect(t, n, 4, i).fillRect(t + r - 4, n, 4, i);
+          e.lineStyle(2, 10124892, 0.55);
+          for (let [t, n, r, i] of a)
+            r > i
+              ? e
+                  .lineBetween(t, n + i * 0.3, t + r, n + i * 0.3)
+                  .lineBetween(t, n + i * 0.7, t + r, n + i * 0.7)
+              : e
+                  .lineBetween(t + r * 0.3, n, t + r * 0.3, n + i)
+                  .lineBetween(t + r * 0.7, n, t + r * 0.7, n + i);
+          for (let n of t.rails) _n(e, n);
+          for (let n of t.warps) vn(e, n);
+        }
+        function _n(e, t) {
+          let n = le(t),
+            r = n,
+            i = (t.shared ?? 0) * 32;
+          if (i > 0) {
+            let e = 0;
+            for (let t = 1; t < n.length; t++) {
+              let a = Math.hypot(n[t].x - n[t - 1].x, n[t].y - n[t - 1].y);
+              if (e + a >= i) {
+                let o = (i - e) / (a || 1);
+                r = [
+                  {
+                    x: n[t - 1].x + (n[t].x - n[t - 1].x) * o,
+                    y: n[t - 1].y + (n[t].y - n[t - 1].y) * o,
+                  },
+                  ...n.slice(t),
+                ];
+                break;
+              }
+              e += a;
+            }
+          }
+          let a = (e, t) => {
+              let n = Math.hypot(e, t) || 1;
+              return { x: e / n, y: t / n };
+            },
+            o = r.map((e, t) =>
+              a(
+                r[Math.min(r.length - 1, t + 1)].x - r[Math.max(0, t - 1)].x,
+                r[Math.min(r.length - 1, t + 1)].y - r[Math.max(0, t - 1)].y,
+              ),
+            ),
+            s = (t, n, r, i, a, o) => {
+              let s = -r.y,
+                c = r.x,
+                l = [
+                  [t + s * i + r.x * a, n + c * i + r.y * a],
+                  [t + s * i - r.x * a, n + c * i - r.y * a],
+                  [t - s * i - r.x * a, n - c * i - r.y * a],
+                  [t - s * i + r.x * a, n - c * i + r.y * a],
+                ];
+              e.fillStyle(o, 1)
+                .fillTriangle(l[0][0], l[0][1], l[1][0], l[1][1], l[2][0], l[2][1])
+                .fillTriangle(l[0][0], l[0][1], l[2][0], l[2][1], l[3][0], l[3][1]);
+            },
+            c = 0,
+            l = 6;
+          for (let e = 1; e < r.length; e++) {
+            let t = r[e - 1],
+              n = r[e],
+              i = Math.hypot(n.x - t.x, n.y - t.y),
+              o = a(n.x - t.x, n.y - t.y);
+            for (; c + i >= l;) {
+              let e = l - c;
+              (s(t.x + o.x * e, t.y + o.y * e, o, 10, 3, 6177318), (l += 14));
+            }
+            c += i;
+          }
+          for (let [t, n] of [
+            [4, 3817288],
+            [2, 11844292],
+          ])
+            for (let i of [-5, 5]) {
+              e.lineStyle(t, n, 1);
+              for (let t = 1; t < r.length; t++) {
+                let n = o[t - 1],
+                  a = o[t];
+                e.lineBetween(
+                  r[t - 1].x - n.y * i,
+                  r[t - 1].y + n.x * i,
+                  r[t].x - a.y * i,
+                  r[t].y + a.x * i,
+                );
+              }
+            }
+          let u = t.buffer ?? `start`;
+          if (u !== `none`) {
+            let e = u === `start` ? 0 : r.length - 1,
+              t = u === `start` ? -1 : 1,
+              n = o[e];
+            (s(r[e].x + t * n.x * 8, r[e].y + t * n.y * 8, n, 13, 4, 6957610),
+              s(r[e].x + t * n.x * 6, r[e].y + t * n.y * 6, n, 13, 1.5, 14207168));
+          }
+          if (t.shared !== void 0) {
+            let t = o[0],
+              n = o[Math.floor(r.length / 2)],
+              i = Math.sign(t.x * n.y - t.y * n.x) || 1,
+              a = r[0].x + t.y * i * 30,
+              s = r[0].y - t.x * i * 30;
+            (e
+              .lineStyle(2, 3817288, 1)
+              .lineBetween(a, s, r[0].x + t.y * i * 8, r[0].y - t.x * i * 8),
+              e.fillStyle(0, 0.22).fillRect(a - 5, s + 4, 18, 4),
+              e.fillStyle(15909424, 1).fillRect(a - 6, s - 5, 11, 9),
+              e.fillStyle(15263982, 1).fillRect(a + 3, s - 2, 9, 7),
+              e
+                .lineStyle(1, 2826800, 1)
+                .strokeRect(a - 6, s - 5, 11, 9)
+                .strokeRect(a + 3, s - 2, 9, 7));
+          }
+        }
+        function vn(e, t) {
+          let n = t.x * 32,
+            r = t.y * 32,
+            i = t.w * 32,
+            a = t.h * 32;
+          (e.fillStyle(1778224, 1).fillRect(n, r, i, a),
+            e.fillStyle(728622, 1).fillRect(n + 4, r + 4, i - 8, a - 8));
+          for (let t = 0; t < 3; t++)
+            e.fillStyle(3721471, 0.12 + t * 0.08).fillRect(
+              n + 8 + t * 4,
+              r + 8 + t * 4,
+              i - 16 - t * 8,
+              a - 16 - t * 8,
+            );
+          (e.lineStyle(2, 10479871, 0.9).strokeRect(n + 3, r + 3, i - 6, a - 6),
+            e.lineStyle(3, 12580095, 0.9));
+          for (let t = n + 16; t < n + i - 28; t += 28)
+            e.lineBetween(t, r + a / 2 + 6, t + 8, r + a / 2 - 4).lineBetween(
+              t + 8,
+              r + a / 2 - 4,
+              t + 16,

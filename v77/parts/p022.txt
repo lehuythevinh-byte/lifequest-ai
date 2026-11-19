@@ -1,0 +1,1000 @@
+ `<h3>${safeStr(q.name)}</h3><p><b>Địa điểm:</b> ${safeStr(q.where)} · <b>Nghệ sĩ:</b> ${safeStr(q.actor)}</p><p>${safeStr(q.why)}</p><p><b>Thử thách tiếng Anh:</b> ${safeStr(q.task)}</p>
+ <div id="lq67-status">${near?'✓ Bạn đang ở gần địa điểm nhiệm vụ.':'Đi tới vị trí nhiệm vụ trên bản đồ: '+(target?`(${target.x}, ${target.y})`:'Vị trí đang được xác định')+'.'} Tiến trình ${st.step+1}/${QUESTS.length}.</div>
+ <textarea id="lq67-answer" maxlength="220" placeholder="Viết một câu tiếng Anh có ý nghĩa và phù hợp bài học..."></textarea>
+ <p class="lq67-hint">Câu mẫu để học: “${safeStr(q.example)}”</p>
+ <div class="lq67-actions"><button data-v67="submit">Hoàn thành thử thách</button><button data-v67="example">Điền câu mẫu</button><button data-v67="map">Xem vị trí</button></div>
+ <p class="lq67-hint">Nội dung luyện tập ở mức B1. Bạn có thể tự viết câu khác, miễn đáp ứng cấu trúc ngữ pháp và nội dung cần thiết.</p>`}`;
+}
+function open(){const sc=scene();if(!isArt(sc))return;mount();shown=true;$('lq67-panel').hidden=false;render();}
+function submit(sc){if(!isArt(sc)||!shown)return;
+ const st=state(sc),q=stage(st);if(st.completed)return;
+ if(distance(sc,q.at)>145){const m='Hãy tới gần '+q.where+' trước khi hoàn thành nhiệm vụ.';$('lq67-status').textContent=m;flash(m);return;}
+ const txt=String($('lq67-answer')?.value||'').trim();
+ if(txt.split(/\s+/).length<7||!q.match.test(txt)){
+  $('lq67-status').textContent='Câu chưa đủ ý. Hãy sử dụng cấu trúc trong ví dụ và giải thích rõ ràng bằng tiếng Anh.';return;
+ }
+ st.choices.push({step:st.step,text:txt.slice(0,220)});st.step++;
+ if(st.step>=QUESTS.length)st.completed=true;
+ store(sc);lastPaint=-1;flash(q.changes);render();
+}
+function drawProgress(g,sc){const st=state(sc);if(!st)return;const n=progress(sc);
+ const x=36*T,y=24.5*T;
+ // Each completed stage physically adds a different authored installation.
+ if(n>=1){for(let i=0;i<5;i++){const xx=(27+i*4.5)*T,yy=9*T;
+  line(g,xx,yy,xx+20,yy-11,0xd7b3bf,.4,2);tri(g,xx,yy-9,xx+20,yy-9,xx+10,yy+14,PALETTE[i%6],.85);}}
+ if(n>=2){for(const side of [-1,1])for(let k=0;k<3;k++){
+  const sx=x+side*(120+k*27),sy=y-60+k*20;
+  rect(g,sx-8,sy-36,16,30,0x51485a,.84);rect(g,sx-5,sy-33,10,20,[C.rose,C.teal,C.gold][k],.9);
+ }}
+ if(n>=3){for(let i=0;i<32;i++){
+  const a=i*Math.PI/16,rad=56+(i%3)*12;
+  circ(g,x+Math.cos(a)*rad,y+Math.sin(a)*rad,2.6,PALETTE[i%6],.75);
+ }}
+ if(n>=4){for(let i=0;i<8;i++){
+  const xx=25*T+i*3*T,yy=28*T+(i%2)*5;
+  rect(g,xx,yy,28,22,0x4e475b,.73);rect(g,xx+3,yy+3,22,16,PALETTE[i%6],.6);
+ }}
+ if(st.completed){for(let i=0;i<12;i++){
+  const xx=(24+i*2)*T,yy=31*T+(i%3)*5;
+  rect(g,xx,yy,5,5,C.gold,.61);
+ }}
+}
+function dispose(){if(!objects)return;for(const obj of objects.activity?.values?.()||[])try{obj?.destroy?.()}catch(_){}for(const obj of Object.values(objects))try{obj?.destroy?.()}catch(_){}objects=null;lastPaint=-1;}
+function addGraphics(sc){dispose();objects={progress:sc.add.graphics().setDepth(.66),live:sc.add.graphics().setDepth(13),activity:new Map()};}
+const ARTISTS={
+ noor:['PREP','CURATE','GUIDE','CLOSE'],ivo:['TUNE','REHEARSE','PERFORM','REST'],
+ ada:['PLAN','SELECT','DISPLAY','STUDY'],kai:['SKETCH','MIX','PAINT','CLEAN'],
+ mira:['IDEAS','MEET','OBSERVE','WRITE'],ren:['LIGHT','FRAME','PHOTO','EDIT'],
+ sol:['READ','REVIEW','INTERVIEW','PUBLISH']
+};
+function updateArtists(sc,time){
+ if(!objects?.activity||!Array.isArray(sc.npcs))return;
+ const m=Number(sc.store?.game?.minutes??720)%1440,period=m<420||m>=1260?3:m<720?0:m<1020?1:2;
+ const cam=sc.cameras?.main?.worldView;
+ for(const a of sc.npcs){
+  const id=a.def?.id;if(!ARTISTS[id])continue;
+  const sprite=a.sprite,off=a.inside||!sprite?.visible||!cam||sc.chat?.isOpen;
+  let el=objects.activity.get(id);
+  if(!el){el=sc.add.text(0,0,'',{fontFamily:'monospace',fontStyle:'bold',fontSize:'8px',color:'#ffe2b6',backgroundColor:'#243349d9',padding:{x:3,y:2}}).setOrigin(.5,1).setDepth(19);objects.activity.set(id,el);}
+  if(off||sprite.x<cam.x-20||sprite.x>cam.right+20||sprite.y<cam.y-20||sprite.y>cam.bottom+20){el.setVisible(false);continue;}
+  el.setVisible(true).setPosition(sprite.x+9,sprite.y-29);
+  const label=ARTISTS[id][period];if(el.text!==label)el.setText(label);
+ }
+}
+function tick(sc,time){
+ if(!isArt(sc)||sc.inside){dispose();if(root){root.hidden=true;if(shown)close();}return;}
+ if(!objects)addGraphics(sc);
+ if(root)root.hidden=false;
+ const st=state(sc),p=progress(sc);
+ if(lastPaint!==p){objects.progress.clear();drawProgress(objects.progress,sc);lastPaint=p;}
+ if((Math.floor(time/110)%2)!==0)return;
+ updateArtists(sc,time);const g=objects.live;g.clear();const cam=sc.cameras?.main,v=cam?.worldView;
+ if(!v)return;
+ const minutes=Number(sc.store?.game?.minutes??720)%1440,night=minutes>=1110||minutes<365;
+ const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+ // Subtle light pulses and studio vignettes are culled by camera rectangle.
+ for(let k=0;k<6;k++){
+  const b=sc.area.buildings[k];if(!b)continue;
+  const x=(b.x+b.w*.5)*T,y=(b.y+b.h)*T-62;
+  if(x<v.x-140||x>v.right+140||y<v.y-140||y>v.bottom+140)continue;
+  const pulse=reduce?0.6:.6+.3*Math.sin(time*.0016+k*1.4);
+  if(night){circ(g,x,y,22,PALETTE[k],.06*pulse);circ(g,x,y,5,PALETTE[k],.32*pulse);}
+  const stageShift=reduce?0:Math.sin(time*.001+k)*2.5;
+  for(let j=0;j<2;j++){rect(g,x-22+j*36,y-40+stageShift,7,3,[C.teal,C.rose,C.gold][(k+j)%3],.30);}
+ }
+ if(st?.completed){const x=36*T,y=24*T;
+  if(x>v.x-200&&x<v.right+200&&y>v.y-200&&y<v.bottom+200){
+   for(let i=0;i<22;i++){const a=i*2.399+time*(reduce?0:.00016),rr=34+(i%5)*16;
+    circ(g,x+Math.cos(a)*rr,y+Math.sin(a)*rr,reduce?2:2+Math.sin(time*.003+i)*.4,PALETTE[i%6],.36);
+   }
+  }
+ }
+ // Time-of-day performance cue; does not fabricate an unrelated NPC sprite.
+ const q=stage(st),point=q.at,px=(point[0]+.5)*T,py=(point[1]+.5)*T;
+ if(!st?.completed&&px>v.x-70&&px<v.right+70&&py>v.y-70&&py<v.bottom+70){
+  const a=reduce?0.56:.48+.2*Math.sin(time*.003);
+  circ(g,px,py-30,11,C.gold,a*.26);circ(g,px,py-30,4,C.gold,a);line(g,px,py-20,px,py-9,C.gold,a,2);
+ }
+ const near=distance(sc,q.at)<145;const prompt=$('lq67-near');if(prompt){prompt.hidden=st.completed||!near||shown;prompt.textContent=`🎨 ${q.where} · F2`;} 
+}
+function connectedRoutes(a){if(!a?.isTileBlocked)return null;
+ const safe=(tx,ty)=>!a.isTileBlocked(tx,ty)&&!a.warpAt?.(tx,ty);
+ const s=[35,51],w=a.w;let seen=new Set([s[1]*w+s[0]]),queue=[s],head=0;
+ while(head<queue.length){const [x,y]=queue[head++];for(const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+  const nx=x+dx,ny=y+dy,id=ny*w+nx;if(!safe(nx,ny)||seen.has(id))continue;
+  seen.add(id);queue.push([nx,ny]);}}
+ return {reachable:queue.length,landmarks:QUESTS.map(q=>({label:q.where,point:q.at,accessible:seen.has(q.at[1]*w+q.at[0])})),buildingDoors:a.buildings.map(b=>({name:b.name,access:seen.has((b.y+b.h)*w+b.door)}))};
+}
+function attach(sc){if(sc.__lq67Listener)return;sc.__lq67Listener=true;
+ sc.events.on('update',(time)=>{try{tick(sc,time)}catch(err){if(!sc.__lq67warn){console.warn('[V67] Scene update',err);sc.__lq67warn=true;}}});
+ sc.events.once('shutdown',()=>{dispose();sc.__lq67Listener=false;});
+}
+function initialize(){mount();setInterval(()=>{
+ const sc=scene();if(!sc?.events||!sc.player)return;
+ if(!sc.__lq67Listener)attach(sc);
+ if(!isArt(sc)&&root){root.hidden=true;if(shown)close();}
+ else if(isArt(sc)){root.hidden=false;if(!objects)addGraphics(sc);}
+},850);}
+window.LQArtV67=Object.freeze({version:'67.0.0',facade,paintPlaza,paintInterior,paintStreetDetails,scene,open,close,state,progress,quests:QUESTS,
+ diagnostics:()=>{const sc=scene();return {map:sc?.area?.id,progress:sc&&state(sc),routes:sc?.area?.id===ID?connectedRoutes(sc.area):null,objects:!!objects};}});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
+})();
+
+/* ---------------- End V67 addon ---------------- */
+/* LIFEQUEST AI V68 — NEON SYMPHONY / ART DISTRICT NIGHTLIFE ARCHITECTURE
+   Six distinct hand-authored pixel architecture compositions, not recolours.
+   Collision, door tile, NPC sprite assets, other maps, and existing quests are preserved.
+   Party = all-ages music, dancing and art performances; no alcohol imagery.
+*/
+(function(){
+'use strict';
+const ID='art-district', T=32;
+if(window.LQArtV68) return;
+const K={ink:0x0e1424,deep:0x192037,purple:0x3b3356,brick:0x745265,steel:0x3f5265,
+ silver:0xb6c4c7,ivory:0xf4e3cd,amber:0xffc66d,pink:0xff77b9,coral:0xff9973,
+ blue:0x5bcdf7,cyan:0x6aeddc,lime:0xc3f99f,lav:0xb2a2ff,rose:0xc17b9f};
+const PAL=[K.pink,K.cyan,K.amber,K.lav,K.coral,K.lime];
+let reduced=false;
+try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+const R=(g,x,y,w,h,c,a=1)=>g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.max(0,Math.round(w)),Math.max(0,Math.round(h)));
+const O=(g,x,y,r,c,a=1)=>g.fillStyle(c,a).fillCircle(x,y,Math.max(0,r));
+const L=(g,x1,y1,x2,y2,c,a=1,w=1)=>g.lineStyle(w,c,a).lineBetween(Math.round(x1),Math.round(y1),Math.round(x2),Math.round(y2));
+const Tr=(g,x1,y1,x2,y2,x3,y3,c,a=1)=>g.fillStyle(c,a).fillTriangle(x1,y1,x2,y2,x3,y3);
+const outline=(g,x,y,w,h,c=K.ink,sw=3)=>g.lineStyle(sw,c).strokeRect(x,y,w,h);
+const hash=(a,b)=>{let h=Math.imul((a+777)|0,374761393)^Math.imul((b+211)|0,668265263);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;};
+const font={
+ 'A':['01110','10001','10001','11111','10001','10001','10001'],
+ 'B':['11110','10001','10001','11110','10001','10001','11110'],
+ 'C':['01111','10000','10000','10000','10000','10000','01111'],
+ 'D':['11110','10001','10001','10001','10001','10001','11110'],
+ 'E':['11111','10000','10000','11110','10000','10000','11111'],
+ 'F':['11111','10000','10000','11110','10000','10000','10000'],
+ 'G':['01111','10000','10000','10111','10001','10001','01111'],
+ 'H':['10001','10001','10001','11111','10001','10001','10001'],
+ 'I':['11111','00100','00100','00100','00100','00100','11111'],
+ 'J':['00111','00010','00010','00010','10010','10010','01100'],
+ 'K':['10001','10010','10100','11000','10100','10010','10001'],
+ 'L':['10000','10000','10000','10000','10000','10000','11111'],
+ 'M':['10001','11011','10101','10101','10001','10001','10001'],
+ 'N':['10001','11001','10101','10101','10011','10001','10001'],
+ 'O':['01110','10001','10001','10001','10001','10001','01110'],
+ 'P':['11110','10001','10001','11110','10000','10000','10000'],
+ 'Q':['01110','10001','10001','10001','10101','10010','01101'],
+ 'R':['11110','10001','10001','11110','10100','10010','10001'],
+ 'S':['01111','10000','10000','01110','00001','00001','11110'],
+ 'T':['11111','00100','00100','00100','00100','00100','00100'],
+ 'U':['10001','10001','10001','10001','10001','10001','01110'],
+ 'V':['10001','10001','10001','10001','10001','01010','00100'],
+ 'W':['10001','10001','10001','10101','10101','10101','01010'],
+ 'X':['10001','10001','01010','00100','01010','10001','10001'],
+ 'Y':['10001','10001','01010','00100','00100','00100','00100'],
+ 'Z':['11111','00001','00010','00100','01000','10000','11111'],
+ '0':['01110','10001','10011','10101','11001','10001','01110'],
+ '1':['00100','01100','00100','00100','00100','00100','01110'],
+ '2':['01110','10001','00001','00010','00100','01000','11111'],
+ '3':['11110','00001','00001','01110','00001','00001','11110'],
+ '4':['00010','00110','01010','10010','11111','00010','00010'],
+ '5':['11111','10000','10000','11110','00001','00001','11110'],
+ '6':['01111','10000','10000','11110','10001','10001','01110'],
+ '7':['11111','00001','00010','00100','01000','01000','01000'],
+ '8':['01110','10001','10001','01110','10001','10001','01110'],
+ '9':['01110','10001','10001','01111','00001','00001','11110'],
+ '&':['01000','10100','10100','01000','10101','10010','01101'],
+ '!':['00100','00100','00100','00100','00100','00000','00100'],
+ '-':['00000','00000','00000','11111','00000','00000','00000'],
+ ':':['00000','00100','00100','00000','00100','00100','00000'],
+ ' ':['00000','00000','00000','00000','00000','00000','00000']
+};
+function letters(g,text,cx,cy,scale=2,color=K.ivory,glow=K.pink){
+ const str=String(text).toUpperCase(), spacing=6*scale, x0=Math.round(cx-str.length*spacing/2), y0=Math.round(cy-4*scale);
+ if(glow!=null){for(let i=0;i<str.length;i++){const bits=font[str[i]]||font[' '];
+  for(let yy=0;yy<7;yy++)for(let xx=0;xx<5;xx++)if(bits[yy][xx]==='1')R(g,x0+i*spacing+xx*scale-1,y0+yy*scale-1,scale+2,scale+2,glow,.22);}}
+ for(let i=0;i<str.length;i++){const bits=font[str[i]]||font[' '];
+  for(let yy=0;yy<7;yy++)for(let xx=0;xx<5;xx++)if(bits[yy][xx]==='1')R(g,x0+i*spacing+xx*scale,y0+yy*scale,scale,scale,color);}
+}
+function arch(g,cx,y,w,h,bg,trim,shade=K.deep){
+ R(g,cx-w/2,y+18,w,h-18,bg);O(g,cx,y+20,w/2,bg);R(g,cx-w/2+4,y+22,w-8,h-20,shade);O(g,cx,y+24,w/2-5,shade);
+ for(let i=0;i<4;i++) L(g,cx-w*.4+i*w*.26,y+25,cx-w*.4+i*w*.26,y+h-6,trim,.65,2);
+ L(g,cx-w/2,y+h-4,cx+w/2,y+h-4,trim,.85,3);
+}
+function speaker(g,x,y,w=27,h=64,c=K.cyan){
+ R(g,x+5,y+5,w+2,h+3,K.ink,.30);R(g,x,y,w,h,0x151929);R(g,x+2,y+3,w-4,h-6,0x262c3e);
+ O(g,x+w/2,y+h*.37,w*.27,0x0a1120);O(g,x+w/2,y+h*.37,w*.21,0x4e6172);
+ O(g,x+w/2,y+h*.37,w*.125,0x172031);O(g,x+w/2,y+h*.72,w*.16,0x050c1b);O(g,x+w/2,y+h*.72,w*.08,c,.75);
+ for(let i=0;i<4;i++)R(g,x+4+i*(w-8)/4,y+h-6,3,2,c,i%2?.65:.95);
+ outline(g,x,y,w,h,K.ink,2);
+}
+function festoon(g,x1,x2,y,sag=17){
+ L(g,x1,y,x2,y,K.ink,.78,3);
+ for(let i=0;i<13;i++){
+  let x=x1+(x2-x1)*i/12,yy=y+Math.sin(Math.PI*i/12)*sag;
+  if(i){L(g,x1+(x2-x1)*(i-1)/12,y+Math.sin(Math.PI*(i-1)/12)*sag,x,yy,0x5f667a,.7,1)}
+  R(g,x-3,yy+1,6,3,0x343346);O(g,x,yy+5,4,PAL[i%6],.94);O(g,x-1,yy+3,1,0xffffff,.92);
+ }
+}
+function metal(g,x,y,w,h){
+ R(g,x,y,w,h,0x30394a);R(g,x+5,y+5,w-10,h-10,0x435166);
+ for(let k=0;k<w;k+=24){R(g,x+k,y+7,3,h-14,0x182334,.55);R(g,x+k+4,y+7,1,h-15,0x94a7b8,.42)}
+ for(let k=0;k<h;k+=32)L(g,x+4,y+k,x+w-4,y+k,0xabc0c9,.16,2);
+}
+function brick(g,x,y,w,h,base=0x755368){
+ R(g,x,y,w,h,base);
+ for(let j=0;j<Math.ceil(h/12);j++)for(let i=0;i<Math.ceil(w/26);i++){
+  const px=x+(i*26)+((j%2)*13)-12,py=y+j*12;
+  if(px>x+w-4)continue;
+  R(g,Math.max(x+2,px),py+8,Math.max(0,Math.min(23,x+w-4-px)),1,0x34283a,.31);
+  if(i%4===0)R(g,Math.max(x+2,px)+3,py+2,10,2,0xf2beb2,.07);
+ }
+}
+function windowGlass(g,x,y,w,h,tint=K.cyan){
+ R(g,x-4,y-4,w+8,h+8,K.ink);R(g,x-1,y-1,w+2,h+2,0x526478);
+ R(g,x+3,y+3,w-6,h-6,tint,.64);Tr(g,x+3,y+3,x+w*.56,y+3,x+3,y+h*.7,K.ivory,.22);
+ L(g,x+w*.5,y+4,x+w*.5,y+h-4,0x15243a,.68,3);L(g,x+3,y+h*.54,x+w-3,y+h*.54,0x18283c,.64,2);
+ R(g,x-6,y+h,w+12,5,0x1b2537);R(g,x-4,y+h+1,w+8,1,K.ivory,.52);
+}
+function roofSilhouette(g,x,y,w,accent){
+ R(g,x+10,y+5,w-20,12,0x101829,.28);R(g,x+4,y+14,w-8,14,0x162235);
+ for(let k=0;k<w;k+=38){R(g,x+6+k,y+13,18,2,accent,.28)}
+}
+function signage(g,x,y,w,label,main,accent,scale=2.35){
+ R(g,x-3,y-3,w+6,35,0x09101d,.85);R(g,x,y,w,28,0x22283e);
+ R(g,x+5,y+3,w-10,2,accent,.75);R(g,x+5,y+24,w-10,2,main,.68);
+ letters(g,label,x+w/2,y+14,scale,K.ivory,accent);
+ for(let k=0;k<6;k++){O(g,x+7+k*(w-14)/5,y+29,2,accent,.9)}
+}
+function entry(g,b,options={}){
+ const x=b.door*T+T/2,y=(b.y+b.h)*T;const c=options.color||K.amber;
+ const wide=options.wide||43;
+ R(g,x-wide/2-8,y-70,wide+16,70,K.ink);
+ R(g,x-wide/2-4,y-65,wide+8,63,0x485468);
+ R(g,x-wide/2,y-61,wide,59,0x151f30);
+ R(g,x-wide/2+5,y-57,wide-10,40,0x395169);
+ for(let i=0;i<4;i++){
+  L(g,x-wide/2+4+i*(wide-8)/3,y-57,x-wide/2+4+i*(wide-8)/3,y-17,c,.35,1);
+ }
+ R(g,x-2,y-58,4,56,0x111829);R(g,x-3,y-60,6,50,0x7a8392,.22);
+ O(g,x+wide/2-10,y-22,3,c,.95);
+ R(g,x-wide/2-11,y-73,wide+22,8,0x0b1528);R(g,x-wide/2-9,y-72,wide+18,3,c,.9);
+ R(g,x-wide/2-11,y-3,wide+22,3,0xf1d4ac,.62);
+ // Only pixel art; doors remain physically usable at the original tile.
+ if(options.canopy){Tr(g,x-wide/2-28,y-85,x+wide/2+28,y-85,x,y-70,0x263049);R(g,x-wide/2-28,y-86,wide+56,5,c,.85)}
+}
+function vinyl(g,x,y,r=17,col=K.pink){
+ O(g,x,y,r,K.ink);O(g,x,y,r-3,0x31344c);
+ for(let k=1;k<5;k++){O(g,x,y,r-k*3,col,.18)}
+ O(g,x,y,5,col);O(g,x,y,2,K.ivory);
+ L(g,x+4,y-9,x+11,y-15,K.ivory,.36,1);
+}
+function equalizer(g,x,y,w,h,col=K.cyan,seed=0){
+ const n=Math.max(5,Math.floor(w/10));for(let i=0;i<n;i++){
+  const amp=.2+.75*hash(i+seed,Math.floor(h));const hh=(4+Math.floor(amp*(h-4)));
+  R(g,x+i*w/n,y+h-hh,Math.max(3,w/n-3),hh,PAL[(i+seed)%6],.9);
+  R(g,x+i*w/n,y+h-hh,Math.max(2,w/n-3),2,K.ivory,.45);
+ }
+}
+function stars(g,x,y,w,h,seed){for(let i=0;i<12;i++){
+ const xx=x+hash(seed,i)*w,yy=y+hash(i,seed+6)*h;
+ O(g,xx,yy,1+(i%2),[K.cyan,K.pink,K.amber][i%3],.6);
+}}
+function marquee(g,x,y,w,title,accent){
+ // Bulb-framed, tiered cinema awning with sloped edges.
+ R(g,x+7,y+3,w-14,38,0x0e1629);R(g,x,y+7,w,34,0x293249);
+ Tr(g,x,y+7,x+16,y-5,x+16,y+7,0x4c4667);Tr(g,x+w,y+7,x+w-16,y-5,x+w-16,y+7,0x4c4667);
+ R(g,x+9,y+10,w-18,25,0x251e3b);R(g,x+12,y+12,w-24,2,accent,.85);
+ letters(g,title,x+w/2,y+24,2.25,K.ivory,accent);
+ for(let i=0;i<21;i++){let xx=x+8+i*(w-16)/20;O(g,xx,y+41,2,i%2?accent:K.amber,.96)}
+}
+function venueFinishing(g,b){
+ const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,fy=y+Math.round(h*.48),cx=b.door*T+16;
+ const signatures={
+  'Color Gallery':{color:K.amber,other:K.pink,model:1},
+  'Backbeat Warehouse':{color:K.cyan,other:K.lav,model:2},
+  'Open Canvas Gallery':{color:K.lav,other:K.cyan,model:3},
+  'Mural Workshop':{color:K.coral,other:K.pink,model:4},
+  'Photo Lab':{color:K.cyan,other:K.amber,model:5},
+  'Independent Studio':{color:K.amber,other:K.lime,model:6},
+ };
+ const cfg=signatures[b.name];if(!cfg)return;
+ // Pixel-shaded edge studs and deliberate trim highlights, with unchanged building bounds.
+ for(let i=0;i<12;i++){
+  const xx=x+9+i*(w-18)/11;
+  O(g,xx,fy-4,1.6,cfg.color,.69);
+  if(i%3===0)R(g,xx,fy+3,7,2,K.ivory,.27);
+ }
+ for(const xx of [x+4,x+w-10]){
+  R(g,xx,fy+10,6,h-Math.round(h*.48)-15,0x14192a,.57);
+  for(let j=0;j<4;j++){
+   O(g,xx+3,fy+21+j*23,1.5,cfg.color,.78);
+  }
+ }
+ // 3D staircase at front door (ground decoration, not obstacle).
+ for(let k=0;k<2;k++){
+  R(g,cx-26-k*5,y+h+k*3,52+k*10,3,0x25283b,.64);
+  R(g,cx-21-k*5,y+h+k*3,42+k*10,1,cfg.color,.42);
+ }
+ // Shaded wall-mounted lights: two small angle brackets, not floating circles.
+ for(const s of [-1,1]){
+  let xx=cx+s*47,yy=y+h-80;
+  if(xx<x+23||xx>x+w-23)continue;
+  R(g,xx-3,yy-4,6,9,0x14182c);R(g,xx-2,yy-3,4,4,cfg.color,.8);
+  Tr(g,xx-8,yy+7,xx+8,yy+7,xx,yy-1,cfg.other,.22);
+ }
+ // Model-specific rooftop detail silhouettes (no physical colliders).
+ if(cfg.model===1){
+  for(let k=0;k<7;k++){
+   const xx=x+14+k*53;
+   O(g,xx,y+34,3,K.amber);R(g,xx-1,y+34,2,6,0xe0c4aa,.7);
+  }
+ }else if(cfg.model===2){
+  for(let k=0;k<3;k++){
+   const xx=x+w-25-k*19;
+   R(g,xx,y+12,8,17,0x253346);R(g,xx+2,y+9,3,7,0x8397ac);
+  }
+ }else if(cfg.model===3){
+  for(let k=0;k<10;k++){
+   const xx=x+22+k*32;
+   Tr(g,xx,y+58,xx+16,y+48,xx+27,y+60,k%2?K.cyan:K.lav,.31);
+  }
+ }else if(cfg.model===4){
+  // Hanging tiny mini flags on the left facade, not in the door mouth.
+  for(let k=0;k<5;k++){
+   let xx=x+17+k*19;
+   Tr(g,xx,y+47,xx+15,y+47,xx+8,y+59,PAL[(k+3)%6]);
+  }
+ }else if(cfg.model===5){
+  // Art-house flashbulb-lit projector camera, roof corner.
+  R(g,x+w-38,y+40,19,12,K.ink);R(g,x+w-35,y+42,11,8,0x718999);
+  O(g,x+w-27,y+45,4,K.cyan);Tr(g,x+w-20,y+43,x+w-10,y+41,x+w-20,y+50,0xd9f6e6,.52);
+ }else{
+  // Lightweight awning ties to three rooflines, and warm perforated lanterns.
+  for(let k=0;k<7;k++){
+   const xx=x+22+k*48;L(g,xx,y+39,xx,y+45,K.ivory,.6,1);
+   O(g,xx,y+48,2,k%2?K.amber:K.pink,.9);
+  }
+ }
+}
+function facade(g,b){if(!b||!b.name)return;const n=b.name;
+ const a={x:b.x*T,y:b.y*T,w:b.w*T,h:b.h*T}, {x,y,w,h}=a;
+ const roof=Math.round(h*.48),fy=y+roof,fh=h-roof;
+ const p=(xx,yy,ww,hh,c,al=1)=>R(g,x+xx,y+yy,ww,hh,c,al),
+       q=(xx,yy,rad,c,al=1)=>O(g,x+xx,y+yy,rad,c,al);
+ // Anchored geometry stays inside building bounds, with only narrow noncolliding roof finials.
+ if(n==='Color Gallery'){
+  // PRISM BALLROOM · symphonic Art Deco. Double-tier radial roof and ceremonial lobby.
+  R(g,x+11,y+17,w-22,h-17,K.ink,.27);
+  brick(g,x+2,fy,w-4,fh,0x6c506d);
+  for(let i=0;i<10;i++){const ax=x+18+i*(w-36)/9;L(g,ax,fy+10,ax,fy+fh-8,0xae83a8,.30,2)}
+  R(g,x+7,fy+4,w-14,9,0xa67a98);R(g,x+7,fy+4,w-14,2,K.ivory,.65);
+  // Deco concentric semicircle crown, inset stained-glass crown segments.
+  Tr(g,x+13,y+39,x+w-13,y+39,x+w*.5,y-3,0x24243c);
+  Tr(g,x+27,y+39,x+w-27,y+39,x+w*.5,y+4,0x674967);
+  Tr(g,x+44,y+36,x+w-44,y+36,x+w*.5,y+13,0xc6949e);
+  for(let i=0;i<13;i++){
+    let xx=x+34+i*(w-68)/12;
+    L(g,x+w/2,y+21,xx,y+40,i%2?K.ivory:K.amber,.64,2);
+  }
+  O(g,x+w/2,y+15,13,K.ink);O(g,x+w/2,y+15,10,K.amber);
+  Tr(g,x+w/2,y+6,x+w/2+6,y+15,x+w/2,y+24,K.ivory,.94);
+  // Raised tier / colonnade on upper front elevation.
+  p(23,47,w-46,33,0x2a2744);p(29,49,w-58,25,0x556184);
+  for(let i=0;i<6;i++){const xx=x+35+i*(w-70)/5;
+   R(g,xx,fy-56,11,30,[0x8abace,0xbd82a9,0xe5b980][i%3]);R(g,xx+2,fy-54,3,18,0xf9e7da,.33);
+   L(g,xx+6,fy-56,xx+6,fy-26,0x243146,.5,2);
+  }
+  // Facade bay windows: repeated arch shape, but individually patterned stained glass.
+  for(let i=0;i<4;i++){const cx=x+48+i*84; arch(g,cx,fy+19,42,63,0x171e33,[K.pink,K.cyan,K.amber,K.lav][i]);
+   O(g,cx,fy+48,10,[K.cyan,K.pink,K.lav,K.amber][i],.8);
+   for(let z=0;z<5;z++)L(g,cx,fy+48,cx+Math.cos(z*1.25)*17,fy+48+Math.sin(z*1.25)*17,K.ivory,.48,2);
+  }
+  // Left/right inlaid columns, brass finials and spotlight boxes.
+  for(let i=0;i<5;i++){const xx=x+8+i*82;R(g,xx,fy+7,7,fh-12,0xc2a6aa);R(g,xx+1,fy+10,2,fh-19,K.ivory,.66);O(g,xx+3,fy+6,6,K.amber)}
+  signage(g,x+88,fy-19,w-176,'PRISM',K.amber,K.pink,3.2);
+  speaker(g,x+23,y+h-63,24,58,K.pink);speaker(g,x+w-47,y+h-63,24,58,K.cyan);
+  entry(g,b,{color:K.amber,wide:53,canopy:true});
+  for(let k=0;k<3;k++){q(27+k*11,h-6,2,K.amber);q(w-27-k*11,h-6,2,K.amber)}
+ }else if(n==='Backbeat Warehouse'){
+  // BASS FOUNDRY · hard industrial nightclub and massive stage entry.
+  R(g,x+6,y+12,w-12,h-12,K.ink,.37);
+  brick(g,x+1,fy,w-2,fh,0x614553);
+  // Five independent saw-tooth industrial gables, different heights.
+  for(let k=0;k<5;k++){
+   let sx=x+4+k*(w-8)/5, ww=(w-8)/5,py=y+30+(k%3)*5;
+   Tr(g,sx,py,sx+ww,py,sx+ww*.47,y+1+(k%2)*7,k%2?0x3c4c5c:0x313247);
+   Tr(g,sx+ww*.35,py-12,sx+ww*.47,y+9+(k%2)*7,sx+ww*.77,py-7,0x9bc0c2,.39);
+   for(let z=0;z<4;z++)L(g,sx+ww*.25+z*5,py-10,sx+ww*.25+z*5,py-3,K.ivory,.20,1);
+  }
+  // Riveted steel frame and dock stairs.
+  for(const xx of [12,120,224,w-18]){p(xx,fy-3,8,fh+2,0x263447);p(xx+2,fy,2,fh-6,0xabb0ba,.48);for(let i=0;i<6;i++)q(xx+4,fy+10+i*17,1.8,K.ivory,.69)}
+  R(g,x+14,fy+15,w-28,47,0x171b2c);R(g,x+18,fy+18,w-36,39,0x343e57);
+  equalizer(g,x+25,fy+25,w-50,26,K.cyan,17);
+  signage(g,x+76,fy-20,w-152,'BASS FOUNDRY',K.cyan,K.pink,1.95);
+  // Two front tower speakers, a perspective sound wave at the bays.
+  for(const [sx,col] of [[x+17,K.cyan],[x+w-56,K.pink]]){
+   speaker(g,sx,y+h-81,34,75,col);O(g,sx+16,y+h-50,26,col,.12);
+  }
+  for(let j=0;j<5;j++){
+   const xx=x+66+j*41;L(g,xx,fy+89,xx+28,fy+93,K.cyan,.45,2);O(g,xx+8,fy+88,2,K.ivory,.68);
+  }
+  // Neon vinyl emblem in upper left, vent stacks and wiring.
+  vinyl(g,x+43,fy-20,17,K.pink);vinyl(g,x+w-46,fy-19,17,K.cyan);
+  R(g,x+w-38,y+1,10,30,0x2b3346);R(g,x+w-35,y-3,5,7,0xb3c6c6);
+  entry(g,b,{color:K.cyan,wide:64,canopy:true});
+ }else if(n==='Open Canvas Gallery'){
+  // AURORA ATRIUM · bright glass wave roof, double-height dance lounge, balcony.
+  R(g,x+3,y+19,w-6,h-19,0x273047);
+  Tr(g,x+2,y+42,x+w/2,y+2,x+w/2,y+44,0x5b6d94);
+  Tr(g,x+w/2,y+44,x+w-2,y+42,x+w/2,y+2,0x849ec0);
+  for(let i=0;i<8;i++){
+   const xx=x+28+i*42;
+   L(g,xx,y+32,xx+22,y+15,i%2?K.cyan:K.ivory,.75,3);
+  }
+  R(g,x+13,y+50,w-26,14,0x1a2136);R(g,x+18,y+53,w-36,3,K.cyan,.7);
+  // Continuous curtain wall with 6 tall bays and prism-shaped reflections.
+  R(g,x+15,fy+4,w-30,fh-11,0x19283e);
+  for(let i=0;i<6;i++){
+   const bw=(w-44)/6,xx=x+23+i*bw;
+   R(g,xx,fy+12,bw-5,fh-24,i%2?0x376e88:0x2e526e);
+   Tr(g,xx+3,fy+15,xx+bw*.72,fy+15,xx+3,fy+fh*.72,0xc7f1ec,.28);
+   R(g,xx+bw*.13,fy+54,bw*.6,8,i%2?K.pink:K.lav,.35);
+   L(g,xx,fy+fh*.55,xx+bw-6,fy+fh*.55,0x9fc7d9,.39,2);
+  }
+  // Stepped terrace and geometric glowing sculpture on right.
+  R(g,x+13,fy+66,w-26,9,0x8994a0);R(g,x+16,fy+69,w-32,3,0xe4d7d0,.7);
+  for(let i=0;i<8;i++)R(g,x+23+i*38,fy+76,3,31,0x4d5d78);
+  for(let i=0;i<6;i++)O(g,x+28+i*53,fy+66,3,i%2?K.lav:K.cyan,.95);
+  signage(g,x+71,fy-18,w-142,'AURORA',K.lav,K.cyan,2.8);
+  // Light prisms like floating flower wings.
+  for(let s of [-1,1]){const cx=x+w/2+s*142,cy=fy+22;
+   Tr(g,cx-14,cy,cx+13,cy-22,cx+12,cy+9,K.cyan,.75);
+   Tr(g,cx-7,cy+4,cx+17,cy-6,cx+12,cy+19,K.pink,.8);
+  }
+  entry(g,b,{color:K.lav,wide:51,canopy:true});
+ }else if(n==='Mural Workshop'){
+  // RHYTHM YARD · street DJ venue, exploded roof heights, live mural façade.
+  brick(g,x+1,fy,w-2,fh,0x625063);
+  Tr(g,x+6,y+38,x+w*.47,y+6,x+w*.47,y+40,0x4a425c);
+  Tr(g,x+w*.36,y+40,x+w-5,y+26,x+w*.67,y+2,0x83647a);
+  R(g,x+18,y+34,w*.58,11,0x252638);
+  // Staggered painter scaffolds and banners, with depth hierarchy.
+  for(let k=0;k<3;k++){
+   const sx=x+15+k*25;R(g,sx,fy+25,4,fh-29,0x252f40);R(g,sx+7,fy+25,3,fh-29,0x9b8b9f);
+   for(let j=0;j<3;j++)L(g,sx,fy+34+j*25,sx+20,fy+34+j*25,K.ivory,.52,2);
+  }
+  // One large deliberate mural of a DJ portrait and undulating music ribbon.
+  R(g,x+100,fy+15,w-121,fh-28,0x2e314b);
+  for(let i=0;i<8;i++){
+   const yy=fy+21+i*10;
+   Tr(g,x+105,yy,x+211,yy+5,x+152,yy+17,PAL[i%6],.73);
+  }
+  O(g,x+220,fy+51,34,0x8f657f);O(g,x+220,fy+48,25,0xffc0b5);
+  R(g,x+204,fy+38,34,9,K.ink);R(g,x+201,fy+42,7,23,K.deep);R(g,x+233,fy+42,7,23,K.deep);
+  O(g,x+201,fy+48,9,K.cyan);O(g,x+239,fy+48,9,K.pink);
+  for(let k=0;k<7;k++){const xx=x+110+k*28;R(g,xx,fy+77,17,4,PAL[k%6]);}
+  // Rooftop outdoor DJ booth + animated looking turntable disks.
+  R(g,x+208,y+34,108,31,K.ink);R(g,x+214,y+39,96,20,0x7a5c86);
+  for(let i=0;i<2;i++){vinyl(g,x+236+i*49,y+48,9,i?K.cyan:K.pink);}
+  R(g,x+260,y+45,7,4,K.ivory);R(g,x+256,y+51,17,2,K.amber);
+  signage(g,x+105,fy-17,w-156,'RHYTHM',K.pink,K.amber,2.45);
+  // Wall-side flight-case speakers.
+  speaker(g,x+17,y+h-59,29,52,K.amber);
+  entry(g,b,{color:K.pink,wide:46});
+ }else if(n==='Photo Lab'){
+  // FLASHFRAME · projection house, cinema marquee, shutter-iris and video walls.
+  R(g,x+5,y+18,w-10,h-18,0x233149);
+  for(let i=0;i<4;i++){
+   const sx=x+9+i*(w-18)/4,ww=(w-18)/4;
+   Tr(g,sx,y+39,sx+ww,y+39,sx+ww*.62,y+3,0x58778b);
+   Tr(g,sx+ww*.48,y+27,sx+ww*.78,y+11,sx+ww*.79,y+29,0xc5eaf0,.61);
+  }
+  // Light walls: clean negative space with poster frames.
+  R(g,x+12,fy+4,w-24,fh-8,0x2d4053);
+  for(let i=0;i<4;i++){
+   const xx=x+17+i*81;
+   R(g,xx,fy+27,65,74,K.ink);
+   R(g,xx+4,fy+31,57,66,0x426782);
+   Tr(g,xx+10,fy+83,xx+54,fy+38,xx+57,fy+83,[K.pink,K.cyan,K.lav,K.amber][i],.74);
+   O(g,xx+26,fy+52,11,K.ivory,.65);O(g,xx+26,fy+52,5,0x324861);
+   for(let j=0;j<3;j++)R(g,xx+12+j*11,fy+91,8,2,K.ivory,.55);
+  }
+  marquee(g,x+46,fy-26,w-92,'FLASHFRAME',K.cyan);
+  // Shutter wheel accent and lit red-carpet runner (pure paint, no collider).
+  O(g,x+36,fy-23,22,K.ink);O(g,x+36,fy-23,18,0x697b96);
+  for(let i=0;i<7;i++){
+   const a=i*Math.PI*2/7;
+   Tr(g,x+36,fy-23,x+36+Math.cos(a)*16,fy-23+Math.sin(a)*16,x+36+Math.cos(a+.67)*16,fy-23+Math.sin(a+.67)*16,K.deep);
+  }
+  O(g,x+36,fy-23,5,K.cyan);
+  entry(g,b,{color:K.cyan,wide:45,canopy:true});
+ }else if(n==='Independent Studio'){
+  // VINYL SOCIAL · rooftop garden, acoustic open-air venue, 3 staggered volumes.
+  brick(g,x+3,fy,w-6,fh,0x776576);
+  const volume=[{a:9,w:110,roof:29,c:0x64536c},{a:117,w:117,roof:13,c:0x5a6079},{a:228,w:115,roof:38,c:0x796275}];
+  for(let i=0;i<volume.length;i++){
+   const v=volume[i];
+   Tr(g,x+v.a-3,y+v.roof+20,x+v.a+v.w+3,y+v.roof+20,x+v.a+v.w*.5,y+v.roof-17,v.c);
+   R(g,x+v.a,y+v.roof+20,v.w,fy-y+12-v.roof,0x3c4459);
+   for(let j=0;j<2;j++)windowGlass(g,x+v.a+17+j*47,fy-38+(i%2)*11,31,43,i%2?0x9fc2b2:0x728bb0);
+  }
+  // Rooftop veranda, suspended musical mobiles and festoon lights.
+  R(g,x+23,fy+9,w-46,10,0x211d31);R(g,x+24,fy+11,w-48,3,K.amber,.8);
+  for(let i=0;i<8;i++){const xx=x+25+i*42;R(g,xx,fy+20,4,fh-28,0x614f69);R(g,xx+1,fy+23,2,fh-35,0xcba9ad,.42)}
+  festoon(g,x+22,x+w-22,fy+20,14);
+  // Row of music-record display windows, varied plants, café-free social area.
+  for(let i=0;i<5;i++){const xx=x+45+i*60;
+   vinyl(g,xx,fy+55,13,i%2?K.amber:K.pink);
+   R(g,xx-20,fy+78,40,4,0x2a3147);R(g,xx-10,fy+83,20,12,0x978478);
+  }
+  signage(g,x+59,fy-17,w-118,'VINYL SOCIAL',K.amber,K.pink,2.15);
+  for(let i=0;i<7;i++){
+   const xx=x+20+i*50;R(g,xx,fy+fh-15,20,9,0x5f7077);O(g,xx+10,fy+fh-21,10,i%2?0x4d977b:0x8aaf76);
+   O(g,xx+6,fy+fh-24,3,i%2?K.pink:K.ivory,.7);
+  }
+  entry(g,b,{color:K.amber,wide:44});
+ }else return;
+ // Tight bottom edge, highlights and careful architectural finishing.
+ venueFinishing(g,b);
+ R(g,x+4,y+h-3,w-8,3,0x152038,.5);
+}
+// Paint genre-specific noncolliding interior decorations on the top wall and selected free floor tiles.
+function roomType(s){
+ const t=(s?.labels||[]).map(z=>String(z.text||'')).join('|').toUpperCase();
+ if(t.includes('COLOR STUDIES'))return 'ballroom';if(t.includes('BACKBEAT'))return 'foundry';
+ if(t.includes('OPEN EXHIBITION'))return 'aurora';if(t.includes('SPRAY · SKETCH'))return 'rhythm';
+ if(t.includes('FRAME THE STORY'))return 'flash';if(t.includes('INDEPENDENT ART REVIEW'))return 'vinyl';
+ return null;
+}
+const CONFIG={
+ ballroom:{label:'PRISM BALLROOM',base:0x533c65,top:K.amber,accent:K.pink},
+ foundry:{label:'BASS FOUNDRY',base:0x2f3449,top:K.cyan,accent:K.pink},
+ aurora:{label:'AURORA',base:0x39556a,top:K.lav,accent:K.cyan},
+ rhythm:{label:'RHYTHM YARD',base:0x56415c,top:K.coral,accent:K.pink},
+ flash:{label:'FLASHFRAME',base:0x2e4e62,top:K.cyan,accent:K.lav},
+ vinyl:{label:'VINYL SOCIAL',base:0x66506a,top:K.amber,accent:K.lime}
+};
+function paintInterior(g,s){
+ const kind=roomType(s);if(!kind)return;
+ const c=CONFIG[kind],W=s.w*T,H=s.h*T;
+ R(g,4,4,W-8,68,0x13182c,.9);R(g,9,8,W-18,54,c.base,.94);
+ R(g,14,9,W-28,3,c.top,.7);R(g,10,63,W-20,7,K.ink,.76);
+ // A decorative back-wall stage is always behind existing furniture and never adds collision.
+ if(kind==='ballroom'){
+  for(let i=0;i<9;i++){
+   const xx=24+i*(W-48)/8;
+   Tr(g,xx-12,49,xx+12,49,xx,14,i%2?0x826da0:0x9f6e8b,.6);
+   O(g,xx,20,2,i%2?c.top:c.accent);
+  }
+  for(let i=0;i<3;i++)vinyl(g,42+i*(W-84)/2,38,13,K.amber);
+ }else if(kind==='foundry'){
+  R(g,28,18,W-56,34,0x151d32,.9);equalizer(g,34,23,W-68,21,K.cyan,34);
+  speaker(g,14,19,23,43,K.cyan);speaker(g,W-37,19,23,43,K.pink);
+ }else if(kind==='aurora'){
+  for(let i=0;i<7;i++){
+   const xx=20+i*(W-40)/6;
+   Tr(g,xx-19,59,xx+18,59,xx,15,i%2?c.top:c.accent,.55);
+   R(g,xx-11,27,22,3,0xe1f3f1,.45);
+  }
+ }else if(kind==='rhythm'){
+  for(let i=0;i<14;i++){
+   const xx=15+i*(W-30)/14;
+   Tr(g,xx,55,xx+21,16+(i%2)*9,xx+35,49,PAL[i%6],.68);
+  }
+  vinyl(g,W/2,36,13,K.pink);
+ }else if(kind==='flash'){
+  for(let i=0;i<6;i++){
+   const xx=21+i*(W-42)/6;
+   R(g,xx,16,35,37,0x151e30);R(g,xx+3,19,29,31,i%2?0x487e95:0x8c718e);
+   Tr(g,xx+7,46,xx+30,24,xx+29,47,K.ivory,.42);
+  }
+ }else if(kind==='vinyl'){
+  festoon(g,20,W-20,15,16);
+  for(let i=0;i<5;i++)vinyl(g,34+i*(W-68)/4,44,12,i%2?K.pink:K.amber);
+ }
+ // Inlaid checker border and a visually distinct but sparse dance zone, on visually free floor tiles.
+ const occ=(s.items||[]).map(i=>({x:i.x*T,y:i.y*T,w:i.w*T,h:i.h*T}));
+ const free=(cx,cy)=>occ.every(o=>cx<o.x-15||cx>o.x+o.w+15||cy<o.y-15||cy>o.y+o.h+15);
+ for(let ty=3;ty<s.h-1;ty++)for(let tx=2;tx<s.w-2;tx++){
+  const px=tx*T+16,py=ty*T+16;
+  if(free(px,py) && (tx+ty)%3===0 && Math.abs(tx-s.w*.5)<s.w*.32){
+   R(g,px-13,py-13,26,26,(tx+ty)%2?c.top:c.accent,.095);
+   R(g,px-11,py-11,4,2,c.accent,.27);
+  }
+ }
+ // Venue signature etched into upper wall.
+ R(g,W/2-102,48,204,15,0x171b32,.85);
+ letters(g,c.label,W/2,56,kind==='foundry'?1.6:kind==='vinyl'?1.5:1.8,K.ivory,c.top);
+}
+// Animated lights: fewer than 200 graphics commands per visible building per update.
+// No audio/flash pulses, no new obstacles; daylight retains legible facades.
+let graphics=null,seenScene=null,elapsed=0,insideMode=false,listener=null;
+function release(){if(graphics){try{graphics.destroy()}catch(e){}graphics=null;}seenScene=null;elapsed=0;}
+function timeOfDay(sc){let m=Number(sc?.store?.game?.minutes??720)%1440;return {minute:m,night:(m>1030||m<350),evening:(m>930||m<350)};}
+function update(sc,time){
+ if(!sc?.player||sc.area?.id!==ID){if(graphics)release();return;}
+ const room=!!sc.inside;
+ if(seenScene!==sc){release();seenScene=sc;}
+ if(room!==insideMode){insideMode=room;if(graphics){graphics.destroy();graphics=null;}}
+ if(!graphics)graphics=sc.add.graphics().setDepth(room?6:2.9);
+ if(time-elapsed<95)return;elapsed=time;graphics.clear();
+ const v=sc.cameras?.main?.worldView;if(!v)return;
+ const night=timeOfDay(sc).evening,alpha=night?1:.45;
+ const q=reduced?0.75:(.78+Math.sin(time*.0018)*.19);
+ if(room){
+  const kind=roomType(sc.inside?.spec);if(!kind)return;
+  const info=CONFIG[kind],roomW=sc.inside.spec.w*T;
+  // Ambient edge only, never an opaque cover over a playable actor.
+  for(let i=0;i<9;i++){
+   let xx=24+i*(roomW-48)/8,yy=68;
+   O(graphics,xx,yy,3,info.top,.12*alpha*q);
+  }
+  return;
+ }
+ const blds=sc.area.buildings||[];
+ for(let j=0;j<blds.length;j++){
+  const b=blds[j];if(!b?.name||!['Color Gallery','Backbeat Warehouse','Open Canvas Gallery','Mural Workshop','Photo Lab','Independent Studio'].includes(b.name))continue;
+  const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T;
+  if(x>v.right+90||x+w<v.x-90||y>v.bottom+90||y+h<v.y-90)continue;
+  const c=PAL[(j+2)%6],cx=x+w/2,cy=y+Math.round(h*.48)+41;
+  // Mounted on facades only, subtle rhythmic illuminations; no strobe or full screen wash.
+  for(let k=0;k<8;k++){
+   const xx=x+26+k*(w-52)/7;
+   O(graphics,xx,y+Math.round(h*.48)+3,3,k%2?c:K.amber,.27*alpha*q);
+  }
+  if(night){
+   const amp=reduced?.57:.5+.27*Math.sin(time*.002+j);
+   O(graphics,cx,cy,14,c,.055*amp);
+   for(let i=0;i<5;i++){
+    const xx=x+94+i*37;
+    R(graphics,xx,y+h-29+(i%2)*2,5,5,PAL[(j+i)%6],.18*amp);
+   }
+  }
+  if(b.name==='Backbeat Warehouse'||b.name==='Mural Workshop'){
+   for(let i=0;i<9;i++){
+    let xx=x+41+i*(w-82)/8,baseline=y+Math.round(h*.48)+29;
+    const bar=reduced?5:4+Math.abs(Math.sin(time*.0013+i*.9+j))*10;
+    R(graphics,xx,baseline-bar,3,bar,c,alpha*.45);
+   }
+  }
+ }
+}
+function begin(sc){if(sc.__lq68Install)return;sc.__lq68Install=true;
+ const fn=(time)=>{try{update(sc,time)}catch(err){if(!sc.__lq68Error){console.warn('[V68 Art]',err);sc.__lq68Error=true;}}};
+ sc.events.on('update',fn);sc.events.once('shutdown',()=>{release();sc.__lq68Install=false;});}
+function boot(){const poll=window.setInterval(()=>{const sc=window.__lifequestGetScene?.();if(sc?.events&&!sc.__lq68Install)begin(sc)},1200);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.LQArtV68=Object.freeze({version:'68.0.0',facade,paintInterior,roomType,drawPreview:(g,bs)=>bs.forEach(b=>facade(g,b)),
+ diagnostics:()=>({map:window.__lifequestGetScene?.()?.area?.id,room:roomType(window.__lifequestGetScene?.()?.inside?.spec),
+ facades:['PRISM BALLROOM','BASS FOUNDRY','AURORA','RHYTHM YARD','FLASHFRAME','VINYL SOCIAL'],collisionChanged:false})});
+})();
+/* END LIFEQUEST AI V68 ART DISTRICT */
+
+
+/* V69 visual and festival module */
+/* LIFEQUEST AI V69 — NEON CARNIVAL CITY
+   Stand-alone enhancement embedded before the main game. No external assets or services.
+   20 new walk-in locations, animated all-ages festival, English B1 quest, collectable creative activities.
+*/
+(function(){
+'use strict';
+const ID='art-district', TILE=32, T=32;
+const VENUES=[
+ {name:'Neon Symphony Hall',title:'NEON SYMPHONY',short:'SYMPHONY',zone:'concert',color:0xffb668,kind:'symphony',x:77,y:55,w:13,h:8,door:83},
+ {name:'Skybridge Gallery',title:'SKYBRIDGE GALLERY',short:'SKYBRIDGE',zone:'gallery',color:0xaab6ff,kind:'skybridge',x:77,y:3,w:13,h:8,door:83},
+ {name:'Aurora Rooftop Club',title:'AURORA ROOFTOP',short:'ROOFTOP',zone:'dance',color:0x89ecf0,kind:'rooftop',x:94,y:55,w:13,h:8,door:100},
+ {name:'Mirror Dance Academy',title:'MIRROR DANCE',short:'DANCE ACADEMY',zone:'dance',color:0xf6b1dc,kind:'academy',x:77,y:72,w:13,h:8,door:83},
+ {name:'Graffiti Tower',title:'GRAFFITI TOWER',short:'GRAFFITI',zone:'creative',color:0xf9b06a,kind:'graffiti',x:77,y:20,w:13,h:9,door:83},
+ {name:'Light Lab Studio',title:'LIGHT LAB',short:'LIGHT LAB',zone:'creative',color:0x85bdff,kind:'lightlab',x:94,y:20,w:13,h:9,door:100},
+ {name:'Hologram Theater',title:'HOLOGRAM THEATER',short:'HOLOGRAM',zone:'concert',color:0xc1a4fc,kind:'hologram',x:94,y:3,w:13,h:8,door:100},
+ {name:'Costume Studio',title:'COSTUME STUDIO',short:'COSTUMES',zone:'creative',color:0xffab9b,kind:'costume',x:77,y:38,w:13,h:8,door:83},
+ {name:'Vinyl Social House',title:'VINYL SOCIAL',short:'VINYL',zone:'social',color:0xf7cd89,kind:'vinyl',x:94,y:72,w:13,h:8,door:100},
+ {name:'Art Hostel',title:'ART HOSTEL',short:'HOSTEL',zone:'social',color:0xb6e6aa,kind:'hostel',x:94,y:38,w:13,h:8,door:100},
+ {name:'Cinema Wall',title:'CINEMA WALL',short:'CINEMA',zone:'gallery',color:0xffa7bf,kind:'cinema',x:77,y:88,w:13,h:8,door:83},
+ {name:'Kite Roof Plaza',title:'KITE ROOF PLAZA',short:'KITE PLAZA',zone:'social',color:0x8dd4ce,kind:'kite',x:94,y:88,w:13,h:8,door:100},
+ {name:'Artist Market Arcade',title:'ARTIST MARKET',short:'ART MARKET',zone:'market',color:0xe9b8f2,kind:'market',x:4,y:61,w:14,h:7,door:11},
+ {name:'Midnight Snack Alley',title:'SNACK ALLEY',short:'SNACK ALLEY',zone:'market',color:0xffbd81,kind:'snack',x:4,y:79,w:14,h:7,door:11},
+ {name:'Rhythm Workshop',title:'RHYTHM WORKSHOP',short:'RHYTHM LAB',zone:'creative',color:0xe7acfa,kind:'rhythm',x:40,y:61,w:14,h:7,door:47},
+ {name:'Sound Garden',title:'SOUND GARDEN',short:'SOUND GARDEN',zone:'social',color:0xa3ecb3,kind:'garden',x:58,y:61,w:14,h:7,door:65},
+ {name:'Sculpture Garden',title:'SCULPTURE GARDEN',short:'SCULPTURES',zone:'gallery',color:0xc0e1ff,kind:'sculpture',x:22,y:61,w:14,h:7,door:29},
+ {name:'Beat Bridge',title:'BEAT BRIDGE',short:'BEAT BRIDGE',zone:'dance',color:0xfea4cd,kind:'bridge',x:22,y:79,w:14,h:7,door:29},
+ {name:'Mini Ferris Neon',title:'NEON WHEEL',short:'NEON WHEEL',zone:'social',color:0xffda89,kind:'wheel',x:40,y:79,w:14,h:7,door:47},
+ {name:'Lantern Courtyard',title:'LANTERN COURT',short:'LANTERNS',zone:'social',color:0xa4e5ce,kind:'lantern',x:58,y:79,w:14,h:7,door:65}
+];
+const BY_NAME=new Map(VENUES.map(v=>[v.name,v]));
+const CL={ink:0x101629,shadow:0x141b2d,brass:0xd1a56c,cream:0xffedc4,mid:0x324258,blue:0x75cfff,pink:0xf285c4,teal:0x8bedd7,purple:0x8176c6,amber:0xffcb78};
+const FONT={A:['01110','10001','11111','10001','10001'],B:['11110','10001','11110','10001','11110'],C:['01111','10000','10000','10000','01111'],D:['11110','10001','10001','10001','11110'],E:['11111','10000','11110','10000','11111'],F:['11111','10000','11110','10000','10000'],G:['01111','10000','10111','10001','01111'],H:['10001','10001','11111','10001','10001'],I:['11111','00100','00100','00100','11111'],J:['00111','00010','00010','10010','01100'],K:['10001','10010','11100','10010','10001'],L:['10000','10000','10000','10000','11111'],M:['10001','11011','10101','10001','10001'],N:['10001','11001','10101','10011','10001'],O:['01110','10001','10001','10001','01110'],P:['11110','10001','11110','10000','10000'],Q:['01110','10001','10101','10011','01111'],R:['11110','10001','11110','10010','10001'],S:['01111','10000','01110','00001','11110'],T:['11111','00100','00100','00100','00100'],U:['10001','10001','10001','10001','01110'],V:['10001','10001','10001','01010','00100'],W:['10001','10001','10101','11011','10001'],X:['10001','01010','00100','01010','10001'],Y:['10001','01010','00100','00100','00100'],Z:['11111','00010','00100','01000','11111'],' ':['00000','00000','00000','00000','00000'],'-':['00000','00000','11111','00000','00000'],'0':['01110','10011','10101','11001','01110'],'1':['00100','01100','00100','00100','01110'],'2':['11110','00001','01110','10000','11111'],'3':['11110','00001','01110','00001','11110'],'4':['10001','10001','11111','00001','00001'],'5':['11111','10000','11110','00001','11110'],'6':['01111','10000','11110','10001','01110'],'7':['11111','00001','00010','00100','00100'],'8':['01110','10001','01110','10001','01110'],'9':['01110','10001','01111','00001','11110']};
+function R(g,x,y,w,h,c,a=1){if(w>0&&h>0)g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
+function L(g,x,y,x2,y2,c,a=1,w=1){g.lineStyle(w,c,a).lineBetween(x,y,x2,y2);}
+function O(g,x,y,r,c,a=1){g.fillStyle(c,a).fillCircle(x,y,r);}
+function E(g,x,y,w,h,c,a=1){g.fillStyle(c,a).fillEllipse(x,y,w,h);}
+function TR(g,x1,y1,x2,y2,x3,y3,c,a=1){g.fillStyle(c,a).fillTriangle(x1,y1,x2,y2,x3,y3);}
+function font(g,text,x,y,size,c){const lines=String(text).toUpperCase(); const width=lines.length*6*size-size;let xx=x;
+ for(let chr of lines){const rows=FONT[chr]||FONT[' '];for(let py=0;py<5;py++)for(let px=0;px<5;px++)if(rows[py][px]==='1')R(g,xx+px*size,y+py*size,size,size,c);xx+=6*size;}return width;}
+function drawLabel(g,v,x,y,width){const n=v.title,scale= n.length>16?1.9:2.35;const ww=n.length*6*scale;const xx=x+Math.max(13,(width-ww)/2),yy=y+5;R(g,xx-11,yy-5,ww+20,17*scale,CL.ink,.96);R(g,xx-8,yy-2,ww+14,2,v.color,.89);font(g,n,xx,yy+7,scale,CL.cream);R(g,xx-8,yy+21*scale-3,ww+14,2,v.color,.84);}
+function windows(g,x,y,w,c){for(let i=0;i<1;i++)for(let j=0;j<w;j++){let xx=x+j*38,yy=y+i*40;R(g,xx-3,yy-3,22,30,CL.ink);R(g,xx,yy,17,23,(j+i)%3?0xb8d5dc:0xf6b9b6,.82);R(g,xx+8,yy,2,23,0x6b6f85);R(g,xx,yy+13,17,2,0x546c82);R(g,xx+2,yy+2,4,5,CL.cream,.34)}}
+function door(g,v,x,y,w,h){const dx=v.door*T+16,ww=48,yy=y+h-46;
+ R(g,dx-ww/2-8,yy-14,ww+16,59,CL.ink);R(g,dx-ww/2,yy,ww,43,0x526077);R(g,dx-ww/2+6,yy+4,ww-12,35,0x263b4b);R(g,dx+9,yy+23,3,3,v.color);R(g,dx-ww/2-16,y+h-5,ww+32,6,0xf2d7a7,.9);}
+function motif(g,id,x,y,w,h,c){if(id==='record'){O(g,x,y,Math.min(w,h)*.42,CL.ink);O(g,x,y,Math.min(w,h)*.31,c);O(g,x,y,Math.min(w,h)*.21,CL.ink);O(g,x,y,Math.min(w,h)*.06,CL.cream);}
+ else if(id==='star'){for(let i=0;i<8;i++){const a=i*Math.PI/4;L(g,x,y,x+Math.cos(a)*w*.49,y+Math.sin(a)*h*.49,c,.9,4)}O(g,x,y,4,CL.cream);}
+ else if(id==='equalizer'){for(let i=0;i<11;i++){const hh=6+Math.abs(Math.sin(i*1.7))*h*.8;R(g,x+i*w/11,y-hh/2,w/18,hh,i%2?c:CL.cream,.82)}}
+ else if(id==='flower'){O(g,x,y,7,CL.cream);for(let i=0;i<6;i++){const a=i*Math.PI/3;O(g,x+Math.cos(a)*w*.3,y+Math.sin(a)*h*.3,8,c,.8)}}
+ else if(id==='film'){R(g,x-w/2,y-h/2,w,h,CL.ink);for(let i=0;i<5;i++){R(g,x-w/2+i*w/5+4,y-h/2+4,w/7,4,CL.cream);R(g,x-w/2+i*w/5+4,y+h/2-8,w/7,4,CL.cream)}R(g,x-w*.38,y-h*.3,w*.76,h*.6,c,.8)}
+ else if(id==='arch'){for(let i=0;i<4;i++){E(g,x,y-i*4,w-i*12,h-i*10,i%2?CL.ink:c,.65)}O(g,x,y-12,8,CL.cream)}}
+function facade(g,b){const v=BY_NAME.get(b?.name);if(!v)return false;
+ const x=v.x*T,y=v.y*T,w=v.w*T,h=v.h*T,roof=h*.39,front=y+roof;
+ // Three-layer architecture: cast shadow / bespoke roof / facade / working entrance.
+ R(g,x+13,y+16,w,h,CL.ink,.32);R(g,x,y+27,w,h-27,CL.ink);R(g,x+7,y+38,w-14,h-45,0x3d3d5a);R(g,x+12,y+49,w-24,h-64,0x536074);
+ for(let i=0;i<7;i++){R(g,x+20+i*(w-40)/7,y+57,2,h-90,0x98b0ba,.18);}
+ const k=v.kind;
+ if(k==='symphony'){
+  R(g,x+24,y+17,w-48,roof-10,0x463550);TR(g,x+12,y+62,x+w/2,y-12,x+w-12,y+62,0x6a506e);TR(g,x+42,y+59,x+w/2,y+12,x+w-42,y+59,0xc48aa0);
+  for(let i=0;i<4;i++){let px=x+24+i*(w-48)/3;R(g,px,y+24,9,roof-3,0xeccaa4);O(g,px+5,y+22,11,v.color)}
+  for(let i=0;i<5;i++)R(g,x+42+i*70,front+6,16,h*.31,0xffe6ba,.67);
+  motif(g,'star',x+w/2,y+83,62,62,v.color);
+ }else if(k==='skybridge'){
+  R(g,x+19,y+7,105,roof+26,0x485c87);R(g,x+w-124,y+7,105,roof+26,0x485c87);R(g,x+111,y+46,w-222,30,CL.ink);R(g,x+114,y+48,w-228,24,v.color,.84);for(let i=0;i<5;i++)L(g,x+115+i*34,y+48,x+130+i*34,y+72,CL.cream,.7,3);
+  windows(g,x+45,front+18,3,v.color);windows(g,x+w-111,front+18,3,v.color);
+ }else if(k==='rooftop'){
+  for(let i=0;i<9;i++){let px=x+17+i*46;R(g,px,y+12,5,roof-10,0x92e9df);R(g,px-4,y+16,13,7,CL.cream,.75)}
+  R(g,x+20,y+30,w-40,28,0x212b49);for(let i=0;i<10;i++)O(g,x+35+i*34,y+40,4,i%2?CL.pink:CL.teal);
+  for(let i=0;i<5;i++)TR(g,x+22+i*76,y+10,x+60+i*76,y-19,x+98+i*76,y+10,i%2?0x7ab9cd:0xdca5ba,.7);
+  windows(g,x+45,front+22,8,v.color);
+ }else if(k==='academy'){
+  R(g,x+22,y+18,w-44,roof-3,0x53648c);for(let i=0;i<5;i++)R(g,x+30+i*70,y+22,58,roof-8,i%2?0xa9dbe3:0xd9c6f4,.78);
+  for(let i=0;i<5;i++)L(g,x+30+i*70,y+22,x+30+i*70+58,y+22+roof-8,CL.cream,.8,2);
+  windows(g,x+40,front+19,8,v.color);
+ }else if(k==='graffiti'){
+  for(let i=0;i<4;i++){let sy=y+15+i*24;R(g,x+17+i*3,sy,w-35-i*6,18,0x3b4f69);R(g,x+21+i*3,sy+3,w-43-i*6,3,i%2?CL.pink:CL.teal,.8)}
+  for(let i=0;i<8;i++){let xx=x+30+i*44,yy=front+20+(i%2)*44;TR(g,xx,yy,xx+42,yy-20,xx+36,yy+39,i%2?v.color:CL.teal,.6)}
+  motif(g,'star',x+w*.3,front+54,76,76,CL.cream);
+ }else if(k==='lightlab'){
+  TR(g,x+14,y+roof+11,x+w*.48,y-18,x+w-8,y+roof+11,0x6077a7);TR(g,x+64,y+roof+2,x+w*.48,y+12,x+w-55,y+roof+2,0xbddcf1);
+  for(let i=0;i<5;i++)L(g,x+47+i*78,front+14,x+25+i*78,y+h-34,i%2?v.color:CL.cream,.45,4);
+  motif(g,'equalizer',x+w/2,front+39,190,80,v.color);
+ }else if(k==='hologram'){
+  E(g,x+w/2,y+roof*.44,w-45,roof*1.45,0x455d8d);E(g,x+w/2,y+roof*.44,w-85,roof*.97,0x8fcee2,.85);E(g,x+w/2,y+roof*.5,w-145,roof*.64,0x4a7195,.8);
+  for(let i=0;i<9;i++)L(g,x+36+i*43,y+roof*.3,x+34+i*43,front+20,v.color,.5,2);
+  motif(g,'arch',x+w/2,front+72,142,100,v.color);
+ }else if(k==='costume'){
+  TR(g,x+10,y+roof,x+w/2,y-20,x+w-10,y+roof,0x745973);TR(g,x+38,y+roof-3,x+w/2,y+15,x+w-37,y+roof-3,0xc694ad);
+  for(let i=0;i<8;i++){let px=x+23+i*47;R(g,px,front+7,34,56,i%2?0xda8d98:0xcac7eb,.75);TR(g,px,front+6,px+17,front-13,px+34,front+6,CL.cream,.7)}
+ }else if(k==='vinyl'){
+  R(g,x+16,y+18,w-32,roof-18,0x694c56);for(let i=0;i<3;i++)motif(g,'record',x+92+i*105,y+74,75,75,i%2?v.color:CL.cream);
+  for(let i=0;i<7;i++)E(g,x+36+i*54,front+58,18,12,i%2?CL.amber:CL.pink,.64);
+ }else if(k==='hostel'){
+  for(let i=0;i<8;i++)R(g,x+13+i*(w-26)/8,y+8,6,roof-11,i%2?0x9acda8:CL.cream,.53);
+  windows(g,x+39,front+17,8,v.color);for(let i=0;i<6;i++){let px=x+29+i*68;R(g,px,front+86,46,5,0xc5cba8);O(g,px+6,front+80,8,0x77b69e)}
+ }else if(k==='cinema'){
+  R(g,x+24,y+14,w-48,roof-19,0x21304b);motif(g,'film',x+w*.51,y+70,w*.56,75,v.color);
+  for(let i=0;i<3;i++){R(g,x+27+i*127,front+12,104,86,CL.ink);R(g,x+33+i*127,front+18,92,73,[0x9c79c6,0xc17ca0,0x669fba][i]);}
+ }else if(k==='kite'){
+  for(let i=0;i<5;i++){const px=x+40+i*79;L(g,px,front+10,px,y-16,CL.cream,.7,2);TR(g,px-22,y+10,px,y-24,px+22,y+10,i%2?CL.pink:CL.teal);TR(g,px-22,y+10,px,y+36,px+22,y+10,CL.cream,.7)}
+  windows(g,x+40,front+25,8,v.color);
+ }else if(k==='market'){
+  R(g,x+8,y+38,w-16,roof,0x415070);for(let i=0;i<7;i++){let xx=x+18+i*(w-36)/7;TR(g,xx,y+48,xx+(w-40)/14,y+9,xx+(w-40)/7,y+48,i%2?CL.pink:CL.cream);R(g,xx,y+57,(w-40)/7,roof-31,i%2?0xc3bbdb:0x88c9c4,.85)}
+  for(let i=0;i<5;i++){let px=x+32+i*76;R(g,px,front+35,55,48,CL.ink);R(g,px+6,front+40,43,34,[0xd8b5b8,0xcbd99a,0x93d1db][i%3]);}
+ }else if(k==='snack'){
+  for(let i=0;i<4;i++){let px=x+23+i*103;TR(g,px,y+80,px+50,y-11,px+97,y+80,i%2?0xc99279:0x76a8ac);R(g,px+8,y+75,81,11,CL.cream);R(g,px+8,front+20,81,48,0x8e6870);R(g,px+18,front+31,62,18,0xfad6a0)}
+  for(let i=0;i<4;i++){O(g,x+57+i*103,front+2,9,CL.amber,.55)}
+ }else if(k==='rhythm'){
+  for(let i=0;i<4;i++){let px=x+34+i*101;R(g,px,y+17,68,roof-16,CL.ink);motif(g,'record',px+34,y+roof*.52,45,45,i%2?v.color:CL.teal)}
+  motif(g,'equalizer',x+w/2,front+50,230,64,v.color);
+ }else if(k==='garden'){
+  TR(g,x+19,y+roof,x+w*.24,y+9,x+w*.48,y+roof,0x7fb8a3);TR(g,x+w*.48,y+roof,x+w*.73,y-7,x+w-12,y+roof,0xa1d5bc);
+  for(let i=0;i<7;i++)motif(g,'flower',x+33+i*63,front+43,45,35,i%2?v.color:CL.pink);
+  for(let i=0;i<7;i++)R(g,x+23+i*59,front+70,30,20,0x467f64,.82);
+ }else if(k==='sculpture'){
+  for(let i=0;i<4;i++){const px=x+60+i*100;R(g,px-27,y+roof*.6,54,14,CL.cream,.75);motif(g,'arch',px,y+roof*.52,70,76,i%2?v.color:CL.teal)}
+  for(let i=0;i<5;i++)R(g,x+24+i*84,front+17,53,36,0x718d9c,.6);
+ }else if(k==='bridge'){
+  R(g,x+14,y+roof*.5,w-28,37,0x7c718f);for(let i=0;i<12;i++){let px=x+22+i*(w-44)/12;R(g,px,y+roof*.5,10,37,i%2?v.color:CL.cream,.67)}
+  for(let i=0;i<6;i++){let px=x+27+i*75;L(g,px,y+roof*.5,px+30,y-5,v.color,.72,4)}
+  motif(g,'equalizer',x+w/2,front+46,260,65,v.color);
+ }else if(k==='wheel'){
+  L(g,x+w/2,y+roof*.85,x+w*.3,y+roof+39,CL.cream,.9,7);L(g,x+w/2,y+roof*.85,x+w*.7,y+roof+39,CL.cream,.9,7);
+  O(g,x+w/2,y+roof*.47,roof*.47,CL.cream,.75);O(g,x+w/2,y+roof*.47,roof*.42,CL.ink);for(let i=0;i<12;i++){let a=i*Math.PI/6,px=x+w/2+Math.cos(a)*roof*.37,py=y+roof*.47+Math.sin(a)*roof*.37;L(g,x+w/2,y+roof*.47,px,py,i%2?v.color:CL.teal,.88,3);O(g,px,py,5,CL.cream)}
+ }else if(k==='lantern'){
+  for(let i=0;i<5;i++)motif(g,'arch',x+54+i*82,y+roof*.52,85,86,0x8fd7b3);
+  for(let i=0;i<10;i++){let px=x+24+i*44;L(g,px,y+9,px,y+42,CL.cream,.7);E(g,px,y+46,18,28,i%2?0xffb76d:0xeab1c0);}
+ }
+ // Architectural texture, inset columns, coordinated awnings and ground contact.
+ for(let i=0;i<8;i++){R(g,x+16+i*(w-36)/8,front+8,3,h-roof-26,v.color,.17);}
+ for(let i=0;i<7;i++)R(g,x+22+i*(w-44)/7,y+h-19,22,3,v.color,.32);
+ R(g,x+7,y+h-7,w-14,5,CL.brass,.85);R(g,x+7,y+h-1,w-14,3,CL.ink,.7);
+ drawLabel(g,v,x,y,w);door(g,v,x,y,w,h);return true;
+}
+function paintStreets(g,a){if(a?.id!==ID)return;
+ const t=32;function painted(x,y,c){R(g,x*t,y*t,1.9*t,0.12*t,c,.54)}
+ // Paving grid and route-coded bands are visual only. All road collisions remain managed by the game.
+ for(let x=72;x<a.w-2;x+=3)for(let y=2;y<a.h-2;y+=3){const n=(x*19+y*37)%17;if(n<5){R(g,x*t+5,y*t+13,4+(n%3)*3,3,n%2?CL.cream:0x89acbd,.23)}}
+ for(let y=0;y<a.h-2;y+=7)for(let x of [73,90])R(g,x*t+8,y*t+7,2*t,2,CL.cream,.24);
+ for(let x=3;x<75;x+=7)for(let y of [70,88])R(g,x*t+4,y*t+8,5*t,2,CL.brass,.16);
+ for(let y of [14,33,49,68,86])for(let x=70;x<106;x+=2)R(g,x*t+7,y*t+9,17,4,(x+y)%4?0xadc7d6:CL.pink,.28);
+ // Chromatic pedestrian crossing near every fresh block; stay on ground and keep all doors visible.
+ for(let v of VENUES){const cy=(v.y+v.h+1.2)*t, cx=(v.door+0.5)*t;
+  for(let j=-2;j<=2;j++)R(g,cx-37+j*18,cy,13,5,j%2?v.color:CL.cream,.43);
+  for(let k=0;k<7;k++)R(g,v.x*t+14+k*(v.w*t-30)/7,(v.y+v.h+1)*t+18,7,3,v.color,.26);
+ }
+ // Fairy-light alleyways and repeating floor mosaics between southern blocks.
+ for(let y of [71,88])for(let x=4;x<72;x+=6){O(g,x*t+12,y*t+17,5,x%2?CL.teal:CL.amber,.3);R(g,x*t+4,y*t+23,30,2,CL.cream,.18)}
+ // Visual zoning for the actual Painters Quarter layout: subtle signs stamped into pavement,
+ // no collision footprints or overlays covering doors.
+ const zones=[
+  {label:'GALLERY WALK',x:78,y:16,c:0xb7e5e0},
+  {label:'PAINTERS ROW',x:78,y:34,c:0xffb5c3},
+  {label:'MAKER COURT',x:78,y:51,c:0xdac6ff},
+  {label:'MUSIC AVENUE',x:78,y:69,c:0xffd8a0},
+  {label:'ART MARKET',x:5,y:74,c:0xeac4e7}
+ ];
+ for(const z of zones){
+  const px=z.x*t+4,py=z.y*t+2,labelSize=1.45,len=z.label.length*6*labelSize;
+  R(g,px-7,py-6,len+17,27,0x35445a,.24);
+  R(g,px-6,py-5,len+15,2,z.c,.47);
+  font(g,z.label,px,py+4,labelSize,z.c);
+ }
+ // Colour guides for the painting/gallery quarter, with calm neutral paving elsewhere.
+ for(let j=0;j<18;j++){
+  const xx=(77+j*1.55)*t,yy=(16+j%4*.43)*t;
+  O(g,xx,yy,3.1,[0xffcb84,0x9de4d6,0xf3a5c9][j%3],.28);
+ }
+ for(let j=0;j<9;j++){
+  const xx=(77+j*3.3)*t,yy=35*t+(j%2)*5;
+  R(g,xx,yy,17,3,[0xf4bbcf,0xa4dada,0xecc98f][j%3],.3);
+ }
+ // A large icon marking the Pulse Street Stage without occupying player collision tiles.
+ for(let i=0;i<6;i++){R(g,(44+i*2)*t,(73+i%2)*t,9,6,i%2?CL.pink:CL.teal,.28)}
+}
+function paintInterior(g,s){if(!s||!s.__lq69Kind)return false;
+ const W=s.w*T,H=s.h*T,kind=s.__lq69Kind,c=s.__lq69Color||CL.pink;
+ // Physical furniture and collision remain defined by the room specification.
+ // This pass embellishes only the back wall, stage background, and tile-floor decals.
+ R(g,10,8,W-20,8,CL.ink,.63);for(let i=0;i<12;i++)R(g,14+i*(W-30)/12,18,3,42,c,.23);
+ R(g,18,65,W-36,4,c,.40);R(g,16,71,W-32,3,CL.cream,.24);
+ if(['symphony','hologram','academy','rhythm','rooftop','lightlab','bridge','wheel'].includes(kind)){
+   R(g,60,14,W-120,65,CL.ink,.8);for(let i=0;i<8;i++){const x=73+i*(W-150)/8;R(g,x,22,9,37+(i%3)*7,i%2?c:CL.teal,.63)}
+   for(let i=0;i<5;i++){const x=62+i*(W-122)/5;TR(g,x,14,x+36,14,x+18,44,i%2?CL.pink:CL.blue,.21)}
+   motif(g,'equalizer',W/2,49,W*.3,37,c);
+ }else if(['graffiti','costume','sculpture','garden','lantern','market'].includes(kind)){
+   for(let i=0;i<5;i++){let x=50+i*(W-100)/5;TR(g,x,16,x+32,17,x+20,50,i%2?CL.pink:c,.5);O(g,x+18,51,5,CL.cream,.57)}
+ }else if(['vinyl','hostel','snack','kite','cinema','skybridge'].includes(kind)){
+   for(let i=0;i<5;i++){let x=38+i*(W-75)/5;R(g,x,20,38,40,0x5b728b,.7);R(g,x+5,25,28,27,i%2?c:CL.teal,.32)}
+ }
+ // Each room has its own functional, non-blocking wall identity.
+ if(kind==='academy')for(let k=0;k<6;k++){let x=24+k*75;R(g,x,86,60,68,0xb3d4e1,.54);L(g,x+3,89,x+57,149,CL.cream,.27,3)}
+ else if(kind==='symphony'){for(let k=0;k<4;k++){const x=40+k*120;R(g,x,83,36,64,CL.brass,.28);E(g,x+18,95,25,18,CL.cream,.53)}font(g,'CONCERT TONIGHT',120,103,2.4,CL.amber)}
+ else if(kind==='rooftop'||kind==='kite'){for(let k=0;k<7;k++){TR(g,28+k*65,87,44+k*65,64,60+k*65,87,k%2?CL.teal:CL.pink,.62);R(g,40+k*65,84,3,29,CL.cream,.33)}}
+ else if(kind==='graffiti'){for(let k=0;k<11;k++){const x=18+k*43;TR(g,x,93,x+32,85,x+22,117,k%2?CL.pink:CL.amber,.55)}}
+ else if(kind==='lightlab'||kind==='hologram'){for(let k=0;k<7;k++)L(g,80+k*51,92,230,186,k%2?c:CL.teal,.18,3)}
+ else if(kind==='costume'){for(let k=0;k<6;k++){const x=35+k*78;TR(g,x,105,x+26,70,x+52,105,k%2?c:CL.teal,.49);R(g,x+16,107,20,32,0xc2a5cb,.48)}}
+ else if(kind==='vinyl'||kind==='rhythm'){for(let k=0;k<5;k++)motif(g,'record',58+k*100,114,42,42,k%2?c:CL.teal)}
+ else if(kind==='cinema'){R(g,70,83,W-140,79,CL.ink,.5);for(let k=0;k<10;k++)R(g,80+k*35,88,17,8,CL.cream,.3)}
+ else if(kind==='snack'||kind==='market'){for(let k=0;k<6;k++){R(g,35+k*75,88,57,48,k%2?0xb77f87:0x719f9a,.47);TR(g,31+k*75,90,61+k*75,59,88+k*75,90,CL.cream,.38)}}
+ else if(kind==='garden'||kind==='sculpture'||kind==='lantern'){for(let k=0;k<8;k++){const x=36+k*56;O(g,x,108,12,k%2?c:CL.teal,.32);R(g,x-6,110,13,27,0x638b79,.28)}}
+ else if(kind==='wheel'){motif(g,'star',W/2,100,104,104,CL.amber)}
+ else if(kind==='skybridge'||kind==='bridge'){for(let k=0;k<6;k++){const x=49+k*81;R(g,x,100,42,9,c,.41);R(g,x+17,91,5,48,CL.brass,.32)}}
+ else if(kind==='hostel'){for(let k=0;k<6;k++){const x=48+k*74;R(g,x,86,52,33,CL.cream,.20);R(g,x+4,90,44,26,0x6f9eb5,.3)}}
+ // Small inlaid music and art floor decoration, traversable and not a new hitbox.
+ for(let i=0;i<7;i++){const x=31+i*(W-62)/7;R(g,x,H*.61,17,2,c,.22);R(g,x+6,H*.65,4,4,CL.cream,.16)}
+ return true;
+}
+const EVENTS=[
+ {day:'Open Studio Morning',night:'Projection Parade',site:'Light Lab Studio',a:'A wave of light moves across the city.'},
+ {day:'Street Rhythm Practice',night:'Neon Dance Jam',site:'Mirror Dance Academy',a:'Dancers share an all-ages choreography.'},
+ {day:'Mural Makers Day',night:'Colour Carnival',site:'Graffiti Tower',a:'Visitors paint a community artwork.'},
+ {day:'Artist Market Fair',night:'Midnight Lantern Walk',site:'Artist Market Arcade',a:'Craft stalls and lanterns fill the streets.'}
+];
+const MISSION=[
+ {title:'A city for everyone',place:'Neon Symphony Hall',question:'Which sentence welcomes visitors and gives a reason?',options:['I think our festival should welcome everyone because art brings people together.','We do festival because.','Festival should people.'],correct:0,story:'The musicians agree to share the main stage with every artist.'},
+ {title:'The three marks',place:'Graffiti Tower',question:'Which sentence explains a mural idea clearly?',options:['Paint a picture.','I prefer the star, eye and wave because they tell our district’s story.','The wall good.'],correct:1,story:'The old star, eye and wave appear in a new community mural.'},
+ {title:'Check the rhythm',place:'Backbeat Warehouse',question:'How can you report the speaker problem politely?',options:['Speaker broken no.','Fix it fast!','Could we test the speakers again? The left one is too quiet.'],correct:2,story:'The sound technicians balance the speakers before the performance.'},
+ {title:'Invite the dance crew',place:'Mirror Dance Academy',question:'Choose the best invitation.',options:['Would your dance crew like to perform at our festival?','You dance, yes.','Can dance now because me.'],correct:0,story:'The students prepare an energetic routine for the town.'},
+ {title:'Paint with light',place:'Light Lab Studio',question:'Which option gives a clear suggestion?',options:['Lighting more.','We should use soft colours near the path so everyone can walk safely.','Lights everywhere always.'],correct:1,story:'The technicians set up gentle and colourful projection effects.'},
+ {title:'The final curtain',place:'Dream Gate Plaza',question:'Which closing announcement is most suitable?',options:['End.','People listen now.','Thank you for creating this festival with us. Enjoy the art and music!'],correct:2,story:'The Dream Gate glows. The community festival begins!'}
+];
+const allZones=Object.freeze(['concert','gallery','dance','creative','social','market']);
+const getScene=()=>{try{return window.__lifequestGetScene?.()||null;}catch(_){return null}};
+const active=sc=>!!(sc?.area?.id===ID&&sc?.player&&!sc.switching);
+function data(sc=getScene()){if(!sc?.store?.game)return {step:0,visits:{},mural:'star',eventVisits:{},won:false};
+ const g=sc.store.game;if(!g.lq69Festival||typeof g.lq69Festival!=='object')g.lq69Festival={step:0,visits:{},mural:'star',eventVisits:{},won:false};return g.lq69Festival;}
+function save(sc){try{sc?.store?.save?.()}catch(_){}}
+function near(sc,px,py,r=4.4){if(!active(sc)||sc.inside)return false;return Math.hypot(sc.player.x/T-(px+.5),sc.player.y/T-(py+.5))<=r}
+function vdoor(v){return [v.door,v.y+v.h]}
+function missionPoint(m){if(m.place==='Dream Gate Plaza')return [36,39];if(m.place==='Backbeat Warehouse')return [9,45];const v=BY_NAME.get(m.place);return v?vdoor(v):[36,39]}
+function guideTo(sc,tx,ty,label){
+ if(!active(sc)||!sc.area?.isTileBlocked)return false;
+ const w=sc.area.w,h=sc.area.h,start=[Math.floor(sc.player.x/T),Math.floor(sc.player.y/T)];
+ const key=(x,y)=>y*w+x,prev=new Int32Array(w*h).fill(-1),queue=[start],target=key(tx,ty);
+ const origin=key(...start);prev[origin]=origin;
+ for(let i=0;i<queue.length&&prev[target]===-1;i++){
+  let [x,y]=queue[i];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=w||ny>=h||sc.area.isTileBlocked(nx,ny))continue;
+   const k=key(nx,ny);if(prev[k]>=0)continue;prev[k]=key(x,y);queue.push([nx,ny]);
+  }
+ }
+ if(prev[target]===-1){toast('Không tìm thấy lối đi tới '+label);return false;}
+ const path=[];for(let k=target,count=0;count<w*h;count++){path.push([k%w,Math.floor(k/w)]);if(k===origin)break;k=prev[k];}
+ path.reverse();guide={target:[tx,ty],label,path,origin:start,started:performance.now()};
+ toast('Đã bật chỉ đường: '+label+' · '+path.length+' ô');return true;
+}
+function guideRefresh(sc){if(!guide||!active(sc))return;let x=Math.floor(sc.player.x/T),y=Math.floor(sc.player.y/T);
+ if(Math.hypot(guide.target[0]-x,guide.target[1]-y)<2){guide=null;return}
+ if(Math.hypot(guide.origin[0]-x,guide.origin[1]-y)>=7){const old=guide;guide=null;guideTo(sc,...old.target,old.label)}
+}
+function trackVisit(sc,v){if(!near(sc,v.door,v.y+v.h,3.8))return false;const d=data(sc);const first=!d.visits[v.name];d.visits[v.name]=(d.visits[v.name]||0)+1;save(sc);if(first)toast('Khám phá mới: '+v.name+' ✦');return true;}
+function timeOf(sc){const g=sc?.store?.game||{};const min=Number(g.minutes??720);const day=Number(g.day??1);return {minutes:(min%1440+1440)%1440,day:Math.max(1,day),night:min>=1080||min<330};}
+function eventFor(sc){const {day,night}=timeOf(sc);const x=EVENTS[(day-1)%EVENTS.length];return {name:night?x.night:x.day,site:x.site,desc:x.a,night};}
+let root=null,panel=null,toastEl=null,uiTab='festival',picked=0,fx=null,crowd=[],guide=null,install=null,lastDraw=0,lastRoot=0,lastCrowd=0,prefs={lights:true,crowd:true,particles:true};
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[k]));
+function toast(msg){if(!toastEl)return;toastEl.textContent=msg;toastEl.hidden=false;let n=++toast.counter;setTimeout(()=>{if(n===toast.counter)toastEl.hidden=true},3400)}toast.counter=0;
+function hud(){const sc=getScene();if(!root)return;const on=active(sc);root.hidden=!on;if(!on&&panel&&!panel.hidden)close();}
+function drawPanel(){if(!panel)return;const sc=getScene(),d=data(sc),m=MISSION[Math.min(5,d.step)],ev=eventFor(sc);const seen=VENUES.filter(v=>d.visits[v.name]).length;
+ const nav=document.getElementById('lq69-nav');nav.innerHTML=['festival','venues','events','visual'].map((k,i)=>`<button data-lq69-tab="${k}" class="${k===uiTab?'selected':''}">${['🎵 Nhiệm vụ','🏙 Công trình','🎆 Sự kiện','⚙ Hiệu ứng'][i]}</button>`).join('');
+ const out=document.getElementById('lq69-body');let html='';
+ if(uiTab==='festival'){
+ const artMod=window.LQArtV71,activities=artMod?.activities||[],done=artMod?.progress?.(sc)?.done||[];
+ const nextTask=activities.find(t=>!done.includes(t.id));
+ if(activities.length){html+=`<div class="lq69-quest" style="margin-bottom:12px"><div class="lq69-sub">PAINTERS QUARTER · BA HOẠT ĐỘNG</div><h3>Học hội họa trước khi vẽ</h3><p>${done.length}/3 hoạt động hoàn thành · ${nextTask?`Tiếp theo: ${escapeHTML(nextTask.title)} tại <b>${escapeHTML(nextTask.place)}</b>.`:'Đã mở khóa Community Wall! Hãy đến Mural Workshop để vẽ.'}</p><button data-lq69="guideArt">🧭 ${nextTask?'Chỉ đường hoạt động tiếp theo':'Chỉ đường tới Community Wall'}</button></div>`;}
+ html+=`<div class="lq69-lead><div class="lq69-sub">NEON CARNIVAL · B1 ENGLISH ADVENTURE</div><h3>The Festival of Light and Sound</h3><p>Phục hồi một khu phố cũ bằng nghệ thuật, âm nhạc và những lựa chọn của bạn.</p><div class="lq69-meter"><i style="width:${Math.min(100,d.step/6*100)}%"></i></div><small>Hoàn thành ${Math.min(d.step,6)}/6 chương</small></div>`;
+ if(d.step>=6)html+=`<div class="lq69-success">✨ Lễ hội đã khai mạc! Tranh cộng đồng và ánh đèn ở Dream Gate được mở vĩnh viễn trong bản lưu.</div>`;
+ else{const pt=missionPoint(m);const close=near(sc,...pt,5.1);html+=`<article class="lq69-quest"><div class="lq69-sub">CHƯƠNG ${d.step+1} / 6</div><h3>${escapeHTML(m.title)}</h3><p><b>Địa điểm:</b> ${escapeHTML(m.place)}</p><p>${escapeHTML(m.question)}</p><div class="lq69-answers">${m.options.map((s,i)=>`<button class="${picked===i?'picked':''}" data-answer="${i}">${escapeHTML(s)}</button>`).join('')}</div><button class="lq69-action" data-lq69="complete" ${!close?'disabled':''}>${close?'✓ Hoàn thành thử thách':'Đến gần địa điểm để tiếp tục'}</button><button data-lq69="guideQuest">🧭 Chỉ đường tới đây</button><p class="lq69-sub">Vị trí mục tiêu: (${pt[0]}, ${pt[1]}) · ${close?'Bạn đang ở gần điểm nhiệm vụ':'Di chuyển tới vị trí, rồi mở lại bằng F4'}</p></article>`;}
+ if(d.step===1)html+=`<div class="lq69-quest" style="margin-top:10px"><b>Chọn biểu tượng cho bức tranh cộng đồng</b><div class="lq69-answers">${['star','eye','wave'].map((k,i)=>`<button data-mural="${k}" class="${d.mural===k?'picked':''}">${['★ Ngôi sao','◉ Con mắt','≈ Làn sóng'][i]}</button>`).join('')}</div></div>`;
+ html+=`<p class="lq69-sub">Khám phá ${seen}/${VENUES.length} địa điểm mới. Tiến trình được lưu cùng trò chơi.</p>`;
+ }else if(uiTab==='venues'){
+ html+=`<div class="lq69-lead"><h3>20 công trình có thể bước vào</h3><p>Tìm đến cửa của từng công trình và nhấn E để khám phá nội thất. Nhấn F4 để ghi dấu địa điểm gần bạn.</p><b>Đã khám phá: ${seen}/20</b></div><div class="lq69-grid">`;
+ for(const v of VENUES){const isNear=near(sc,v.door,v.y+v.h,4.5);html+=`<div class="lq69-venue"><b style="color:#${v.color.toString(16).padStart(6,'0')}">${escapeHTML(v.name)}</b><span>${escapeHTML(v.zone)} · (${v.door},${v.y+v.h})</span><button data-visit="${escapeHTML(v.name)}" ${isNear?'':'disabled'}>${d.visits[v.name]?'✓ Đã ghé':isNear?'✦ Khám phá':'Đến gần cửa'}</button><button data-guide="${escapeHTML(v.name)}">🧭 Chỉ đường</button></div>`;}html+='</div>';
+ }else if(uiTab==='events'){
+ html+=`<div class="lq69-lead"><div class="lq69-sub">LỊCH THEO NGÀY & GIỜ TRONG GAME</div><h3>${escapeHTML(ev.name)}</h3><p>${escapeHTML(ev.desc)}</p><p>Địa điểm: <b>${escapeHTML(ev.site)}</b></p></div><div class="lq69-eventlist">`;
+ for(let i=0;i<EVENTS.length;i++){const evx=EVENTS[i];html+=`<div><b>Ngày ${i+1} (chu kỳ 4 ngày)</b><p>Ban ngày: ${escapeHTML(evx.day)}</p><p>Ban tối: ${escapeHTML(evx.night)}</p></div>`;}html+='</div>';
+ }else{html+=`<div class="lq69-lead"><h3>Tối ưu đồ họa</h3><p>Giữ các hệ thống V66–V68, chỉ điều chỉnh hiệu ứng bổ sung V69.</p></div>`;for(const [k,label] of [['lights','Ánh sáng sân khấu'],['crowd','Người tham dự lễ hội'],['particles','Hạt giấy và ánh sáng']])html+=`<label class="lq69-opt"><input type="checkbox" data-option="${k}" ${prefs[k]?'checked':''}/> ${label}</label>`;}
+ out.innerHTML=html;
+}
+function open(){if(!root||!active(getScene()))return;panel.hidden=false;picked=0;drawPanel()}
+function close(){if(panel)panel.hidden=true}
+function mount(){if(root)return;const css=document.createElement('style');css.textContent=`
+#lq69-root[hidden],#lq69-panel[hidden],#lq69-toast[hidden]{display:none!important}
+#lq69-root{position:fixed;inset:0;z-index:10021;pointer-events:none;font:13px system-ui,sans-serif;color:#fff}
+#lq69-open{position:absolute;top:148px;right:13px;pointer-events:auto;color:#fff1e3;border:1px solid #e1a4d5;background:linear-gradient(130deg,#38224aeb,#142f4aec);border-radius:9px;padding:9px 12px;cursor:pointer;box-shadow:0 6px 20px #0009;font-weight:800}
+#lq69-panel{position:absolute;inset:0;pointer-events:auto;background:#07101edb;display:grid;place-items:center;padding:10px;backdrop-filter:blur(4px)}
+#lq69-card{width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column;border:1px solid #8869a8;border-radius:15px;background:#151c32;color:#f4eefc;box-shadow:0 20px 60px #000c;overflow:hidden}
+#lq69-card header{display:flex;align-items:center;justify-content:space-between;gap:7px;background:#222b48;padding:13px 16px;border-bottom:1px solid #465474}
+#lq69-card header h2{margin:0;font-size:17px;color:#ffe1b3}#lq69-card button{font:inherit;cursor:pointer;border:1px solid #6585b7;border-radius:8px;padding:8px 10px;color:#fff;background:#2b476b}
+#lq69-card button:hover:not(:disabled){background:#376c96}#lq69-card button:disabled{opacity:.55;cursor:not-allowed}
+#lq69-nav{display:flex;gap:6px;overflow:auto;padding:9px;background:#171f35}#lq69-nav button{white-space:nowrap;flex:1}#lq69-nav .selected{background:#65508c;border-color:#d9add9}
+#lq69-body{overflow:auto;min-height:220px;padding:16px;line-height:1.52}#lq69-body h3{color:#fff2ca;font-size:17px;margin:3px 0 9px}#lq69-body p{margin:7px 0 11px}
+.lq69-lead{border-radius:11px;padding:13px;background:#202e4b;border:1px solid #425d84;margin-bottom:14px}.lq69-sub{color:#b6bdd9;font-size:11px;letter-spacing:.04em}
+.lq69-meter{height:8px;background:#323650;border-radius:9px;overflow:hidden;margin:10px 0}.lq69-meter i{display:block;height:100%;background:linear-gradient(90deg,#79c9ea,#efa4c5);transition:width .25s}
+.lq69-quest{background:#20283e;padding:15px;border:1px solid #4b5c85;border-radius:12px}.lq69-answers{display:grid;gap:8px;margin:12px 0}.lq69-answers button{text-align:left}.lq69-answers .picked{background:#655085!important;border-color:#ffd8a9!important}
+#lq69-card button.lq69-action{background:#8c4f91;border-color:#f2c5ea;font-weight:800}.lq69-success{padding:16px;border-radius:10px;border:1px solid #7dccbb;background:#215650;margin-bottom:12px}
+.lq69-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.lq69-venue{display:flex;flex-direction:column;gap:5px;background:#1f3049;border:1px solid #3a5275;border-radius:9px;padding:10px}.lq69-venue span{color:#9fafca;font-size:11px}.lq69-venue button{align-self:flex-start;font-size:11px!important}
+.lq69-eventlist{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lq69-eventlist>div{background:#1e2f47;border-radius:9px;padding:12px}.lq69-opt{display:flex;align-items:center;gap:10px;padding:9px}.lq69-opt input{accent-color:#a989d0}
+#lq69-toast{position:absolute;top:21%;left:50%;transform:translateX(-50%);background:#1d4b55;border:1px solid #bfe4d3;padding:12px 15px;border-radius:9px;box-shadow:0 8px 20px #000a;max-width:80vw}
+@media(max-width:540px){#lq69-open{top:125px;right:6px;padding:7px;font-size:11px}.lq69-grid,.lq69-eventlist{grid-template-columns:1fr}#lq69-card header h2{font-size:14px}#lq69-body{padding:10px}}
+`;document.head.appendChild(css);
+ root=document.createElement('div');root.id='lq69-root';root.hidden=true;
+ root.innerHTML=`<button id="lq69-open" title="F4 · Art District Festival">🎵 V69 FESTIVAL</button><div id="lq69-toast" hidden role="status"></div><div id="lq69-panel" hidden><section id="lq69-card" role="dialog" aria-label="Art District Festival" aria-modal="true"><header><h2>✦ ART DISTRICT · NEON CARNIVAL</h2><button data-lq69="close">✕</button></header><nav id="lq69-nav"></nav><main id="lq69-body"></main></section></div>`;document.body.appendChild(root);panel=document.getElementById('lq69-panel');toastEl=document.getElementById('lq69-toast');
+ document.getElementById('lq69-open').addEventListener('click',open);
+ root.addEventListener('click',e=>{if(e.target===panel){close();return;}const t=e.target.closest('button');if(!t)return;const sc=getScene();
+  if(t.dataset.lq69Tab){uiTab=t.dataset.lq69Tab;drawPanel();return;}
+  if(t.dataset.answer!==undefined){picked=Number(t.dataset.answer);drawPanel();return;}
+  if(t.dataset.mural){data(sc).mural=t.dataset.mural;save(sc);drawPanel();return;}
+  if(t.dataset.visit){const v=BY_NAME.get(t.dataset.visit);if(v)trackVisit(sc,v);drawPanel();return;}
+  if(t.dataset.guide){const v=BY_NAME.get(t.dataset.guide);if(v&&guideTo(sc,v.door,v.y+v.h,v.name))close();return;}
+  const a=t.dataset.lq69;if(a==='close'){close();return;}
+   if(a==='guideArt'){const mod=window.LQArtV71;const tasks=mod?.activities||[],d=mod?.progress?.(sc)?.done||[],next=tasks.find(t=>!d.includes(t.id));const goal=next?.at||[9,32];if(guideTo(sc,...goal,next?.place||'Mural Workshop'))close();return;}
+  if(a==='guideQuest'){const m=MISSION[data(sc).step];if(m){const pt=missionPoint(m);if(guideTo(sc,...pt,m.place))close();}return;}
+  if(a==='complete'){guide=null;const d=data(sc);const m=MISSION[d.step];if(!m)return;const pt=missionPoint(m);if(!near(sc,...pt,5.1)){toast('Cần tới gần địa điểm.');return;}if(picked!==m.correct){toast('Thử lại: hãy chọn câu tiếng Anh tự nhiên và đầy đủ nhất.');return;}d.step++;if(d.step>=6)d.won=true;save(sc);toast(m.story);picked=0;drawPanel();}
+ });
+ root.addEventListener('change',e=>{const k=e.target?.dataset?.option;if(k in prefs){prefs[k]=!!e.target.checked;toast('Đã lưu thiết lập hiển thị tạm thời.')}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel&&!panel.hidden){e.preventDefault();e.stopImmediatePropagation();close();return;}
+  if(e.key!=='F4'||e.repeat||e.altKey||e.metaKey||e.ctrlKey||e.defaultPrevented)return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable)return;
+  if(!active(getScene()))return;e.preventDefault();e.stopImmediatePropagation();panel.hidden?open():close();},true);
+}
+function cloneCrowd(sc){if(!active(sc)||crowd.length||!prefs.crowd)return;const sprites=(sc.npcs||[]).filter(n=>n?.sprite?.texture?.key&&n.sprite.texture.key!=='__MISSING');if(!sprites.length)return;
+ const sites=[[83,14],[100,14],[83,32],[100,32],[83,50],[100,50],[83,66],[100,66],[83,83],[100,83],[11,72],[29,72],[47,72],[65,72],[11,90],[65,90]];
+ for(let i=0;i<sites.length;i++){const src=sprites[(i*3+1)%sprites.length],pt=sites[i];if(sc.area.isTileBlocked(pt[0],pt[1]))continue;
+ const sp=sc.add.sprite((pt[0]+.5)*T,(pt[1]+.5)*T,src.sprite.texture.key).setDepth(7.3).setScale(.92);sp.setVisible(true);
+ crowd.push({sprite:sp,x:pt[0]+.5,y:pt[1]+.5,home:pt,face:1,seed:i,base:src});
+ }
+}
+function clearCrowd(){for(let c of crowd)try{c.sprite.destroy()}catch(_){}crowd=[]}
+function crowdFrame(sc,time){if(!prefs.crowd){for(let c of crowd)c.sprite.setVisible(false);return}cloneCrowd(sc);const cam=sc.cameras?.main;
+ for(let c of crowd){const phase=time*.00055+c.seed*2;const dx=Math.sin(phase)*.78,dy=Math.cos(phase*.57)*.5;

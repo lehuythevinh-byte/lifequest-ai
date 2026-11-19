@@ -1,0 +1,1000 @@
+    col(g,q.roof,x+12,y+6,w-24,roofH-5);
+    col(g,q.hi,x+17,y+9,w-34,6,.78);
+    col(g,0x142c3f,x+9,y+roofH-9,w-18,12,.78);
+    col(g,0xe3f0de,x+15,y+roofH-11,w-30,3,.52);
+    // Regular pilasters and glass windows are on the wall, not on the roof.
+    const wy=y+roofH+21;
+    for(let i=0;i<7;i++){
+      const xx=x+32+i*(w-64)/6;
+      if(Math.abs(xx-d)<40)continue;
+      tBox(g,xx-12,wy,25,44,q.glass,q.shade);
+      col(g,0xcdf3e9,xx-8,wy+5,6,12,.60);
+      col(g,q.frame,xx-1,wy+4,2,34);
+      col(g,0x6c8b8b,xx-15,wy+44,31,5,.90);
+    }
+    // Door is always in the exact, existing tile position.
+    col(g,0x334c5d,d-23,y+h-65,46,62);
+    col(g,0xa7c5bd,d-19,y+h-60,38,57);
+    col(g,0x326b80,d-17,y+h-57,34,52);
+    col(g,0x8fd8d5,d-13,y+h-54,12,34,.90);
+    col(g,0x6fb6c1,d+3,y+h-54,9,34,.87);
+    col(g,0x264b67,d-1,y+h-54,3,51);
+    col(g,0xffe4a1,d+11,y+h-27,4,4);
+    col(g,0x4c6b73,d-29,y+h-5,58,6);
+    col(g,0xd9e4db,d-25,y+h-4,50,2,.80);
+    // Bespoke roofs, each fundamentally different: glass atrium, pavilion,
+    // service hub, warm creative studio.
+    if(index===0){
+      // Headquarters: deep blue steel lattice and striking central glass atrium.
+      for(let k=0;k<5;k++){
+        const xx=x+27+k*(w-54)/4;
+        col(g,0x16374c,xx,y+17,7,roofH-28,.90);
+        col(g,0x6cb5c4,xx+1,y+19,2,roofH-34,.85);
+      }
+      tBox(g,x+w*.26,y+35,w*.48,roofH-62,0x5eaabf,0x153a58);
+      for(let k=0;k<6;k++){
+        let xx=x+w*.28+k*(w*.44)/6;
+        col(g,k%2?0x80d3d9:0x4b94ae,xx,y+43,w*.44/6-3,roofH-79,.96);
+      }
+      col(g,0xeffff8,x+w*.30,y+47,w*.40,5,.45);
+      col(g,0x193e59,x+24,y+roofH-35,79,10,.90);
+      for(let i=0;i<3;i++) col(g,0xd9eadd,x+34+i*21,y+roofH-34,14,7,.85);
+    }else if(index===1){
+      // Meeting Studio: pale ceramic stepped roof and long glazed skylights.
+      col(g,0xc8e4df,x+25,y+25,w-50,roofH-52);
+      col(g,0x709eae,x+36,y+34,w-72,roofH-72);
+      for(let k=0;k<4;k++){
+        let yy=y+39+k*(roofH-80)/3;
+        col(g,0x477e9b,x+48,yy,w-96,11,.96);
+        col(g,0x9fe1e2,x+49,yy+2,w-98,3,.78);
+      }
+      for(let i=0;i<4;i++){
+        col(g,0xf1eade,x+25+i*(w-50)/4,y+16,8,roofH-25,.77);
+      }
+      col(g,0x4a8193,x+w/2-44,y+22,88,7);
+      col(g,0xd9e7e1,x+w/2-29,y+23,58,3,.94);
+    }else if(index===2){
+      // Help Desk: graphite service roof, three cooling cells and code panels.
+      for(let i=0;i<5;i++){
+        const xx=x+23+i*(w-46)/5;
+        col(g,0x182e40,xx,y+17,8,roofH-28,.88);
+        col(g,0x7395a0,xx+1,y+19,2,roofH-32,.56);
+      }
+      for(let i=0;i<3;i++){
+        const xx=x+75+i*(w-150)/2;
+        tBox(g,xx-37,y+36,74,62,0x496d7b,0x142f43);
+        ellipse(g,0x183c50,xx,y+67,42,42,1);
+        ellipse(g,0x93c4be,xx,y+67,27,27,.92);
+        col(g,0x28536c,xx-4,y+52,8,30);
+        col(g,0x28536c,xx-15,y+63,30,8);
+      }
+      for(let i=0;i<4;i++) col(g,0x8ce9cb,x+29+i*22,y+roofH-27,12,4,.82);
+    }else{
+      // Mail & Projects: timber-and-green roof with solar bands and mail icon.
+      for(let i=0;i<4;i++){
+        const xx=x+29+i*(w-58)/4;
+        col(g,0x234b56,xx,y+23,43,roofH-47);
+        for(let k=0;k<4;k++) col(g,0x5d9eb3,xx+5,y+29+k*19,33,13,.95);
+      }
+      col(g,0xd4d0af,x+w*.36,y+33,w*.27,58,.92);
+      col(g,0x2e6c75,x+w*.36+8,y+43,w*.27-16,34);
+      col(g,0xeff4d8,x+w*.36+10,y+45,w*.27-20,5);
+      col(g,0xc6d9cf,x+w*.46,y+65,w*.08,4);
+      for(let k=0;k<7;k++) col(g,0x90b397,x+20+k*55,y+roofH-21,24,4,.76);
+    }
+    // Carefully drawn entrance awnings, small planted accents outside walls.
+    col(g,q.shade,d-34,y+h-76,68,10);
+    col(g,q.hi,d-31,y+h-74,62,5);
+    col(g,0xfaf5dd,d-22,y+h-70,44,2,.68);
+    if(index===3){col(g,0xc4a17e,d+48,y+h-63,38,43);col(g,0xe7cba1,d+52,y+h-53,30,3);}
+    techFutureBuilding(g,b,index);
+  }
+  function techNexus(g){
+    const x=27.5*T,y=9.7*T;
+    // Four concentric mosaic rings; the tower rises within the square plaza.
+    ellipse(g,0x2b6578,x+3,y+18,194,80,.20);
+    col(g,0x578a95,x-79,y+5,158,38);
+    col(g,0xd5dbd1,x-72,y+10,144,25);
+    for(let k=0;k<7;k++){
+      let xx=x-67+k*21;
+      col(g,k%2?0xa5cac6:0x7fb2b9,xx,y+13,15,5,.86);
+    }
+    col(g,0x376f81,x-50,y-3,100,34);
+    col(g,0x9ed1c5,x-45,y+1,90,21);
+    col(g,0x25516a,x-33,y-108,66,116);
+    col(g,0x397e95,x-25,y-102,50,110);
+    col(g,0x79c7d0,x-15,y-98,19,100,.93);
+    col(g,0xb4f0de,x-13,y-97,6,86,.76);
+    col(g,0x1c4d6e,x+11,y-91,11,87);
+    for(let k=0;k<5;k++){
+      const yy=y-87+k*19;
+      col(g,0xd3f4ea,x-20,yy,38,4,.82);
+      col(g,0x2b768e,x-26,yy+5,51,4,.62);
+    }
+    // Faceted, teal beacon at the top; no strobe or full-screen flash.
+    g.fillStyle(0x28556e,1).fillTriangle(x-27,y-112,x,y-154,x+27,y-112);
+    g.fillStyle(0x7ed4cb,1).fillTriangle(x-20,y-115,x,y-145,x,y-111);
+    g.fillStyle(0xa9ead9,1).fillTriangle(x,y-145,x+20,y-115,x,y-111);
+    col(g,0xf7e4a2,x-3,y-150,6,9,.93);
+    // Physical progress indicator housing: LED status is driven by quest saves.
+    for(let k=0;k<3;k++){
+      let xx=x-32+k*27;
+      col(g,0x23445f,xx-8,y+23,18,11);
+      col(g,0x627986,xx-5,y+25,12,6,.9);
+    }
+    // V19 sculpted architectural fins, roof lights, tiled inlay and glass rails.
+    for(const side of [-1,1]){
+      const edge=x+side*43;
+      col(g,0x2b6477,edge-5,y-47,10,49);
+      col(g,0x7caeb6,edge-3,y-43,6,40);
+      col(g,0x9be8df,edge-1,y-39,2,26,.72);
+      for(let k=0;k<5;k++)col(g,0xc2ddd1,edge+side*7,y-39+k*10,10,3,.75);
+      col(g,0x2e586d,edge-13,y+5,26,5);
+      ellipse(g,0xace9d9,edge,y-50,13,8,.86);
+    }
+    for(let k=0;k<8;k++){
+      const xx=x-69+k*20;
+      col(g,k%2?0x86b9b5:0xabcac5,xx,y+15,15,4,.68);
+      col(g,0xe4f0e3,xx+2,y+16,6,1,.60);
+    }
+    techFutureNexus(g);
+  }
+  function techGarden(g){
+    const x=27.5*T,y=27.7*T;
+    ellipse(g,0x2c5b5b,x,y+12,295,130,.16);
+    col(g,0x67998a,x-131,y-59,262,110);
+    col(g,0xb5c5aa,x-123,y-53,246,98);
+    col(g,0x42765e,x-113,y-46,226,84);
+    col(g,0x75b18c,x-99,y-35,198,60);
+    // Cross-axis paved walk retains the central traversal.
+    col(g,0xc9d5cd,x-18,y-53,36,104);
+    col(g,0xdbe2d9,x-12,y-51,24,100);
+    col(g,0xb1c5b7,x-123,y-6,246,22);
+    col(g,0xe4e2ce,x-121,y-1,242,12);
+    for(let side of [-1,1]){
+      tPlanter(g,x+side*68-44,y-34,88);
+      tBench(g,x+side*81-26,y+16);
+    }
+    for(let k=0;k<16;k++){
+      let a=k*Math.PI*2/16;
+      let xx=x+Math.cos(a)*100, yy=y+Math.sin(a)*33;
+      ellipse(g,k%3===0?0xedc5ae:k%3===1?0xc7d9a9:0xc1c7e8,xx,yy,7,6,.92);
+    }
+    col(g,0x578c83,x-18,y-18,36,36,.95);
+    col(g,0xb2d5c6,x-12,y-12,24,24,.94);
+    col(g,0x6a9dab,x-7,y-7,14,14,.9);
+    col(g,0xe8f3d8,x-3,y-4,6,4,.77);
+    // V19: concentric fountain paving, pixel water jets, wood-and-steel benches.
+    for(const rr of [64,49,34]){
+      g.lineStyle(2,rr===64?0x3b756d:0xd1e6d9,.66);
+      g.strokeEllipse(x,y,rr*2,rr*.65);
+    }
+    for(const off of [-18,0,18]){
+      col(g,0xeff6df,x+off-1,y-30+(Math.abs(off)/3),3,8,.8);
+      ellipse(g,0xb8efea,x+off,y-32+(Math.abs(off)/3),7,4,.85);
+    }
+    for(const dx of [-115,115]){
+      col(g,0x315f63,x+dx-9,y+35,18,4);
+      col(g,0xd6cfaa,x+dx-12,y+29,24,6);
+      col(g,0x466c6d,x+dx-10,y+25,3,11);
+      col(g,0x466c6d,x+dx+8,y+25,3,11);
+    }
+    techFutureGarden(g);
+  }
+  function techGround(g,a){
+    const ww=W*T,hh=H*T,R=rnd(521802);
+    col(g,0x478a91,0,0,ww,hh);
+    // Authored grass patches: clustered pixels, not a dense random spray.
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const xx=x*T,yy=y*T;
+      col(g,(x*3+y*7)%11<5?0x79c5ac:0x378e8b,xx,yy,T,T,.25);
+      if((x*7+y*13)%7===0){
+        col(g,0x4e927e,xx+7,yy+11,6,2,.42);
+        col(g,0xb8d8b5,xx+17,yy+24,9,3,.55);
+      }
+    }
+    for(let k=0;k<420;k++){
+      const x=R()*ww,y=R()*hh;
+      if((x>5*T&&x<51*T)&&(y>4*T&&y<31*T))continue;
+      col(g,k%3?0x427f72:0xe6d69c,x,y,3+R()*4,2+R()*3,.25);
+    }
+    // Raised walkways of the original 56x34 traversal graph remain visible.
+    col(g,0x487f82,0,15.4*T,ww,4.2*T);
+    col(g,0x649fae,0,15.6*T,ww,3.8*T);
+    col(g,0x9dc8c7,0,15.9*T,ww,3.3*T);
+    col(g,0x4c878c,25.7*T,0,4.8*T,hh);
+    col(g,0x649aa8,25.9*T,0,4.4*T,hh);
+    col(g,0xa4ccc8,26.1*T,0,4*T,hh);
+    // Main plaza plus four building forecourts.
+    const pavements=[[21,11.6,14,12.3],[6,12,15,3],[35,12,15,3],[6,20.6,15,3.4],[35,20.6,15,3.4]];
+    for(const [x,y,w,h] of pavements){
+      col(g,0x639c98,x*T,y*T,w*T,h*T);
+      col(g,0x9cc7c6,x*T+7,y*T+7,w*T-14,h*T-14);
+      for(let ty=Math.ceil(y);ty<y+h;ty++)for(let tx=Math.ceil(x);tx<x+w;tx++){
+        const xx=tx*T,yy=ty*T;
+        if(xx<(x*T+7)||yy<(y*T+7)||xx>(x+w)*T-28||yy>(y+h)*T-28)continue;
+        tLine(g,0x90b9b2,xx+2,yy+30,xx+29,yy+30,1,.31);
+        tLine(g,0xffffff,xx+3,yy+3,xx+24,yy+3,1,.20);
+        if((tx+ty)%3===0)col(g,0x85aaa8,xx+7,yy+8,5,3,.22);
+      }
+    }
+    // Discrete curb and stepping-stone rhythm along the main road.
+    for(let x=0;x<W;x++){
+      let xx=x*T;
+      col(g,0x78a9a9,xx+2,15.5*T,26,3,.65);
+      col(g,0xf9f4df,xx+8,19.3*T,16,2,.72);
+      if(x%3===0)col(g,0xffffff,xx+12,17.3*T,12,3,.28);
+    }
+    for(let y=1;y<H-1;y++){
+      if(y>=16&&y<=19)continue;
+      col(g,0xffffff,26.12*T,y*T+13,3,12,.28);
+      col(g,0x619995,30*T-1,y*T+16,3,11,.32);
+    }
+    // Embedded circuit motif: the engraving belongs to the ground, not a blocking prop.
+    for(let sign of [-1,1]){
+      let xx=27.5*T+sign*138;
+      tLine(g,0x72b7ae,xx,13.1*T,xx,15.1*T,3,.6);
+      tLine(g,0x72b7ae,xx,13.1*T,xx-sign*45,13.1*T,3,.6);
+      ellipse(g,0xc4ead7,xx-sign*45,13.1*T,11,11,.76);
+      tLine(g,0x72b7ae,xx,21.2*T,xx,23.5*T,3,.6);
+      ellipse(g,0xd2ece0,xx,23.4*T,10,10,.68);
+    }
+    techFutureGround(g);
+    // Non-blocking perimeter landscaping and roof-side paths.
+    for(const [x,y,v] of [[2,3,0],[53,3,1],[2,29,2],[53,30,1],[3,10,3],[53,11,2],[3,23,1],[52,24,3]]){
+      tTree(g,x*T,y*T,v);
+    }
+    for(const [x,y,w] of [[6,13.8,108],[14,13.8,96],[36,13.8,98],[45,13.8,90],[6,22.5,105],[14,22.5,94],[36,22.5,95],[45,22.5,104]]){
+      tPlanter(g,x*T,y*T,w);
+    }
+    for(const [x,y] of [[20.4,12.2],[34.5,12.2],[20,22.7],[34.6,22.7],[23.1,14.8],[32,14.8]])tLamp(g,x*T,y*T);
+    for(const [x,y] of [[7,12.4],[38,12.4],[9,22],[38,22]])tBench(g,x*T,y*T);
+    // Small authored green pockets fill the perimeter without blocking paths.
+    for(const [x,y,k] of [[3.5,7,0],[52.3,7.2,1],[3.5,25.7,2],[52.3,26.1,3]]){
+      tPocketGarden(g,x*T,y*T,k);
+    }
+    // Two quiet pedestrian crossings visually connect the office courts.
+    for(const bx of [19.1,35.1]){
+      for(let k=0;k<4;k++){
+        const xx=(bx+k*.42)*T;
+        col(g,0xf9f2df,xx,16.35*T,10,2.45*T,.56);
+        col(g,0xaacac7,xx+1,16.38*T,2,2.39*T,.31);
+      }
+    }
+    a.buildings.forEach((b,i)=>techBuilding(g,b,i));
+    techNexus(g);
+    techGarden(g);
+    // Contextual platforms behind each teacher, without interactive blockers.
+    function workPad(x,y,kind){
+      const xx=x*T,yy=y*T;
+      col(g,0x476e73,xx-42,yy-12,84,44,.82);
+      col(g,0xbdd8cc,xx-39,yy-9,78,38,.96);
+      for(let i=0;i<3;i++)col(g,0x80aaa7,xx-31+i*22,yy+18,16,3,.7);
+      if(kind==='meeting'){
+        col(g,0x2c5971,xx-29,yy-7,58,18);
+        col(g,0xe1cb8c,xx-23,yy-3,46,4,.91);
+        for(let i=0;i<3;i++)col(g,0xa6e4d9,xx-18+i*16,yy+3,10,4,.8);
+      }else if(kind==='issue'){
+        col(g,0x2a4d65,xx-29,yy-8,58,21);
+        for(let i=0;i<3;i++)col(g,[0xe5ac87,0xe8d898,0x93dcc2][i],xx-23+i*17,yy-1,11,6,.91);
+      }else{
+        col(g,0x284f5e,xx-27,yy-9,54,20);
+        col(g,0xe5e6d6,xx-20,yy-5,40,12);
+        col(g,0x78b5b7,xx-15,yy,29,2);
+      }
+    }
+    workPad(22.2,12.7,'meeting');
+    workPad(33,12.7,'issue');
+    workPad(32,22.7,'mail');
+    // Company gateway and wayfinder at the east border, staying off warp tiles.
+    col(g,0x325f72,51.3*T,13.5*T,90,16);
+    col(g,0x97cdbd,51.4*T,13.58*T,84,5,.92);
+    tLine(g,0xe2e5ca,51.5*T,13.95*T,51.5*T,15*T,2,.84);
+  }
+
+  /* V21 ROYAL CAPITAL: self-contained graphics, neither reuse nor recolor other maps. */
+  const RC={ivory:0xf1dfbb,gold:0xdab766,burgundy:0x813e50,blue:0x405f7d,
+    stone:0xc1ad90,ink:0x56465a,deep:0x29374d,green:0x567052,water:0x739bb5};
+  const rRect=(g,c,x,y,w,h,a=1)=>{if(w>0&&h>0){g.fillStyle(c,a);g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}};
+  const rOval=(g,c,x,y,w,h,a=1)=>{g.fillStyle(c,a);g.fillEllipse(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+  const rLine=(g,c,ax,ay,bx,by,w=2,a=1)=>{g.lineStyle(w,c,a);g.lineBetween(ax,ay,bx,by);};
+  function royalFlower(g,x,y,i=0){
+    rRect(g,0x456348,x-1,y-3,2,9);const c=[0xe9a3b1,0xf2d590,0xb3a8d6,0xf8ece1][i%4];
+    rOval(g,c,x,y-5,8,5,.95);rRect(g,0xffe6a8,x-1,y-6,2,2);
+  }
+  function royalHedge(g,x,y,w,h=12){
+    rRect(g,0x334e40,x+3,y+4,w-6,h,0.4);rRect(g,0x405d43,x,y,w,h);
+    rRect(g,0x73966b,x+2,y+1,w-5,Math.max(3,h/2));
+    for(let a=5;a<w-5;a+=11)rRect(g,0xa6bc83,x+a,y+2,5,2,.73);
+  }
+  function royalTree(g,x,y,scale=1){
+    const c=(v)=>v*scale;
+    rOval(g,0x423b32,x+4,y+10,c(35),c(15),.25);
+    rRect(g,0x675644,x-4*scale,y-c(22),c(8),c(35));
+    rRect(g,0x9a795c,x-3*scale,y-c(21),c(2),c(29),.7);
+    rOval(g,0x334f43,x,y-c(39),c(33),c(64));
+    rOval(g,0x5e7e5a,x-c(4),y-c(43),c(26),c(55));
+    rOval(g,0x86a377,x-c(8),y-c(53),c(10),c(22),.85);
+    for(let j=0;j<4;j++)rRect(g,0xc6d4a5,x-c(9)+j*c(5),y-c(53)+j*c(8),c(4),c(3),.6);
+  }
+  function royalBollard(g,x,y){
+    rOval(g,0x4a474c,x,y+9,15,7,.23);rRect(g,0x554d58,x-3,y-11,6,22);
+    rRect(g,0xe8c988,x-5,y-17,10,8);rRect(g,0xfff6cc,x-3,y-16,6,4,.87);
+    rRect(g,0x3c3544,x-5,y-20,10,3);rRect(g,0xd7ae68,x-4,y-10,8,2);
+  }
+  function royalFlag(g,x,y,alt=false){
+    rRect(g,0x6c6e76,x,y-51,3,53);rOval(g,0xf6dd97,x+1,y-53,7,7);
+    rRect(g,alt?0x476a80:0x8d3b54,x+3,y-47,25,16);
+    rRect(g,alt?0x98b4bd:0xf6db91,x+8,y-41,11,4);
+    rRect(g,0xd6ac65,x+3,y-47,3,16);
+  }
+  function royalBench(g,x,y,flip=0){
+    const dir=flip?-1:1;
+    rOval(g,0x4a423d,x,y+8,44,10,.18);
+    rRect(g,0x6e543f,x-18,y-1,36,7);
+    rRect(g,0xc9a16e,x-16,y-3,32,3,.96);
+    rRect(g,0x5b4738,x-16*dir,y-12,4,16);
+    rRect(g,0x5b4738,x+12*dir,y-12,4,16);
+    rRect(g,0x6a4d40,x-16,y-15,32,4,.95);
+    rRect(g,0xcba97a,x-14,y-17,28,2,.82);
+  }
+  function royalPlanter(g,x,y,mode=0){
+    rOval(g,0x453a34,x,y+8,40,12,.17);
+    rRect(g,0x7d6552,x-16,y-6,32,15);
+    rRect(g,0xe6d4b6,x-14,y-5,28,9);
+    rRect(g,0xc0a27e,x-14,y+3,28,3,.86);
+    for(let k=0;k<4;k++){
+      const px=x-10+k*7,py=y-8-(k%2)*2;
+      rOval(g,mode%2?0x4e754c:0x5a824f,px,py,11,10,.96);
+      if(k!==1)rOval(g,[0xf0c49a,0xd8a1b7,0xcfd5a2,0xf5e3aa][(k+mode)%4],px+(k%2?1:-1),py-4,5,4,.85);
+    }
+  }
+  function royalCanopy(g,x,y,mode=0){
+    const aw=54,roof=mode%2?0x7a4154:0x46627a;
+    rOval(g,0x362d31,x,y+18,74,12,.18);
+    for(const dx of [-21,21]){rRect(g,0x7a644e,x+dx-2,y-6,4,28);rRect(g,0xe8dbc5,x+dx-1,y-5,2,22,.65);}
+    g.fillStyle(roof,1).fillTriangle(x-aw/2,y-4,x,y-23,x+aw/2,y-4);
+    g.fillStyle(mode%2?0xb57a85:0x87a4b9,1).fillTriangle(x-aw/2+8,y-7,x,y-18,x+aw/2-8,y-7);
+    rRect(g,0xe6cf99,x-aw/2-2,y-3,aw+4,5);
+    rRect(g,0x85684e,x-18,y+2,36,9);
+    for(let i=0;i<3;i++)rRect(g,[0xe8d3a7,0xc9e1d6,0xd9b8aa][(i+mode)%3],x-13+i*10,y+4,7,5,.94);
+  }
+  function royalMemorial(g,x,y){
+    rOval(g,0x413b39,x,y+15,64,14,.2);
+    rRect(g,0x8b7a68,x-22,y+1,44,15);
+    rRect(g,0xe8dac1,x-18,y+3,36,10);
+    rRect(g,0xbda17d,x-12,y-23,24,27);
+    rRect(g,0xf5ead6,x-9,y-21,18,21);
+    rOval(g,0xead8b2,x,y-28,34,10);
+    rRect(g,0x8d3f54,x-3,y-18,6,13);
+    rRect(g,0xffe8a5,x-1,y-15,2,8,.92);
+  }
+  function royalRuinCluster(g,x,y){
+    rOval(g,0x4b4037,x+4,y+10,70,15,.17);
+    for(const [dx,dy,w,h,c] of [[-20,-6,18,13,0xcdbca1],[-2,-10,22,17,0xb5a88e],[22,-4,15,12,0xdccdb3]]){
+      rRect(g,0x817568,x+dx,y+dy,w,h);
+      rRect(g,c,x+dx+2,y+dy+2,w-4,h-4,.93);
+      rRect(g,0xf4eee0,x+dx+3,y+dy+3,w-8,2,.4);
+    }
+    for(let i=0;i<5;i++)rOval(g,i%2?0x5f8453:0x73956a,x-24+i*13,y-8+(i%2?0:2),10,8,.9);
+  }
+
+  function royalParterre(g,x,y,w,h,flip=0){
+    // Formal parterre rather than a flat grass rectangle: carved borders,
+    // clipped hedges, mirrored scrollwork and controlled color accents.
+    rRect(g,0x8d816b,x-6,y-5,w+12,h+10,.72);
+    rRect(g,0xe4d6b8,x-3,y-3,w+6,h+6);
+    rRect(g,0x496c4b,x+5,y+5,w-10,h-10);
+    rRect(g,0x75936a,x+10,y+10,w-20,h-20);
+    royalHedge(g,x+4,y+3,w-8,9);
+    royalHedge(g,x+4,y+h-12,w-8,9);
+    const cx=x+w/2,cy=y+h/2;
+    rOval(g,0x3b5d42,cx,cy,Math.min(w*.77,150),Math.min(h*.7,90));
+    rOval(g,0xb2c19a,cx,cy,Math.min(w*.65,125),Math.min(h*.6,68));
+    rOval(g,0x53744e,cx,cy,Math.min(w*.50,99),Math.min(h*.51,49));
+    rOval(g,0xd8c59a,cx,cy,Math.min(w*.23,43),Math.min(h*.31,25));
+    rLine(g,0xc6ce9d,x+12,cy,x+w-12,cy,4,.7);
+    // Two mirrored ribbon beds, never spilling onto adjacent roads.
+    for(const side of [-1,1]){
+      const xx=cx+side*w*.28;
+      rOval(g,0x436c48,xx,cy,Math.min(w*.17,38),Math.min(h*.39,35));
+      rOval(g,0xe0ceac,xx,cy,Math.min(w*.07,18),Math.min(h*.17,17));
+      for(let j=0;j<6;j++){
+        const py=y+14+j*(h-28)/5;
+        royalFlower(g,xx+(side*5),py,(j+flip+(side>0?1:0))%4);
+      }
+    }
+    // Accent flowers on the formal outer border only.
+    for(let j=0;j<9;j++){
+      const px=x+17+j*(w-34)/8;
+      royalFlower(g,px,y+15,flip+j);
+      royalFlower(g,px,y+h-16,flip+j+2);
+    }
+  }
+
+  function royalRoadNetwork(g,routes){
+    const drawing=(border)=>{
+      for(const {path,width} of routes){
+        const size=width+(border?9:0),color=border?0x9c876b:0xe6d2af;
+        for(let i=1;i<path.length;i++){
+          const a=path[i-1],b=path[i];
+          rLine(g,color,a[0],a[1],b[0],b[1],size);
+        }
+        // Round the joints and termini to prevent broken joins on diagonals.
+        for(const pt of path)rOval(g,color,pt[0],pt[1],size,size);
+      }
+    };
+    drawing(true);
+    drawing(false);
+    // Cobble joints are intentionally small, offset and low-contrast.
+    // There are no thick centre-lines crossing junctions or sharp end caps.
+    for(const {path,width} of routes){
+      for(let i=1;i<path.length;i++){
+        const a=path[i-1],b=path[i],d=Math.hypot(b[0]-a[0],b[1]-a[1]);
+        const n=Math.max(1,Math.floor(d/36));
+        for(let j=1;j<n;j++){
+          const q=j/n,x=a[0]+(b[0]-a[0])*q,y=a[1]+(b[1]-a[1])*q;
+          rRect(g,0x9f886d,x-4,y-2,8,2,.13);
+        }
+      }
+    }
+  }
+  function royalRoad(g,path,width){royalRoadNetwork(g,[{path,width}]);}
+
+  // V27.2: paths are authored as a connected topological street graph.
+  // Separate branches never run through the occupied house footprint.
+  function v27DoorRoutes(a){
+    const t=(x,y)=>[x*T,y*T];
+    const specs=[
+      {name:'CROWN PALACE',width:57,p:[[44.5,19],[44.5,25.8]]},
+      {name:'GRAND OPERA',width:36,p:[[16.5,36],[16.5,36.75],[26.6,36.75],[30,39.8]]},
+      {name:'ROYAL ACADEMY',width:36,p:[[71.5,36],[71.5,36.75],[61.4,36.75],[58,39.8]]},
+      {name:'GALLERY OF DYNASTIES',width:37,p:[[71.5,54],[71.5,54.8],[62,54.8],[62,42],[58.2,40.1]]},
+      {name:'HOUSE OF AURELIA',width:34,p:[[15.5,17],[15.5,17.9],[24.6,17.9],[24.6,24.4],[26.3,26.1]]},
+      {name:'HOUSE OF VALMONT',width:34,p:[[72.5,17],[72.5,17.9],[63.4,17.9],[63.4,24.4],[61.7,26.1]]},
+      {name:'HOUSE OF SERAPHINE',width:35,p:[[15.5,53],[15.5,54.8],[25,54.8]]},
+      {name:'HOUSE OF CORVEN',width:35,p:[[29.5,54],[29.5,54.8],[25,54.8]]}
+    ];
+    // Single shared lane for the two southwest houses; no parallel stray
+    // outlines and no illegal path across the fortified gate tower.
+    specs.push({name:'ROYAL SOUTHWEST LANE',width:39,
+      p:[[25,54.8],[25,42.4],[30,40.1]]});
+    return specs.map(entry=>{
+      const b=a.buildings.find(v=>v.name===entry.name);
+      if(b){entry.p[0]=[b.door+.5,b.y+b.h];}
+      return {name:entry.name,path:entry.p.map(v=>t(...v)),width:entry.width};
+    });
+  }
+  function v27DoorAprons(g,a){
+    // Same physical threshold as the E-key interaction. Two very shallow
+    // steps stop at the doorstep and do not close the walking lane.
+    for(const b of a.buildings){
+      const cx=(b.door+.5)*T,y=(b.y+b.h)*T;
+      rRect(g,0xc7ac87,cx-25,y-1,50,3,.72);
+      rRect(g,0xf6e8ce,cx-22,y-1,44,2,.94);
+    }
+  }
+
+  function royalFountain(g,cx,cy){
+    // Multi-tier marble fountain scaled for an imperial ceremonial court.
+    rOval(g,0x3a3b45,cx+7,cy+24,248,117,.28);
+    rOval(g,0x8f8179,cx,cy+8,244,143);
+    rOval(g,0xf8ebd2,cx,cy+3,234,132);
+    rOval(g,0xa99072,cx,cy-1,219,117);
+    rOval(g,0x315a74,cx,cy-4,210,107);
+    rOval(g,0x5791a1,cx-6,cy-14,188,84);
+    rOval(g,0x8cc4c5,cx-15,cy-19,123,38,.6);
+    for(let j=0;j<16;j++){
+      const angle=j*Math.PI*2/16;
+      const px=cx+Math.cos(angle)*112,py=cy+Math.sin(angle)*57;
+      rRect(g,0xe8d2a9,px-5,py-3,10,6);
+      rRect(g,0xf8e7c5,px-5,py-3,7,2);
+    }
+    // Pedestal and second basin: layered elevations and sculpted edging.
+    rOval(g,0x394e5d,cx,cy-16,102,48);
+    rOval(g,0xebd6aa,cx,cy-22,105,50);
+    rOval(g,0x6396a0,cx,cy-25,83,35);
+    rRect(g,0xc2a57c,cx-14,cy-78,28,55);
+    rRect(g,0xf6e3bb,cx-8,cy-86,16,63);
+    rOval(g,0xf4dfb8,cx,cy-86,49,21);
+    rOval(g,0x81c4c8,cx,cy-89,28,10);
+    rRect(g,0xe8d5ab,cx-6,cy-118,12,31);
+    rOval(g,0xf7eccf,cx,cy-122,30,13);
+    rOval(g,0xb7eded,cx,cy-128,10,12,.86);
+    // Four small natural water spouts, no neon-like glow.
+    for(const [dx,dy] of [[-63,-9],[63,-9],[-35,21],[35,21]]){
+      rOval(g,0xb6e4e3,cx+dx,cy+dy,7,12,.78);
+      rRect(g,0xd4f4e9,cx+dx-2,cy+dy-13,4,14,.57);
+    }
+  }
+
+  // V26 · Bespoke architectural reconstruction. Independent building masses,
+  // shared stonecutting vocabulary only. All geometry stays inside prior footprints.
+  const V26={ivory:0xf1e5cf,lit:0xfff2db,stone:0xcbb695,edge:0x92795d,
+    copper:0x6d857c,slate:0x405770,burgundy:0x743b50,glass:0x6d94a1,
+    ink:0x344251,shadow:0x383b46,gold:0xc8a56e};
+  function v26Shadow(g,x,y,w,h){
+    // Only the ground-contact shadow: never surround a bespoke silhouette with
+    // a solid, rectangular underlay. The previous backplate caused the dark
+    // square artifacts seen beside the conservatory and turret.
+    rOval(g,0x493e39,x+w/2+6,y+h+3,w-18,19,.20);
+    rRect(g,0x8b795f,x+16,y+h-5,w-32,4,.20);
+  }
+  function v26Stone(g,x,y,w,h,kind=0){
+    const colors=[0xeadac0,0xe2d2b8,0xd0d0c8,0xe4d9c5,0xf0dac5];
+    const c=colors[kind]||colors[0];
+    rRect(g,0x9c8772,x,y,w,h);
+    rRect(g,c,x+5,y+4,w-10,h-7);
+    rRect(g,0xffffff,x+7,y+5,w-14,3,.2);
+    for(let j=1;j<4;j++){
+      const yy=y+10+j*(h-26)/4;
+      rRect(g,0x775d53,x+8,yy,w-16,2,.12);
+      for(let k=0;k<7;k++){
+        const xx=x+12+k*(w-24)/7+(j%2)*8;
+        rRect(g,0x8f7b63,xx,yy-10,2,10,.095);
+      }
+    }
+    rRect(g,0xf8e9d4,x+8,y+6,4,h-14,.38);
+    rRect(g,0x7c6559,x+w-11,y+6,4,h-14,.23);
+  }
+  function v26Mansard(g,x,y,w,h,shade=V26.slate,dormers=3){
+    // Multi-layer stepped mansard with visible upper crown and lower eaves.
+    rRect(g,0x293847,x+6,y+14,w-12,h-4);
+    rRect(g,shade,x+14,y+5,w-28,h-12);
+    rRect(g,0x9bb0aa,x+22,y+8,w-44,3,.38);
+    rRect(g,0x213348,x+3,y+h-21,w-6,13,.48);
+    for(let t=0;t<3;t++)rRect(g,0x243649,x+13,y+18+t*13,w-26,2,.20);
+    for(let j=0;j<dormers;j++){
+      const xx=x+w*(j+1)/(dormers+1);
+      v26Dormer(g,xx,y+18,shade,Math.min(1.12,w/(dormers*80)));
+    }
+    v24Cornice(g,x+3,y+h-5,w-6,0xceae78);
+  }
+  function v26Dormer(g,cx,y,roof=V26.slate,s=1){
+    const q=(n)=>Math.round(n*s);
+    rRect(g,0x8d795d,cx-q(15),y+q(3),q(30),q(29));
+    rRect(g,0xf5e6c9,cx-q(12),y+q(5),q(24),q(24));
+    rRect(g,0x314c61,cx-q(8),y+q(10),q(16),q(18));
+    rRect(g,0x91b1b2,cx-q(6),y+q(12),q(5),q(14),.8);
+    rRect(g,0xd7e1d5,cx+q(2),y+q(12),q(2),q(12),.38);
+    g.fillStyle(0x28384c,1).fillTriangle(cx-q(20),y+q(7),cx,y-q(12),cx+q(20),y+q(7));
+    g.fillStyle(roof,1).fillTriangle(cx-q(17),y+q(5),cx,y-q(9),cx+q(17),y+q(5));
+    rRect(g,0xf8e5be,cx-q(17),y+q(5),q(34),q(3));
+  }
+  function v26HighWindow(g,x,y,variant=0,s=1,balcony=false){
+    const k=(n)=>n*s,w=k(20),h=k(38),glass=[0x65859c,0x678b8f,0x8d7085,0x62798f][variant%4];
+    rRect(g,0x99846b,x-k(6),y-k(9),w+k(12),h+k(16));
+    rRect(g,0xfcf0d9,x-k(4),y-k(7),w+k(8),h+k(11));
+    rRect(g,0x344b60,x,y+9*s,w,h-9*s);
+    rOval(g,0x344b60,x+w/2,y+8*s,w,17*s);
+    rRect(g,glass,x+k(2),y+k(11),w-k(4),h-k(12));
+    rRect(g,0xcbe2df,x+k(4),y+k(13),k(3),h-k(19),.60);
+    rRect(g,0x152e43,x+w/2,y+k(10),k(2),h-k(10));
+    rRect(g,0x183247,x,y+k(23),w,k(2),.8);
+    rRect(g,0xe8caa0,x-k(7),y+h-k(1),w+k(14),k(5));
+    rRect(g,0x9c7c5b,x-k(8),y+h+k(3),w+k(16),k(3));
+    if(balcony){
+      rRect(g,0x9b805f,x-k(10),y+h+k(5),w+k(20),k(9));
+      for(let j=0;j<5;j++)rRect(g,0xd8b77f,x-k(6)+j*k(8),y+h+k(11),k(3),k(15));
+      rRect(g,0xf2d79c,x-k(12),y+h+k(24),w+k(24),k(4));
+    }
+  }
+  function v26Windows(g,x,y,w,count,kind=0,s=1,balcony=false){
+    for(let j=0;j<count;j++){
+      const cx=x+(j+.5)*w/count;
+      v26HighWindow(g,cx-10*s,y,kind+((j===0||j===count-1)?1:0),s,balcony&&(j%3===1));
+    }
+  }
+  function v26Portico(g,x,y,w,h,columns=4){
+    // Open arcade: columns carry the upper entablature, not an applied pattern.
+    rRect(g,0x977b60,x,y+5,w,h);
+    rRect(g,0xf1e3c8,x+5,y+5,w-10,h-10);
+    for(let j=0;j<columns;j++){
+      const xx=x+10+j*(w-20)/(columns-1);
+      royalColumn(g,xx,y+16,h-21);
+    }
+    v24Cornice(g,x-4,y,w+8,0xe0ba7d);
+    rRect(g,0x927253,x-4,y+h-4,w+8,9);
+    rRect(g,0xdcbf91,x-5,y+h+3,w+10,4);
+  }
+  function v26GrandDoor(g,b,yExtra=0,arch=0){
+    const bottom=(b.y+b.h)*T+yExtra,cx=(b.door+.5)*T;
+    const width=arch?61:52,height=arch?79:67;
+    rOval(g,0x383541,cx+3,bottom+6,100,25,.2);
+    rRect(g,0x8b725b,cx-width/2-9,bottom-height-11,width+18,height+16);
+    rRect(g,0xf5e5c9,cx-width/2-5,bottom-height-10,width+10,height+10);
+    rRect(g,0x344054,cx-width/2,bottom-height+9,width,height-9);
+    rOval(g,0x384c5c,cx,bottom-height+9,width,36);
+    rRect(g,0x714b56,cx-width/2+4,bottom-height+18,width-8,height-18);
+    rRect(g,0xd3ac77,cx-2,bottom-height+20,4,height-20);
+    for(let j=0;j<3;j++){
+      rRect(g,0x4d3844,cx-width/2+6,bottom-height+27+j*12,width-12,4,.5);
+      rRect(g,0xe4c68d,cx-width/2+10,bottom-height+29+j*12,width-20,2,.55);
+    }
+    rOval(g,0xf4d99a,cx+11,bottom-24,5,5);
+    for(let i=0;i<3;i++){
+      const step=10+i*9;
+      rRect(g,0x947b66,cx-width/2-step,bottom+i*5,width+2*step,8);
+      rRect(g,0xf6e8cf,cx-width/2-step,bottom+i*5,width+2*step,3);
+    }
+  }
+  function v26Tower(g,x,y,w,h,roof=V26.slate,round=false){
+    rRect(g,0x86796a,x+6,y+22,w-12,h-14);
+    rRect(g,round?0xa9afb2:0xeee0c8,x+10,y+20,w-20,h-22);
+    if(round){
+      rOval(g,0xc7c9c6,x+w/2,y+h/2,w-9,h*.9,.43);
+      rOval(g,0x445566,x+w/2,y+58,w*.70,28);
+    }
+    rRect(g,0x5c6980,x-4,y+8,w+8,34);
+    rRect(g,roof,x+1,y+4,w-2,31);
+    g.fillStyle(roof,1).fillTriangle(x-8,y+8,x+w/2,y-23,x+w+8,y+8);
+    rRect(g,0xe8c58e,x-6,y+34,w+12,5);
+    v26HighWindow(g,x+w/2-10,y+67,round?3:0,.9);
+    rRect(g,0x89725d,x+3,y+h-10,w-6,8);
+  }
+  function v26Relief(g,x,y,w,c=0xd1ab71){
+    rRect(g,0x6f6355,x-6,y+8,w+12,7,.65);
+    rRect(g,c,x-8,y,w+16,8);
+    rRect(g,0xffecc9,x-6,y+1,w+12,2,.7);
+    for(let i=0;i<Math.floor(w/20);i++)rRect(g,0xf1d7a8,x+8+i*20,y+9,8,5,.76);
+  }
+  function v26HeraldicClock(g,cx,cy){
+    rOval(g,0xa9844c,cx,cy,57,57);
+    rOval(g,0xf2e5cb,cx,cy-1,48,48);
+    rOval(g,0x526270,cx,cy-1,40,40);
+    for(let k=0;k<12;k++){
+      const t=k*Math.PI/6;
+      rRect(g,0xf3e2bb,cx+Math.sin(t)*16-1,cy-1-Math.cos(t)*16,2,3);
+    }
+    rLine(g,0xffe1a1,cx,cy-1,cx+6,cy-12,2);
+    rLine(g,0xffe1a1,cx,cy-1,cx-10,cy-6,2);
+  }
+  function v26Facade(g,b){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,mid=x+w/2,base=y+h;
+    v26Shadow(g,x,y,w,h);
+    if(b.name==='CROWN PALACE'){
+      // Crown Palace: coherent central corps-de-logis, lower long wings, terminal pavilions.
+      v26Stone(g,x+14,y+104,w-28,h-106,0);
+      const wingW=285;
+      for(const [sx,side] of [[x+15,-1],[x+w-15-wingW,1]]){
+        v26Stone(g,sx,y+121,wingW,h-126,0);
+        v26Mansard(g,sx-6,y+45,wingW+12,80,0x3e526b,4);
+        v26Relief(g,sx+10,y+209,wingW-20);
+        v26Windows(g,sx+12,y+231,wingW-24,5,0,.87,false);
+        v26Windows(g,sx+12,y+286,wingW-24,5,0,.93,true);
+        v26Portico(g,sx+15,y+351,wingW-30,50,6);
+        v26Tower(g,sx+(side<0?-6:wingW-96),y+34,100,155,0x44566a);
+      }
+      // Shallow central projecting block is genuinely in front of the wings.
+      v26Stone(g,mid-219,y+104,438,h-107,0);
+      v26Mansard(g,mid-230,y+34,460,90,0x354d68,7);
+      // Cupola: drum, dome, top lantern.
+      rRect(g,0xbfa584,mid-74,y+8,148,65);
+      rRect(g,0xf2e3c8,mid-62,y+15,124,54);
+      for(let z=-2;z<=2;z++)v26HighWindow(g,mid+z*23-8,y+26,0,.55);
+      rOval(g,0x304b65,mid,y+5,168,105);
+      rOval(g,0x6e899b,mid-10,y-17,110,55);
+      rRect(g,0xe0bd81,mid-9,y-77,18,37);
+      rOval(g,0xf5d48e,mid,y-80,17,13);
+      v24Gable(g,mid,y+118,240,0x526782);
+      v26Windows(g,mid-201,y+158,402,7,0,1.05,false);
+      v26Relief(g,mid-213,y+224,426,0xe0bd85);
+      v26Windows(g,mid-199,y+243,398,7,0,1.01,true);
+      v26Portico(g,mid-190,y+321,380,74,8);
+      v24Heraldry(g,mid,y+147,0xe5c486);
+      // The door must remain exactly aligned with the existing portal.
+      v26GrandDoor(g,b,0,1);
+      for(const sx of [mid-182,mid+182])v24Statue(g,sx,base-6);
+      return;
+    }
+    if(b.name==='GRAND OPERA'){
+      // Opera: convex foyer, burgundy monumental roof and wings around a stage axis.
+      v26Stone(g,x+17,y+91,w-34,h-94,4);
+      for(const sx of [x+15,x+w-116]){
+        v26Stone(g,sx,y+108,101,h-115,0);
+        v26Mansard(g,sx-7,y+44,115,67,0x743e51,2);
+        v26Windows(g,sx+8,y+162,85,2,2,.95,true);
+        v26Windows(g,sx+8,y+224,85,2,2,.88,false);
+      }
+      v26Mansard(g,mid-171,y+37,342,82,0x754151,5);
+      rOval(g,0x604454,mid,y+83,194,124);
+      rOval(g,0xa36b73,mid,y+75,163,97);
+      rOval(g,0xe7bea1,mid,y+71,121,62);
+      v24Gable(g,mid,y+135,196,0x7c3e53);
+      v26Stone(g,mid-168,y+149,336,h-152,4);
+      v26Windows(g,mid-154,y+181,308,5,2,1.02,true);
+      v26Relief(g,mid-172,y+248,344,0xe6bf87);
+      v26Portico(g,mid-150,y+261,300,72,7);
+      v24Heraldry(g,mid,y+153,0xe5bf7e);
+      v26GrandDoor(g,b,0,1);
+      v24Statue(g,x+47,base-17);v24Statue(g,x+w-47,base-17);
+      return;
+    }
+    if(b.name==='ROYAL ACADEMY'){
+      // Academy: glazed archival roof, square turrets and central clock bay.
+      v26Stone(g,x+17,y+91,w-34,h-93,0);
+      v26Mansard(g,x+25,y+39,w-50,72,0x496e69,6);
+      for(const xx of [x+11,x+w-116]){
+        v26Tower(g,xx,y+34,106,166,0x446a67);
+        v26Relief(g,xx+7,y+188,92,0xcaaa75);
+        v26HighWindow(g,xx+38,y+224,1,.9,true);
+      }
+      v26Stone(g,mid-150,y+108,300,h-113,0);
+      v24Gable(g,mid,y+125,210,0x4c736d);
+      v26HeraldicClock(g,mid,y+89);
+      v26Windows(g,mid-143,y+169,286,5,1,.97,false);
+      v26Relief(g,mid-143,y+225,286,0xbca577);
+      v26Windows(g,mid-143,y+243,286,5,1,.92,true);
+      v26Portico(g,mid-111,y+283,222,62,5);
+      v26GrandDoor(g,b);
+      return;
+    }
+    if(b.name==='GALLERY OF DYNASTIES'){
+      // Neoclassical museum: skylight roof and a single legible giant order.
+      v26Stone(g,x+13,y+88,w-26,h-91,0);
+      v26Mansard(g,x+19,y+32,w-38,70,0x526779,1);
+      for(let k=0;k<6;k++){
+        const sx=x+65+k*(w-130)/5;
+        rRect(g,0x243e55,sx-17,y+51,34,23);
+        rRect(g,0x9db9bb,sx-13,y+53,26,19,.84);
+        rRect(g,0xe0e8d9,sx-11,y+55,9,16,.62);
+      }
+      v24Gable(g,mid,y+122,278,0x4c6071);
+      v24Heraldry(g,mid,y+110,0xd9ba8d);
+      v26Relief(g,x+19,y+166,w-38,0xe5c58e);
+      v26Windows(g,x+28,y+180,w-56,7,0,1.0,false);
+      v26Portico(g,x+24,y+248,w-48,81,9);
+      for(const sx of [x+53,x+w-53])v24Statue(g,sx,base-23);
+      v26GrandDoor(g,b,0,1);
+      return;
+    }
+    if(b.name==='HOUSE OF AURELIA'){
+      // Rococo manor: lateral rose salons, central curved projection, balcony.
+      v26Stone(g,x+11,y+87,w-22,h-91,4);
+      for(const sx of [x+9,x+w-109]){
+        v26Stone(g,sx,y+82,100,h-90,4);
+        v26Mansard(g,sx-4,y+26,108,65,0x7b4055,2);
+        v26HighWindow(g,sx+37,y+149,2,1.02,true);
+        rRect(g,0xe2bc96,sx+12,y+204,75,8);
+      }
+      v26Mansard(g,mid-143,y+37,286,73,0x7f4054,4);
+      v26Windows(g,mid-136,y+127,272,5,2,.95,true);
+      rOval(g,0xa17b7e,mid,y+224,190,38);
+      rOval(g,0xe8c69f,mid,y+220,164,26);
+      v24Heraldry(g,mid,y+102,0xdfbc83);
+      v26GrandDoor(g,b);
+      return;
+    }
+    if(b.name==='HOUSE OF VALMONT'){
+      // French classical estate with two true roof towers and disciplined stone bays.
+      v26Stone(g,x+17,y+94,w-34,h-97,2);
+      v26Mansard(g,x+48,y+45,w-96,75,0x354d65,5);
+      v26Tower(g,x+10,y+35,102,153,0x374d65);
+      v26Tower(g,x+w-112,y+35,102,153,0x374d65);
+      v26Windows(g,x+121,y+153,w-242,4,3,1.04,true);
+      v26Relief(g,x+108,y+222,w-216,0xc3ac80);
+      v26Windows(g,x+121,y+238,w-242,4,3,.82,false);
+      v24Heraldry(g,mid,y+126,0xc6b28b);
+      v26GrandDoor(g,b);
+      return;
+    }
+    if(b.name==='HOUSE OF SERAPHINE'){
+      // V27.3: a genuine attached conservatory, not a full-height glass rectangle.
+      // Both wings share the plinth and eave datum; the garden room is lower than
+      // the mansion and its canopy is supported by two stone corner piers.
+      const mainW=Math.floor(w*.64), joinX=x+mainW-7;
+      const gx=joinX,gw=x+w-10-gx, plinthY=y+h-37;
+      v26Stone(g,x+10,y+86,mainW+8,h-91,4);
+      v26Mansard(g,x+6,y+34,mainW+16,69,0x8e6852,4);
+      v26Windows(g,x+23,y+142,mainW-30,4,1,.96,true);
+      v26Relief(g,x+18,y+204,mainW-14,0xccad86);
+
+      // Roof gutters and the stone connection belong to both facades.
+      rRect(g,0x8b785e,gx-8,y+111,19,h-118);
+      rRect(g,0xf5e6ce,gx-4,y+116,11,h-126);
+      // Foundation: solid stone masonry below the conservatory glazing.
+      rRect(g,0x917c67,gx-3,plinthY,gw+6,36);
+      rRect(g,0xe8d9bf,gx+1,plinthY+3,gw-2,28);
+      rRect(g,0xfbebd1,gx+5,plinthY+5,gw-12,3,.7);
+      // Greenhouse glazing has a wall face, not an opaque rectangle covering
+      // the original building. Vertical piers make the side volume structural.
+      const glassTop=y+139,glassBottom=plinthY;
+      rRect(g,0x3e635e,gx-1,glassTop-4,gw+2,glassBottom-glassTop+5);
+      rRect(g,0xbcd3bd,gx+8,glassTop+3,gw-16,glassBottom-glassTop-10);
+      for(let j=0;j<4;j++){
+        const sx=gx+12+j*(gw-28)/3;
+        rRect(g,0xe5f2dc,sx,glassTop+6,(gw-28)/3*.35,glassBottom-glassTop-14,.21);
+      }
+      for(const yy of [glassTop+52,glassTop+105]){
+        if(yy>glassBottom-14)continue;
+        rRect(g,0x486e67,gx+6,yy,gw-12,6);
+        rRect(g,0xe8e5cf,gx+8,yy+1,gw-16,2,.82);
+      }
+      const bays=4;
+      for(let j=0;j<=bays;j++){
+        const px=gx+7+j*(gw-14)/bays;
+        rRect(g,0x52756d,px-2,glassTop,5,glassBottom-glassTop);
+        rRect(g,0xe2e9d9,px-1,glassTop,2,glassBottom-glassTop-4,.85);
+      }
+      // Roof: glazed pitched canopy, crisp copper ridge and continuous eaves;
+      // its ridge is lower than the main mansard roof and neither triangle
+      // projects into the neighbouring estate or the street.
+      const eavesY=glassTop+1,apexY=y+90,midG=gx+gw/2;
+      g.fillStyle(0x3e635e,1).fillTriangle(gx-6,eavesY,midG,apexY-8,gx+gw+6,eavesY);
+      g.fillStyle(0x7fada1,1).fillTriangle(gx+4,eavesY-4,midG,apexY+3,gx+gw-4,eavesY-4);
+      g.fillStyle(0xbfd6c4,.9).fillTriangle(gx+17,eavesY-8,midG,apexY+14,midG-15,eavesY-8);
+      g.fillStyle(0xdce3cc,.30).fillTriangle(midG+12,apexY+16,midG+20,apexY+22,gx+gw-22,eavesY-6);
+      rLine(g,0x456a65,gx-7,eavesY,midG,apexY-9,6);
+      rLine(g,0x456a65,midG,apexY-9,gx+gw+7,eavesY,6);
+      rLine(g,0xe2e7d0,gx-4,eavesY-1,midG,apexY-5,2,.78);
+      rLine(g,0xe2e7d0,midG,apexY-5,gx+gw+4,eavesY-1,2,.78);
+      rRect(g,0x48675e,gx-7,eavesY-1,gw+14,9);
+      rRect(g,0xd5d3b8,gx-6,eavesY+1,gw+12,3);
+      // Stone posts close the wall-to-greenhouse seam and the exposed end.
+      for(const px of [gx-6,gx+gw-4]){
+        rRect(g,0xa99980,px,glassTop-1,10,glassBottom-glassTop+7);
+        rRect(g,0xf0e4cc,px+2,glassTop+3,6,glassBottom-glassTop-4);
+        rRect(g,0xc4a783,px-2,glassBottom-1,14,8);
+      }
+      rRect(g,0xb09a79,gx-7,y+h-8,gw+14,7);
+      rRect(g,0xf1dfbf,gx-5,y+h-8,gw+10,2);
+      v24Heraldry(g,x+mainW*.46,y+112,0xdfc28e);
+      v26GrandDoor(g,b);
+      return;
+    }
+    // V27.3 Corven: narrower western townhouse with a deliberate setback from
+    // the sovereign gate. Unlike V27.2, its turret cannot penetrate gate masonry.
+    v26Stone(g,x+12,y+91,w-27,h-95,2);
+    v26Mansard(g,x+8,y+59,w-16,74,0x515b6a,3);
+    // An asymmetric cross-gable defines the manor entrance independently of
+    // the turret; the facade stays within [x, x+w] with a small roof overhang.
+    const hallCx=x+w*.43;
+    g.fillStyle(0x364655,1).fillTriangle(hallCx-101,y+90,hallCx,y+2,hallCx+101,y+90);
+    g.fillStyle(0xb6b9b7,1).fillTriangle(hallCx-81,y+87,hallCx,y+18,hallCx+81,y+87);
+    rRect(g,0xf1e8d5,hallCx-39,y+87,78,12);
+    rRect(g,0x987e61,hallCx-40,y+98,80,5);
+    for(const rowY of [y+147,y+218])v26Windows(g,x+17,rowY,w-151,3,3,.82,false);
+    // Turret is tangent to the right bay and has its own footing and cornice.
+    const tx=x+w-99;
+    v26Tower(g,tx,y+26,90,229,0x505b6a,true);
+    rRect(g,0x988779,tx+4,base-8,84,7);
+    rRect(g,0xe0d0b9,tx+8,base-8,76,2);
+    v24Heraldry(g,hallCx,y+129,0xc9b48f);
+    v26GrandDoor(g,b);
+  }
+
+  function v26GroundFinishing(g,a){
+    // Controlled, district-aware cobbles: the single repeated 32px square is gone.
+    const R=rnd(260026),townW=a.w*T,townH=a.h*T;
+    // Low-contrast stone seams form groups, never a mechanical checker grid.
+    for(let k=0;k<440;k++){
+      const xx=144+R()*(townW-288), yy=145+R()*(townH-290);
+      const ix=Math.floor(xx/T),iy=Math.floor(yy/T);
+      if(a.buildings.some(b=>ix>b.x-1&&ix<b.x+b.w+1&&iy>b.y-1&&iy<b.y+b.h+1))continue;
+      if(Math.abs(ix-44)<3||Math.hypot((ix-44)/12,(iy-32)/8)<1.0)continue;
+      const span=10+Math.floor(R()*41),shade=R()>.62?0xf7e6c7:0x917c63;
+      rRect(g,shade,xx,yy,span,2,.075+R()*.09);
+      if(k%3===0)rRect(g,0x756952,xx+span-3,yy-6,2,6,.08);
+    }
+    // Palace garden axis: ornamental radial paving stops short of collision zones.
+    for(let i=0;i<17;i++){
+      const x=(35.2+i*1.05)*T,y=23.2*T;
+      rRect(g,0xa88e6e,x,y,20,3,.19);
+      rRect(g,0xffffff,x+2,y+1,9,1,.14);
+    }
+    // Entry-court cobbles: short staggered courses, visually subordinate to buildings.
+    for(let row=0;row<7;row++)for(let k=0;k<10;k++){
+      const xx=(37.7+k*1.34+(row%2)*.39)*T,yy=(49+row*.89)*T;
+      if(Math.abs(xx-44*T)<48)continue;
+      rRect(g,0x9b8266,xx,yy,29,2,.22);
+    }
+    // Sculpted round tree beds are away from the center, door tiles and garden paths.
+    for(const [tx,ty] of [[6.3,25],[81.7,25],[6.5,48.7],[81.8,48.7]]){
+      rOval(g,0x8b8069,tx*T,ty*T,78,39,.5);
+      rOval(g,0xe5d4b0,tx*T,ty*T-4,70,29,.9);
+      rOval(g,0x496749,tx*T,ty*T-6,58,22);
+      royalTree(g,tx*T,ty*T-.3*T,.82);
+    }
+  }
+
+  // V26: keep the tested 88×60 royal capital footprint and active quest geometry.
+  function royalGround(g,a){
+    const W2=a.w*T,H2=a.h*T,ct=(x,y)=>[x*T,y*T];
+    // Warm stone is the quiet background; architecture supplies visual complexity.
+    // Broad continuous masonry replaces the 5280 repeated tile squares.
+    rRect(g,0xbca789,0,0,W2,H2);
+    const royalRandom=rnd(26013);
+    for(let i=0;i<440;i++){
+      const px=royalRandom()*W2,py=royalRandom()*H2;
+      const shade=i%5===0?0xf2dfbb:i%3===0?0xa9977a:0xd6c4a3;
+      rRect(g,shade,px,py,35+royalRandom()*145,12+royalRandom()*70,.07+royalRandom()*.09);
+    }
+    const rw=4*T;
+    // Deep enclosing river. Bridges and quays are later drawn over water.
+    for(const [x,y,w,h] of [[0,0,W2,rw],[0,H2-rw,W2,rw],[0,0,rw,H2],[W2-rw,0,rw,H2]]){
+      rRect(g,0x395c70,x,y,w,h);
+      rRect(g,0x4f8192,x+5,y+5,w-10,h-10,.9);
+      for(let i=0;i<Math.floor((w*h)/(32*600));i++){
+        const px=x+12+((i*173+37)%(Math.max(14,w-24)));
+        const py=y+10+((i*113+29)%(Math.max(13,h-20)));
+        rRect(g,0x90c1c1,px,py,25+(i%4)*9,2,.13);
+      }
+    }
+    // Retaining walls and a shadowed inner embankment.
+    for(const yy of [rw-8,H2-rw]){
+      rRect(g,0x344950,rw-6,yy+4,W2-2*rw+12,10,.38);
+      rRect(g,0x867a70,rw-6,yy,W2-2*rw+12,8);
+      rRect(g,0xdcc9a7,rw-6,yy,W2-2*rw+12,3);
+    }
+    for(const xx of [rw-8,W2-rw]){
+      rRect(g,0x344950,xx+4,rw-8,10,H2-2*rw+16,.3);
+      rRect(g,0x91816f,xx,rw-8,8,H2-2*rw+16);
+      rRect(g,0xe1cdb0,xx,rw-8,3,H2-2*rw+16);
+    }
+    // Three broad stone bridges (the south one is the main ceremonial approach).
+    const bridgeH=(x,y,w,h)=>{
+      rRect(g,0x443a39,x-4,y+5,w+8,h+6,.34);
+      rRect(g,0x9f8668,x-6,y-6,w+12,h+12);
+      rRect(g,0xe1cead,x,y,w,h);
+      for(let j=9;j<w-7;j+=29)rRect(g,0xc5ae89,x+j,y+6,3,h-12,.42);
+      rRect(g,0xf7e4c2,x-6,y-7,w+12,7);
+      rRect(g,0x765f53,x-6,y+h,w+12,8);
+    };
+    bridgeH(40*T,H2-rw,8*T,rw+6);
+    bridgeH(0,29*T,rw+7,5*T);
+    bridgeH(W2-rw-7,29*T,rw+7,5*T);
+    // Upper terrace has a bespoke masonry base and a much clearer silhouette.
+    rRect(g,0x9d8769,26*T,5.0*T,36*T,15*T);
+    rRect(g,0xd6c2a2,26*T,5*T,36*T,14.6*T);
+    rRect(g,0x92795f,26*T,19.25*T,36*T,10);
+    for(let j=0;j<6;j++)rRect(g,j%2?0xf6e8c7:0xbdaa86,26*T,19.25*T+j*2,36*T,2,.8);
+    // Continuous network: draw every outline, then every paved core.
+    // Round joints include all branches, so streets connect without dark seams.
+    const front=[],back=[];
+    for(let i=0;i<=44;i++){
+      const a=Math.PI-(i/44)*Math.PI;
+      front.push(ct(44+22*Math.cos(a),32+10*Math.sin(a)));
+    }
+    for(let i=0;i<=28;i++){
+      const a=Math.PI-(i/28)*Math.PI;
+      back.push(ct(44+23.8*Math.cos(a),26-5.8*Math.sin(a)));
+    }
+    royalRoadNetwork(g,[
+      {path:[ct(44.5,60),ct(44.5,54),ct(44.5,47),ct(44.5,40.5),ct(44.5,33),ct(44.5,25),ct(44.5,19.5)],width:132},
+      {path:[ct(-2,31.5),ct(10,31.5),ct(21,32),ct(30,32.5)],width:69},
+      {path:[ct(58,32.5),ct(67,32),ct(78,31.5),ct(90,31.5)],width:69},
+      {path:front,width:49}, {path:back,width:38},
+      {path:[ct(20,30),ct(26,26),ct(33,21.5)],width:40},
+      {path:[ct(68,30),ct(62,26),ct(55,21.5)],width:40},
+      // Opera and Academy forecourts already merge into the crescent;
+      // a second diagonal here created pointed double-outline artefacts.
+      ...v27DoorRoutes(a)
+    ]);
+    // Court of state: oval, ceremonial paving, a readable ring around the water.
+    rOval(g,0x827361,44*T,32*T,21*T,12*T,.91);
+    rOval(g,0xf0dfbd,44*T,31.8*T,20.4*T,11.4*T);
+    rOval(g,0xcbb28a,44*T,31.8*T,17.6*T,9.0*T);
+    rOval(g,0xf7e9cf,44*T,31.8*T,16.8*T,8.2*T);
+    for(let i=0;i<32;i++){
+      const t=i*Math.PI*2/32;
+      rOval(g,0xac8f69,44*T+Math.cos(t)*9.65*T,31.8*T+Math.sin(t)*5.18*T,9,7,.55);
+    }
+    // Palace esplanade and stairs are deliberately kept free from furniture.
+    rRect(g,0xe5d4b2,35*T,20*T,18*T,5*T);
+    for(let i=0;i<7;i++){
+      rRect(g,i%2?0xfaf1db:0xcbb18a,35*T,19.4*T+i*5,18*T,3,.75);
+    }
+    // Entrance court is part of the existing axial road, not a giant
+    // square underlay that fakes a closed gate or leaves dark straight borders.
+    // Subtle longitudinal joints only within the paved axis and bridge.
+    for(const dx of [-1.55,-.62,.62,1.55]){
+      rLine(g,0xb99d7b,(44.5+dx)*T,48.7*T,(44.5+dx)*T,59.7*T,2,.16);
+    }
+    // Two large formal gardens; no random scatter or fake solid objects.
+    royalParterre(g,7.5*T,18.9*T,16*T,4.4*T,0);
+    royalParterre(g,64.5*T,18.9*T,16*T,4.4*T,1);
+    royalParterre(g,7.5*T,37.6*T,15*T,3.45*T,2);
+    royalParterre(g,65.5*T,37.6*T,15*T,3.45*T,3);
+    royalParterre(g,28*T,25.1*T,9.5*T,3.4*T,4);
+    royalParterre(g,50.5*T,25.1*T,9.5*T,3.4*T,5);
+    // Stone planting beds: a controlled number of trees read as wealth and order.

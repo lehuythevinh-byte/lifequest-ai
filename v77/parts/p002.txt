@@ -1,0 +1,1000 @@
+      s.onerror = () => { clearTimeout(timer); rej(new Error('Could not load the sign-in library')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function fetchRow() {
+    const r = await client.from('saves').select('data,updated_at').eq('user_id', user.id).maybeSingle();
+    if (r.error) throw r.error;
+    return r.data || null;
+  }
+
+  function sameData(a, b) {
+    const ka = Object.keys(a).sort(),
+      kb = Object.keys(b).sort();
+    return ka.length === kb.length && ka.every((k, i) => k === kb[i] && a[k] === b[k]);
+  }
+
+  async function push(opts = {}) {
+    if (!user || !client || busy) return false;
+    busy = true;
+    setStatus('sync');
+    try {
+      const data = snapshot();
+      if (!data[SAVE_KEY]) {
+        setStatus('ok');
+        return true;
+      }
+      const body = { v: 1, data, savedAt: new Date().toISOString() };
+      if (JSON.stringify(body).length > MAX_BYTES) throw new Error('Save data is too large');
+      const meta = readMeta();
+      if (!opts.force) {
+        const row = await fetchRow();
+        if (row && row.updated_at !== meta.lastCloudAt && !sameData(row.data.data || {}, data)) {
+          busy = false;
+          const pick = await chooseSave(data, row, 'Server progress was changed from another device.');
+          if (pick === 'cloud') {
+            applySnapshot(row.data.data || {});
+            writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false });
+            hardReload();
+            return false;
+          }
+          return await push({ force: true });
+        }
+      }
+      const r = await client.from('saves').upsert({ user_id: user.id, data: body }).select('updated_at').single();
+      if (r.error) throw r.error;
+      writeMeta({ userId: user.id, lastCloudAt: r.data.updated_at, dirty: false, guest: false });
+      setStatus('ok');
+      return true;
+    } catch (e) {
+      console.warn('cloud save failed', e);
+      setStatus('bad', friendly(e));
+      return false;
+    } finally {
+      busy = false;
+    }
+  }
+
+  // Best-effort save while the tab is closing (fetch with keepalive survives page unload).
+  function pushOnLeave() {
+    if (!user || !token || !readMeta().dirty) return;
+    const data = snapshot();
+    if (!data[SAVE_KEY]) return;
+    const body = JSON.stringify({ user_id: user.id, data: { v: 1, data, savedAt: new Date().toISOString() } });
+    if (body.length > 60000) return; // keepalive requests are limited to 64 KB
+    try {
+      fetch(URL_ + '/rest/v1/saves?on_conflict=user_id', {
+        method: 'POST',
+        keepalive: true,
+        headers: { apikey: ANON, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body,
+      });
+      writeMeta({ dirty: false, lastCloudAt: '' });
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function markDirty() {
+    const m = readMeta();
+    if (!m.dirty) writeMeta({ dirty: true });
+    if (user) {
+      setStatus('sync');
+      clearTimeout(pushTimer);
+      pushTimer = setTimeout(() => push(), PUSH_DELAY);
+    }
+  }
+
+  /** Decide which copy to keep after signing in. Returns 'applied' when this device's data was replaced. */
+  async function reconcile() {
+    const meta = readMeta();
+    const row = await fetchRow();
+    const local = snapshot();
+    const hasLocal = !!local[SAVE_KEY];
+    if (!row) {
+      if (hasLocal) await push({ force: true });
+      else writeMeta({ userId: user.id, lastCloudAt: '', dirty: false, guest: false });
+      return 'kept';
+    }
+    const cloudData = row.data.data || {};
+    if (hasLocal && sameData(cloudData, local)) {
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false, guest: false });
+      return 'kept';
+    }
+    if (!hasLocal) {
+      applySnapshot(cloudData);
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false, guest: false });
+      return 'applied';
+    }
+    if (meta.userId === user.id && row.updated_at === meta.lastCloudAt) {
+      if (meta.dirty) await push({ force: true });
+      return 'kept';
+    }
+    if (meta.userId === user.id && !meta.dirty) {
+      applySnapshot(cloudData);
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false });
+      return 'applied';
+    }
+    const why = meta.userId === user.id ? 'Both places have unsynced changes.' : 'This device has game progress (guest or another account), and your account also has progress on the server.';
+    const pick = await chooseSave(local, row, why);
+    if (pick === 'cloud') {
+      applySnapshot(cloudData);
+      writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false, guest: false });
+      return 'applied';
+    }
+    await push({ force: true });
+    return 'kept';
+  }
+
+  async function checkRemote() {
+    if (!user || busy || Date.now() - lastCheck < 20000) return;
+    lastCheck = Date.now();
+    try {
+      const row = await fetchRow();
+      const meta = readMeta();
+      if (!row || row.updated_at === meta.lastCloudAt) return;
+      if (sameData(row.data.data || {}, snapshot())) {
+        writeMeta({ lastCloudAt: row.updated_at, dirty: false });
+        return;
+      }
+      if (meta.dirty) await push();
+      else showBanner('Newer progress is available from another device.', 'Reload', () => reloadWithCloud(row));
+    } catch (e) {
+      /* offline: ignore */
+    }
+  }
+  function reloadWithCloud(row) {
+    applySnapshot(row.data.data || {});
+    writeMeta({ userId: user.id, lastCloudAt: row.updated_at, dirty: false });
+    hardReload();
+  }
+  function showBanner(text, label, fn) {
+    addCss();
+    let b = document.getElementById('lq-banner');
+    if (b) b.remove();
+    b = document.createElement('div');
+    b.id = 'lq-banner';
+    b.innerHTML = '<span>' + esc(text) + '</span><button type="button">' + esc(label) + '</button>';
+    b.querySelector('button').onclick = fn;
+    document.body.appendChild(b);
+  }
+
+  // ---------- account chip ----------
+  function setStatus(kind, text) {
+    statusText = text || '';
+    if (!chip) return;
+    const dot = chip.querySelector('.dot');
+    if (dot) dot.className = 'dot ' + (kind === 'ok' ? 'ok' : kind === 'sync' ? 'sync' : kind === 'bad' ? 'bad' : '');
+    const note = chip.querySelector('.note');
+    if (note) note.textContent = kind === 'bad' ? 'Sync error: ' + statusText : kind === 'sync' ? 'Syncing…' : kind === 'ok' ? 'Synced' : '';
+  }
+
+  function lookName() {
+    try {
+      const sc = window.__lifequestGetScene && window.__lifequestGetScene();
+      return (sc && sc.store.game.rpg.look.name) || '';
+    } catch {
+      return '';
+    }
+  }
+
+  function mountChip() {
+    addCss();
+    if (!chip) {
+      chip = document.createElement('div');
+      chip.id = 'lq-chip';
+      document.body.appendChild(chip);
+      chip.addEventListener('click', async (ev) => {
+        const b = ev.target.closest('button');
+        if (!b) return;
+        if (b.dataset.a === 'toggle') return chip.classList.toggle('open');
+        chip.classList.remove('open');
+        if (b.dataset.a === 'look') return window.LQCreatorUI && window.LQCreatorUI.open({});
+        if (b.dataset.a === 'sync') return push();
+        if (b.dataset.a === 'out') return signOut();
+        if (b.dataset.a === 'in') {
+          const r = await showLogin({ allowGuest: false });
+          if (r === 'user') {
+            const res = await reconcile();
+            hardReload();
+          }
+        }
+      });
+      document.addEventListener('click', (ev) => {
+        if (!chip.contains(ev.target)) chip.classList.remove('open');
+      });
+    }
+    render();
+    setInterval(render, 5000);
+  }
+  function render() {
+    if (!chip) return;
+    const name = lookName();
+    const label = user ? name || user.email || 'Account' : name ? name + ' (guest)' : 'Guest';
+    chip.innerHTML = `<button type="button" data-a="toggle"><span class="dot"></span>${user ? '👤' : '🎮'} ${esc(label)}</button>
+      <div class="menu">
+        ${user ? `<p>${esc(user.email || '')}<br><span class="note"></span></p><button type="button" data-a="sync">🔄 Sync now</button>` : ENABLED ? '<p>Playing as a guest. Progress is saved only on this device.</p><button type="button" data-a="in">🔐 Sign in / Sign up</button>' : '<p>Progress is saved on this device.</p>'}
+        <button type="button" data-a="look">🎭 Change character</button>
+        ${user ? '<button type="button" data-a="out">🚪 Sign out</button>' : ''}
+      </div>`;
+    setStatus(user ? (readMeta().dirty ? 'sync' : 'ok') : '', statusText);
+  }
+
+  async function signOut() {
+    if (!confirm('Sign out? Your progress will be saved to the server, then removed from this device.')) return;
+    try {
+      clearTimeout(pushTimer);
+      if (readMeta().dirty) await push({ force: false });
+      if (readMeta().dirty) {
+        if (!confirm('Could not save to the server. Sign out anyway and delete data on this device?')) return;
+      }
+      await client.auth.signOut();
+    } catch (e) {
+      console.warn(e);
+    }
+    applySnapshot({});
+    nativeRemove.call(store, META_KEY);
+    hardReload();
+  }
+
+  function installHooks() {
+    Storage.prototype.setItem = function (k, v) {
+      if (this === store && blockWrites && isSyncKey(k)) return;
+      nativeSet.call(this, k, v);
+      if (this === store && !suppress && isSyncKey(k)) markDirty();
+    };
+    Storage.prototype.removeItem = function (k) {
+      if (this === store && blockWrites && isSyncKey(k)) return;
+      nativeRemove.call(this, k);
+      if (this === store && !suppress && isSyncKey(k)) markDirty();
+    };
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') pushOnLeave();
+      else checkRemote();
+    });
+    window.addEventListener('pagehide', pushOnLeave);
+    window.addEventListener('lifequest:lookchanged', render);
+    setInterval(() => {
+      if (user && readMeta().dirty && !busy && !pushTimer) pushTimer = setTimeout(() => push(), PUSH_DELAY);
+    }, 60000);
+  }
+
+  // ---------- entry point (called by js/loader.js before the game starts) ----------
+  async function start() {
+    const boot = () => mountChipWhenReady();
+    // V74 offline-first: the standalone HTML must never block game startup
+    // while waiting for a Supabase SDK connection that may be unavailable.
+    if (location.protocol === 'file:' || location.protocol === 'about:') {
+      console.info('[LQ V74] Local game: skip remote sign-in, continue as guest.');
+      boot();
+      return;
+    }
+    if (!ENABLED) {
+      await showLogin({ allowGuest: true, disabled: true });
+      boot();
+      return;
+    }
+    try {
+      await loadSdk();
+      client = window.supabase.createClient(URL_, ANON, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+    } catch (e) {
+      console.warn('Đăng nhập không khả dụng:', e);
+      boot();
+      return;
+    }
+    installHooks();
+    client.auth.onAuthStateChange((evt, session) => {
+      token = session ? session.access_token : '';
+      if (session) user = session.user;
+      if (evt === 'SIGNED_OUT') user = null;
+    });
+    try {
+      const s = await client.auth.getSession();
+      if (s.data && s.data.session) {
+        user = s.data.session.user;
+        token = s.data.session.access_token;
+      }
+      if (!user) {
+        const r = await showLogin({ allowGuest: true });
+        if (r === 'guest') writeMeta({ guest: true });
+      }
+      if (user) await reconcile();
+    } catch (e) {
+      console.warn('Không đồng bộ được lúc khởi động:', e);
+      setStatus('bad', friendly(e));
+    }
+    boot();
+  }
+
+  function mountChipWhenReady() {
+    const go = () => mountChip();
+    if (document.body) go();
+    else document.addEventListener('DOMContentLoaded', go);
+  }
+
+  window.LQAuth = { start, enabled: ENABLED, syncNow: () => push(), signOut, getUser: () => user };
+})();
+
+</script>
+    <script>
+/*
+ * Character creator.
+ * Lets the player pick a name, gender, skin, hair (style / colour), eyes, clothes, hat, glasses, backpack.
+ * The result is stored in the game save at game.rpg.look, so it follows the account across devices.
+ * Sprite drawing lives in js/game/10-core-characters-and-scene.js (window.LQCharacter).
+ */
+(function () {
+  const SKINS = [0xffe0c8, 0xf6d2b0, 0xe8b88a, 0xc98e62, 0x8d5a3a, 0x5b3a29];
+  const HAIRS = [0x1b1b1b, 0x3a2418, 0x5a3b2a, 0x8a5a3b, 0xe3c16f, 0xb5532a, 0xb8b8b8, 0xeeeeee, 0x3f6fd1, 0xe56fa8, 0x3fae6a, 0xd9877a, 0xc8702a, 0x2a3a35];
+  const EYES = [0x222233, 0x5a3a22, 0x2f6fd0, 0x2f9e55, 0x7a8794, 0x7a3fbf, 0x55c8ff];
+  const OUTFITS = [0x3a63c8, 0xb8433f, 0x3f9b5a, 0xe0a63a, 0x7a4fb5, 0x2f8f8a, 0xd9d9d9, 0x2b2f3a, 0xe56fa8, 0x8a5a3b, 0xff8a3d, 0x5a84bb];
+  const PANTS = [0x2d3a55, 0x3b3b3b, 0x6b4a2e, 0x4a5a3a, 0x2b2f3a, 0x7a7f8a, 0x8a4b2a, 0xb8433f];
+  const HAT_COLORS = [0x2f7de1, 0xb8433f, 0x3f9b5a, 0xe0a63a, 0x2b2f3a, 0xeeeeee, 0x7a4fb5];
+  const HATS = [
+    ['none', 'No hat'],
+    ['cap', 'Cap'],
+    ['police', 'Police cap'],
+    ['chef', 'Chef hat'],
+    ['helmet', 'Hard hat'],
+  ];
+  const STYLES = [
+    ['short', 'Short'],
+    ['long', 'Long'],
+    ['bob', 'Shoulder-length'],
+    ['ponytail', 'Ponytail'],
+    ['bun', 'Bun'],
+    ['spiky', 'Upright'],
+    ['curly', 'Curly'],
+    ['bald', 'Bald'],
+    ['storm', 'Storm spikes'],
+    ['scruffy', 'Short scruffy'],
+    ['thorn', 'Sharp spikes'],
+    ['flare', 'Chin-length flared'],
+    ['highpony', 'High ponytail'],
+    ['longbun', 'Long half-bun'],
+    ['swept', 'Swept back'],
+    ['blaze', 'Wild spikes'],
+    ['tousled', 'Lightly tousled'],
+    ['crop', 'Cropped messy'],
+    ['ryomen', 'Pink upright spikes'],
+    ['urchin', 'Urchin spikes'],
+  ];
+  // Hair colour suggested when one of the styles below is picked (can be changed afterwards).
+  const STYLE_COLORS = { storm: 0xeeeeee, scruffy: 0xd9877a, thorn: 0x1b1b1b, flare: 0xc8702a, highpony: 0x2a3a35, longbun: 0x1b1b1b, swept: 0xe3c16f, blaze: 0xd9877a, tousled: 0x1b1b1b, crop: 0x1b1b1b, ryomen: 0xea8fa0, urchin: 0x15192a };
+  const STYLE_ALIAS = { gojo: 'storm', itadori: 'scruffy', megumi: 'thorn', nobara: 'flare', maki: 'highpony', geto: 'longbun', nanami: 'swept', sukuna: 'blaze', yuta: 'tousled', toji: 'crop' };
+  const BAGS = [0x8a4b2a, 0x3a63c8, 0xb8433f, 0x2b2f3a];
+
+  // Ready-made characters. Picking one fills in the whole look; the player's own name is kept and everything can
+  // still be changed afterwards.
+  const SCHOOL = 0x1f2a44;
+  const PRESETS = [
+    { name: 'The Honored One', lock: 'mineral-trip', note: 'The strongest sorcerer: white hair, blindfold, high-collared black uniform, Infinity aura. Tap Ctrl to open the Six Eyes and see through walls', look: { gender: 'male', skin: 0xffe0c8, hair: 0xf4f7ff, style: 'storm', eye: 0x55c8ff, eyeGlow: true, blindfold: true, aura: 'infinity', sixEyes: true, outfit: 0x14141b, pants: 0x14141b, uniform: true, hat: null } },
+    { name: 'Cursed King', lock: 'sukuna-fingers', note: 'King of Curses: pink upright spiky hair, four red eyes, face markings, white kimono', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xea8fa0, style: 'ryomen', eye: 0xc02a2a, extraEyes: true, faceMarks: true, kimono: true, outfit: 0xe9e4d6, pants: 0x24242d, hat: null } },
+    { name: 'Potential Gentleman', lock: 'ten-shadows', note: 'Cold and calm shadow user: black sea-urchin spikes, black eyes, navy high-collared uniform. Tap Ctrl to summon the Divine Dog and ride it', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x15192a, style: 'urchin', eye: 0x16161e, outfit: 0x12172a, pants: 0x0d111d, uniform: true, trim: 0x2a3f66, shadow: true, hat: null } },
+    { name: 'Haru', note: 'Short scruffy pink-orange hair', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xd9877a, style: 'scruffy', eye: 0x7a4a22, outfit: SCHOOL, pants: SCHOOL, hat: null } },
+    { name: 'Kuro', note: 'Black sharp-spiked hair', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x1b1b1b, style: 'thorn', eye: 0x2a5a6a, outfit: SCHOOL, pants: SCHOOL, hat: null } },
+    { name: 'Mika', note: 'Orange chin-length flared hair, dress', look: { gender: 'female', skin: 0xf6d2b0, hair: 0xc8702a, style: 'flare', eye: 0x7a4a22, outfit: SCHOOL, pants: SCHOOL, dress: true, hat: null } },
+    { name: 'Sora', note: 'High ponytail, glasses', look: { gender: 'female', skin: 0xe8b88a, hair: 0x2a3a35, style: 'highpony', eye: 0x2f9e55, outfit: SCHOOL, pants: SCHOOL, glasses: true, hat: null } },
+    { name: 'Ryu', note: 'Long black hair, half-bun', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x1b1b1b, style: 'longbun', eye: 0x222233, outfit: 0x1b1b24, pants: 0x1b1b24, hat: null } },
+    { name: 'Daiki', note: 'Blond swept-back hair, beige suit, tie', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xe3c16f, style: 'swept', eye: 0x5a3a22, outfit: 0xc9b48a, pants: 0xc9b48a, glasses: true, collar: true, tie: 0xf0c040, hat: null } },
+    { name: 'Akira', note: 'Wild pink spiky hair, red eyes', look: { gender: 'male', skin: 0xf6d2b0, hair: 0xd9877a, style: 'blaze', eye: 0xc0392b, outfit: 0xe8e4d8, pants: 0x2b2f3a, hat: null } },
+    { name: 'Yuki', note: 'Lightly tousled black hair, white uniform', look: { gender: 'male', skin: 0xf6d2b0, hair: 0x1b1b1b, style: 'tousled', eye: 0x222233, outfit: 0xf2f2f2, pants: 0xf2f2f2, collar: true, hat: null } },
+    { name: 'Tora', note: 'Short black hair, green eyes', look: { gender: 'male', skin: 0xe8b88a, hair: 0x1b1b1b, style: 'crop', eye: 0x2f9e55, outfit: 0x1b1b1b, pants: 0x2b2f3a, hat: null } },
+  ];
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const hex = (n) => '#' + (n >>> 0).toString(16).padStart(6, '0');
+
+  function defaults(gender) {
+    return gender === 'female'
+      ? { name: '', gender, skin: SKINS[1], hair: HAIRS[1], style: 'long', eye: EYES[1], outfit: OUTFITS[1], pants: PANTS[0], hat: null, glasses: false, dress: true, backpack: 0, blindfold: false, collar: false, tie: null }
+      : { name: '', gender: 'male', skin: SKINS[1], hair: HAIRS[2], style: 'short', eye: EYES[0], outfit: OUTFITS[0], pants: PANTS[0], hat: { kind: 'cap', color: HAT_COLORS[0] }, glasses: false, dress: false, backpack: 0, blindfold: false, collar: false, tie: null };
+  }
+
+  const CSS = `
+#lq-cc{position:fixed;inset:0;z-index:96;background:#05080ef0;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;font:14px/1.4 system-ui,sans-serif;color:#eef3ff}
+#lq-cc[hidden]{display:none}
+#lq-cc .box{width:min(920px,100%);max-height:100%;overflow:auto;background:#141824;border:2px solid #5a6a9a;border-radius:14px;padding:16px 18px;box-shadow:0 20px 60px #000a}
+#lq-cc h2{margin:0 0 4px;font-size:20px;color:#ffd36b}
+#lq-cc .sub{color:#a9b8d0;margin:0 0 12px}
+#lq-cc .grid{display:grid;grid-template-columns:230px 1fr;gap:18px}
+@media(max-width:700px){#lq-cc .grid{grid-template-columns:1fr}}
+#lq-cc .prev{background:linear-gradient(#27405a,#1b2a3c);border:2px solid #34506e;border-radius:12px;padding:12px;text-align:center}
+#lq-cc canvas{image-rendering:pixelated;width:192px;height:400px;display:block;margin:0 auto 8px}
+#lq-cc .dirs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#lq-cc button{font:inherit;cursor:pointer}
+#lq-cc .dirs button,#lq-cc .opt button,#lq-cc .gender button{background:#1f2a3d;color:#eef3ff;border:1px solid #3b4c6b;border-radius:8px;padding:5px 9px}
+#lq-cc .dirs button.on,#lq-cc .opt button.on,#lq-cc .gender button.on{border-color:#ffd36b;background:#33405a;color:#fff}
+#lq-cc .row{margin:0 0 10px}
+#lq-cc .row>b{display:block;margin-bottom:5px;color:#ffd36b;font-size:13px}
+#lq-cc .sw{display:flex;gap:6px;flex-wrap:wrap}
+#lq-cc .sw button{width:28px;height:28px;border-radius:50%;border:2px solid #0008;padding:0}
+#lq-cc .sw button.on{border-color:#fff;box-shadow:0 0 0 2px #ffd36b}
+#lq-cc .opt{display:flex;gap:6px;flex-wrap:wrap}
+#lq-cc input[type=text]{background:#0d1320;color:#fff;border:1px solid #3b4c6b;border-radius:8px;padding:7px 10px;font:inherit;width:100%;box-sizing:border-box}
+#lq-cc .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;position:sticky;bottom:-16px;background:#141824;padding:10px 0 4px}
+#lq-cc .foot button{border:0;border-radius:9px;padding:9px 16px;font-weight:700}
+#lq-cc .ok{background:#f3b94d;color:#1b2630}
+#lq-cc .ghost{background:#2a3550;color:#eef3ff}
+#lq-cc .err{color:#ff9a9a;min-height:18px;margin-top:6px}
+#lq-cc .tabs{display:flex;gap:6px;margin-bottom:12px}
+#lq-cc .tabs button{flex:1;background:#1f2a3d;color:#eef3ff;border:1px solid #3b4c6b;border-radius:9px;padding:8px}
+#lq-cc .tabs button.on{background:#33405a;border-color:#ffd36b}
+#lq-cc .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+#lq-cc .card{background:#1a2438;border:1px solid #3b4c6b;border-radius:12px;padding:8px;text-align:center;cursor:pointer;color:#eef3ff}
+#lq-cc .card:hover{border-color:#ffd36b;background:#243250}
+#lq-cc .card canvas{width:72px;height:150px;margin:0 auto 4px}
+#lq-cc .card.locked{cursor:not-allowed;opacity:.85}
+#lq-cc .card.locked canvas{filter:brightness(0) opacity(.55)}
+#lq-cc .card.locked span{color:#ffb4b4}
+#lq-cc .card b{display:block;font-size:13px;color:#ffd36b}
+#lq-cc .card span{display:block;font-size:12px;color:#a9b8d0}
+#lq-cc .hint{color:#a9b8d0;font-size:13px;margin:0 0 10px}
+`;
+
+  let root = null,
+    look = null,
+    dir = 'down',
+    tab = 'custom',
+    onDone = null,
+    mandatory = false,
+    guard = null;
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  function currentLook() {
+    const sc = getScene();
+    return sc && sc.store && sc.store.game && sc.store.game.rpg ? sc.store.game.rpg.look : null;
+  }
+
+  function draw() {
+    const sc = getScene();
+    if (!root || !sc || !look) return;
+    const cv = root.querySelector('canvas'),
+      cx = cv.getContext('2d');
+    cx.clearRect(0, 0, cv.width, cv.height);
+    cx.imageSmoothingEnabled = false;
+    try {
+      const img = window.LQCharacter.imageFor(sc, look, dir === 'left' ? 'side' : dir, 0);
+      cx.save();
+      if (dir === 'left') {
+        cx.translate(cv.width, 0);
+        cx.scale(-1, 1);
+      }
+      cx.drawImage(img, 0, 0, cv.width, cv.height);
+      cx.restore();
+    } catch (e) {
+      console.warn('creator preview failed', e);
+    }
+  }
+
+  function swatches(field, colors, hatColor) {
+    return colors
+      .map((c) => {
+        const on = hatColor ? look.hat && look.hat.color === c : look[field] === c;
+        return `<button type="button" data-f="${hatColor ? 'hatcolor' : field}" data-v="${c}" class="${on ? 'on' : ''}" style="background:${hex(c)}" aria-label="${hex(c)}"></button>`;
+      })
+      .join('');
+  }
+
+  function presetLook(p) {
+    return Object.assign(defaults(p.look.gender), p.look);
+  }
+
+  // A preset with `lock` stays unavailable until that achievement is completed (see achievements.js).
+  const isLocked = (p) => !!p.lock && !(window.LQAchievements && window.LQAchievements.isUnlocked(p.lock));
+
+  function renderGallery() {
+    return `<p class="hint">Pick a character as your starting point (your name is kept). You can still customise it further in the "Customise" tab. Characters with 🔒 need an achievement from the Menu to unlock.</p>
+      <div class="gal">${PRESETS.map((p, i) => (isLocked(p)
+        ? `<button type="button" class="card locked" data-lock="${p.lock}"><canvas width="24" height="50" data-pc="${i}"></canvas><b>🔒 ${p.name}</b><span>Achievement required</span></button>`
+        : `<button type="button" class="card" data-p="${i}"><canvas width="24" height="50" data-pc="${i}"></canvas><b>${p.name}</b><span>${p.note}</span></button>`)).join('')}</div>`;
+  }
+
+  function drawGalleryThumbs() {
+    const sc = getScene();
+    if (!sc) return;
+    root.querySelectorAll('canvas[data-pc]').forEach((cv) => {
+      const cx = cv.getContext('2d');
+      cx.imageSmoothingEnabled = false;
+      try {
+        cx.drawImage(window.LQCharacter.imageFor(sc, presetLook(PRESETS[Number(cv.dataset.pc)]), 'down', 0), 0, 0);
+      } catch (e) {
+        console.warn('thumbnail failed', e);
+      }
+    });
+  }
+
+  function renderCustom() {
+    const hatKind = look.hat ? look.hat.kind : 'none';
+    return `
+      <div class="row gender"><b>Gender</b><div class="opt"><button type="button" data-g="male" class="${look.gender === 'male' ? 'on' : ''}">👦 Male</button><button type="button" data-g="female" class="${look.gender === 'female' ? 'on' : ''}">👧 Female</button></div></div>
+      <div class="row"><b>Skin</b><div class="sw">${swatches('skin', SKINS)}</div></div>
+      <div class="row"><b>Hairstyle</b><div class="opt">${STYLES.map(([k, n]) => `<button type="button" data-f="style" data-v="${k}" class="${look.style === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      <div class="row"><b>Hair colour</b><div class="sw">${swatches('hair', HAIRS)}</div></div>
+      <div class="row"><b>Eye colour</b><div class="sw">${swatches('eye', EYES)}</div></div>
+      <div class="row"><b>Top</b><div class="sw">${swatches('outfit', OUTFITS)}</div></div>
+      <div class="row"><b>Trousers</b><div class="sw">${swatches('pants', PANTS)}</div></div>
+      <div class="row"><b>Hat</b><div class="opt">${HATS.map(([k, n]) => `<button type="button" data-hat="${k}" class="${hatKind === k ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      ${look.hat && look.hat.kind !== 'chef' ? `<div class="row"><b>Hat colour</b><div class="sw">${swatches('hat', HAT_COLORS, true)}</div></div>` : ''}
+      <div class="row"><b>Accessories</b><div class="opt">
+        <button type="button" data-t="glasses" class="${look.glasses ? 'on' : ''}">👓 Glasses</button>
+        <button type="button" data-t="blindfold" class="${look.blindfold ? 'on' : ''}">🕶️ Blindfold</button>
+        <button type="button" data-t="collar" class="${look.collar ? 'on' : ''}">👔 Collar &amp; tie</button>
+        <button type="button" data-t="uniform" class="${look.uniform ? 'on' : ''}">🥋 Sorcerer uniform</button>
+        <button type="button" data-t="eyeGlow" class="${look.eyeGlow ? 'on' : ''}">✨ Glowing eyes</button>
+        <button type="button" data-t="extraEyes" class="${look.extraEyes ? 'on' : ''}">👁️ Four eyes</button>
+        <button type="button" data-t="faceMarks" class="${look.faceMarks ? 'on' : ''}">〰️ Face markings</button>
+        <button type="button" data-t="kimono" class="${look.kimono ? 'on' : ''}">👘 Kimono</button>
+        <button type="button" data-t="dress" class="${look.dress ? 'on' : ''}">👗 Dress</button>
+        <button type="button" data-t="backpack" class="${look.backpack ? 'on' : ''}">🎒 Backpack</button>
+      </div></div>
+      ${look.backpack ? `<div class="row"><b>Backpack colour</b><div class="sw">${swatches('backpack', BAGS)}</div></div>` : ''}`;
+  }
+
+  function render() {
+    root.querySelector('.opts').innerHTML = `
+      <div class="row"><b>Character name</b><input type="text" id="lq-cc-name" maxlength="20" placeholder="Enter your name" value="${String(look.name || '').replace(/"/g, '&quot;')}"></div>
+      <div class="tabs"><button type="button" data-tab="custom" class="${tab === 'custom' ? 'on' : ''}">🎨 Customise</button><button type="button" data-tab="gallery" class="${tab === 'gallery' ? 'on' : ''}">🌟 Preset characters</button></div>
+      ${tab === 'gallery' ? renderGallery() : renderCustom()}`;
+    root.querySelectorAll('.dirs button').forEach((b) => b.classList.toggle('on', b.dataset.d === dir));
+    if (tab === 'gallery') drawGalleryThumbs();
+    draw();
+  }
+  function onClick(ev) {
+    const b = ev.target.closest('button');
+    if (!b || !root.contains(b)) return;
+    if (b.dataset.tab) {
+      tab = b.dataset.tab;
+      render();
+      return;
+    }
+    if (b.dataset.lock) {
+      if (window.LQAchievements) window.LQAchievements.hint(b.dataset.lock);
+      return;
+    }
+    if (b.dataset.p) {
+      const preset = PRESETS[Number(b.dataset.p)];
+      if (isLocked(preset)) return;
+      const typed = (root.querySelector('#lq-cc-name') || {}).value;
+      look = Object.assign(presetLook(preset), { name: (typed || look.name || '').trim() || preset.name });
+      tab = 'custom';
+      render();
+      return;
+    }
+    if (b.dataset.d) {
+      dir = b.dataset.d;
+      render();
+      return;
+    }
+    if (b.dataset.g) {
+      const keep = look.name;
+      look = Object.assign(defaults(b.dataset.g), { name: keep });
+      render();
+      return;
+    }
+    if (b.dataset.hat) {
+      look.hat = b.dataset.hat === 'none' ? null : { kind: b.dataset.hat, color: look.hat ? look.hat.color : HAT_COLORS[0] };
+      render();
+      return;
+    }
+    if (b.dataset.t) {
+      const t = b.dataset.t;
+      if (t === 'backpack') look.backpack = look.backpack ? 0 : BAGS[0];
+      else if (t === 'collar') {
+        look.collar = !look.collar;
+        look.tie = look.collar ? look.tie || 0xb8433f : null;
+      } else look[t] = !look[t];
+      render();
+      return;
+    }
+    if (b.dataset.f) {
+      const f = b.dataset.f,
+        v = b.dataset.v;
+      if (f === 'hatcolor') look.hat = { kind: look.hat.kind, color: Number(v) };
+      else if (f === 'style') {
+        look.style = v;
+        if (STYLE_COLORS[v] !== undefined) look.hair = STYLE_COLORS[v];
+      }
+      else look[f] = Number(v);
+      render();
+      return;
+    }
+    if (b.id === 'lq-cc-random') {
+      const g = pick(['male', 'female']);
+      const name = look.name;
+      look = Object.assign(defaults(g), {
+        name,
+        skin: pick(SKINS),
+        hair: pick(HAIRS),
+        style: pick(STYLES)[0],
+        eye: pick(EYES),
+        outfit: pick(OUTFITS),
+        pants: pick(PANTS),
+        hat: Math.random() < 0.4 ? { kind: pick(HATS.slice(1))[0], color: pick(HAT_COLORS) } : null,
+        glasses: Math.random() < 0.25,
+        dress: g === 'female' && Math.random() < 0.6,
+        backpack: Math.random() < 0.3 ? pick(BAGS) : 0,
+      });
+      render();
+      return;
+    }
+    if (b.id === 'lq-cc-save') save();
+    if (b.id === 'lq-cc-cancel') close(false);
+  }
+
+  function save() {
+    const name = (root.querySelector('#lq-cc-name').value || '').trim().replace(/\s+/g, ' ');
+    const err = root.querySelector('.err');
+    if (!name) {
+      err.textContent = 'Please enter a name for your character.';
+      root.querySelector('#lq-cc-name').focus();
+      return;
+    }
+    look.name = name.slice(0, 20);
+    const sc = getScene();
+    if (!sc || !sc.store || !sc.store.game) {
+      err.textContent = 'The game has not finished loading; try again in a moment.';
+      return;
+    }
+    const g = sc.store.game;
+    if (!g.rpg || typeof g.rpg !== 'object') g.rpg = {};
+    g.rpg.look = JSON.parse(JSON.stringify(look));
+    sc.store.save();
+    try {
+      sc.applyRankLook();
+    } catch (e) {
+      console.warn('applyRankLook failed', e);
+    }
+    window.dispatchEvent(new CustomEvent('lifequest:lookchanged', { detail: g.rpg.look }));
+    close(true);
+  }
+
+  function build() {
+    if (root) return;
+    const st = document.createElement('style');
+    st.textContent = CSS;
+    document.head.appendChild(st);
+    root = document.createElement('div');
+    root.id = 'lq-cc';
+    root.hidden = true;
+    root.innerHTML = `<div class="box" role="dialog" aria-modal="true" aria-label="Create character">
+      <h2>🎭 Create character</h2><p class="sub">Choose your look. You can change it again at any time.</p>
+      <div class="grid">
+        <div class="prev"><canvas width="24" height="50"></canvas>
+          <div class="dirs"><button type="button" data-d="down">Front</button><button type="button" data-d="side">Right</button><button type="button" data-d="left">Left</button><button type="button" data-d="up">Back</button></div></div>
+        <div class="opts"></div>
+      </div>
+      <div class="err" role="alert"></div>
+      <div class="foot"><button type="button" class="ghost" id="lq-cc-random">🎲 Random</button><button type="button" class="ghost" id="lq-cc-cancel">Cancel</button><button type="button" class="ok" id="lq-cc-save">✔ Done</button></div>
+    </div>`;
+    document.body.appendChild(root);
+    root.addEventListener('click', onClick);
+    root.addEventListener('input', () => {
+      const n = root.querySelector('#lq-cc-name');
+      if (n) look.name = n.value;
+    });
+  }
+
+  function open(opts = {}) {
+    build();
+    mandatory = !!opts.mandatory;
+    onDone = opts.onDone || null;
+    look = Object.assign(defaults('male'), JSON.parse(JSON.stringify(currentLook() || {})));
+    if (STYLE_ALIAS[look.style]) look.style = STYLE_ALIAS[look.style];
+    dir = 'down';
+    tab = 'custom';
+    root.querySelector('#lq-cc-cancel').hidden = mandatory;
+    root.querySelector('.err').textContent = '';
+    root.hidden = false;
+    render();
+    guard = (ev) => {
+      const typing = ev.target && /^(INPUT|TEXTAREA)$/.test(ev.target.tagName);
+      if (ev.key === 'Escape' && !mandatory) {
+        close(false);
+        return;
+      }
+      if (typing) ev.stopPropagation();
+      else {
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+      }
+    };
+    window.addEventListener('keydown', guard, true);
+    setTimeout(() => {
+      const n = root.querySelector('#lq-cc-name');
+      if (n && !n.value) n.focus();
+    }, 50);
+  }
+
+  function close(saved) {
+    if (!root) return;
+    root.hidden = true;
+    window.removeEventListener('keydown', guard, true);
+    guard = null;
+    if (onDone) onDone(!!saved);
+    onDone = null;
+  }
+
+  // ---- Quick switch dock: a button on the right edge that lists the ready-made characters; one click swaps the
+  // look immediately (the player's own name is kept). No editing screen involved.
+  const QUICK_CSS = `
+#lq-quick{position:fixed;right:13px;top:50%;transform:translateY(-50%);z-index:41;font:600 13px system-ui,sans-serif;color:#eef3ff;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+#lq-quick>button{background:#141824f2;color:#eef3ff;border:1px solid #5a6a9a;border-radius:999px;padding:9px 13px;cursor:pointer;font:inherit;box-shadow:0 4px 14px #0006}
+#lq-quick>button:hover{border-color:#ffd36b}
+#lq-quick .qp{display:none;width:min(280px,calc(100vw - 26px));max-height:70vh;overflow:auto;background:#141824f5;border:1px solid #5a6a9a;border-radius:14px;padding:10px;box-shadow:0 10px 30px #000a}
+#lq-quick.open .qp{display:block}
+#lq-quick .qp h4{margin:0 0 8px;font-size:13px;color:#ffd36b}
+#lq-quick .qg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#lq-quick .qc{background:#1a2438;border:1px solid #3b4c6b;border-radius:10px;padding:6px 4px;text-align:center;cursor:pointer;color:#eef3ff;font:inherit}
+#lq-quick .qc:hover{border-color:#ffd36b;background:#243250}
+#lq-quick .qc.on{border-color:#ffd36b;box-shadow:0 0 0 2px #ffd36b66}
+#lq-quick .qc.locked{cursor:not-allowed;opacity:.85}
+#lq-quick .qc.locked canvas{filter:brightness(0) opacity(.55)}
+#lq-quick .qc.locked b{color:#ffb4b4}
+#lq-quick .qc small{display:block;font-size:10px;color:#ffb4b4}
+#lq-quick .qc canvas{image-rendering:pixelated;width:48px;height:100px;display:block;margin:0 auto 3px}
+#lq-quick .qc b{display:block;font-size:11px;color:#ffd36b;font-weight:700}
+@media(max-width:700px){#lq-quick{top:auto;bottom:130px;transform:none}}
+`;
+  let quick = null;
+
+  function sameLook(a, b) {
+    return !!a && !!b && a.style === b.style && a.hair === b.hair && a.outfit === b.outfit && a.gender === b.gender;
+  }
+
+  function applyPreset(i) {
+    const sc = getScene();
+    if (!sc || !sc.store || !sc.store.game) return;
+    const preset = PRESETS[i];
+    if (!preset || isLocked(preset)) return;
+    const g = sc.store.game;
+    if (!g.rpg || typeof g.rpg !== 'object') g.rpg = {};
+    const cur = g.rpg.look;
+    const next = Object.assign(presetLook(preset), { name: ((cur && cur.name) || '').trim() || preset.name });
+    g.rpg.look = JSON.parse(JSON.stringify(next));
+    sc.store.save();
+    try {
+      sc.applyRankLook();
+    } catch (e) {
+      console.warn('applyRankLook failed', e);
+    }
+    window.dispatchEvent(new CustomEvent('lifequest:lookchanged', { detail: g.rpg.look }));
+    drawQuick();
+  }
+
+  function drawQuick() {
+    if (!quick) return;
+    const sc = getScene();
+    const cur = currentLook();
+    quick.querySelectorAll('.qc').forEach((c) => {
+      const i = Number(c.dataset.q);
+      const locked = isLocked(PRESETS[i]);
+      c.classList.toggle('locked', locked);
+      c.querySelector('b').textContent = (locked ? '🔒 ' : '') + PRESETS[i].name;
+      let sm = c.querySelector('small');
+      if (locked && !sm) c.appendChild((sm = document.createElement('small')));
+      if (sm) sm.textContent = locked ? 'Achievement required' : '';
+      c.title = locked ? 'Achievement required: complete it in Menu → Achievements' : PRESETS[i].name;
+      c.classList.toggle('on', !locked && sameLook(presetLook(PRESETS[i]), cur));
+      const cv = c.querySelector('canvas');
+      if (!sc || !cv) return;
+      const cx = cv.getContext('2d');
+      cx.clearRect(0, 0, cv.width, cv.height);
+      cx.imageSmoothingEnabled = false;
+      try {
+        cx.drawImage(window.LQCharacter.imageFor(sc, presetLook(PRESETS[i]), 'down', 0), 0, 0);
+      } catch (e) {
+        console.warn('quick thumbnail failed', e);
+      }
+    });
+  }
+
+  function mountQuick() {
+    if (quick) return;
+    const st = document.createElement('style');
+    st.textContent = QUICK_CSS;
+    document.head.appendChild(st);
+    quick = document.createElement('div');
+    quick.id = 'lq-quick';
+    quick.innerHTML = `<div class="qp"><h4>🎭 Choose a character</h4><div class="qg">${PRESETS.map((p, i) => `<button type="button" class="qc" data-q="${i}" title="${p.name}"><canvas width="24" height="50"></canvas><b>${p.name}</b></button>`).join('')}</div></div><button type="button" data-qt="1">🎭 Character</button>`;
+    document.body.appendChild(quick);
+    quick.addEventListener('click', (ev) => {
+      const b = ev.target.closest('button');
+      if (!b) return;
+      if (b.dataset.qt) {
+        quick.classList.toggle('open');
+        if (quick.classList.contains('open')) drawQuick();
+      } else if (b.dataset.q !== undefined) {
+        const p = PRESETS[Number(b.dataset.q)];
+        if (isLocked(p)) {
+          if (window.LQAchievements) window.LQAchievements.hint(p.lock);
+        } else applyPreset(Number(b.dataset.q));
+      }
+    });
+    window.addEventListener('lifequest:achievements', drawQuick);
+    document.addEventListener('click', (ev) => {
+      if (quick && !quick.contains(ev.target)) quick.classList.remove('open');
+    });
+    window.addEventListener('lifequest:lookchanged', drawQuick);
+  }
+
+  // A save that already wears a locked character (e.g. Gojo picked before the lock existed) is switched to the first
+  // unlocked preset, keeping the player's name.
+  function enforceLocks() {
+    const cur = currentLook();
+    if (!cur) return;
+    const locked = PRESETS.find((p) => isLocked(p) && cur.style === p.look.style && cur.hair === p.look.hair && !!cur.uniform === !!p.look.uniform);
+    if (!locked) return;
+    const i = PRESETS.findIndex((p) => !isLocked(p));
+    if (i >= 0) {
+      applyPreset(i);
+      if (window.LQAchievements) window.LQAchievements.hint(locked.lock);
+    }
+  }
+
+  // Open the creator by itself the first time a player enters the game.
+  function watch() {
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries++;
+      const sc = getScene();
+      if (sc && sc.player && sc.store && sc.store.game) {
+        clearInterval(timer);
+        mountQuick();
+        enforceLocks();
+        if (!currentLook()) open({ mandatory: true });
+      } else if (tries > 240) clearInterval(timer);
+    }, 500);
+  }
+
+  window.LQCreatorUI = { open, close, watch, hasLook: () => !!currentLook(), currentLook, presets: PRESETS, presetLook, applyPreset };
+})();
+
+</script>
+    <script>
+/*
+ * LifeQuest achievements.
+ * Each achievement has steps that are detected from the game state (the area the player is standing in) and an
+ * optional reward: unlocking a ready-made character. Progress is stored in the normal save (game.ach), so it syncs
+ * and survives reloads. The Menu gets an "Achievements" page that renders from ACHIEVEMENTS.
+ */
+(function () {
+  'use strict';
+
+  const MINE = 'mining-town';
+  const TOWN = 'english-town';
+
+  // reward.character = name of a PRESETS entry in creator.js that stays locked until this achievement is done.
+  const ACHIEVEMENTS = [
+    {
+      id: 'mineral-trip',
+      icon: '🚂',
+      title: 'Minerals Town Trip',
+      desc: 'Take the train to Minerals Town, step into the mining town, then return to English Town.',
+      hint: 'Buy a ticket at the English Town train station to reach Minerals Town. To go back, step onto the glowing tile in the south-west corner of Minerals Town, or take the train back.',
+      steps: [
+        { id: 'visit', text: 'Set foot in Minerals Town' },
+        { id: 'return', text: 'Return to English Town' },
+      ],
+      reward: { character: 'The Honored One' },
+    },
+    {
+      id: 'sukuna-fingers',
+      icon: '👆',
+      title: "The Cursed King's Twenty Fingers",
+      desc: "The King of Curses' twenty cursed fingers are scattered across the towns. Find and collect all 20 of them.",
+      hint: 'The fingers glow purple. Walk close to one to pick it up. Explore every corner, both outdoors and indoors.',
+      counter: () => (window.LQFingers ? { done: window.LQFingers.count(), total: window.LQFingers.total } : null),
+      reward: { character: 'Cursed King' },
+    },
+    {
+      id: 'ten-shadows',
+      icon: '🌑',
+      title: 'The Ten Shadows',
+      desc: 'An old legend tells of ten shadow beasts that left their marks across both towns. Learn the legend and find all ten shadows.',
+      hint: 'Ask Ms. Green in the Library about the Ten Shadows, then ask the villagers about the shadows. Each one knows a story and a clue to where a mark is hidden. Check the quest panel (V) for your next clue.',
+      counter: () => (window.LQTenShadows ? { done: window.LQTenShadows.count(), total: window.LQTenShadows.total } : null),
+      reward: { character: 'Potential Gentleman' },
+    },
+  ];
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+  const esc = (s) =>
+    String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+  function state(create) {
+    const sc = getScene();
+    const g = sc && sc.store && sc.store.game;
+    if (!g) return null;
+    if (!g.ach || typeof g.ach !== 'object') {
+      if (!create) return { steps: {}, done: {} };
+      g.ach = { steps: {}, done: {} };
+    }
+    if (!g.ach.steps) g.ach.steps = {};
+    if (!g.ach.done) g.ach.done = {};
+    return g.ach;
+  }
+
+  const isUnlocked = (id) => !!(state(false) || { done: {} }).done[id];
+  const byId = (id) => ACHIEVEMENTS.find((a) => a.id === id);
+  const stepDone = (a, sid) => !!((state(false) || { steps: {} }).steps[a.id + ':' + sid]);
+
+  function persist() {
+    const sc = getScene();
+    try {
+      sc.store.save();
+    } catch (e) {
+      console.warn('achievement save failed', e);
+    }
+  }
+
+  // ---- notification -------------------------------------------------------------------------------------------
+  const TOAST_CSS = `
+#lq-ach-toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-140%);z-index:9500;min-width:260px;max-width:min(420px,calc(100vw - 24px));background:linear-gradient(#2b2347,#171326);border:2px solid #ffd36b;border-radius:14px;padding:12px 16px;box-shadow:0 12px 36px #000a;color:#eef3ff;font:14px/1.4 system-ui,sans-serif;transition:transform .45s cubic-bezier(.2,1.2,.3,1);cursor:pointer}
+#lq-ach-toast.on{transform:translate(-50%,0)}
+#lq-ach-toast small{display:block;color:#ffd36b;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px;margin-bottom:2px}
+#lq-ach-toast b{display:block;font-size:15px}
+#lq-ach-toast p{margin:4px 0 0;color:#cdd7ee;font-size:13px}
+`;
+  let toastEl = null,
+    toastTimer = 0;
+
+  function toast(kicker, title, text) {
+    if (!toastEl) {
+      const st = document.createElement('style');
+      st.textContent = TOAST_CSS;
+      document.head.appendChild(st);
+      toastEl = document.createElement('div');
+      toastEl.id = 'lq-ach-toast';
+      toastEl.setAttribute('role', 'status');
+      toastEl.addEventListener('click', () => {
+        toastEl.classList.remove('on');
+        if (window.LQ11_UI) window.LQ11_UI.open('achievements');
+      });
+      document.body.appendChild(toastEl);
+    }
+    toastEl.innerHTML = `<small>${esc(kicker)}</small><b>${esc(title)}</b><p>${esc(text)}</p>`;
+    requestAnimationFrame(() => toastEl.classList.add('on'));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('on'), 7000);
+  }
+
+  function hint(id) {
+    const a = byId(id);
+    if (a) toast('🔒 Achievement required', a.title, 'See how to unlock it in Menu → Achievements.');
+  }
+
+  function complete(a) {
+    const st = state(true);
+    if (!st || st.done[a.id]) return;
+    st.done[a.id] = Date.now();
+    persist();
+    window.dispatchEvent(new CustomEvent('lifequest:achievements', { detail: { id: a.id } }));
+    const reward = a.reward && a.reward.character ? `Unlocked the character ${a.reward.character}! Open Menu → Achievements to wear it.` : 'You completed the achievement.';
+    toast('🏆 Achievement completed', a.title, reward);
+    if (window.LQ11_UI && document.getElementById('l11-shell') && !document.getElementById('l11-shell').hidden)
+      window.LQ11_UI.page('achievements');
+  }
+
+  // ---- progress tracking --------------------------------------------------------------------------------------
+  function mark(a, sid) {
+    const st = state(true);
+    const key = a.id + ':' + sid;
+    if (!st || st.steps[key]) return false;
+    st.steps[key] = Date.now();
+    persist();
+    return true;
+  }
+
+  let greeting = false;
+  function tick() {
+    const sc = getScene();
+    if (!sc || !sc.area || !sc.store || !sc.store.game) return;
+    const area = sc.area.id;
+    const a = byId('mineral-trip');
+    if (!a || isUnlocked(a.id) || greeting) return;
+    // Progress is recorded silently; the how-to lives only on the Menu → Achievements page.
+    if (area === MINE) mark(a, 'visit');
+    // The trip only counts once the player is back, and only if they really stood in Minerals Town first. Gojo's
+    // greeting (gojo.js) plays first; if the page closed during it, the saved 'return' step finishes it next time.

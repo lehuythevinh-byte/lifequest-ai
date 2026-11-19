@@ -1,0 +1,1000 @@
+              result.push(`✅ ${quest.title}: +${quest.xp} XP, +$${quest.money}, 🎟️`);
+              notify(`🏅 Quest complete: ${quest.title}`);
+            }
+          }
+          save();
+          refresh();
+          return result;
+        }
+        function choose(option) {
+          const s = state(),
+            c = chapter();
+          if (!s || !c) return;
+          if (
+            (c.id === 'letter' && step() === 1) ||
+            (c.id === 'guide' && step() === 1) ||
+            (c.id === 'festival' && step() === 1)
+          ) {
+            const approved = {
+              letter: ['Carefully', 'Quickly'],
+              guide: ['Search the market', 'Ask Tom'],
+              festival: ['Music', 'Green garden'],
+            }[c.id];
+            if (!approved.includes(option)) return;
+            s.story.choice = option;
+            const lines = advance(`You chose: ${option}.`);
+            notify(lines[0] || 'Choice made.');
+          }
+        }
+        function buy(id) {
+          LQ10.show('shop');
+          LQ10.notice('🛒 Buy at the right building through Economy (B); remote purchases from the RPG panel are not available.');
+        }
+        function use(id) {
+          const s = state(),
+            def = items[id];
+          if (!s || !def || (s.inventory[id] || 0) <= 0) return;
+          if (def.quest || !def.bonus) {
+            notify('🎒 This is a collectible item and cannot be used.');
+            return;
+          }
+          changeItem(id, -1);
+          giveXP(def.bonus, `Used ${def.name}`);
+          refresh();
+        }
+        function storeFact(text) {
+          const s = state();
+          if (!s) return 'The game is loading.';
+          text = String(text || '')
+            .trim()
+            .slice(0, 180);
+          if (text.length < 3) return 'Enter what you want the AI to remember.';
+          if (s.playerFacts.some((f) => fold(f) === fold(text)))
+            return '🧠 I have already saved this memory.';
+          s.playerFacts.push(text);
+          s.playerFacts = s.playerFacts.slice(-16);
+          save();
+          refresh();
+          return '🧠 Saved to your character\'s memory: ' + text;
+        }
+        function forgetFact(index) {
+          const s = state();
+          if (!s) return;
+          s.playerFacts.splice(index, 1);
+          save();
+          refresh();
+        }
+        function coachContext() {
+          const s = state(),
+            g = game();
+          if (!s || !g) return {};
+          return {
+            character: {
+              level: levelInfo(s.xp).level,
+              xp: s.xp,
+              money: g.money,
+              inventory: Object.entries(s.inventory)
+                .filter(([, n]) => n > 0)
+                .map(([id, n]) => `${items[id]?.name || id} x${n}`),
+            },
+            story: {
+              chapter: chapter()?.title || 'Completed',
+              objective: chapter()?.steps[s.story.step] || 'Take an AI quest',
+              choice: s.story.choice,
+            },
+            activeQuests: s.generated
+              .filter((q) => q.status === 'active')
+              .map((q) => ({ title: q.title, npc: q.npc, objective: q.instruction })),
+            playerMemory: s.playerFacts.slice(-10),
+          };
+        }
+        function npcContext(id) {
+          const s = state();
+          if (!s) return '';
+          const rel = relationship(id),
+            q = s.generated.find((q) => q.status === 'active' && q.npc === id);
+          return `\n[Grounded RPG STATE] Player level ${levelInfo(s.xp).level}. Player money $${game()?.money || 0}. Current story objective: ${chapter()?.steps[s.story.step] || 'story complete'}. This NPC's extended bond: ${rel.trust}/100, talked ${rel.talks} times. ${q ? `Active quest with this NPC: ${q.instruction}` : ''}. Confirm an objective only when the application records it, not by pretending to award items.\n`;
+        }
+        function currentSchedules() {
+          const scene = getScene(),
+            ctx = getTownContext();
+          if (!scene || !ctx) return [];
+          const schedules = window.__lifequestNpcSchedules?.() || {};
+          return ctx.npcs.map((n) => {
+            const rel = relationship(n.id);
+            return {
+              ...n,
+              affinity: scene.store.get(n.id)?.affinity || 0,
+              talks: rel.talks,
+              trust: rel.trust,
+              lastMessage: rel.lastMessage,
+              timetable: schedules[n.id] || [],
+            };
+          });
+        }
+        function clockHour(h) {
+          const min = Math.round(Number(h) * 60);
+          return (
+            String(Math.floor(min / 60) % 24).padStart(2, '0') +
+            ':' +
+            String(min % 60).padStart(2, '0')
+          );
+        }
+        function restorePosition(scene) {
+          const point = scene?.store?.game?.rpg?.lastPosition;
+          if (!point || point.area !== scene.area?.id || scene.inside) return;
+          const x = Number(point.x),
+            y = Number(point.y);
+          if (
+            !Number.isFinite(x) ||
+            !Number.isFinite(y) ||
+            x < 32 ||
+            y < 32 ||
+            x >= scene.area.w * 32 - 32 ||
+            y >= scene.area.h * 32 - 32
+          )
+            return;
+          if (typeof scene.blocked === 'function' && scene.blocked(x, y)) return;
+          scene.player?.setPosition(x, y);
+        }
+        function savePosition(scene) {
+          const s = state();
+          if (!s || !scene?.player || !scene?.area) return;
+          if (scene.inside) {
+            const r = scene.inside;
+            s.lastInterior = {
+              area: scene.area.id,
+              building: r.b.name,
+              floor: r.floor || 0,
+              tx: +((scene.player.x - Yr) / (32 * r.k)).toFixed(3),
+              ty: +((scene.player.y - Xr) / (32 * r.k)).toFixed(3),
+            };
+            save();
+            return;
+          }
+          if (s.lastInterior) {
+            delete s.lastInterior;
+            save();
+          }
+          const { x, y } = scene.player,
+            p = s.lastPosition || {};
+          if (p.area === scene.area.id && Math.hypot(x - (p.x || 0), y - (p.y || 0)) < 8) return;
+          s.lastPosition = { area: scene.area.id, x: Math.round(x), y: Math.round(y) };
+          save();
+        }
+        function activeGenerated() {
+          const s = state();
+          return s?.generated?.find((q) => q.status === 'active') || null;
+        }
+        async function makeQuest() {
+          const s = state(),
+            ctx = getTownContext();
+          if (!s || !ctx) return notify('The town hasn\'t finished loading.');
+          if (activeGenerated()) {
+            notify('📜 Finish your current AI quest before creating a new one.');
+            return;
+          }
+          const completedToday = s.generated.filter((q) => q.createdDay === ctx.day).length;
+          if (completedToday >= 3) {
+            notify('⏰ You can have at most 3 AI quests per in-game day. Wait for the next day.');
+            return;
+          }
+          const available = ctx.npcs.filter(
+            (n) => n.available && !n.indoors && n.activity && !/sleep/i.test(n.activity),
+          );
+          if (!available.length) {
+            notify(
+              'No NPCs are active outdoors right now. Head to a busier area or wait until daytime.',
+            );
+            return;
+          }
+          const choice =
+            available[(s.generated.length + ctx.day + ctx.position.x) % available.length];
+          const tpl =
+            generatedTemplates[(s.generated.length + ctx.day) % generatedTemplates.length];
+          let title = tpl.title,
+            summary = tpl.summary,
+            instruction = tpl.instruction;
+          const ai = {};
+          try {
+            Object.assign(ai, JSON.parse(localStorage.getItem('english-town-ai') || '{}'));
+          } catch {}
+          const key = String(
+            ai.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || '',
+          ).trim();
+          const model =
+            String(
+              ai.geminiModel || window.LIFEQUEST_AI_CONFIG?.MODEL || 'gemini-2.5-flash',
+            ).trim() || 'gemini-2.5-flash';
+          const prompt = `Create engaging English-learning RPG dialogue quest flavor. Return only JSON with keys "title", "summary_vi", "instruction_en". NPC: ${choice.name}; role: ${choice.activity}. Quest's unchangeable completion criterion: ${tpl.instruction}. Player level: ${cefrService.getLevel()}. Title max 55 chars, Vietnamese summary max 150 chars, English instruction max 140 chars. Do NOT claim any rewards or change targets.`;
+          const config = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: window.LQGemini.genConfig(model, {
+              temperature: 0.7,
+              maxOutputTokens: 270,
+              responseMimeType: 'application/json',
+            }),
+          };
+          const button = $('rpg-generate');
+          if (button) {
+            button.disabled = true;
+            button.textContent = '✨ AI is writing…';
+          }
+          try {
+            // Flavor is optional: quest validation and rewards remain entirely local & deterministic.
+            if (key || (await window.LQGemini.proxyAvailable())) {
+              const controller = new AbortController();
+              const timer = setTimeout(() => controller.abort(), 14000);
+              try {
+                const url = key
+                  ? `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`
+                  : window.LIFEQUEST_AI_CONFIG?.PROXY_URL || '/api/gemini';
+                const resp = await fetch(url, {
+                  method: 'POST',
+                  headers: key
+                    ? { 'Content-Type': 'application/json', 'x-goog-api-key': key }
+                    : { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(key ? config : { model, body: config }),
+                  signal: controller.signal,
+                });
+                if (resp.ok) {
+                  const data = await resp.json();
+                  const content = (data.candidates?.[0]?.content?.parts || [])
+                    .map((p) => p.text || '')
+                    .join('');
+                  const parsed = JSON.parse(content.replace(/^```(?:json)?|```$/g, '').trim());
+                  if (parsed && typeof parsed === 'object') {
+                    if (typeof parsed.title === 'string' && parsed.title.length < 80)
+                      title = parsed.title.slice(0, 60);
+                    if (typeof parsed.summary_vi === 'string' && parsed.summary_vi.length < 230)
+                      summary = parsed.summary_vi.slice(0, 160);
+                    // Keep the original validated objective. Generated prose must not change completion rules.
+                  }
+                }
+              } finally {
+                clearTimeout(timer);
+              }
+            }
+          } catch (e) {
+            console.warn('Quest flavor uses offline fallback:', e?.message);
+          } finally {
+            if (button) {
+              button.disabled = false;
+              button.textContent = '✨ Create new quest';
+            }
+          }
+          const quest = {
+            id: `daily-${ctx.day}-${s.generated.length + 1}`,
+            npc: choice.id,
+            npcName: choice.name,
+            title,
+            summary,
+            instruction,
+            keywords: tpl.keywords,
+            xp: tpl.xp,
+            money: tpl.money,
+            status: 'active',
+            createdDay: ctx.day,
+          };
+          s.generated.push(quest);
+          s.generated = s.generated.slice(-30);
+          save();
+          refresh();
+          notify(`📜 New quest from ${choice.name}: ${quest.title}`);
+        }
+        function handleCoach(message) {
+          const m = fold(message);
+          const match = String(message).match(
+            /^\s*(?:nhớ(?:\s+giùm)?\s+rằng|nho rang|remember that)\s*[:：]?\s*(.+)$/i,
+          );
+          if (match) return storeFact(match[1]);
+          if (/^(?:quen ghi nho|xoa ghi nho|forget memories|show memory|ghi nho|bo nho)$/.test(m)) {
+            open('memory');
+            return '🧠 Opened the memory tab. You can delete individual entries here.';
+          }
+          if (/^(?:tui do|hanh trang|inventory|backpack|cua hang|shop)$/.test(m)) {
+            open(/shop|cua hang/.test(m) ? 'shop' : 'bag');
+            return '🎒 I opened your bag / shop.';
+          }
+          if (
+            /^(?:cap do|kinh nghiem|my level|xp|trang thai nhan vat|character status|money|tien)$/.test(
+              m,
+            )
+          ) {
+            const s = state(),
+              g = game();
+            if (!s || !g) return 'Loading.';
+            return `🎮 Level ${levelInfo(s.xp).level}, ${s.xp} XP, $${g.money}, ${s.totalChats} conversations. Press the 🎒 RPG button on the toolbar for details.`;
+          }
+          if (
+            /^(?:cot truyen|nhiem vu cot truyen|story|story quest|chuong tiep|quest story)$/.test(m)
+          ) {
+            open('story');
+            return storyText();
+          }
+          if (/^(?:lich npc|lich sinh hoat|npc schedule|npc relationships|quan he npc)$/.test(m)) {
+            open('people');
+            return '👥 Opened NPC schedules, friendships and conversations.';
+          }
+          if (/^(?:tao nhiem vu|nhiem vu ai|generate quest|new ai quest|quest ai)$/.test(m)) {
+            open('quests');
+            void makeQuest();
+            return '✨ I am creating a conversation quest based on the NPCs who are around. If Gemini is not connected, the game will use a pre-written quest.';
+          }
+          return null;
+        }
+        function open(tab = 'story') {
+          visibleTab = tab;
+          $('rpg-panel').hidden = false;
+          refresh();
+        }
+        function close() {
+          $('rpg-panel').hidden = true;
+        }
+        function renderStory(s) {
+          const c = chapter();
+          if (!c)
+            return `<div class="rpg-good">🏆 You have completed all 3 chapters! Keep taking AI quests or practice English with NPCs.</div>`;
+          const choices = {
+            letter: ['Carefully', 'Quickly'],
+            guide: ['Search the market', 'Ask Tom'],
+            festival: ['Music', 'Green garden'],
+          }[c.id];
+          const chooseNow = s.story.step === 1;
+          const actualStep = (v, i) =>
+            c.id === 'guide' && i === 2 && s.story.choice === 'Search the market'
+              ? 'Go to the Market to look for clues. No need to chat with Tom.'
+              : c.id === 'festival' && i === 2
+                ? s.story.choice === 'Green garden'
+                  ? 'Ask Lily about the green garden.'
+                  : 'Ask Mia about the music idea.'
+                : v;
+          return `<h3>📜 ${escape(c.title)}</h3><p>${escape(c.summary)}</p><ol class="rpg-steps">${c.steps.map((v, i) => `<li class="${i < s.story.step ? 'done' : i === s.story.step ? 'current' : ''}">${escape(actualStep(v, i))}</li>`).join('')}</ol>${chooseNow ? `<div class="rpg-card"><b>Make a decision:</b><div class="rpg-actions">${choices.map((c) => `<button data-rpg-choice="${escape(c)}">${escape(c)}</button>`).join('')}</div></div>` : ''}<p class="rpg-muted">${s.story.choice ? `You chose: ${escape(s.story.choice)} · ` : ''}To complete a conversation step, go to the right NPC, press E and say an English sentence of at least 3 words that fits the goal.</p><div class="rpg-card">🎁 Reward: ${c.rewards.xp} XP, $${c.rewards.money} and ${items[c.rewards.item].name}</div>`;
+        }
+        function renderQuest(s) {
+          return (
+            `<h3>✨ Situational AI Quests</h3><p class="rpg-muted">AI can write the quest content if Gemini is connected. If not, the game still creates offline quests. Goals and rewards are always verified by the game.</p><button id="rpg-generate" class="rpg-primary">✨ Create new quest</button>` +
+            (s.generated.length
+              ? s.generated
+                  .slice()
+                  .reverse()
+                  .map(
+                    (q) =>
+                      `<div class="rpg-card"><b>${escape(q.title)}</b> ${q.status === 'done' ? '✅' : ''}<p>${escape(q.summary)}</p><div>🎯 ${escape(q.npcName)} · ${escape(q.instruction)}</div><div class="rpg-muted">Use at least 3 English words, including one of these words: ${escape(q.keywords.join(', '))}.</div><small>+${q.xp} XP · $${q.money} · ${q.status === 'active' ? 'In progress' : 'Completed'}</small></div>`,
+                  )
+                  .join('')
+              : '<p>No AI quests yet. Press the create button to get started.</p>') +
+            `<p class="rpg-muted">Limit of 3 quests per in-game day, with at most 1 quest in progress.</p>`
+          );
+        }
+        function renderBag(s) {
+          const entries = Object.entries(s.inventory).filter(([id, n]) => n > 0 && items[id]);
+          return `<h3>🎒 Your Bag</h3>${entries.length ? entries.map(([id, n]) => `<div class="rpg-card rpg-item"><div><b>${items[id].name}</b><div class="rpg-muted">${items[id].desc}</div></div><div>x${n} ${!items[id].quest && items[id].bonus ? `<button data-rpg-use="${id}">Use</button>` : ''}</div></div>`).join('') : '<p>No items yet.</p>'}<p class="rpg-muted">Story items are kept as keepsakes. Don't clear your browser data unless you have exported your save in the ⚙ AI section.</p>`;
+        }
+        function renderShop() {
+          return `<h3>💰 Smart Economy V10</h3><p>Go to a shop, meet the NPC and open Economy with the B key to buy things. Remote purchases are not possible.</p><button onclick="window.LQ10_ECONOMY?.show('shop')">🛒 Open V10 Shop</button>`;
+        }
+        function renderPeople() {
+          const all = currentSchedules();
+          return `<h3>👥 Residents & Live Schedules</h3><p class="rpg-muted">Activity data comes directly from the in-game time; NPCs may go home, sleep, or move to another area.</p>${all.map((n) => `<div class="rpg-card"><b>${escape(n.name)}</b> <span class="rpg-muted">${n.available ? '🟢 Around' : '🌙 Unavailable'}</span><div>🕒 ${escape(n.activity || 'Unknown')} · 🤝 Bond ${n.trust}/100 · 💬 ${n.talks} chats</div>${n.lastMessage ? `<small>Last said: “${escape(n.lastMessage)}”</small>` : ''}${n.timetable.length ? `<details><summary>View 24-hour schedule</summary>${n.timetable.map((w) => `<div class="rpg-schedule">${clockHour(w.from)}–${clockHour(w.to)} · ${escape(w.label)}</div>`).join('')}</details>` : ''}</div>`).join('')}`;
+        }
+        function renderMemory(s) {
+          return `<h3>🧠 Player Memory</h3><p class="rpg-muted">Only information you explicitly ask to be remembered is saved. The AI receives these memories along with the quest context.</p><form id="rpg-memory-form"><input id="rpg-fact" maxlength="180" placeholder="Example: My name is Minh and I like reading books" required/><button>Save</button></form>${s.playerFacts.length ? s.playerFacts.map((f, i) => `<div class="rpg-card rpg-item"><span>${escape(f)}</span><button data-rpg-forget="${i}" title="Delete this entry">Delete</button></div>`).join('') : '<p>No memories yet. You can also chat: “Remember that I like reading books”.</p>'}`;
+        }
+        function refresh() {
+          const g = game(),
+            s = state();
+          if (!s || !g) return;
+          const info = levelInfo(s.xp),
+            percent = Math.max(
+              0,
+              Math.min(100, ((s.xp - info.start) / (info.next - info.start)) * 100),
+            );
+          const hud = $('rpg-hud');
+          if (hud) {
+            hud.innerHTML = `<span>⭐ Level ${info.level}</span><span>$${g.money}</span><span class="rpg-xp"><i style="width:${percent}%"></i></span><small>${s.xp}/${info.next} XP</small>`;
+          }
+          const panel = $('rpg-panel');
+          if (!panel || panel.hidden) return;
+          const labels = {
+            story: '📜 Story',
+            quests: '✨ AI Quests',
+            bag: '🎒 Bag',
+            shop: '🏪 Shop',
+            people: '👥 NPC',
+            memory: '🧠 Memory',
+          };
+          $('rpg-tabs').innerHTML = Object.entries(labels)
+            .map(
+              ([id, text]) =>
+                `<button data-rpg-tab="${id}" class="${visibleTab === id ? 'active' : ''}">${text}</button>`,
+            )
+            .join('');
+          $('rpg-title').textContent = `⭐ Level ${info.level} · $${g.money} · ${s.xp} XP`;
+          const content = {
+            story: renderStory,
+            quests: renderQuest,
+            bag: renderBag,
+            shop: renderShop,
+            people: renderPeople,
+            memory: renderMemory,
+          }[visibleTab];
+          $('rpg-content').innerHTML = content(s);
+        }
+        let lastScene = null,
+          lastTick = 0;
+        function heartbeat() {
+          const scene = getScene();
+          if (scene !== lastScene) {
+            lastScene = scene;
+            refresh();
+          }
+          if (!scene) return;
+          const s = state(),
+            market = scene.area?.places?.market;
+          if (
+            s?.story?.index === 1 &&
+            s.story.step === 2 &&
+            s.story.choice === 'Search the market' &&
+            !scene.inside &&
+            market
+          ) {
+            const dist = Math.hypot(
+              scene.player.x - (market.x * 32 + 16),
+              scene.player.y - (market.y * 32 + 16),
+            );
+            if (dist < 82) advance('You found a clue at the Market.');
+          }
+          const sec = Date.now();
+          if (sec - lastTick > 1400) {
+            lastTick = sec;
+            refresh();
+          }
+          if (sec - lastPositionSave > 4000) {
+            lastPositionSave = sec;
+            savePosition(scene);
+          }
+        }
+        function init() {
+          $('rpg-open').addEventListener('click', () => open('story'));
+          $('rpg-close').addEventListener('click', close);
+          $('rpg-panel').addEventListener('click', (e) => {
+            if (e.target.id === 'rpg-panel') {
+              close();
+              return;
+            }
+            const el = e.target.closest(
+              '[data-rpg-tab], [data-rpg-choice], [data-rpg-use], [data-rpg-buy], [data-rpg-forget], #rpg-generate',
+            );
+            if (!el) return;
+            if (el.dataset.rpgTab) open(el.dataset.rpgTab);
+            else if (el.dataset.rpgChoice) choose(el.dataset.rpgChoice);
+            else if (el.dataset.rpgUse) use(el.dataset.rpgUse);
+            else if (el.dataset.rpgBuy) buy(el.dataset.rpgBuy);
+            else if (el.dataset.rpgForget != null) forgetFact(Number(el.dataset.rpgForget));
+            else if (el.id === 'rpg-generate') void makeQuest();
+          });
+          $('rpg-panel').addEventListener('submit', (e) => {
+            if (e.target.id !== 'rpg-memory-form') return;
+            e.preventDefault();
+            notify(storeFact($('rpg-fact').value));
+          });
+          $('rpg-panel').addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Escape') close();
+          });
+          $('rpg-panel').addEventListener('keyup', (e) => e.stopPropagation());
+          document.addEventListener('keydown', (e) => {
+            if (
+              e.code === 'KeyR' &&
+              !e.repeat &&
+              !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) &&
+              !document.getElementById('chat').offsetParent
+            ) {
+              if ($('rpg-panel').hidden) open('story');
+              else close();
+            }
+          });
+          setInterval(heartbeat, 850);
+          window.addEventListener('beforeunload', save);
+          window.addEventListener('lifequest:status', () => setTimeout(refresh, 0));
+          refresh();
+        }
+        return {
+          init,
+          state,
+          refresh,
+          open,
+          close,
+          restorePosition,
+          onNpcOpen,
+          onNpcMessage,
+          npcContext,
+          coachContext,
+          handleCoach,
+          storeFact,
+          makeQuest,
+          storyText,
+          levelInfo,
+        };
+      })();
+      window.LQ_ADVENTURE = adventure;
+
+      const assistantCore = (() => {
+        // Separate deterministic, validated game commands from free-form tutor answers.
+        const fold = (s) =>
+          String(s ?? '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/[^a-z0-9 .!?'-]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        const has = (s, p) =>
+          (
+            ' ' +
+            fold(s)
+              .replace(/[.!?'-]/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim() +
+            ' '
+          ).includes(
+            ' ' +
+              fold(p)
+                .replace(/[.!?'-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim() +
+              ' ',
+          );
+        const starts = (s, re) => re.test(s);
+        const npcAliases = {
+          barista: ['lily', 'barista', 'pha che'],
+          mayor: ['brown', 'thi truong'],
+          librarian: ['green', 'thu thu'],
+          shopkeeper: ['tom', 'chu tiem'],
+          kid: ['mia'],
+          doctor: ['chen', 'bac si'],
+          police: ['davis', 'canh sat'],
+          teacher: ['taylor', 'giao vien'],
+          firefighter: ['carlos', 'linh cuu hoa'],
+          chef: ['marco', 'dau bep'],
+          banker: ['park', 'nhan vien ngan hang'],
+          postman: ['sam', 'buu ta'],
+          hotelclerk: ['sofia', 'le tan'],
+          priest: ['joe'],
+          cinema: ['zoe'],
+          foreman: ['jack'],
+          miner: ['ben'],
+          blaster: ['tomas'],
+          carter: ['pete'],
+          sorter: ['lena'],
+          stationmaster: ['hale', 'truong ga'],
+          ticketclerk: ['nina', 'ban ve'],
+          porter: ['ollie', 'phu khuan vac'],
+          etmaster: ['reed'],
+          etclerk: ['emma'],
+          etporter: ['leo'],
+        };
+        const placeAliases = {
+          'Sunny Cafe': ['quan ca phe', 'cafe', 'coffee shop'],
+          Library: ['thu vien'],
+          School: ['truong hoc'],
+          Hospital: ['benh vien'],
+          'Town Hall': ['toa thi chinh', 'uy ban'],
+          'Police Station': ['don canh sat'],
+          Restaurant: ['nha hang'],
+          'Corner Shop': ['cua hang', 'tap hoa'],
+          Bank: ['ngan hang'],
+          'Post Office': ['buu dien'],
+          Hotel: ['khach san'],
+          Cinema: ['rap phim'],
+          'Fire Station': ['tram cuu hoa'],
+          Church: ['nha tho'],
+          Market: ['cho'],
+          "Hero's Home": ['nha cua toi', 'nha toi', 'my home'],
+          'Great Mine': ['ham mo', 'khu mo'],
+          'Rail Station': ['ga tau'],
+          stn_forecourt: ['ga tau', 'nha ga'],
+          'Mining Inn': ['quan tro', 'nha tro'],
+          'First-Aid Post': ['tram y te'],
+        };
+        const npcRoles = {
+          etmaster: 'station master',
+          etclerk: 'ticket clerk',
+          etporter: 'porter',
+          barista: 'barista at Sunny Cafe',
+          mayor: 'mayor',
+          librarian: 'librarian at the library',
+          shopkeeper: 'shop owner',
+          kid: 'student',
+          doctor: 'doctor at the hospital',
+          police: 'police officer',
+          teacher: 'English teacher',
+          firefighter: 'firefighter',
+          chef: 'chef',
+          banker: 'bank clerk',
+          postman: 'mail carrier',
+          hotelclerk: 'hotel receptionist',
+          priest: 'church caretaker',
+          cinema: 'cinema ticket seller',
+          foreman: 'mine foreman',
+          miner: 'miner',
+          blaster: 'rock blaster',
+          carter: 'ore cart driver',
+          sorter: 'ore sorter',
+          stationmaster: 'station master',
+          ticketclerk: 'ticket clerk at the train station',
+          porter: 'porter at the train station',
+        };
+        const terms = {
+          hello: ['xin chào', 'Hello! Nice to meet you.'],
+          thank: ['cảm ơn', 'Thank you for your help.'],
+          please: ['làm ơn / vui lòng', 'Could you help me, please?'],
+          library: ['thư viện', 'I am going to the library.'],
+          school: ['trường học', 'I study at school.'],
+          hospital: ['bệnh viện', 'Where is the hospital?'],
+          friend: ['người bạn', 'She is my friend.'],
+          teacher: ['giáo viên', 'My teacher is kind.'],
+          student: ['học sinh', 'I am a student.'],
+          breakfast: ['bữa sáng', 'I have breakfast at seven.'],
+          lunch: ['bữa trưa', 'I eat lunch at school.'],
+          dinner: ['bữa tối', 'We have dinner at home.'],
+          price: ['giá cả', 'What is the price?'],
+          expensive: ['đắt', 'This jacket is expensive.'],
+          cheap: ['rẻ', 'This book is cheap.'],
+          delicious: ['ngon', 'The soup is delicious.'],
+          recommend: ['giới thiệu / đề xuất', 'Can you recommend a book?'],
+          directions: ['chỉ đường', 'Could you give me directions?'],
+          safe: ['an toàn', 'Please stay safe.'],
+          careful: ['cẩn thận', 'Be careful when crossing the road.'],
+          healthy: ['khỏe mạnh', 'I eat vegetables to stay healthy.'],
+          polite: ['lịch sự', 'It is polite to say thank you.'],
+          confident: ['tự tin', 'I feel confident speaking English.'],
+          practice: ['luyện tập', 'I practice English every day.'],
+          improve: ['cải thiện', 'I want to improve my English.'],
+          borrow: ['mượn', 'May I borrow this book?'],
+          receipt: ['hóa đơn', 'Could I have a receipt, please?'],
+          ticket: ['vé', 'One ticket, please.'],
+          appointment: ['cuộc hẹn', "I have a doctor's appointment."],
+          hobby: ['sở thích', 'Reading is my hobby.'],
+          because: ['bởi vì', 'I study because I enjoy learning.'],
+          yesterday: ['hôm qua', 'I went to the library yesterday.'],
+          tomorrow: ['ngày mai', 'I will study tomorrow.'],
+        };
+        const samples = {
+          A1: [
+            ['I ___ a student.', 'am', 'is', 'are', 'a', 'I am a student.'],
+            ['She ___ a book.', 'has', 'have', 'having', 'a', 'She has a book.'],
+            ['What ___ your name?', 'is', 'are', 'am', 'a', 'What is your name?'],
+            ['I ___ apples.', 'like', 'likes', 'liking', 'a', 'I like apples.'],
+          ],
+          A2: [
+            ['I ___ to school yesterday.', 'went', 'go', 'goes', 'a', 'Yesterday → went.'],
+            [
+              'How ___ apples do you need?',
+              'many',
+              'much',
+              'long',
+              'a',
+              'Use “many” with countable nouns.',
+            ],
+            ['She is ___ than me.', 'taller', 'tall', 'tallest', 'a', 'Comparative: taller.'],
+            [
+              'There ___ some books on the desk.',
+              'are',
+              'is',
+              'am',
+              'a',
+              '“Books” is plural → are.',
+            ],
+          ],
+          B1: [
+            [
+              'If it rains, I ___ at home.',
+              'will stay',
+              'stayed',
+              'staying',
+              'a',
+              'First conditional: if + present, will + verb.',
+            ],
+            [
+              'I have lived here ___ 2020.',
+              'since',
+              'for',
+              'during',
+              'a',
+              'Since + a point in time.',
+            ],
+            [
+              'The book ___ by many students.',
+              'is read',
+              'reads',
+              'reading',
+              'a',
+              'Passive voice: be + past participle.',
+            ],
+            [
+              'She asked me where I ___.',
+              'lived',
+              'do live',
+              'am live',
+              'a',
+              'Indirect question: she asked where I lived.',
+            ],
+          ],
+          B2: [
+            [
+              'Hardly ___ arrived when it started raining.',
+              'had I',
+              'I had',
+              'have I',
+              'a',
+              'Inversion with hardly + had.',
+            ],
+            [
+              'The report needs ___ before Friday.',
+              'to be finished',
+              'finish',
+              'finished it',
+              'a',
+              'Need + to be + V3.',
+            ],
+          ],
+          C1: [
+            [
+              'Only after the meeting ___ the issue.',
+              'did we understand',
+              'we understood',
+              'understood we',
+              'a',
+              'Inversion after Only after.',
+            ],
+            [
+              'Were I ___ your position, I would reconsider.',
+              'in',
+              'at',
+              'on',
+              'a',
+              'Conditional inversion: Were I in your position.',
+            ],
+          ],
+        };
+        let quiz = null,
+          lastTarget = null,
+          practiceCounter = 0,
+          practiceState = null;
+        const modes = ['auto', 'chat', 'learn', 'control'];
+        function findMention(s, entries, aliases) {
+          const hits = [];
+          for (const x of entries || []) {
+            let names = [
+              x.id,
+              x.name,
+              String(x.name)
+                .replace(/\([^)]*\)/g, '')
+                .replace(/^(mr|ms|dr|officer|father)\.? /i, ''),
+              ...(aliases[x.id] || []),
+              ...(aliases[x.name] || []),
+            ];
+            for (const name of names) {
+              const n = fold(name);
+              if (n.length > 2 && has(s, n)) hits.push({ x, len: n.length });
+            }
+          }
+          hits.sort((a, b) => b.len - a.len);
+          return hits[0]?.x || null;
+        }
+        function detectAction(input, ctx, mode) {
+          const s = fold(input),
+            plain = s.replace(/[.!?]+$/, '');
+          const isStop =
+            /^(dung|dung lai|stop|stop moving|cancel|huy lenh|huy di chuyen|thoi dung|pause)( ngay| lai| di| nhe)?$/.test(
+              plain,
+            );
+          if (isStop) return { kind: 'stop' };
+          if (mode === 'chat' || mode === 'learn') return null;
+          const isGuide =
+            /^(help|giup do|huong dan|cach choi|lenh nao|commands|ban lam duoc gi|nhung lenh nao)/.test(
+              s,
+            );
+          if (isGuide) return { kind: 'help' };
+          if (
+            /^(toi|minh|nhan vat|player|i) (dang )?o dau|^(vi tri|toa do|where am i|what time is it|may gio roi|gio trong game)/.test(
+              s,
+            )
+          )
+            return { kind: 'status' };
+          const near =
+            /nguoi gan nhat|npc gan nhat|nguoi gan day|nearest (npc|person)|talk to someone|noi chuyen voi ai do/.test(
+              s,
+            );
+          const talking =
+            /noi chuyen|tro chuyen|bat chuyen|chat with|talk to|speak to|giao tiep voi|noi voi|say hello to/.test(
+              s,
+            );
+          const npc = findMention(s, ctx.npcs, npcAliases),
+            place = findMention(s, ctx.places, placeAliases);
+          const asking =
+            /\?$/.test(input.trim()) ||
+            /^(ai la|la ai|who is|what is|what does|where is|where can|can you tell|co phai|co nhung|gioi thieu|liet ke|ke ten|cho biet|toi muon biet|neu|y nghia|huong dan cach|tai sao|why|how do|how to|tu vung|dich|sua cau|goi y|explain)/.test(
+              s,
+            );
+          const motion =
+            /^(hay |lam on |giup toi |please |cho toi |ban hay |co the |could you )?(di |chay |dua |den |den cho |dan |tim |find |go |walk |move |navigate |head |dua toi |hay den |dich chuyen |qua |sang |tien |lui |len |xuong )/.test(
+              s,
+            ) || /^toi muon (den|di den|tim|gap)/.test(s);
+          if (near && (talking || /^talk|^noi chuyen/.test(s))) return { kind: 'talk' };
+          // Never navigate because a name is merely mentioned in a question or a grammar task.
+          if (npc && (talking || motion) && !asking) {
+            lastTarget = { kind: 'navigate_npc', target: npc.id };
+            return { kind: 'navigate_npc', target: npc.id, autoTalk: talking };
+          }
+          if (place && motion && !asking) {
+            lastTarget = { kind: 'navigate_place', target: place.id };
+            return { kind: 'navigate_place', target: place.id };
+          }
+          if (talking && (near || /^(noi chuyen|talk|bat chuyen|say hello)$/.test(plain)))
+            return { kind: 'talk' };
+          if (
+            /^(den do|di den do|quay lai do|go there|go back there|noi chuyen voi nguoi do|talk to them)/.test(
+              s,
+            ) &&
+            lastTarget
+          ) {
+            return { ...lastTarget, autoTalk: talking };
+          }
+          const dirCmd =
+            /^(di|hay di|cho|cho toi di|move|go|walk|chay|sang|qua|re|tien|lui|len|xuong|walk to the|turn)/.test(
+              s,
+            );
+          if (dirCmd && !asking && !npc && !place) {
+            const dir = /\b(trai|left|west)\b/.test(s)
+              ? 'left'
+              : /\b(phai|right|east)\b/.test(s)
+                ? 'right'
+                : /\b(len|tren|up|north)\b/.test(s)
+                  ? 'up'
+                  : /\b(xuong|duoi|down|south)\b/.test(s)
+                    ? 'down'
+                    : null;
+            if (dir) {
+              const num = s.match(/\b(\d+(?:[.,]\d+)?)\s*(giay|s|second|seconds|buoc|steps?)\b/);
+              const seconds = num
+                ? parseFloat(num[1].replace(',', '.')) * (/buoc|step/.test(num[2]) ? 0.25 : 1)
+                : 1;
+              return {
+                kind: 'move',
+                direction: dir,
+                seconds: Math.max(0.25, Math.min(3, seconds)),
+              };
+            }
+          }
+          return null;
+        }
+        const prettyNpc = (n) => n.name.replace(/\([^)]*\)/, '').trim();
+        function localKnowledge(message, ctx) {
+          const s = fold(message),
+            npc = findMention(s, ctx.npcs, npcAliases),
+            place = findMention(s, ctx.places, placeAliases);
+          if (
+            npc &&
+            /la ai|who is|nghe gi|lam gi|what does|gioi thieu|co biet|dang o dau/.test(s)
+          ) {
+            const activity = npc.activity ? ` Right now they are ${npc.activity}.` : '';
+            const canSpeak = /tieng anh|english|can speak|biet noi/.test(s)
+              ? ` Yes, you can chat in English with ${prettyNpc(npc)} in the game.`
+              : '';
+            return `👤 ${prettyNpc(npc)} is ${npcRoles[npc.id] || 'a resident'} of English Town.${activity}${canSpeak} ${npc.available ? 'This character can currently be found in this area.' : 'This character is not near you right now.'}\nTo go meet them, say: “đến ${prettyNpc(npc)} và nói chuyện”.`;
+          }
+          if (
+            place &&
+            /o dau|where is|what is|gioi thieu|la gi|co gi|tell me|chi duong|duong den|way to|how do i get/.test(
+              s,
+            )
+          ) {
+            let direction = '';
+            if (place.tile && !ctx.inside) {
+              const dx = place.tile.x - ctx.position.x,
+                dy = place.tile.y - ctx.position.y;
+              const hor = dx > 2 ? 'East' : dx < -2 ? 'West' : '';
+              const ver = dy > 2 ? 'South' : dy < -2 ? 'North' : '';
+              const compass = [hor, ver].filter(Boolean).join(' ') || 'right nearby';
+              direction = ` From your current position, the rough direction is ${compass}, about ${Math.round(Math.hypot(dx, dy))} map tiles away (not counting detours).`;
+            }
+            return `🏠 ${place.name} is a location on the ${ctx.area} map.${direction} If you say “đến ${place.name}”, your character will find a valid path there.`;
+          }
+          if (
+            /\b(npc|nhan vat|nguoi dan|dan cu|citizens)\b/.test(s) &&
+            /co ai|danh sach|ke ten|lieu ke|nhung ai|who/.test(s)
+          )
+            return (
+              '👥 Characters in this area: ' +
+              ctx.npcs
+                .map((n) => prettyNpc(n))
+                .slice(0, 20)
+                .join(', ') +
+              '.'
+            );
+          if (
+            /(dia diem|toa nha|buildings|places)/.test(s) &&
+            /(nao|danh sach|ke ten|co nhung|where)/.test(s)
+          )
+            return (
+              '📍 Available destinations: ' +
+              ctx.places
+                .filter((x) => x.type === 'building')
+                .slice(0, 15)
+                .map((x) => x.name)
+                .join(', ') +
+              '.'
+            );
+          if (/(nhiem vu|quest|mission)/.test(s))
+            return '📜 Press Q to see your real quests in the game. Chat with the residents in English to complete their requests. I can suggest suitable questions for each NPC.';
+          if (
+            /(gio|time|ngay)/.test(s) &&
+            /(bao nhieu|may gio|what time|hien tai|trong game)/.test(s)
+          )
+            return `🕒 It is ${ctx.time} in the game, day ${ctx.day}.`;
+          if (/(vi tri|toa do|dang o dau|where am i)/.test(s))
+            return `📍 You are at ${ctx.inside || ctx.area}, tile (${ctx.position.x}, ${ctx.position.y}) at ${ctx.time}.`;
+          if (/(goi y|cau nao|noi gi|say what|what should i say)/.test(s) && npc) {
+            const help = {
+              barista: 'Could I have a cup of tea, please?',
+              librarian: 'Could you recommend a book?',
+              doctor: 'I have a headache. What should I do?',
+              teacher: 'How can I improve my English?',
+              shopkeeper: 'How much does this cost?',
+              kid: 'Hi! My name is Alex. What is your name?',
+              police: 'Excuse me, where is the library?',
+              mayor: 'We could build a new park.',
+            };
+            return `💬 Suggestion for talking to ${prettyNpc(npc)}:\n“${help[npc.id] || 'Hello! Can I ask you a question, please?'}”`;
+          }
+          return null;
+        }
+        function offlineTutor(message, ctx) {
+          const s = fold(message);
+          if (/^(xin chao|hello|hi|chao ban|hey|good morning|good evening)\b/.test(s))
+            return 'Hi there! 👋 I can help you control the game and practice English. Try “đến Lily”, “sửa câu: I goes to school”, “từ vựng: library” or “quiz”.';
+          if (/^(ket thuc luyen noi|thoat luyen noi|stop roleplay|end roleplay)$/.test(s))
+            return 'You are not in a conversation practice round. Type “luyện hội thoại” to start.';
+          if (/^(cam on|thank you|thanks)\b/.test(s))
+            return 'No problem! 😊 You’re welcome. Try a quiz or ask a new English question.';
+          const known = localKnowledge(message, ctx);
+          if (known) return known;
+          const termRequest = s.match(
+            /^(?:tu vung|tra tu|nghia cua|what does|meaning of|vocabulary|explain word)\s*[: ]\s*([a-z- ]{2,35})/,
+          );
+          if (termRequest) {
+            const word = termRequest[1].trim().replace(/ mean(s)?$/, '');
+            const item = terms[word];
+            if (item) return `📖 ${word} — ${item[0]}\nExample: “${item[1]}”`;
+            return `I don’t have “${word}” in the offline dictionary yet. Connect Gemini for extended lookups, or try “từ vựng: library”.`;
+          }
+          const requested = message.match(
+            /^\s*(?:sửa câu|sửa ngữ pháp|check grammar|correct|fix|sua cau|grammar)\s*[:：-]?\s*(.+)$/i,
+          );
+          if (requested) {
+            const raw = requested[1].trim();
+            let fixed = raw,
+              reasons = [];
+            const rules = [
+              [/\bi goes\b/gi, 'I go', 'Use “go” with “I”, not “goes”.'],
+              [/\bhe go\b/gi, 'he goes', '“He” needs “goes” in the present simple.'],
+              [/\bshe go\b/gi, 'she goes', '“She” needs “goes” in the present simple.'],
+              [/\bi is\b/gi, 'I am', '“I” goes with “am”.'],
+              [/\bshe are\b/gi, 'she is', '“She” goes with “is”.'],
+              [/\bthey is\b/gi, 'they are', '“They” goes with “are”.'],
+              [
+                /\bi have (\d+) years old\b/gi,
+                'I am $1 years old',
+                'Use “be + years old” to say your age.',
+              ],
+              [/\bi am agree\b/gi, 'I agree', '“Agree” is a verb; you don’t need “am”.'],
+              [/\bcan you to\b/gi, 'can you', 'Use the base verb after “can”.'],
+              [/\bdidn't went\b/gi, "didn't go", 'Use the base verb after “didn’t”.'],
+            ];
+            for (const [re, rep, reason] of rules) {
+              if (re.test(fixed)) {
+                re.lastIndex = 0;

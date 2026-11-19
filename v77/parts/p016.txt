@@ -1,0 +1,1000 @@
+#lq-art .cap.show{opacity:1}
+#lq-art .who{font:800 12px system-ui,sans-serif;color:var(--acc,#ffd447);letter-spacing:.06em;margin-bottom:3px;text-transform:uppercase}
+#lq-art .en{margin:0;font:700 clamp(16px,2.4vw,20px)/1.4 system-ui,'Segoe UI',sans-serif}
+#lq-art .vi{margin:5px 0 0;font:14px/1.4 system-ui,sans-serif;color:#b9bcc4}
+#lq-art .hint{font-size:11px;color:#8b8f99;text-align:right;margin-top:4px}
+#lq-art .skip{position:absolute;top:calc(10vh + 10px);right:14px;background:#0009;color:#fff;border:1px solid #ffffff55;border-radius:999px;padding:7px 14px;font:700 13px system-ui,sans-serif;cursor:pointer;pointer-events:auto}
+#lq-art .card{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) rotate(-2deg);text-align:center;color:#fff;opacity:0;transition:opacity .8s;white-space:nowrap;padding:30px 60px;background:radial-gradient(closest-side,#000c,#0000)}
+#lq-art .card.show{opacity:1}
+#lq-art .card small{display:block;font:800 13px system-ui,sans-serif;letter-spacing:.35em;color:#35c8d0;text-transform:uppercase}
+#lq-art .card b{display:block;font:900 clamp(30px,6vw,54px)/1.05 Impact,'Arial Black',system-ui,sans-serif;margin:8px 0;letter-spacing:.03em;background:linear-gradient(90deg,#ff4f87,#ffd447 40%,#35c8d0 70%,#9470e8);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(3px 3px 0 #000)}
+#lq-art .card span{font:600 14px system-ui,sans-serif;color:#d4d6dc}
+`;
+
+  // who: '' = narrator. cam: tile to look at (null = the player). acc: caption colour. act: what happens at this line.
+  const FILM = [
+    { cam: [35, 50], zoom: 1.35, en: 'The old freight tunnel was dark and quiet. Nobody used it any more.', vi: 'Đường hầm chở hàng cũ tối om và im lặng. Không còn ai dùng nó nữa.', act: 'dark' },
+    { cam: [35, 47], zoom: 1.45, en: 'Then you saw them on the wall: a star, an eye and a wave. The three marks!', vi: 'Rồi bạn nhìn thấy chúng trên tường: một ngôi sao, một con mắt và một con sóng. Ba dấu hiệu!', act: 'marks', acc: '#ffd447' },
+    { cam: [35, 40], zoom: 1.15, en: 'At the end of the tunnel, there was light… and colour everywhere.', vi: 'Ở cuối đường hầm có ánh sáng… và màu sắc ở khắp mọi nơi.', act: 'light' },
+    { cam: [36, 14], zoom: 0.82, en: 'Beyond the tunnel rises Dream Gate: a new home for painters, makers and performers.', vi: 'Qua đường hầm là Dream Gate: ngôi nhà mới của họa sĩ, nghệ nhân và nghệ sĩ biểu diễn.', act: 'paint' },
+    { cam: [9, 13], zoom: 1.3, who: 'Noor · Color Curator', en: 'Welcome to the Art District! Here, every wall tells a story.', vi: 'Chào mừng đến Khu Nghệ thuật! Ở đây, bức tường nào cũng kể một câu chuyện.', act: 'noor', acc: '#ff5d9b' },
+    { cam: [83, 32], zoom: 1.0, en: 'Galleries and studios now share an artists’ avenue, while stages and dance venues have their own quarter.', vi: 'Phòng tranh và xưởng sáng tác nằm trên tuyến phố nghệ sĩ; sân khấu và sàn nhảy có khu riêng.', act: 'paint', acc: '#42dce7' },
+    { cam: [10, 46], zoom: 1.3, who: 'Ivo · Street Musician', en: 'And every street can become a stage. Can you hear the rhythm?', vi: 'Và mỗi con phố đều có thể trở thành sân khấu. Bạn có nghe thấy nhịp điệu không?', act: 'music', acc: '#42dce7' },
+    { cam: [9, 33], zoom: 1.26, who: 'Kai · Mural Painter', en: 'Before you paint our community wall, first learn to observe, design and prepare the colours.', vi: 'Trước khi vẽ lên tường cộng đồng, hãy học quan sát, bố cục và chuẩn bị màu sắc.', act: 'kai', acc: '#ff8b54' },
+    { cam: [62, 47], zoom: 1.3, who: 'Sol · Art Critic', en: "Don't just say it is beautiful. Tell us why it matters.", vi: 'Đừng chỉ nói nó đẹp. Hãy cho chúng tôi biết vì sao nó có ý nghĩa.', act: 'sol', acc: '#c39cff' },
+    { cam: null, zoom: 1, en: 'Explore the painters’ quarter, complete three creative activities, then leave your mark.', vi: 'Hãy khám phá khu hội họa, hoàn thành ba hoạt động sáng tạo rồi để lại dấu ấn của bạn.', act: 'end' },
+  ];
+
+  // ---- drawing helpers (into the film's own Graphics, redrawn every frame) -------------------------------------------
+  function star(g, cx, cy, r, color, alpha) {
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5;
+      const rr = i % 2 ? r * 0.45 : r;
+      pts.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr });
+    }
+    g.fillStyle(color, alpha).fillPoints(pts, true);
+  }
+  function eye(g, cx, cy, r, color, alpha) {
+    g.lineStyle(3, color, alpha);
+    g.beginPath();
+    g.arc(cx, cy + r * 0.9, r * 1.25, Math.PI * 1.22, Math.PI * 1.78, false);
+    g.strokePath();
+    g.beginPath();
+    g.arc(cx, cy - r * 0.9, r * 1.25, Math.PI * 0.22, Math.PI * 0.78, false);
+    g.strokePath();
+    g.fillStyle(color, alpha).fillCircle(cx, cy, r * 0.32);
+  }
+  function wave(g, cx, cy, r, color, alpha) {
+    g.lineStyle(3, color, alpha);
+    g.beginPath();
+    for (let i = 0; i <= 20; i++) {
+      const x = cx - r + (i / 20) * r * 2;
+      const y = cy + Math.sin((i / 20) * Math.PI * 2) * r * 0.35;
+      if (i) g.lineTo(x, y);
+      else g.moveTo(x, y);
+    }
+    g.strokePath();
+  }
+  function glow(g, x, y, r, color, a) {
+    for (let k = 3; k >= 1; k--) g.fillStyle(color, a * 0.12 * k).fillCircle(x, y, r * (1 + (3 - k) * 0.6));
+  }
+  // Seeded random so the splashes are always in the same place.
+  function rnd(seed) {
+    let s = seed >>> 0;
+    return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  }
+
+  // ---- film player -------------------------------------------------------------------------------------------------
+  let filming = false;
+  function ensureCss() {
+    if (document.getElementById('lq-art-css')) return;
+    const st = document.createElement('style');
+    st.id = 'lq-art-css';
+    st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  function setupScene(sc, actors) {
+    const W = sc.area.w * 32,
+      H = sc.area.h * 32;
+    const R = rnd(77);
+    const splashes = [];
+    for (let i = 0; i < 46; i++)
+      splashes.push({
+        x: (12 + R() * 48) * 32,
+        y: (14 + R() * 32) * 32,
+        r: 5 + R() * 12,
+        c: PALETTE[i % PALETTE.length],
+        d: R() * 1.6,
+      });
+    const notes = [];
+    const marks = [
+      { k: 'star', x: 31.7 * 32, y: 48.4 * 32, c: 0xff4f87 },
+      { k: 'eye', x: 38.6 * 32, y: 46.6 * 32, c: 0x35c8d0 },
+      { k: 'wave', x: 31.9 * 32, y: 45.2 * 32, c: 0x9470e8 },
+    ];
+    const st = { dark: 0, darkTo: 0, darkFrom: 0, darkT0: 0, marks: 0, marksT0: 0, paint: 0, paintT0: 0, music: 0, focus: null, focusT0: 0 };
+    const fade = (to, ms) => {
+      st.darkFrom = st.dark;
+      st.darkTo = to;
+      st.darkT0 = performance.now();
+      st.darkMs = ms;
+    };
+    const npcAt = (id) => {
+      const n = sc.npcs && sc.npcs.find((n) => n.def && n.def.id === id && n.sprite && n.sprite.visible);
+      return n ? { x: n.sprite.x, y: n.sprite.y } : null;
+    };
+    return {
+      tick(time) {
+        const now = performance.now();
+        if (st.darkT0) {
+          const p = Math.min(1, (now - st.darkT0) / st.darkMs);
+          st.dark = st.darkFrom + (st.darkTo - st.darkFrom) * p;
+        }
+        // Paint splashes "land" one after another once the light comes in.
+        if (st.paint) {
+          const t = (now - st.paintT0) / 1000;
+          for (const s of splashes) {
+            const p = Math.max(0, Math.min(1, (t - s.d) / 0.35));
+            if (!p) continue;
+            actors.fillStyle(s.c, 0.55 * p).fillEllipse(s.x, s.y, s.r * 2 * p, s.r * 1.3 * p);
+            actors.fillStyle(s.c, 0.5 * p).fillRect(s.x - 1, s.y + s.r * 0.5, 2, s.r * 0.9 * p);
+          }
+        }
+        // Darkness over the whole map (the tunnel at the start).
+        if (st.dark > 0.01) actors.fillStyle(0x05070c, st.dark).fillRect(-64, -64, W + 128, H + 128);
+        // The three marks glow on the tunnel wall, one after another.
+        if (st.marks) {
+          const t = (now - st.marksT0) / 1000;
+          marks.forEach((m, i) => {
+            const a = Math.max(0, Math.min(1, (t - i * 0.7) / 0.6));
+            if (!a) return;
+            const pulse = 0.75 + Math.sin(time * 0.005 + i) * 0.25;
+            glow(actors, m.x, m.y, 16, m.c, a * pulse);
+            if (m.k === 'star') star(actors, m.x, m.y, 11, m.c, a);
+            if (m.k === 'eye') eye(actors, m.x, m.y, 10, m.c, a);
+            if (m.k === 'wave') wave(actors, m.x, m.y, 12, m.c, a);
+          });
+        }
+        // Music notes rise from the warehouse stage.
+        if (st.music) {
+          const base = npcAt('ivo') || { x: 9 * 32 + 16, y: 47 * 32 };
+          if (notes.length < 14 && Math.random() < 0.08)
+            notes.push({ x: base.x + (Math.random() - 0.5) * 70, y: base.y - 10, t0: now, c: PALETTE[(Math.random() * PALETTE.length) | 0] });
+          for (let i = notes.length - 1; i >= 0; i--) {
+            const n = notes[i];
+            const t = (now - n.t0) / 1000;
+            if (t > 2.4) {
+              notes.splice(i, 1);
+              continue;
+            }
+            const a = 1 - t / 2.4;
+            const x = n.x + Math.sin(t * 3 + i) * 8,
+              y = n.y - t * 42;
+            actors.fillStyle(n.c, a).fillEllipse(x, y, 8, 6);
+            actors.fillStyle(n.c, a).fillRect(x + 3, y - 14, 2, 14);
+          }
+        }
+        // A soft ring under the artist who is speaking.
+        if (st.focus) {
+          const p = npcAt(st.focus.id);
+          if (p) {
+            const r = 20 + Math.sin(time * 0.006) * 3;
+            actors.lineStyle(3, st.focus.c, 0.85).strokeEllipse(p.x, p.y + 14, r * 2, r * 0.8);
+          }
+        }
+      },
+      act(a, skipping) {
+        if (a === 'dark') {
+          st.dark = 0.8;
+          st.darkTo = 0.8;
+          st.darkT0 = 0;
+        }
+        if (a === 'marks') {
+          st.marks = 1;
+          st.marksT0 = performance.now();
+          if (!skipping) toast('✨ The three marks', 'Star · Eye · Wave', 'Ngôi sao · Con mắt · Con sóng');
+        }
+        if (a === 'light') fade(0, 2200);
+        if (a === 'paint') {
+          st.paint = 1;
+          st.paintT0 = performance.now();
+        }
+        if (a === 'noor') st.focus = { id: 'noor', c: 0xff5d9b };
+        if (a === 'music') {
+          st.music = 1;
+          st.focus = { id: 'ivo', c: 0x42dce7 };
+        }
+        if (a === 'kai') {
+          st.music = 0;
+          st.focus = { id: 'kai', c: 0xff8b54 };
+        }
+        if (a === 'sol') st.focus = { id: 'sol', c: 0xc39cff };
+        if (a === 'end') {
+          st.focus = null;
+          st.music = 0;
+          st.marks = 0;
+          st.dark = 0;
+          st.darkT0 = 0;
+        }
+      },
+    };
+  }
+
+  function play() {
+    const sc = getScene();
+    if (!sc || !here(sc) || filming || sc.inside || !sc.player) return Promise.resolve(false);
+    // Never on top of the Chapter 2 film.
+    if (document.body.classList.contains('lq-filming')) return Promise.resolve(false);
+    filming = true;
+    ensureCss();
+    return new Promise((resolve) => {
+      const cam = sc.cameras.main;
+      const zoom0 = cam.zoom;
+      const kb = sc.input && sc.input.keyboard;
+      if (kb) {
+        kb.enabled = false;
+        try {
+          kb.resetKeys();
+        } catch (e) {}
+      }
+      cam.stopFollow();
+      const actors = sc.add.graphics().setDepth(9.6);
+      const scene = setupScene(sc, actors);
+      const tick = (time) => {
+        actors.clear();
+        scene.tick(time);
+      };
+      sc.events.on('update', tick);
+      const root = document.createElement('div');
+      root.id = 'lq-art';
+      root.innerHTML =
+        '<div class="lb t"></div><div class="lb b"></div>' +
+        '<div class="card"><small>New area unlocked</small><b>ART DISTRICT</b><span>Concrete Dreams · Khu Nghệ thuật</span></div>' +
+        '<div class="cap"><div class="who"></div><p class="en"></p><p class="vi"></p><div class="hint">Click / Space ▶</div></div>' +
+        '<button class="skip" type="button">Skip ⏭</button>';
+      document.body.appendChild(root);
+      if (sc.game && sc.game.canvas) sc.game.canvas.classList.add('lq-main');
+      document.body.classList.add('lq-artfilm');
+      const card = root.querySelector('.card');
+      const cap = root.querySelector('.cap');
+      const who = root.querySelector('.who');
+      const en = root.querySelector('.en');
+      const vi = root.querySelector('.vi');
+      let i = -1,
+        typing = 0,
+        full = '',
+        ended = false;
+      const look = (shot, ms) => {
+        if (shot.cam) cam.pan(shot.cam[0] * 32 + 16, shot.cam[1] * 32 + 16, ms, 'Sine.easeInOut', true);
+        else cam.pan(sc.player.x, sc.player.y, ms, 'Sine.easeInOut', true);
+        cam.zoomTo(zoom0 * (shot.zoom || 1), ms, 'Sine.easeInOut', true);
+      };
+      const show = () => {
+        const s = FILM[i];
+        look(s, i === 0 ? 1 : 1500);
+        if (s.act) scene.act(s.act);
+        root.style.setProperty('--acc', s.acc || '#d9d9d9');
+        who.textContent = s.who || '';
+        who.style.display = s.who ? '' : 'none';
+        vi.textContent = s.vi;
+        full = s.en;
+        en.textContent = '';
+        clearInterval(typing);
+        let n = 0;
+        typing = setInterval(() => {
+          n += 1;
+          en.textContent = full.slice(0, n);
+          if (n >= full.length) clearInterval(typing);
+        }, 28);
+      };
+      const next = () => {
+        if (ended) return;
+        if (i >= 0 && en.textContent.length < full.length) {
+          clearInterval(typing);
+          en.textContent = full;
+          return;
+        }
+        i += 1;
+        if (i >= FILM.length) return finish();
+        show();
+      };
+      const finish = () => {
+        if (ended) return;
+        ended = true;
+        clearInterval(typing);
+        window.removeEventListener('keydown', onKey, true);
+        const g = game();
+        if (g) {
+          g.artIntroSeen = g.artIntroSeen || Date.now();
+          g.v72ArtIntroSeen = g.v72ArtIntroSeen || Date.now();
+          save();
+        }
+        root.classList.add('out');
+        document.body.classList.remove('lq-artfilm');
+        cap.classList.remove('show');
+        card.classList.remove('show');
+        sc.events.off('update', tick);
+        actors.destroy();
+        cam.zoomTo(zoom0, 600, 'Sine.easeInOut', true);
+        cam.startFollow(sc.player, true, 0.1, 0.1);
+        if (kb) kb.enabled = true;
+        setTimeout(() => {
+          root.remove();
+          filming = false;
+          toast('🎨 Art District', 'Meet the seven artists', 'Gặp gỡ bảy nghệ sĩ: Noor, Ivo, Ada, Kai, Mira, Ren, Sol.');
+          resolve(true);
+        }, 850);
+      };
+      const onKey = (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          next();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          finish();
+        }
+      };
+      window.addEventListener('keydown', onKey, true);
+      cap.addEventListener('click', next);
+      root.querySelector('.skip').addEventListener('click', finish);
+      cam.centerOn(FILM[0].cam[0] * 32 + 16, FILM[0].cam[1] * 32 + 16);
+      cam.setZoom(zoom0 * FILM[0].zoom);
+      scene.act(FILM[0].act);
+      card.classList.add('show');
+      setTimeout(() => {
+        if (ended) return;
+        card.classList.remove('show');
+        cap.classList.add('show');
+        next();
+      }, 2800);
+    });
+  }
+
+  // Go to the Art District (testing, or later from the story).
+  function enter(opts) {
+    const o = Object.assign({ film: true }, opts || {});
+    const sc = getScene();
+    if (!sc || !sc.switchArea) return false;
+    if (o.film) pending = true;
+    if (here(sc)) return true;
+    sc.switchArea(ID, SPAWN, 'Art District – Concrete Dreams');
+    return true;
+  }
+
+  // First arrival → the film (checked a few times a second, like past.js).
+  let pending = false;
+  let waiting = false;
+  setInterval(() => {
+    const sc = getScene();
+    if (!sc || !sc.area || !sc.player || filming || waiting) return;
+    if (!here(sc) || sc.inside || sc.switching) return;
+    const g = game();
+    if (!g) return;
+    if (!pending && g.artIntroSeen && g.v72ArtIntroSeen) return;
+    waiting = true;
+    setTimeout(() => {
+      waiting = false;
+      const s = getScene();
+      if (!here(s) || s.inside || s.switching || filming) return;
+      pending = false;
+      play();
+    }, 800);
+  }, 400);
+
+  const m = /[?&]artfilm=1\b/.exec(location.search);
+  if (m) {
+    const wait = setInterval(() => {
+      const sc = getScene();
+      if (sc && sc.player && sc.switchArea) {
+        clearInterval(wait);
+        setTimeout(() => enter({ film: true }), 900);
+      }
+    }, 500);
+  }
+
+  window.LQArtDistrict = {
+    id: ID,
+    play,
+    enter,
+    isFilming: () => filming,
+    // Testing: see the film again on the next arrival.
+    reset() {
+      const g = game();
+      if (g) {
+        delete g.artIntroSeen;
+        delete g.v72ArtIntroSeen;
+        save();
+      }
+    },
+  };
+})();
+
+</script>
+    <!-- Art District: floor mural of the three marks, paint, neon string lights, drifting light. -->
+    <script>
+/*
+ * Art District · street-art light and colour (layered on top of the game's own drawing of the area).
+ *  - Floor (one texture, depth 0.5, under the characters): paint splatters and drips under the facades, rainbow
+ *    crosswalks, little cyan stars leading from the tunnel to the plaza, and a big floor mural of the three marks
+ *    (a gold star, an eye and a blue wave) in the middle of the plaza.
+ *  - Lights (redrawn every frame, additive): neon string lights hanging over the streets, the mural glowing softly,
+ *    and specks of coloured light drifting up into the night.
+ * Testing: index.html?preview=art-district
+ */
+(function () {
+  'use strict';
+  const ID = 'art-district';
+  const T = 32;
+  const PAL = [0xff4f87, 0x35c8d0, 0xffd447, 0x9470e8, 0x83c96b, 0xff893d];
+  // On the square in front of the tunnel: the first thing the player sees (the middle is the fenced building site).
+  const MURAL = { x: 36 * T, y: 40 * T, s: 1.1 }; // centred between the lower street (ends y 36) and the tunnel (y 44)
+  // The fenced site in the middle of the district, kept free for a future landmark (obstacles in game/03).
+  const SITE = { x0: 23, y0: 2, x1: 48, y1: 31 }; // the whole back middle, centred on x 36
+  // The drifting specks of colour: the artists' creativity, everywhere in the district.
+  const MOTE_PAL = [0xffb6d5, 0x1f4fd8, 0x8fd3ff, 0x6f5cff, 0xfff04a, 0xf5b21b];
+  const ADD = 1; // Phaser.BlendModes.ADD
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  function rnd(seed) {
+    let s = seed | 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const onBuilding = (a, x, y, m) => a.buildings.some((b) => x >= b.x - m && x < b.x + b.w + m && y >= b.y - m && y < b.y + b.h + m);
+
+  // ---- the floor ------------------------------------------------------------------------------------------------------
+  function star(g, cx, cy, n, ro, ri, rot) {
+    const pts = [];
+    for (let i = 0; i < n * 2; i++) {
+      const a = rot + (i * Math.PI) / n;
+      const r = i % 2 ? ri : ro;
+      pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+    }
+    g.fillPoints(pts, true);
+  }
+  function sparkle(g, cx, cy, r, c, a) {
+    g.fillStyle(c, a);
+    g.fillTriangle(cx - r * 0.25, cy, cx + r * 0.25, cy, cx, cy - r);
+    g.fillTriangle(cx - r * 0.25, cy, cx + r * 0.25, cy, cx, cy + r);
+    g.fillTriangle(cx, cy - r * 0.25, cx, cy + r * 0.25, cx - r, cy);
+    g.fillTriangle(cx, cy - r * 0.25, cx, cy + r * 0.25, cx + r, cy);
+  }
+  // The three marks, like the poster: a gold eight-point star, an eye in its heart, a blue wave curling below.
+  function mural(g, cx, cy) {
+    g.fillStyle(0x15122a, 1).fillCircle(cx, cy, 110);
+    g.lineStyle(3, 0x9470e8, 0.8).strokeCircle(cx, cy, 110);
+    // splashes of paint around the disc
+    const R = rnd(77);
+    for (let i = 0; i < 26; i++) {
+      const a = R() * Math.PI * 2;
+      const d = 110 + R() * 22;
+      g.fillStyle(i % 2 ? 0x9470e8 : 0x35c8d0, 0.55).fillCircle(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 2 + R() * 5);
+    }
+    // the star: dark outline, orange shade, gold face
+    g.fillStyle(0x1b1206, 1);
+    star(g, cx, cy, 8, 100, 46, -Math.PI / 2);
+    g.fillStyle(0xe08a1e, 1);
+    star(g, cx + 2, cy + 3, 8, 92, 40, -Math.PI / 2);
+    g.fillStyle(0xffc93c, 1);
+    star(g, cx, cy, 8, 88, 38, -Math.PI / 2);
+    g.fillStyle(0xffe58a, 1);
+    star(g, cx - 3, cy - 4, 4, 70, 22, -Math.PI / 2);
+    // the eye
+    g.fillStyle(0x1b1206, 1).fillEllipse(cx, cy, 78, 40);
+    g.fillStyle(0xf4ead2, 1).fillEllipse(cx, cy, 70, 32);
+    g.fillStyle(0x2a6fd6, 1).fillCircle(cx, cy, 14);
+    g.fillStyle(0x4cc3ff, 1).fillCircle(cx, cy, 10);
+    g.fillStyle(0x0b0b14, 1).fillCircle(cx, cy, 6);
+    g.fillStyle(0xffffff, 1).fillCircle(cx - 4, cy - 5, 3);
+    // the wave curling under the eye
+    // (each arc stays under a full turn: from the left, over the top, curling down on the right, like a breaking wave)
+    const wx = cx + 22;
+    const wy = cy + 62;
+    const arcs = [
+      [0x1d4fbf, 11, 30, 0, 0],
+      [0x2f86e8, 8, 21, 3, -2],
+      [0x35c8d0, 6, 13, 5, -3],
+      [0xd9f6ff, 3, 6, 6, -4],
+    ];
+    g.lineStyle(12, 0x1d4fbf, 1);
+    g.beginPath();
+    g.moveTo(cx - 80, wy + 26);
+    g.lineTo(wx - 4, wy + 26);
+    g.strokePath();
+    for (const [c, w, r, ox, oy] of arcs) {
+      g.lineStyle(w, c, 1);
+      g.beginPath();
+      g.arc(wx + ox, wy + oy, r, Math.PI * 0.55, Math.PI * 2.2, false);
+      g.strokePath();
+    }
+    g.lineStyle(4, 0xd9f6ff, 0.9);
+    g.beginPath();
+    g.moveTo(cx - 70, wy + 20);
+    g.lineTo(wx - 22, wy + 20);
+    g.strokePath();
+    // little stars all around
+    [[-80, -70], [80, -66], [-92, 20], [96, 30], [0, -102], [-40, 96], [60, 92]].forEach(([dx, dy], i) => sparkle(g, cx + dx, cy + dy, 7 + (i % 3) * 2, 0xffd447, 0.95));
+  }
+  // ---- graffiti on the buildings ----------------------------------------------------------------------------------------
+  // A tiny 5×5 block font for the big "bubble letter" words.
+  const FONT = {
+    A: ['01110', '10001', '11111', '10001', '10001'], B: ['11110', '10001', '11110', '10001', '11110'],
+    C: ['01111', '10000', '10000', '10000', '01111'], D: ['11110', '10001', '10001', '10001', '11110'],
+    E: ['11111', '10000', '11110', '10000', '11111'], I: ['11111', '00100', '00100', '00100', '11111'],
+    L: ['10000', '10000', '10000', '10000', '11111'], N: ['10001', '11001', '10101', '10011', '10001'],
+    O: ['01110', '10001', '10001', '10001', '01110'], P: ['11110', '10001', '11110', '10000', '10000'],
+    R: ['11110', '10001', '11110', '10010', '10001'], S: ['01111', '10000', '01110', '00001', '11110'],
+    M: ['10001', '11011', '10101', '10001', '10001'], G: ['01111', '10000', '10011', '10001', '01110'],
+    T: ['11111', '00100', '00100', '00100', '00100'], Y: ['10001', '01010', '00100', '00100', '00100'],
+  };
+  // Bubble letters: dark outline, colour fill (top lighter than bottom), a white shine.
+  function word(g, text, x, y, k, c1, c2) {
+    const each = (fn) =>
+      [...text].forEach((ch, i) => (FONT[ch] || []).forEach((row, ry) => [...row].forEach((v, rx) => v === '1' && fn(x + (i * 6 + rx) * k, y + ry * k, ry))));
+    each((px, py) => g.fillStyle(0x0d0b14, 1).fillRect(px - k * 0.45, py - k * 0.45, k * 1.9, k * 1.9));
+    each((px, py, ry) => g.fillStyle(ry < 2 ? c1 : c2, 1).fillRect(px, py, k, k));
+    each((px, py, ry) => ry === 0 && g.fillStyle(0xffffff, 0.75).fillRect(px + k * 0.15, py + k * 0.15, k * 0.35, k * 0.3));
+  }
+  function note(g, x, y, c) {
+    g.fillStyle(c, 1).fillEllipse(x, y, 9, 7).fillRect(x + 3, y - 16, 2, 16).fillTriangle(x + 5, y - 16, x + 11, y - 12, x + 5, y - 9);
+  }
+  const ICONS = {
+    // Color Gallery: a colour wheel and a brush
+    color(g, x, y, s) {
+      [0xff4f87, 0xff893d, 0xffd447, 0x83c96b, 0x35c8d0, 0x9470e8].forEach((c, i) => g.fillStyle(c, 1).slice(x, y, s, (i * Math.PI) / 3, ((i + 1) * Math.PI) / 3).fillPath());
+      g.fillStyle(0xf4ead2, 1).fillCircle(x, y, s * 0.3);
+      g.lineStyle(5, 0x8a5a3b, 1).lineBetween(x + s * 0.4, y + s * 0.9, x + s * 1.2, y - s * 0.4);
+      g.fillStyle(0xff4f87, 1).fillCircle(x + s * 0.4, y + s * 0.9, 4);
+    },
+    // Backbeat Warehouse: a speaker, sound waves and notes
+    beat(g, x, y, s) {
+      g.fillStyle(0x1a1a22, 1).fillRect(x - s * 0.5, y - s * 0.8, s, s * 1.6);
+      g.fillStyle(0x35c8d0, 1).fillCircle(x, y - s * 0.35, s * 0.28).fillCircle(x, y + s * 0.35, s * 0.36);
+      g.fillStyle(0x0d0b14, 1).fillCircle(x, y - s * 0.35, s * 0.12).fillCircle(x, y + s * 0.35, s * 0.16);
+      for (let i = 1; i <= 3; i++) {
+        g.lineStyle(3, [0xff4f87, 0xffd447, 0x9470e8][i - 1], 1);
+        g.beginPath();
+        g.arc(x + s * 0.5, y, s * 0.35 * i, -0.8, 0.8, false);
+        g.strokePath();
+      }
+      note(g, x + s * 1.5, y - s * 0.4, 0xffd447);
+      note(g, x - s * 1.0, y - s * 0.6, 0xff4f87);
+    },
+    // Open Canvas Gallery: three framed abstract pictures
+    open(g, x, y, s) {
+      [[-1.1, 0xff4f87], [0, 0x35c8d0], [1.1, 0xffd447]].forEach(([dx, c], i) => {
+        const fx = x + dx * s - s * 0.45;
+        g.fillStyle(0xc9a24a, 1).fillRect(fx - 3, y - s * 0.65 - 3, s * 0.9 + 6, s * 1.3 + 6);
+        g.fillStyle(0xf4ead2, 1).fillRect(fx, y - s * 0.65, s * 0.9, s * 1.3);
+        g.fillStyle(c, 1).fillCircle(fx + s * 0.45, y - s * 0.1, s * 0.25);
+        g.fillStyle(0x9470e8, 0.9).fillTriangle(fx + 4, y + s * 0.6, fx + s * 0.5, y + s * (0.05 + i * 0.1), fx + s * 0.86, y + s * 0.6);
+      });
+    },
+    // Mural Workshop: a spray can spraying a colourful cloud
+    spray(g, x, y, s) {
+      g.fillStyle(0x0d0b14, 1).fillRect(x - s * 0.32, y - s * 0.6, s * 0.64, s * 1.4);
+      g.fillStyle(0xff4f87, 1).fillRect(x - s * 0.26, y - s * 0.5, s * 0.52, s * 1.25);
+      g.fillStyle(0xffffff, 0.5).fillRect(x - s * 0.18, y - s * 0.45, s * 0.1, s * 1.1);
+      g.fillStyle(0xc0c4cc, 1).fillRect(x - s * 0.12, y - s * 0.78, s * 0.24, s * 0.2);
+      [[0x35c8d0, 0.9, -1.1, 0.42], [0xffd447, 1.25, -1.35, 0.3], [0x9470e8, 0.7, -1.5, 0.26], [0x83c96b, 1.45, -0.85, 0.24]].forEach(([c, dx, dy, r]) =>
+        g.fillStyle(c, 0.9).fillCircle(x + dx * s, y + dy * s * 0.5, r * s),
+      );
+    },
+    // Photo Lab: a camera with a flash, and a film strip
+    snap(g, x, y, s) {
+      g.fillStyle(0xffd447, 0.9);
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4;
+        g.fillTriangle(x + s * 0.5, y - s * 0.7, x + s * 0.5 + Math.cos(a) * s * 0.7, y - s * 0.7 + Math.sin(a) * s * 0.7, x + s * 0.5 + Math.cos(a + 0.3) * s * 0.7, y - s * 0.7 + Math.sin(a + 0.3) * s * 0.7);
+      }
+      g.fillStyle(0x0d0b14, 1).fillRect(x - s * 0.8, y - s * 0.45, s * 1.6, s * 1.05);
+      g.fillStyle(0x6b7280, 1).fillRect(x - s * 0.72, y - s * 0.37, s * 1.44, s * 0.89);
+      g.fillStyle(0x0d0b14, 1).fillCircle(x, y + s * 0.08, s * 0.38);
+      g.fillStyle(0x35c8d0, 1).fillCircle(x, y + s * 0.08, s * 0.27);
+      g.fillStyle(0xffffff, 0.8).fillCircle(x - s * 0.08, y - s * 0.02, s * 0.08);
+      g.fillStyle(0x1a1a22, 1).fillRect(x - s * 1.6, y + s * 0.7, s * 3.2, s * 0.32);
+      for (let i = 0; i < 9; i++) g.fillStyle(0xf4ead2, 1).fillRect(x - s * 1.5 + i * s * 0.36, y + s * 0.74, s * 0.14, s * 0.08);
+    },
+    // Independent Studio: a crown and a big star
+    indie(g, x, y, s) {
+      g.fillStyle(0x0d0b14, 1);
+      star(g, x, y, 5, s * 0.95, s * 0.42, -Math.PI / 2);
+      g.fillStyle(0x83c96b, 1);
+      star(g, x, y, 5, s * 0.82, s * 0.34, -Math.PI / 2);
+      g.fillStyle(0xffd447, 1).fillPoints(
+        [[-0.6, -0.9], [-0.35, -1.35], [-0.15, -1.0], [0, -1.45], [0.15, -1.0], [0.35, -1.35], [0.6, -0.9]].map(([dx, dy]) => ({ x: x + dx * s, y: y + dy * s })),
+        true,
+      );
+    },
+  };
+  const GRAFFITI = {
+    'Color Gallery': { word: 'COLOR', icon: 'color', c1: 0xffd447, c2: 0xff893d },
+    'Backbeat Warehouse': { word: 'BEAT', icon: 'beat', c1: 0x4cc3ff, c2: 0x9470e8 },
+    'Open Canvas Gallery': { word: 'OPEN', icon: 'open', c1: 0xff9ac1, c2: 0xff4f87 },
+    'Mural Workshop': { word: 'SPRAY', icon: 'spray', c1: 0x9be37a, c2: 0x35c8d0 },
+    'Photo Lab': { word: 'SNAP', icon: 'snap', c1: 0xfff1a8, c2: 0xffd447 },
+    'Independent Studio': { word: 'INDIE', icon: 'indie', c1: 0xc39cff, c2: 0xff4f87 },
+  };
+  // Painted over the facade panel that 07a draws on every building (same geometry as __lqStreetArtBuilding).
+  function graffiti(g, b, R) {
+    const art = GRAFFITI[b.name];
+    if (!art) return;
+    const x = b.x * T;
+    const y = b.y * T;
+    const w = b.w * T;
+    const h = b.h * T;
+    const frontY = y + Math.round(h * 0.48);
+    const wallH = h - Math.round(h * 0.48);
+    const px = x + 8;
+    const py = frontY + 7;
+    const pw = w - 16;
+    const ph = wallH - 12;
+    // brick wall
+    g.fillStyle(0x2a2833, 1).fillRect(px, py, pw, ph);
+    for (let yy = 0; yy < ph; yy += 8)
+      for (let xx = (yy / 8) % 2 ? -8 : 0; xx < pw; xx += 16) g.fillStyle(0x34323f, 1).fillRect(px + Math.max(0, xx) + 1, py + yy + 1, Math.min(14, pw - Math.max(0, xx) - 2), 6);
+    // overspray in the background
+    for (let i = 0; i < 14; i++) g.fillStyle(PAL[i % PAL.length], 0.35).fillCircle(px + R() * pw, py + R() * ph, 3 + R() * 9);
+    // the word on the left, the picture on the right
+    const k = Math.max(3, Math.min(ph * 0.12, (pw * 0.58) / (art.word.length * 6)));
+    word(g, art.word, px + 10, py + ph * 0.5 - k * 2.5, k, art.c1, art.c2);
+    const iconX = px + 10 + art.word.length * 6 * k + (pw - (20 + art.word.length * 6 * k)) / 2;
+    ICONS[art.icon](g, Math.min(iconX, px + pw - ph * 0.45), py + ph * 0.52, Math.min(ph * 0.36, 30));
+    // drips from the letters
+    for (let i = 0; i < 6; i++) {
+      const dx = px + 12 + R() * art.word.length * 6 * k;
+      const len = 6 + R() * 16;
+      g.fillStyle(art.c2, 0.9).fillRect(dx, py + ph * 0.5 + k * 2.4, 2, len);
+      g.fillCircle(dx + 1, py + ph * 0.5 + k * 2.4 + len, 2);
+    }
+  }
+  // The building site: gravel ground, a construction fence with posts and warning stripes, a "COMING SOON" board.
+  function site(g, R) {
+    if (window.LQArtV67?.paintPlaza) { window.LQArtV67.paintPlaza(g, SITE); return; }
+    const x0 = SITE.x0 * T;
+    const y0 = SITE.y0 * T;
+    const w = (SITE.x1 - SITE.x0 + 1) * T;
+    const h = (SITE.y1 - SITE.y0 + 1) * T;
+    g.fillStyle(0x6b6258, 1).fillRect(x0, y0, w, h);
+    for (let i = 0; i < 900; i++) g.fillStyle([0x7d746a, 0x5a524a, 0x8a8178][i % 3], 0.8).fillRect(x0 + R() * w, y0 + R() * h, 2 + R() * 2, 2);
+    // survey pegs and chalk lines for the future landmark
+    g.lineStyle(2, 0xf4ead2, 0.5).strokeRect(x0 + 3 * T, y0 + 3 * T, w - 6 * T, h - 6 * T);
+    g.lineStyle(2, 0xf4ead2, 0.35).strokeCircle(x0 + w / 2, y0 + h / 2, 4 * T);
+    for (const [px, py] of [[3, 3], [w / T - 3, 3], [3, h / T - 3], [w / T - 3, h / T - 3]]) g.fillStyle(0xff893d, 1).fillRect(x0 + px * T - 2, y0 + py * T - 6, 4, 10);
+    // the fence: one tile thick, posts every tile, two rails and yellow-black warning stripes
+    const rail = (ax, ay, bx, by) => {
+      g.fillStyle(0x3b3f46, 1).fillRect(Math.min(ax, bx), Math.min(ay, by), Math.abs(bx - ax) || 4, Math.abs(by - ay) || 4);
+    };
+    for (const [ax, ay, bx, by] of [[x0, y0 + 16, x0 + w, y0 + 16], [x0, y0 + h - 16, x0 + w, y0 + h - 16]]) {
+      g.fillStyle(0x1a1a20, 0.25).fillRect(ax, ay + 10, bx - ax, 6);
+      rail(ax, ay - 8, bx, ay - 8);
+      rail(ax, ay + 2, bx, ay + 2);
+      for (let x = ax; x < bx; x += 16) g.fillStyle((x / 16) % 2 ? 0x15151a : 0xffd447, 1).fillRect(x, ay - 3, 16, 4);
+    }
+    for (const [ax, ay, bx, by] of [[x0 + 16, y0 + 16, x0 + 16, y0 + h - 16], [x0 + w - 16, y0 + 16, x0 + w - 16, y0 + h - 16]]) {
+      rail(ax - 8, ay, ax - 8, by);
+      rail(ax + 2, ay, ax + 2, by);
+      for (let y = ay; y < by; y += 16) g.fillStyle((y / 16) % 2 ? 0x15151a : 0xffd447, 1).fillRect(ax - 3, y, 4, 16);
+    }
+    for (let x = x0 + 16; x <= x0 + w - 16; x += T) for (const y of [y0 + 16, y0 + h - 16]) g.fillStyle(0x8a9097, 1).fillRect(x - 2, y - 14, 4, 20);
+    for (let y = y0 + 16; y <= y0 + h - 16; y += T) for (const x of [x0 + 16, x0 + w - 16]) g.fillStyle(0x8a9097, 1).fillRect(x - 2, y - 14, 4, 20);
+    // the board on the south fence, facing the street: COMING SOON
+    const bw = 300;
+    const bx = x0 + w / 2 - bw / 2;
+    const by = y0 + h - 16 - 64;
+    g.fillStyle(0x0d0b14, 1).fillRect(bx - 4, by - 4, bw + 8, 58);
+    g.fillStyle(0x23202e, 1).fillRect(bx, by, bw, 50);
+    g.fillStyle(0x8a9097, 1).fillRect(bx + 20, by + 50, 5, 14).fillRect(bx + bw - 25, by + 50, 5, 14);
+    word(g, 'COMING SOON', bx + 18, by + 13, 4.4, 0xfff04a, 0xf5b21b);
+  }
+  function paintFloor(sc, a) {
+    const key = 'lq_art_floor67';
+    if (sc.textures.exists(key)) return key;
+    const R = rnd(4242);
+    const g = sc.make.graphics({ x: 0, y: 0, add: false });
+    const pick = () => PAL[Math.floor(R() * PAL.length)];
+    // 1. paint splatters on streets and squares (not on the buildings)
+    for (let i = 0; i < 320; i++) {
+      const x = R() * a.w;
+      const y = R() * a.h;
+      if (onBuilding(a, x, y, 0.4)) continue;
+      const c = pick();
+      const r = 3 + R() * 9;
+      g.fillStyle(c, 0.18 + R() * 0.22).fillCircle(x * T, y * T, r);
+      for (let k = 0; k < 5; k++) g.fillCircle(x * T + (R() - 0.5) * r * 4, y * T + (R() - 0.5) * r * 4, 1 + R() * 2.5);
+    }
+    // 2. paint dripping down from the bottom of every facade
+    for (const b of a.buildings) {
+      const by = (b.y + b.h) * T;
+      for (let x = b.x * T + 6; x < (b.x + b.w) * T - 6; x += 7 + R() * 16) {
+        const c = pick();
+        const len = 6 + R() * 26;
+        g.fillStyle(c, 0.75).fillRect(x, by - 2, 3, len);
+        g.fillCircle(x + 1.5, by - 2 + len, 2.6);
+      }
+    }
+    // 3. rainbow crosswalks where the streets cross
+    for (const v of a.roadsV)
+      for (const h of a.roadsH) {
+        if (h.y < (v.y0 ?? 0) || h.y > (v.y1 ?? a.h)) continue;
+        for (let i = 0; i < 6; i++) {
+          g.fillStyle(PAL[i], 0.55).fillRect(v.x * T + 4, (h.y - 1) * T + 4 + i * 5, v.w * T - 8, 3);
+          g.fillRect((v.x - 1) * T + 4 + i * 5, h.y * T + 4, 3, h.h * T - 8);
+        }
+      }
+    // 4. little cyan stars leading from the tunnel up to the plaza
+    for (let y = 47; y > 44; y -= 2) sparkle(g, 35.5 * T + (y % 4 ? 10 : -10), y * T, 6, 0x35c8d0, 0.85);
+    // 5. the big floor mural of the three marks (scaled up around its centre)
+    g.save();
+    g.translateCanvas(MURAL.x, MURAL.y);
+    g.scaleCanvas(MURAL.s, MURAL.s);
+    mural(g, 0, 0);
+    g.restore();
+    // 6. V67 art sidewalks and planters; don't overpaint dedicated new facades.
+    if (window.LQArtV67?.paintStreetDetails) window.LQArtV67.paintStreetDetails(g, a);
+    else for (const b of a.buildings) graffiti(g, b, R);
+    window.LQArtV69?.paintStreets?.(g,a);
+    // 7. Fully accessible Living Canvas and the new walk-through Dream Gate.
+    site(g, R);
+    g.generateTexture(key, a.w * T, a.h * T);
+    g.destroy();
+    return key;
+  }
+
+  // ---- lights -----------------------------------------------------------------------------------------------------------
+  // String lights hang over the streets, from post to post (every 6 tiles), with a little sag.
+  function strings(a) {
+    const out = [];
+    const span = (x1, y1, x2, y2) => out.push([x1 * T, y1 * T, x2 * T, y2 * T]);
+    for (const h of a.roadsH) for (let x = (h.x0 ?? 0) + 1; x <= (h.x1 ?? a.w) - 7; x += 6) span(x, h.y + 0.2, x + 6, h.y + 0.2);
+    for (const v of a.roadsV) for (let y = (v.y0 ?? 0) + 3; y < (v.y1 ?? a.h) - 6; y += 6) span(v.x - 0.2, y, v.x - 0.2, y + 6);
+    return out;
+  }
+  function makeLights(sc, a) {
+    const st = {
+      floor: sc.add.image(0, 0, paintFloor(sc, a)).setOrigin(0).setDepth(0.5),
+      wires: sc.add.graphics().setDepth(12),
+      bulbs: sc.add.graphics().setDepth(12.1).setBlendMode(ADD),
+      glow: sc.add.graphics().setDepth(0.6).setBlendMode(ADD),
+      motes: [],
+      spans: strings(a),
+      area: a,
+    };
+    const R = rnd(9);
+    // the wires never change: draw them once
+    for (const [x1, y1, x2, y2] of st.spans) {
+      st.wires.lineStyle(1, 0x101018, 0.9);
+      st.wires.beginPath();
+      for (let k = 0; k <= 12; k++) {
+        const t = k / 12;
+        const sag = Math.sin(t * Math.PI) * 10;
+        const x = x1 + (x2 - x1) * t + (x1 === x2 ? sag : 0);
+        const y = y1 + (y2 - y1) * t + (y1 === y2 ? sag : 0);
+        if (k) st.wires.lineTo(x, y);
+        else st.wires.moveTo(x, y);
+      }
+      st.wires.strokePath();
+    }
+    for (let i = 0; i < 126; i++) st.motes.push({ x: R() * a.w * T, y: R() * a.h * T, v: 10 + R() * 22, c: MOTE_PAL[i % MOTE_PAL.length], p: R() * 6, r: 1.6 + R() * 1.9 });
+    return st;
+  }
+  function drawLights(st, time, dt, cam) {
+    const b = st.bulbs;
+    b.clear();
+    const view = cam.worldView;
+    st.spans.forEach(([x1, y1, x2, y2], si) => {
+      if (Math.max(x1, x2) < view.x - 40 || Math.min(x1, x2) > view.right + 40 || Math.max(y1, y2) < view.y - 40 || Math.min(y1, y2) > view.bottom + 40) return;
+      for (let k = 1; k < 8; k++) {
+        const t = k / 8;
+        const sag = Math.sin(t * Math.PI) * 10;
+        const x = x1 + (x2 - x1) * t + (x1 === x2 ? sag : 0);
+        const y = y1 + (y2 - y1) * t + (y1 === y2 ? sag : 0) + 3;
+        const c = PAL[(si + k) % PAL.length];
+        const tw = 0.55 + 0.45 * Math.sin(time * 0.004 + si * 1.7 + k * 0.9);
+        b.fillStyle(c, 0.12 * tw).fillCircle(x, y, 11);
+        b.fillStyle(c, 0.5 + 0.5 * tw).fillCircle(x, y, 2.6);
+      }
+    });
+    // specks of light drifting up, then starting again at the bottom
+    for (const m of st.motes) {
+      m.y -= m.v * dt;
+      m.p += dt;
+      if (m.y < 0) m.y = st.area.h * T;
+      const x = m.x + Math.sin(m.p * 0.8) * 10;
+      if (x < view.x || x > view.right || m.y < view.y || m.y > view.bottom) continue;
+      const tw = 0.5 + 0.5 * Math.sin(m.p * 2.3);
+      b.fillStyle(m.c, 0.14 * tw).fillCircle(x, m.y, 4 + m.r * 3);
+      b.fillStyle(m.c, 0.45 + 0.5 * tw).fillCircle(x, m.y, m.r);
+    }
+    // the mural breathes softly
+    const gl = st.glow;
+    gl.clear();
+    const p = 0.5 + 0.5 * Math.sin(time * 0.0022);
+    for (let i = 0; i < 4; i++) gl.fillStyle(i % 2 ? 0x35c8d0 : 0xffd447, 0.035 + p * 0.03).fillCircle(MURAL.x, MURAL.y, 205 - i * 34);
+  }
+
+  // ---- per-frame hook ---------------------------------------------------------------------------------------------------
+  function update(sc, time, delta) {
+    let st = sc.__lqArtGlow;
+    const here = !!(sc.area && sc.area.id === ID) && !sc.switching;
+    if (st && (!here || st.area !== sc.area)) {
+      ['floor', 'wires', 'bulbs', 'glow'].forEach((k) => st[k].destroy());
+      sc.__lqArtGlow = st = null;
+    }
+    if (!here || !sc.cameras || !sc.cameras.main) return;
+    if (!st) st = sc.__lqArtGlow = makeLights(sc, sc.area);
+    const show = !sc.inside;
+    ['floor', 'wires', 'bulbs', 'glow'].forEach((k) => st[k].setVisible(show));
+    if (show) drawLights(st, time, Math.min(0.05, (delta || 16) / 1000), sc.cameras.main);
+  }
+  setInterval(() => {
+    const sc = getScene();
+    if (!sc || !sc.events || sc.__lqArtGlowHook) return;
+    sc.__lqArtGlowHook = true;
+    sc.events.on('update', (time, delta) => {
+      try {
+        update(sc, time, delta);
+      } catch (e) {
+        console.warn('LQArtGlow', e);
+      }
+    });
+  }, 400);
+})();
+
+</script>
+    <script>
+/*
+ * "Infinity" aura: a hazy blue mist with soft wisps rising and dissolving behind the player (no hard outline), shown
+ * while the player's look has aura === 'infinity' (Gojo). It hooks into the scene's update loop once per scene.
+ */
+(function () {
+  'use strict';
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  function draw(sc, time) {
+    const st = sc.__lqAura;
+    if (!st) return;
+    const g = st.g;
+    g.clear();
+    const look = sc.store && sc.store.game && sc.store.game.rpg && sc.store.game.rpg.look;
+    const p = sc.player;
+    if (!look || look.aura !== 'infinity' || !p || !p.visible) return;
+    const s = p.scaleX || 1;
+    // Slow hover: nudge the sprite's origin up and down (applyRankLook resets it, which we detect below).
+    if (st.lastOrigin === undefined || Math.abs(p.originY - st.lastOrigin) > 1e-6) st.baseOrigin = p.originY;
+    const bob = Math.sin(time * 0.0016) * 1.5;
+    st.lastOrigin = st.baseOrigin + bob / (p.height || 50);
+    p.setOrigin(0.5, st.lastOrigin);
+    const cx = p.x;
+    const cy = p.y - 17 * s;
+    const pulse = 0.5 + 0.5 * Math.sin(time * 0.0025);
+    // Hazy mist with no visible edge: many very faint ellipses stacked from the body outwards, so the alpha
+    // builds up towards the centre and fades smoothly to nothing at the rim.
+    const layers = 18;
+    const breathe = 0.85 + 0.15 * pulse;
+    for (let i = 0; i < layers; i++) {
+      const k = i / (layers - 1);
+      const r = (7 + k * 25) * s * (1 + pulse * 0.04);
+      g.fillStyle(0x8fd8ff, 0.011 * breathe);
+      g.fillEllipse(cx, cy, r * 1.5, r * 2.3);
+    }
+    // Soft wisps that rise slowly from the feet, swell, and dissolve.
+    for (let i = 0; i < 9; i++) {
+      const life = (time * 0.00022 + i / 9) % 1;
+      const fade = Math.sin(life * Math.PI);
+      const x = cx + Math.sin(i * 7.3 + time * 0.0007) * (9 + life * 5) * s;
+      const y = cy + 22 * s - life * 46 * s;
+      const r = (2 + life * 4) * s;
+      g.fillStyle(0xe4f6ff, 0.05 * fade);
+      g.fillCircle(x, y, r * 1.8);
+      g.fillStyle(0xe4f6ff, 0.07 * fade);
+      g.fillCircle(x, y, r);
+      g.fillStyle(0xffffff, 0.08 * fade);
+      g.fillCircle(x, y, r * 0.45);
+    }
+  }
+
+  function attach(sc) {
+    if (sc.__lqAura) return;
+    sc.__lqAura = { g: sc.add.graphics().setDepth(9.5) };
+    sc.events.on('update', (time) => draw(sc, time));
+    sc.events.once('shutdown', () => {
+      sc.__lqAura = null;
+    });
+  }
+
+  setInterval(() => {
+    const sc = getScene();
+    if (sc && sc.add && sc.events && sc.player && !sc.__lqAura) {
+      try {
+        attach(sc);
+      } catch (e) {
+        console.warn('aura attach failed', e);
+      }
+    }
+  }, 1000);
+})();
+
+</script>
+    <script>
+/*
+ * Divine Dog (Megumi's shadow beast). Tap Ctrl once (no need to hold it) to summon a black dog out of the player's
+ * shadow; the player rides it with eyes shut, relaxed. Tap Ctrl again to send it back. Only looks that carry
+ * `shadow: true` (the Megumi preset) can do this.
+ *
+ * The dog is drawn every frame with Phaser graphics, in two layers: `back` under the rider and `front` over the rider
+ * (the head and front legs when the dog faces the camera). The rider is the normal player sprite, swapped for a
+ * "riding" texture (closed eyes, no ground shadow, see the `riding` flag in 10-core-characters-and-scene.js) and
+ * lifted a few pixels so it sits on the dog's back.
+ */
+(function () {
+  'use strict';
+
+  const getScene = () => (typeof window.__lifequestGetScene === 'function' ? window.__lifequestGetScene() : null);
+
+  const BLACK = 0x0a0a12,
+    FAR = 0x06060b,
+    DARK = 0x15152a,
+    RIM = 0x3a3a68,
+    OUT = 0x2e2c58,
+    EYE = 0xe6e8ff,
+    GLOW = 0x6a4aa8,
+    FURH = 0x2c2c3a, // head and mane fur: a touch lighter than the body so the shaggy tufts read
+    STREAK = 0x70708a,
+    YEL = 0xe8cc22,
+    RED = 0xc02830,
+    FANG = 0xeeeae0,
+    NOSE = 0x4a2a20;
+  const LIFT = 9; // how many art pixels the rider is raised (front/back views)
+  const LIFT_SIDE = 7.5; // same for the smaller side-view dog
+  const state = { riding: false };
+
+  // Draws the dog. o = { x, y (ground), s (scale), dir, flip, moving, time, part: 'back' | 'front', alpha }.
+  // Local units are art pixels: x grows towards the dog's nose (mirrored when flipped), y is up from the ground (< 0).
+  function drawDog(g, o) {
+    const s = o.s,
+      sx = o.flip ? -1 : 1,
+      back = o.part === 'back',
+      // The side views are drawn 18% smaller than the front/back ones so the dog is not bigger than its rider.
+      k = o.dir === 'up' || o.dir === 'down' ? 1 : 0.82;
+    const R = (x, y, w, h, c, a = 1) => {
+      g.fillStyle(c, a * o.alpha);
+      g.fillRect(o.x + (sx > 0 ? x : -(x + w)) * s * k, o.y + y * s * k, w * s * k, h * s * k);
+    };
+    const E = (x, y, w, h, c, a = 1) => {
+      g.fillStyle(c, a * o.alpha);
+      g.fillEllipse(o.x + sx * x * s * k, o.y + y * s * k, w * s * k, h * s * k);
+    };
+    const T = (x1, y1, x2, y2, x3, y3, c) => {
+      g.fillStyle(c, o.alpha);
+      g.fillTriangle(o.x + sx * x1 * s * k, o.y + y1 * s * k, o.x + sx * x2 * s * k, o.y + y2 * s * k, o.x + sx * x3 * s * k, o.y + y3 * s * k);
+    };
+    // Pixel-art rounded block (corners cut by one pixel), used for the stocky front/back body.
+    const B = (x, y, w, h, c) => {
+      R(x + 1, y, w - 2, h, c);
+      R(x, y + 1, w, h - 2, c);
+    };
+    const ph = o.moving ? o.time * 0.014 : 0;
+    const wag = Math.sin(o.time * 0.006) * 1.5;
+    const dir = o.dir;
+    const swing = (p0, amp) => (o.moving ? Math.sin(ph + p0) * amp : 0);
+    const lift = (p0, amp) => (o.moving ? Math.max(0, Math.cos(ph + p0)) * amp : 0);
+    if (dir === 'down') {
+      if (back) {
+        // Wide body that sticks out on both sides of the rider, with a pale violet outline so it reads against the
+        // dark uniform.
+        B(-12.5, -19, 25, 11, OUT);
+        B(-11.5, -18, 23, 9, BLACK);
+        R(-10, -10, 20, 1, DARK, 0.9);
+        R(-9, -18, 18, 1, RIM, 0.8);
+      } else {
+        // Front legs step alternately, then chest, a low head with big ears, snout and pale eyes.
+        const l = lift(0, 2),
+          r = lift(Math.PI, 2);
+        R(-10, -10, 6, 10 - l, OUT);
+        R(4, -10, 6, 10 - r, OUT);
+        R(-9, -10, 4, 10 - l, BLACK);
+        R(5, -10, 4, 10 - r, BLACK);
+        R(-9, -1 - l, 5, 1, DARK);
+        R(4, -1 - r, 5, 1, DARK);
+        B(-11, -15, 22, 12, OUT);
+        B(-10, -14, 20, 10, BLACK);
+        R(-8, -15, 16, 12, OUT);
+        T(-7, -12, -12.5, -9, -7, -4, FURH);
+        T(7, -12, 12.5, -9, 7, -4, FURH);
+        T(-7, -9, -11, -3, -5, -6, FURH);
+        T(7, -9, 11, -3, 5, -6, FURH);
+        R(-7, -14, 14, 10, FURH);
+        T(-8, -14, -10, -26, -1.5, -14, OUT);
+        T(8, -14, 10, -26, 1.5, -14, OUT);
+        T(-7, -14, -8.8, -24, -2.5, -14, FURH);
+        T(7, -14, 8.8, -24, 2.5, -14, FURH);
+        T(-4, -14, -2, -18, 0, -14, FURH);
+        T(0, -14, 2, -18, 4, -14, FURH);

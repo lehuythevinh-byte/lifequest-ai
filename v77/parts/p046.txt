@@ -1,0 +1,1000 @@
+              ctx.lineTo(tx(r.x1 ?? sc.area.w), ty(r.y + r.h / 2));
+              ctx.stroke();
+            }
+            for (const r of sc.area.roadsV || []) {
+              ctx.beginPath();
+              ctx.moveTo(tx(r.x + r.w / 2), ty(r.y0 ?? 0));
+              ctx.lineTo(tx(r.x + r.w / 2), ty(r.y1 ?? sc.area.h));
+              ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            // Central station (south of both towns): same tile layout as drawStation().
+            if (sc.area.id === 'mining-town' || sc.area.id === 'english-town') {
+              box(4, 47, 52, 5, '#cfd4d3');
+              box(4, 52, 7, 11, '#c2c9c9');
+              box(51, 52, 5, 11, '#c2c9c9');
+              box(11, 58, 40, 5, '#d8dcdb');
+              box(28, 52, 5, 6, '#b9c1c2');
+              box(30.3, 52, 0.4, 11, '#16b3a5');
+              for (const [hx, hw] of [
+                [11, 17],
+                [33, 18],
+              ]) {
+                box(hx, 52, hw, 3, '#5b6a74');
+                box(hx, 55, hw, 1, '#24505a');
+                box(hx, 56, hw, 2, '#62b9b8');
+              }
+              box(14, 48, 3, 2, '#5a3f2c');
+              box(44, 48, 3, 2, '#5a3f2c');
+              box(25, 47, 3, 5, '#7b8b96');
+              box(33, 47, 3, 5, '#7b8b96');
+              box(4, 63, 52, 2, '#bcc3c3');
+              box(4, 67, 52, 2, '#bcc3c3');
+              box(0, 65, sc.area.w, 2, '#8a8478');
+              box(0, 69, sc.area.w, 2, '#8a8478');
+              box(15, 65, 32, 2, '#f3f6f4');
+              box(15, 66, 32, 0.5, '#16b3a5');
+              box(22, 69, 5, 2, '#1b8f8a');
+              box(27, 69, 25, 2, '#6b4a36');
+              for (const w of sc.area.warps || []) box(w.x, w.y, w.w, w.h, '#f3b94d');
+            }
+            // Obstacles are cosmetic on the minimap, with the real type and location.
+            for (const o of sc.area.obstacles || []) {
+              const xx = tx(o.x + o.w / 2),
+                yy = ty(o.y + o.h / 2);
+              if (o.kind === 'tree' || o.kind === 'pine') {
+                circle(xx + 0.5, yy + 0.8, Math.max(1.6, scale * 0.42), '#254a36');
+                circle(xx, yy, Math.max(1.2, scale * 0.36), '#9fc781');
+              } else if (o.kind === 'fountain' || o.kind === 'pond')
+                circle(xx, yy, Math.max(2, scale * 0.55), '#76d6e9');
+              else if (o.kind === 'rock') circle(xx, yy, Math.max(1, scale * 0.36), '#a1b1b4');
+              else if (o.kind === 'lamp') circle(xx, yy, 1.2, '#ffe7a5');
+            }
+            // Roof blocks, wall outlines, and entry dots.
+            for (const b of sc.area.buildings || []) {
+              const nm = String(b.name || '').toLowerCase();
+              const civic = /bank|school|hall|police|hospital|church|post|library|station/i.test(
+                nm,
+              );
+              const market = /shop|cafe|market|restaurant|hotel|inn|smithy|gem/i.test(nm);
+              const color = civic
+                ? '#93c7d7'
+                : market
+                  ? '#e7b47c'
+                  : mineral
+                    ? '#a8a5a7'
+                    : '#dca09a';
+              box(b.x - 0.08, b.y - 0.08, b.w + 0.16, b.h + 0.16, '#26394c');
+              box(
+                b.x + 0.08,
+                b.y + 0.08,
+                Math.max(0.1, b.w - 0.16),
+                Math.max(0.1, b.h - 0.16),
+                color,
+              );
+              box(
+                b.x + 0.19,
+                b.y + 0.2,
+                Math.max(0.1, b.w - 0.38),
+                Math.min(0.45, b.h * 0.17),
+                '#ffffff53',
+              );
+              circle(tx(b.door + 0.5), ty(b.y + b.h), Math.max(1.1, scale * 0.21), '#f9f4d4');
+            }
+            // Live NPC positions and any current quest target.
+            for (const n of sc.npcs || []) {
+              if (!n.sprite?.visible || n.inside) continue;
+              circle(
+                tx(n.sprite.x / 32),
+                ty(n.sprite.y / 32),
+                Math.max(1.5, scale * 0.28),
+                '#c9f0f3',
+              );
+            }
+            const tr = target();
+            if (tr && Number.isFinite(tr.x) && Number.isFinite(tr.y) && !tr.remote) {
+              const xx = tx(tr.x / 32),
+                yy = ty(tr.y / 32);
+              ctx.strokeStyle = '#ffdb7d';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(xx, yy, 7, 0, Math.PI * 2);
+              ctx.stroke();
+              circle(xx, yy, 2, '#ffe79d');
+            }
+            const cam = sc.cameras?.main?.worldView;
+            if (cam && Number.isFinite(cam.x) && Number.isFinite(cam.y)) {
+              ctx.strokeStyle = '#d2f6ff7a';
+              ctx.lineWidth = 1;
+              ctx.strokeRect(
+                tx(cam.x / 32),
+                ty(cam.y / 32),
+                Math.max(1, (cam.width / 32) * scale),
+                Math.max(1, (cam.height / 32) * scale),
+              );
+            }
+            const facing = String(sc.pFace?.dir || 'down').toLowerCase();
+            marker(
+              tx(sc.player.x / 32),
+              ty(sc.player.y / 32),
+              '#ffd27e',
+              { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 }[facing] ?? Math.PI,
+            );
+          }
+          ctx.restore();
+          ctx.strokeStyle = '#aecbd2aa';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(ox + 0.5, oy + 0.5, tilesW * scale - 1, tilesH * scale - 1);
+          ctx.fillStyle = '#d2eefa';
+          ctx.font = 'bold 10px system-ui,sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillText('N ↑', W - 9, 12);
+          const label = $('v8-map-label');
+          if (label) {
+            const value = inside
+              ? sc.inside.b.name + (sc.inside.floor ? ' · 2nd floor' : '')
+              : sc.area.name;
+            if (label.textContent !== value) label.textContent = value;
+          }
+        }
+        function updateCompass() {
+          const el = $('v8-compass');
+          if (!el) return;
+          el.hidden = !preferences.compass;
+          if (!preferences.compass) return;
+          const sc = getScene();
+          const tr = target();
+          if (!sc || !tr) {
+            el.textContent = '🧭 Choose a quest';
+            return;
+          }
+          if (tr.remote || sc.inside) {
+            const gate = sc.inside && sc.area.portals?.[sc.inside.b.name];
+            el.textContent =
+              '🧭 ' +
+              (sc.inside
+                ? gate
+                  ? 'Press E near the gate in ' + sc.inside.b.name
+                  : 'Step outside to find the way'
+                : tr.remote + ' · another area');
+            return;
+          }
+          const dx = tr.x - sc.player.x,
+            dy = tr.y - sc.player.y;
+          const dir = Math.abs(dx) > Math.abs(dy) ? (dx >= 0 ? '→' : '←') : dy >= 0 ? '↓' : '↑';
+          el.textContent =
+            '🧭 ' + dir + ' ' + tr.name + ' · ' + Math.round(Math.hypot(dx, dy) / 32) + ' tiles';
+        }
+        const seed = (day) => {
+          let v = (day * 79 + 37) % 9;
+          return v === 0 || v === 3 ? 'rain' : v === 6 ? 'mist' : 'clear';
+        };
+        function newWeather() {
+          const sc = getScene(),
+            day = sc?.store?.game?.day || 1;
+          if (day === weatherDay) return;
+          weatherDay = day;
+          weatherType = seed(day);
+          const conditions = $('v8-weather-condition');
+          if (conditions)
+            conditions.textContent =
+              weatherType === 'rain'
+                ? '🌦️ Light rain'
+                : weatherType === 'mist'
+                  ? '🌫️ Light mist'
+                  : '☀️ Clear sky';
+        }
+        function paintWeather(now) {
+          const c = $('v8-weather-canvas');
+          if (!c) return;
+          if (!preferences.weather || preferences.performance === 'low') {
+            const cx = c.getContext('2d');
+            cx?.clearRect(0, 0, c.width, c.height);
+            return;
+          }
+          const sc = getScene();
+          if (!sc || sc.inside || weatherType === 'clear') {
+            c.getContext('2d')?.clearRect(0, 0, c.width, c.height);
+            return;
+          }
+          const fps = preferences.performance === 'high' ? 30 : 20;
+          if (now - fxFrame < 1000 / fps) return;
+          fxFrame = now;
+          const ctx = c.getContext('2d');
+          if (!ctx) return;
+          ctx.clearRect(0, 0, c.width, c.height);
+          const count =
+            weatherType === 'rain' ? (preferences.performance === 'high' ? 65 : 36) : 18;
+          while (fxParticles.length < count)
+            fxParticles.push({
+              x: Math.random() * c.width,
+              y: Math.random() * c.height,
+              speed: 1 + Math.random() * 2.4,
+            });
+          if (fxParticles.length > count) fxParticles.length = count;
+          ctx.strokeStyle =
+            weatherType === 'rain' ? 'rgba(164,209,250,0.45)' : 'rgba(234,244,255,0.16)';
+          ctx.lineWidth = weatherType === 'rain' ? 1.2 : 8;
+          for (const p of fxParticles) {
+            p.x += weatherType === 'rain' ? 2 : 0.3;
+            p.y += weatherType === 'rain' ? 6 * p.speed : 0.2 * p.speed;
+            if (p.y > c.height) {
+              p.y = -15;
+              p.x = Math.random() * c.width;
+            }
+            if (p.x > c.width) p.x = 0;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(
+              p.x + (weatherType === 'rain' ? 3 : 17),
+              p.y + (weatherType === 'rain' ? 14 : 7),
+            );
+            ctx.stroke();
+          }
+        }
+        function sizeWeather() {
+          const c = $('v8-weather-canvas');
+          if (!c) return;
+          c.width = Math.max(1, window.innerWidth);
+          c.height = Math.max(1, window.innerHeight);
+          fxParticles = [];
+        }
+        function onFrame(sc, dt) {
+          if (!sc?.player) return;
+          const now = performance.now();
+          if (now - lastFrame < 170) return;
+          lastFrame = now;
+          newWeather();
+          updateCompass();
+          paintWeather(now);
+          if (now - lastMini > 430) {
+            lastMini = now;
+            paintMap();
+          }
+          const hr = Math.floor((sc.store.game.minutes || 0) / 60),
+            status = $('v8-hud-time');
+          if (status) {
+            const day = sc.store.game.day;
+            const text =
+              'Day ' +
+              day +
+              ' · ' +
+              String(hr).padStart(2, '0') +
+              ':' +
+              String(sc.store.game.minutes % 60).padStart(2, '0') +
+              ' · $' +
+              sc.store.game.money;
+            if (text !== lastHud) {
+              status.textContent = text;
+              lastHud = text;
+            }
+          }
+          const wasMoving = sc.pMoving === true && !sc.chat?.isOpen;
+          if (wasMoving && now - lastFoot > 480) {
+            lastFoot = now;
+            state.stats.steps++;
+            sound('step');
+          }
+        }
+        let pendingOpening = false;
+        function onWorldReady() {
+          pendingOpening = false;
+          renderQuest();
+          newWeather();
+          paintMap();
+        }
+        function learningHint() {
+          let data = {};
+          try {
+            data = JSON.parse(localStorage.getItem('lifequest_study_lab_v1') || '{}');
+          } catch {}
+          const n = Number(data.quizzes) || 0,
+            correct = Number(data.correct) || 0,
+            ratio = n ? correct / n : 0,
+            current = cefrService.getLevel();
+          if (n < 12)
+            return (
+              '📚 Complete ' +
+              Math.max(0, 12 - n) +
+              ' more quiz questions to get a level suggestion. Currently studying ' +
+              current +
+              '.'
+            );
+          const idx = levels.indexOf(current);
+          const suggestion =
+            ratio > 0.83
+              ? levels[Math.min(4, idx + 1)]
+              : ratio < 0.55
+                ? levels[Math.max(0, idx - 1)]
+                : current;
+          return (
+            '🎯 Correct ' +
+            correct +
+            '/' +
+            n +
+            ' (' +
+            Math.round(ratio * 100) +
+            '%). Suggestion: ' +
+            suggestion +
+            '. ' +
+            (suggestion !== current
+              ? 'You can change it in the Level section.'
+              : 'Keep practicing new words.')
+          );
+        }
+        function maybeAdapt() {
+          if (!preferences.adaptive) return;
+          let data = {};
+          try {
+            data = JSON.parse(localStorage.getItem('lifequest_study_lab_v1') || '{}');
+          } catch {}
+          const n = Number(data.quizzes) || 0,
+            accuracy = n ? (Number(data.correct) || 0) / n : 0;
+          const previous = Math.max(0, Number(state.stats.lastAdaptedAt) || 0);
+          if (n < 12 || n - previous < 12) return;
+          const level = cefrService.getLevel(),
+            idx = levels.indexOf(level);
+          const next =
+            accuracy >= 0.86
+              ? levels[Math.min(4, idx + 1)]
+              : accuracy <= 0.45
+                ? levels[Math.max(0, idx - 1)]
+                : level;
+          if (next !== level) {
+            cefrService.setLevel(next);
+            const label = $('level-current'),
+              select = $('level-select');
+            if (label) label.textContent = next;
+            if (select) select.value = next;
+            state.stats.lastAdaptedAt = n;
+            store();
+            toast(
+              '🎓 AI Coach adjusted your level from ' +
+                level +
+                ' to ' +
+                next +
+                ' based on your practice results.',
+            );
+          }
+        }
+        function coachReply(message, ctx) {
+          const q = normalize(message);
+          if (
+            /^(?:toi bi lac|minh bi lac|i am lost|where am i|duong ve nha|di dau tiep)$/.test(q)
+          ) {
+            const sc = getScene();
+            if (!sc) return 'The town is still loading.';
+            const here = sc.inside
+              ? sc.inside.b.name + (sc.inside.floor ? ' · 2nd floor' : '')
+              : sc.area.name;
+            return (
+              '🧭 You are in ' +
+              here +
+              '. ' +
+              (sc.inside
+                ? 'To leave, head to the EXIT ▼ at the end of the room; if you are on the 2nd floor, press E near the stairs.'
+                : 'Press M to see the minimap. Press J to see quests, or ask “go to the library”.')
+            );
+          }
+          if (
+            /^(?:toi can kiem tien|kiem tien o dau|how to earn money|can kiem tien|toi can tien)$/.test(
+              q,
+            )
+          ) {
+            const qs = QUESTS.filter((q) => !done(q)).map(
+              (q) => q.title + ' ($' + q.reward.money + ')',
+            );
+            return (
+              '💰 Complete these quests: ' +
+              qs.join('; ') +
+              '. There are also NPC quests in the RPG panel (R).'
+            );
+          }
+          if (/^(?:nhiem vu v8|quest v8|nhiem vu the gioi|world quest)$/.test(q)) {
+            openPanel('quests');
+            return '📜 Opened 3 exploration quests across the two towns. Earn rewards by completing real-world steps.';
+          }
+          if (/^(?:toi dang o tang nao|which floor|vi tri trong nha)$/.test(q))
+            return (
+              '🏠 ' +
+              (getScene()?.inside
+                ? 'You are in ' +
+                  getScene().inside.b.name +
+                  ', floor ' +
+                  (getScene().inside.floor ? 2 : 1) +
+                  '.'
+                : 'You are outdoors.')
+            );
+          if (/^(?:danh gia trinh do|tien bo hoc tap|my progress)$/.test(q)) return learningHint();
+          return null;
+        }
+        function openPanel(tab = 'quests') {
+          const p = $('v8-panel');
+          if (!p) return;
+          p.hidden = false;
+          p.querySelectorAll('[data-v8-tab]').forEach((x) =>
+            x.classList.toggle('active', x.dataset.v8Tab === tab),
+          );
+          p.querySelectorAll('[data-v8-page]').forEach(
+            (x) => (x.hidden = x.dataset.v8Page !== tab),
+          );
+          if (tab === 'quests') renderQuest();
+          if (tab === 'learn') {
+            $('v8-learning-hint').textContent = learningHint();
+            $('v8-study-summary').textContent = studyLab.summary();
+          }
+          if (tab === 'npc') renderNpcs();
+          if (tab === 'journal') renderJournal();
+        }
+        function closePanel() {
+          const p = $('v8-panel');
+          if (p) p.hidden = true;
+        }
+        function renderJournal() {
+          const el = $('v8-journal-log');
+          if (!el) return;
+          el.replaceChildren();
+          for (const activity of state.activities) {
+            const div = document.createElement('div');
+            div.className = 'v8-journal-item';
+            div.textContent = 'Day ' + activity.day + ' · ' + activity.text;
+            el.appendChild(div);
+          }
+          if (!state.activities.length)
+            el.textContent = 'Explore buildings and complete quests to fill your journal.';
+        }
+        function renderNpcs() {
+          const el = $('v8-npc-list');
+          if (!el) return;
+          el.replaceChildren();
+          const sc = getScene();
+          if (!sc?.npcs) {
+            el.textContent = 'Town is loading…';
+            return;
+          }
+          const relationships = adventure.state()?.relationships || {};
+          for (const n of sc.npcs) {
+            const r = relationships[n.def.id] || {};
+            const div = document.createElement('div');
+            div.className = 'v8-npc';
+            const rank = Math.max(0, Math.min(100, Number(r.trust) || 0));
+            div.innerHTML =
+              '<div><strong>' +
+              html(n.def.name) +
+              '</strong><small>' +
+              html(n.slot?.label || 'On the move') +
+              '</small></div><div><span>♥ ' +
+              rank +
+              '/100</span><div class="v8-meter"><i style="width:' +
+              rank +
+              '%"></i></div></div>';
+            el.appendChild(div);
+          }
+        }
+        const keysToBackup = () => {
+          const keys = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (
+              (k === 'english-town-save-v1' ||
+                k === KEY ||
+                k === PREF ||
+                k === 'lifequest_study_lab_v1' ||
+                (/^lifequest[_-]/i.test(k) && !/(?:key|secret|token|credential)/i.test(k))) &&
+              k !== 'english-town-ai'
+            )
+              keys.push(k);
+          }
+          return keys;
+        };
+        function backup() {
+          try {
+            const saves = {};
+            for (const k of keysToBackup()) {
+              const v = localStorage.getItem(k);
+              if (typeof v === 'string') saves[k] = v;
+            }
+            const file = {
+              format: 'LIFEQUEST_V8_BACKUP',
+              version: 8,
+              created: new Date().toISOString(),
+              data: saves,
+            };
+            const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
+            const u = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = u;
+            a.download = 'LIFEQUEST_V8_SAVE_' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(u), 5000);
+            toast('💾 Backup file exported (API keys not included).');
+          } catch (e) {
+            toast('⚠ Could not export progress: ' + e.message);
+          }
+        }
+        function importBackup(file) {
+          if (!file || file.size > 3e6) {
+            toast('⚠ Backup file is too large or invalid.');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const obj = JSON.parse(reader.result);
+              // Accept the original V1–V7 Journal/J export format for safe cross-file migration.
+              if (
+                obj.app === 'english-town' &&
+                obj.game &&
+                typeof obj.game === 'object' &&
+                ['day', 'money', 'rep', 'minutes'].every(
+                  (k) => typeof obj.game[k] === 'number' && Number.isFinite(obj.game[k]),
+                )
+              ) {
+                if (!confirm('Importing LIFEQUEST V7 data will overwrite your current progress. Continue?'))
+                  return;
+                localStorage.setItem(
+                  'english-town-save-v1',
+                  JSON.stringify({
+                    game: obj.game,
+                    mem:
+                      obj.mem && typeof obj.mem === 'object' && !Array.isArray(obj.mem)
+                        ? obj.mem
+                        : {},
+                  }),
+                );
+                location.reload();
+                return;
+              }
+              if (
+                obj.format !== 'LIFEQUEST_V8_BACKUP' ||
+                !obj.data ||
+                typeof obj.data !== 'object' ||
+                Array.isArray(obj.data)
+              )
+                throw Error('Invalid format');
+              const entries = Object.entries(obj.data);
+              if (entries.length > 100) throw Error('Too many entries');
+              for (const [k, v] of entries) {
+                if (
+                  !/^(english-town-save-v1|lifequest[_-][a-z0-9_-]{1,100})$/i.test(k) ||
+                  /(?:key|secret|token|credential)/i.test(k) ||
+                  typeof v !== 'string' ||
+                  v.length > 2e6
+                )
+                  throw Error('Invalid data: ' + k);
+                JSON.parse(v);
+              }
+              if (
+                !confirm(
+                  'Importing a backup will overwrite game progress on this device. Continue?',
+                )
+              )
+                return;
+              for (const [k, v] of entries) localStorage.setItem(k, v);
+              location.reload();
+            } catch (e) {
+              toast('⚠ Could not import backup: ' + e.message);
+            }
+          };
+          reader.readAsText(file, 'utf-8');
+        }
+        function init() {
+          if ($('v8-dock')) return;
+          const root = document.createElement('div');
+          root.id = 'v8-shell';
+          root.innerHTML = `
+      <canvas id="v8-weather-canvas" aria-hidden="true"></canvas>
+      <div id="v8-dock"><div class="v8-logo">✦ <b>LIFEQUEST <em>V8</em></b></div><span id="v8-hud-time">Loading world…</span><button id="v8-menu-btn" aria-label="Open V8 Hub">☷ <span>World</span></button></div>
+      <div id="v8-map-wrap"><div class="v8-map-head"><span>🧭 <span id="v8-map-label">English Town</span></span><button id="v8-map-hide" title="Hide map (M)" aria-label="Hide map">−</button></div><canvas id="v8-map" width="504" height="328" aria-label="Minimap of your current location"></canvas><div id="v8-map-legend"><span><i class="lqmap-dot player"></i>You</span><span><i class="lqmap-dot npc"></i>NPC</span><span><i class="lqmap-dot target"></i>Target</span></div></div>
+      <div id="v8-navigation"><button id="v8-nav-toggle" type="button" title="Hide quest card" aria-label="Hide quest card">−</button><span id="v8-compass">🧭 Finding the way…</span><div class="v8-quest-head"><span id="v8-quest-title">World quest</span><b id="v8-quest-progress">0/3</b></div><p id="v8-quest-text">Open a quest to begin</p><button id="v8-open-quests">📜 View quests</button></div>
+      <div id="v8-toast" role="status" hidden></div>
+      <div id="v8-panel" role="dialog" aria-modal="true" aria-label="LIFEQUEST V9 Hub" hidden>
+       <div class="v8-panel-head"><div><strong>✦ LIFEQUEST V9</strong><span>LIVING WORLD NEXT</span></div><button id="v8-close" aria-label="Close">✕</button></div>
+       <div class="v8-tabs"><button data-v8-tab="quests" class="active">📜 Quests</button><button data-v8-tab="npc">♥ NPC</button><button data-v8-tab="learn">📚 Learn</button><button data-v8-tab="settings">⚙ Settings</button><button data-v8-tab="journal">📝 Journal</button></div>
+       <div class="v8-page" data-v8-page="quests"><p class="v8-explain">Quests are verified: you must enter the right building, meet the right NPC and say the right thing. Rewards can only be claimed once.</p><div id="v8-quests-list"></div><h4>Tracking</h4><div id="v8-current-steps"></div></div>
+       <div class="v8-page" data-v8-page="npc" hidden><p class="v8-explain">Relationships and behavior are taken from each NPC's current state.</p><div id="v8-npc-list"></div></div>
+       <div class="v8-page" data-v8-page="learn" hidden><p id="v8-learning-hint"></p><p id="v8-study-summary"></p><p>Learn through quests, talk to NPCs in English, press K to open Gemini, and type “quiz” or “flashcard”.</p><button class="v8-primary" id="v8-learn-ai">🤖 Open AI assistant</button></div>
+       <div class="v8-page" data-v8-page="settings" hidden>
+        <div class="v8-options"><label><input type="checkbox" data-v8-pref="minimap"> 🗺️ Minimap (M)</label><label><input type="checkbox" data-v8-pref="compass"> 🧭 Quest compass</label><label><input type="checkbox" data-v8-pref="weather"> 🌦️ Weather effects</label><label><input type="checkbox" data-v8-pref="audio"> 🔊 Synthesized sound</label><label><input type="checkbox" data-v8-pref="contrast"> ♿ Increase contrast</label><label><input type="checkbox" data-v8-pref="adaptive"> 🎓 Auto-adjust level after quizzes</label><label>⚡ Performance <select id="v8-perf"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option></select></label></div>
+        <p class="v8-explain"><span id="v8-weather-condition"></span> · Old V1–V7 data is kept. Exported files do not contain your Gemini API key. You can import a V7 save (exported from Journal/J).</p>
+        <div class="v8-save-row"><button class="v8-primary" id="v8-export">⬇ Export progress</button><button id="v8-import">⬆ Import progress</button><input type="file" accept="application/json,.json" id="v8-import-file" hidden></div>
+       </div>
+       <div class="v8-page" data-v8-page="journal" hidden><div id="v8-journal-log"></div></div>
+       <footer>WASD / ↑↓←→: move · E: interact · M: map · V: V8 · ESC: close</footer>
+      </div>`;
+          document.body.appendChild(root);
+          sizeWeather();
+          window.addEventListener('resize', sizeWeather);
+          $('v8-menu-btn').addEventListener('click', () => openPanel('quests'));
+          $('v8-open-quests').addEventListener('click', () => openPanel('quests'));
+          // Quest card: "−" folds it into a small "📜 +" button, which opens it again. Remembered between visits.
+          const navCard = $('v8-navigation'),
+            navToggle = $('v8-nav-toggle');
+          const applyNavCard = () => {
+            const folded = !!preferences.questCollapsed;
+            navCard.classList.toggle('collapsed', folded);
+            navToggle.textContent = folded ? '📜 +' : '−';
+            const label = folded ? 'Show quest card' : 'Hide quest card';
+            navToggle.title = label;
+            navToggle.setAttribute('aria-label', label);
+          };
+          navToggle.addEventListener('click', () => {
+            preferences.questCollapsed = !preferences.questCollapsed;
+            prefs();
+            applyNavCard();
+          });
+          applyNavCard();
+          $('v8-map-hide').addEventListener('click', () => {
+            preferences.minimap = false;
+            prefs();
+            paintMap();
+          });
+          $('v8-close').addEventListener('click', closePanel);
+          $('v8-panel').addEventListener('click', (e) => {
+            if (e.target === $('v8-panel')) closePanel();
+          });
+          $('v8-panel').addEventListener('keydown', (e) => e.stopPropagation());
+          $('v8-panel').addEventListener('keyup', (e) => e.stopPropagation());
+          for (const button of root.querySelectorAll('[data-v8-tab]'))
+            button.addEventListener('click', () => openPanel(button.dataset.v8Tab));
+          for (const input of root.querySelectorAll('[data-v8-pref]')) {
+            input.checked = !!preferences[input.dataset.v8Pref];
+            input.addEventListener('change', () => {
+              preferences[input.dataset.v8Pref] = input.checked;
+              prefs();
+              paintMap();
+              updateCompass();
+              document.body.classList.toggle('v8-contrast', !!preferences.contrast);
+            });
+          }
+          $('v8-perf').value = preferences.performance;
+          $('v8-perf').addEventListener('change', (e) => {
+            preferences.performance = e.target.value;
+            prefs();
+          });
+          document.body.classList.toggle('v8-contrast', !!preferences.contrast);
+          $('v8-export').addEventListener('click', backup);
+          $('v8-import').addEventListener('click', () => $('v8-import-file').click());
+          $('v8-import-file').addEventListener('change', (e) => {
+            importBackup(e.target.files?.[0]);
+            e.target.value = '';
+          });
+          $('v8-learn-ai').addEventListener('click', () => {
+            closePanel();
+            $('ai-open')?.click();
+          });
+          document.addEventListener('keydown', (e) => {
+            const tag = e.target?.tagName?.toLowerCase();
+            if (['input', 'textarea', 'select'].includes(tag) || e.target?.isContentEditable)
+              return;
+            if (e.key.toLowerCase() === 'm') {
+              preferences.minimap = !preferences.minimap;
+              prefs();
+              paintMap();
+              e.preventDefault();
+            }
+            if (e.key.toLowerCase() === 'v') {
+              if ($('v8-panel').hidden) openPanel('quests');
+              else closePanel();
+              e.preventDefault();
+            }
+            if (e.key === 'Escape') closePanel();
+          });
+          renderQuest();
+          window.addEventListener('lifequest:worldready', onWorldReady);
+          window.addEventListener('lifequest:studyupdate', () => {
+            maybeAdapt();
+            if (!$('v8-panel').hidden && $('v8-learning-hint'))
+              $('v8-learning-hint').textContent = learningHint();
+          });
+          const loop = (t) => {
+            paintWeather(t);
+            requestAnimationFrame(loop);
+          };
+          requestAnimationFrame(loop);
+        }
+        return {
+          init,
+          onFrame,
+          onWorldReady,
+          onEvent,
+          coachReply,
+          getScene,
+          renderQuest,
+          select: selectQuest,
+          selected: () => state.selected,
+          isDone: (id) => state.completed.includes(id),
+          progressOf,
+          openPanel,
+          closePanel,
+          prefs,
+          paintMap,
+          sound,
+          toast,
+          learningHint,
+          isPanelOpen: () => !!$('v8-panel') && !$('v8-panel').hidden,
+          currentObjective: () => ({
+            title: currentQuest().title,
+            step: nextStep()?.text || 'Completed',
+          }),
+          // The step the player is on (kind, npc, building…), or null; used by Gojo's Six Eyes (gojo.js).
+          currentStep: () => nextStep(),
+        };
+      })();
+      window.LQV8 = V8;
+
+      const __v8OriginalAssistantRun = assistantCore.run;
+      assistantCore.run = async (message, ctx, history, options = {}) => {
+        const sc = V8.getScene();
+        const rpg = adventure.state();
+        const extra = {
+          ...ctx,
+          floor: sc?.inside?.floor || 0,
+          inventory: rpg?.inventory || {},
+          relationshipSummary: Object.entries(rpg?.relationships || {})
+            .slice(0, 18)
+            .map(([id, x]) => ({ id, trust: Number(x.trust) || 0 })),
+          worldQuest: V8.currentObjective?.() || null,
+        };
+        return __v8OriginalAssistantRun(message, extra, history, { ...options, mode: 'auto' });
+      };
+
+      const $ = (id) => document.getElementById(id);
+      const show = (id) => ($(id).hidden = false),
+        hide = (id) => ($(id).hidden = true);
+      const status = $('ai-online-status');
+      window.__townControls = {};
+      const aiLog = $('ai-log'),
+        aiPrompt = $('ai-input'),
+        aiSend = $('ai-send');
+      function renderStudyStats() {
+        $('study-stats').textContent = studyLab.summary();
+      }
+      window.addEventListener('lifequest:studyupdate', renderStudyStats);
+      renderStudyStats();
+      const historyKey = 'lifequest_coach_pro_history_v1';
+      const maxHistory = 52;
+      const aiStart = {
+        role: 'assistant',
+        text: 'Hello! 👋 I’m AI Coach PRO. I tell questions apart from movement commands, and I offer A1–C1 quizzes, conversation practice, sentence correction, word lookup, and Gemini when you connect an API key. Try “Lily là ai?”, “đến Lily”, “flashcard”, “thử thách hôm nay”, “lộ trình học” or “kịch bản: quán cà phê”.',
+      };
+      let messages = [aiStart],
+        aiBusy = false,
+        listening = false,
+        recognition = null,
+        aborter = null,
+        mode = 'auto';
+      let lastAssistant = aiStart.text;
+      try {
+        let saved = JSON.parse(localStorage.getItem(historyKey) || 'null');
+        if (
+          Array.isArray(saved) &&
+          saved.every(
+            (m) => m && ['assistant', 'user'].includes(m.role) && typeof m.text === 'string',
+          )
+        )
+          messages = [aiStart, ...saved.slice(-maxHistory)].slice(-maxHistory);
+      } catch {}
+      function saveHistory() {
+        try {
+          localStorage.setItem(
+            historyKey,
+            JSON.stringify(
+              messages
+                .slice(-maxHistory)
+                .map(({ role, text }) => ({ role, text: text.slice(0, 5000) })),
+            ),
+          );
+        } catch {}
+      }
+      function appendBubble(role, text) {
+        const div = document.createElement('div');
+        div.className = 'ai-message ' + (role === 'user' ? 'mine' : 'theirs');
+        div.textContent = text;
+        aiLog.appendChild(div);
+        aiLog.scrollTop = aiLog.scrollHeight;
+      }
+      function addMsg(role, text) {
+        text = String(text || '').slice(0, 4800);
+        messages.push({ role, text });
+        if (messages.length > maxHistory) messages.splice(0, messages.length - maxHistory);
+        if (role === 'assistant') lastAssistant = text;
+        appendBubble(role, text);
+        while (aiLog.children.length > maxHistory) aiLog.firstElementChild.remove();
+        saveHistory();
+      }
+      for (const msg of messages) appendBubble(msg.role, msg.text);
+      lastAssistant =
+        [...messages].reverse().find((m) => m.role === 'assistant')?.text || aiStart.text;
+      function updateConnectionStatus() {
+        let obj = {};
+        try {
+          obj = JSON.parse(localStorage.getItem('english-town-ai') || '{}');
+        } catch {}
+        const key = !!String(
+          obj.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || '',
+        ).trim();
+        status.textContent = key
+          ? 'Gemini configured · lessons ready'
+          : 'Offline learning · add your own key to use Gemini';
+      }
+      updateConnectionStatus();
+      $('ai-save')?.addEventListener('click', () => setTimeout(updateConnectionStatus, 150));
+      $('ai-clear')?.addEventListener('click', () => setTimeout(updateConnectionStatus, 150));
+      function setOpen(open) {
+        $('ai-panel').hidden = !open;
+        $('ai-open').hidden = open;
+        if (open) setTimeout(() => aiPrompt.focus(), 30);
+      }
+      $('ai-open').addEventListener('click', () => setOpen(true));
+      $('copilot-close').addEventListener('click', () => setOpen(false));
+      const modeNotes = {
+        auto: 'Auto: tells Q&A apart from movement commands',
+        chat: 'Chat: Q&A only, no character control',
+        learn: 'Learn: quiz, corrections, explanations, roleplay',
+        control: 'Control: only runs in-game commands',
+      };
+      for (const btn of document.querySelectorAll('[data-ai-mode]'))
+        btn.addEventListener('click', () => {
+          mode = btn.dataset.aiMode;
+          for (const b of document.querySelectorAll('[data-ai-mode]'))
+            b.classList.toggle('selected', b === btn);
+          $('ai-mode-note').textContent = modeNotes[mode];
+          if (mode === 'chat' || mode === 'learn') cancelTownAutopilot();
+        });
+      window.addEventListener('lifequest:status', (e) => {
+        const msg = e.detail?.text;
+        if (msg) {
+          addMsg('assistant', msg);
+          if (msg.startsWith('💬')) setOpen(false);
+        }
+      });
+      async function sendAI(text = aiPrompt.value) {
+        text = (text || '').trim();
+        if (!text || aiBusy) return;
+        const previous = messages.slice(-12);
+        aiPrompt.value = '';
+        addMsg('user', text);
+        const ctx = getTownContext();
+        if (!ctx) {
+          addMsg('assistant', 'The game is starting up. Try again once the town appears.');
+          return;
+        }
+        const v8Local = V8.coachReply(text, ctx);
+        if (v8Local !== null) {
+          addMsg('assistant', v8Local);
+          return;
+        }
+        const handled = adventure.handleCoach(text);
+        if (handled !== null) {
+          addMsg('assistant', handled);
+          return;
+        }
+        aiBusy = true;
+        aiSend.disabled = true;
+        $('ai-busy').hidden = false;
+        aborter = new AbortController();
+        const current = aborter;
+        try {
+          const result = await assistantCore.run(text, ctx, previous, {
+            mode,
+            level: cefrService.getLevel(),
+            signal: current.signal,
+          });
+          if (current.signal.aborted) return;
+          const reply =
+            result.kind === 'action' ? executeTownCommand(result.command) : result.reply;
+          addMsg('assistant', reply || 'I didn’t quite understand; could you rephrase that?');
+        } catch (err) {
+          if (!current.signal.aborted)
+            addMsg(
+              'assistant',
+              '⚠ Could not process this message. Try again or check your Gemini connection.',
+            );
+        } finally {
+          if (current === aborter) {
+            aborter = null;
+            aiBusy = false;
+            aiSend.disabled = false;
+            $('ai-busy').hidden = true;
+          }
+        }
+      }
+      $('ai-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        sendAI();
+      });
+      for (const b of document.querySelectorAll('[data-ai-example]'))
+        b.addEventListener('click', () => sendAI(b.dataset.aiExample));
+      function cancelRequest() {
+        const did = aiBusy;
+        aborter?.abort();
+        aborter = null;
+        aiBusy = false;
+        aiSend.disabled = false;
+        $('ai-busy').hidden = true;
+        if (did) addMsg('assistant', 'AI request cancelled.');
+      }
+      $('ai-cancel').addEventListener('click', cancelRequest);
+      function stopAuto() {
+        cancelRequest();
+        addMsg('assistant', executeTownCommand({ kind: 'stop' }));
+      }
+      $('ai-stop').addEventListener('click', stopAuto);
+      $('ai-clear-chat').addEventListener('click', () => {
+        if (aiBusy) cancelRequest();
+        messages = [aiStart];
+        aiLog.replaceChildren();
+        appendBubble('assistant', aiStart.text);
+        lastAssistant = aiStart.text;
+        saveHistory();
+      });
+      $('ai-read').addEventListener('click', () => {
+        if (!('speechSynthesis' in window)) {
+          addMsg('assistant', 'Your browser does not support text-to-speech.');
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(lastAssistant.slice(0, 500));
+        utterance.lang = /[ăâđêôơưàáảãạằắẳẵặềếểễệ]/i.test(lastAssistant) ? 'vi-VN' : 'en-US';
+        utterance.rate = 0.92;
+        window.speechSynthesis.speak(utterance);
+      });
+      $('ai-copy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(lastAssistant);
+          addMsg('assistant', '📋 Copied the latest reply.');
+        } catch {
+          addMsg(
+            'assistant',
+            'Your browser does not allow copying in this mode. Select the text to copy it manually.',
+          );
+        }
+      });
+      $('ai-export-words').addEventListener('click', () => studyLab.exportWords());
+      $('ai-save-chat').addEventListener('click', () => {
+        const blob = new Blob(
+          [messages.map((m) => `${m.role === 'user' ? 'You' : 'AI'}: ${m.text}`).join('\n\n')],
+          { type: 'text/plain;charset=utf-8' },
+        );
+        const url = URL.createObjectURL(blob),
+          a = document.createElement('a');
+        a.href = url;
+        a.download = 'LIFEQUEST_AI_LICH_SU_CHAT.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        $('ai-mic').title = 'Your browser does not support voice input';
+        $('ai-mic').disabled = true;
+      } else {
+        $('ai-mic').addEventListener('click', () => {
+          if (listening) {
+            recognition?.stop();
+            return;
+          }
+          recognition = new SR();
+          recognition.lang = /^[a-zA-Z\s]+$/.test(aiPrompt.value.trim()) ? 'en-US' : 'vi-VN';
+          recognition.interimResults = false;
+          recognition.onresult = (e) => {
+            aiPrompt.value = e.results[0][0].transcript;
+            aiPrompt.focus();
+          };
+          recognition.onerror = () => {
+            $('ai-mic').classList.remove('recording');
+            listening = false;
+          };
+          recognition.onend = () => {
+            $('ai-mic').classList.remove('recording');
+            listening = false;
+          };
+          try {
+            recognition.start();
+            listening = true;
+            $('ai-mic').classList.add('recording');
+          } catch (e) {
+            listening = false;
+          }

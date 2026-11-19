@@ -1,0 +1,1000 @@
+              p.node.setPosition(p.x + Math.sin(sp) * 10, p.y + Math.cos(sp * 1.3) * 8);
+              p.node.setAlpha((0.28 + 0.23 * Math.sin(sp * 2)) * (q === 2 ? 1 : 0.7));
+            }
+          }
+
+          function v11ArtTerrain(g, a) {
+            const W=a.w,H=a.h,T=32;
+            const palette=[0xff4f87,0x35c8d0,0xffd447,0x9470e8,0x83c96b,0xff893d];
+            for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++) {
+              if(avoid(a,x,y)) continue;
+              const p=hash(x,y,505), q=hash(x,y,606), px=x*T, py=y*T;
+              if(tileRoad(a,x,y)) {
+                if(p>0.70) line(g,px+5,py+22,px+13,py+20,0x20262d,0.35,1);
+                if(p<0.10) {
+                  oval(g,px+18,py+16,19,8,0x1e252d,0.3);
+                  line(g,px+11,py+15,px+21,py+15,0xaeb9c1,0.2,1);
+                }
+                if(q>0.88) rect(g,px+5,py+6,3,2,palette[(q*palette.length)|0],0.50);
+              } else {
+                if(p>0.87) {
+                  const c=palette[(q*palette.length)|0];
+                  rect(g,px+6,py+7,6,2,c,0.66);
+                  rect(g,px+11,py+9,2,5,c,0.58);
+                  rect(g,px+17,py+13,4,2,c,0.52);
+                }
+                if(q>0.95) {
+                  oval(g,px+18,py+22,6,3,palette[(p*palette.length)|0],0.72);
+                  rect(g,px+17,py+20,3,1,0xffffff,0.5);
+                }
+              }
+            }
+            // Small stencil-like marks near the workshop and plaza, all decorative and non-blocking.
+            for(const [tx,ty,c] of [[17,21,0xff4f87],[48,21,0x35c8d0],[18,38,0xffd447],[49,38,0x9470e8]]) {
+              const x=tx*T,y=ty*T;
+              line(g,x+3,y+15,x+13,y+4,c,0.78,3);
+              line(g,x+13,y+4,x+23,y+15,c,0.78,3);
+              line(g,x+23,y+15,x+3,y+15,c,0.78,2);
+            }
+            // Faded triple-mark clue at the old freight shed in Minerals Town.
+            if(a.id==='mining-town') {
+              const x=50*T,y=41*T;
+              line(g,x+14,y+24,x+25,y+10,0xff4f87,0.58,3);
+              line(g,x+25,y+10,x+36,y+24,0xff4f87,0.58,3);
+              line(g,x+36,y+24,x+14,y+24,0xff4f87,0.58,3);
+              g.lineStyle(3,0x35c8d0,0.52).strokeCircle(x+160,y+24,10);
+              line(g,x+194,y+16,x+207,y+25,0x9470e8,0.56,3);
+              line(g,x+207,y+25,x+194,y+34,0x9470e8,0.56,3);
+            }
+            // Tunnel floor details and warm safety lamps.
+            if(a.id==='art-district') {
+              const x=30*T,y=44*T,w=12*T;
+              for(let yy=y+12;yy<y+12*T-8;yy+=32) {
+                rect(g,x+6,yy,w-12,1,0x9aa1a7,0.22);
+                rect(g,x+6,yy+2,w-12,1,0x050a10,0.32);
+              }
+              for(const xx of [31,40]) {
+                rect(g,xx*T+11,y+18,10,4,0x3b4248,1);
+                oval(g,xx*T+16,y+24,26,14,0xffd447,0.14);
+                rect(g,xx*T+13,y+18,6,3,0xffd447,0.9);
+              }
+              // A few bright paint drops on the tunnel floor guide the way out.
+              for(let i=0;i<7;i++) {
+                const xx=34*T+hash(i,71)*4*T, yy=y+48+i*40;
+                oval(g,xx,yy,6,4,palette[i%palette.length],0.72);
+              }
+            }
+          }
+          /* LIFEQUEST V11 - high-contrast silhouettes, material detail and readable pixel art.
+   Rendered exclusively into existing cached textures, so geometry/collisions remain identical. */
+          function v11Terrain(g, a) {
+            if (a.theme === 'art') { v11ArtTerrain(g, a); return; }
+            drawTerrain(g, a);
+            const mining = mine(a);
+            const W = a.w,
+              H = a.h;
+            for (let y = 1; y < H - 1; y++)
+              for (let x = 1; x < W - 1; x++) {
+                if (avoid(a, x, y)) continue;
+                const p = hash(x, y, 111),
+                  q = hash(x, y, 209),
+                  px = x * 32,
+                  py = y * 32;
+                if (tileRoad(a, x, y)) {
+                  // Fine aggregate, asphalt seams and restrained wear only where roads already exist.
+                  if (p > 0.36) {
+                    rect(
+                      g,
+                      px + 4 + ((q * 19) | 0),
+                      py + 5 + ((p * 18) | 0),
+                      3,
+                      1,
+                      mining ? 0xced6dc : 0xcbd1d8,
+                      0.22,
+                    );
+                  }
+                  if (p < 0.13) {
+                    line(g, px + 9, py + 21, px + 15, py + 22, 0x151e2d, 0.3);
+                    line(g, px + 15, py + 22, px + 19, py + 19, 0xffffff, 0.09);
+                  }
+                  if (p > 0.92) {
+                    rect(g, px + 3, py + 3, 26, 1, 0xffffff, 0.07);
+                    rect(g, px + 3, py + 4, 26, 1, 0x101825, 0.08);
+                  }
+                } else if (mining) {
+                  // Hand-shaped angular shards and mineral streaks; visual-only.
+                  if (p > 0.59) {
+                    g.fillStyle(0x667d85, 0.28).fillTriangle(
+                      px + 5,
+                      py + 23,
+                      px + 12,
+                      py + 11,
+                      px + 21,
+                      py + 25,
+                    );
+                    line(g, px + 12, py + 11, px + 17, py + 20, 0xd4e9e0, 0.2);
+                  }
+                  if (q > 0.94) {
+                    rect(g, px + 22, py + 7, 2, 6, 0x77dfd7, 0.48);
+                    rect(g, px + 23, py + 6, 1, 2, 0xffffff, 0.53);
+                  }
+                } else {
+                  if (p > 0.5) {
+                    line(g, px + 8, py + 25, px + 10, py + 18, 0x28613e, 0.35);
+                    line(g, px + 12, py + 25, px + 11, py + 20, 0xa8d480, 0.28);
+                  }
+                  if (q > 0.83) {
+                    const c = [0xffd4a6, 0xf8e4a7, 0xb6dbff][((q * 100) | 0) % 3];
+                    rect(g, px + 19, py + 14, 3, 3, c, 0.65);
+                    rect(g, px + 20, py + 13, 1, 1, 0xffffff, 0.65);
+                  }
+                  if (p < 0.09) oval(g, px + 18, py + 22, 15, 6, 0x26502b, 0.1);
+                }
+              }
+            // Kerbstones and real-world continuity. Only draw strips where an existing road meets an existing non-road tile.
+            for (let y = 1; y < H - 1; y++)
+              for (let x = 1; x < W - 1; x++) {
+                if (!tileRoad(a, x, y) || avoid(a, x, y)) continue;
+                const px = x * 32,
+                  py = y * 32;
+                if (!tileRoad(a, x, y - 1)) {
+                  rect(g, px, py, 32, 3, mining ? 0x9f978d : 0xd8d4c7, 0.55);
+                  rect(g, px, py + 3, 32, 2, 0x121921, 0.24);
+                  for (let k = 0; k < 2; k++)
+                    rect(g, px + k * 16 + 2, py + 1, 1, 2, 0xffffff, 0.14);
+                }
+                if (!tileRoad(a, x - 1, y)) {
+                  rect(g, px, py, 3, 32, mining ? 0x9f978d : 0xd8d4c7, 0.52);
+                  rect(g, px + 3, py, 2, 32, 0x121921, 0.2);
+                }
+              }
+          }
+          function v11Landscape(g, a) {
+            drawLandscape(g, a);
+            for (const o of a.obstacles) {
+              const x = o.x * 32,
+                y = o.y * 32,
+                w = Math.max(1, o.w || 1) * 32,
+                h = Math.max(1, o.h || 1) * 32;
+              const id = hash(o.x, o.y, 678);
+              if (o.kind === 'tree' || o.kind === 'pine') {
+                // A leaf cluster with asymmetric facets rather than a circular glow.
+                const cx = x + w / 2,
+                  cy = y + Math.min(21, h * 0.38);
+                const shade = o.kind === 'pine' ? 0x184d3f : 0x245b3b;
+                oval(g, cx + 4, cy + 15, Math.min(w * 0.65, 35), 10, 0x0d2a25, 0.24);
+                const colors =
+                  o.kind === 'pine'
+                    ? [0x376f61, 0x4e9877, 0x9ec9aa]
+                    : [0x397d45, 0x69a65b, 0xb0d77d];
+                for (let k = 0; k < 5; k++) {
+                  const xx = cx + [-11, 7, -3, 13, -8][k],
+                    yy = cy + [-2, 3, -9, -5, 7][k];
+                  oval(
+                    g,
+                    xx,
+                    yy,
+                    13 + (k % 2) * 5,
+                    9 + (k % 3) * 2,
+                    colors[k % 3],
+                    k < 3 ? 0.31 : 0.2,
+                  );
+                }
+                rect(g, cx - 2, cy - 7, 4, 2, 0xf6ffd8, 0.28);
+                rect(g, cx + 8, cy + 1, 3, 2, 0xd8ffd0, 0.22);
+              } else if (o.kind === 'rock' || o.kind === 'ore' || o.kind === 'boulder') {
+                const c = mine(a) ? 0x7ca6b0 : 0x9cafa0;
+                g.fillStyle(0x0b1721, 0.2).fillEllipse(
+                  x + w * 0.5,
+                  y + h * 0.83,
+                  Math.min(w * 0.85, 47),
+                  10,
+                );
+                g.fillStyle(c, 0.25).fillTriangle(
+                  x + w * 0.25,
+                  y + h * 0.47,
+                  x + w * 0.57,
+                  y + h * 0.2,
+                  x + w * 0.75,
+                  y + h * 0.61,
+                );
+                line(g, x + w * 0.57, y + h * 0.2, x + w * 0.7, y + h * 0.52, 0xffffff, 0.25);
+                if (mine(a) && id > 0.3) {
+                  rect(g, x + w * 0.38, y + h * 0.38, 3, 6, 0x81f3df, 0.45);
+                }
+              } else if (o.kind === 'pond' || o.kind === 'fountain' || o.kind === 'water') {
+                for (let k = 0; k < 4; k++) {
+                  const yy = y + 8 + k * Math.max(8, h / 5);
+                  const sx = x + 9 + (k % 2) * 10;
+                  line(g, sx, yy, sx + Math.min(w - 24, 25), yy, 0xdcffff, 0.25, 2);
+                  rect(g, sx + 3, yy + 2, 12, 1, 0x1e658f, 0.27);
+                }
+              } else if (o.kind === 'lamp') {
+                rect(g, x + w * 0.5 - 3, y + 5, 6, 5, 0x493f39, 0.75);
+                rect(g, x + w * 0.5 - 2, y + 5, 4, 3, 0xffe9ac, 0.87);
+                line(g, x + w * 0.5 - 5, y + 11, x + w * 0.5 + 5, y + 11, 0xffd58c, 0.29, 2);
+              }
+            }
+          }
+          function v11Building(g, b, a) {
+            drawBuilding(g, b, a);
+            const mining = mine(a);
+            const x = b.x * 32,
+              y = b.y * 32,
+              w = b.w * 32,
+              h = b.h * 32;
+            const roof = Math.round(h * ((b.floors ?? 1) === 2 ? 0.4 : 0.55));
+            const n = String(b.name || '');
+            const iron = /Mine|Smithy|Tool Shop|Rail Station|Station|Gem Shop/i.test(n);
+            const civic = /Town Hall|Bank|Library|School|Hospital/i.test(n);
+            const cafe = /Cafe|Restaurant|Hotel|Inn|Market/i.test(n);
+            const timber = /House|Home|Cabin|Apartments/i.test(n);
+            const edge = iron ? 0x768995 : civic ? 0xf0d4a5 : cafe ? 0xf6cfac : 0xdfc39c;
+            // Roof-edge volume: highlights facing northwest; lower bevel facing southeast.
+            rect(g, x + 9, y + 8, Math.max(5, w - 18), 3, edge, 0.32);
+            rect(g, x + 7, y + roof - 9, Math.max(5, w - 14), 4, 0x1c2430, 0.19);
+            line(g, x + 10, y + roof - 12, x + w - 10, y + roof - 12, edge, 0.3, 2);
+            for (let row = y + 17, k = 0; row < y + roof - 14; row += 15, k++) {
+              for (let xx = x + 16 + (k % 2) * 10; xx < x + w - 14; xx += 24) {
+                if (iron) {
+                  rect(g, xx, row, 15, 1, edge, 0.24);
+                  rect(g, xx + 2, row + 3, 1, 5, 0x0d1722, 0.15);
+                } else {
+                  g.lineStyle(1, edge, 0.2).lineBetween(xx, row, xx + 15, row + 2);
+                  rect(g, xx + 1, row + 3, 5, 1, 0xffffff, 0.13);
+                }
+              }
+            }
+            // Distinct facade identity with no new geometry outside building bounds.
+            if (iron) {
+              for (let j = 0; j < Math.min(5, b.w - 2); j++) {
+                const xx = x + 18 + j * 32;
+                rect(g, xx, y + roof + 8, 7, Math.max(7, h - roof - 34), 0x2e3944, 0.25);
+                rect(g, xx + 1, y + roof + 8, 2, Math.max(7, h - roof - 34), 0xadc7b6, 0.13);
+              }
+              rect(g, x + w * 0.23, y + roof - 7, w * 0.54, 3, 0xf3cf8a, 0.4);
+              if (/Gem Shop/.test(n))
+                for (let j = 0; j < 3; j++) {
+                  const xx = x + 22 + j * 22;
+                  g.fillStyle(0x76fff1, 0.28).fillTriangle(
+                    xx,
+                    y + roof * 0.65 - 6,
+                    xx + 4,
+                    y + roof * 0.65,
+                    xx,
+                    y + roof * 0.65 + 6,
+                  );
+                }
+            } else if (civic) {
+              for (let xx = x + 17; xx < x + w - 17; xx += 32) {
+                rect(g, xx, y + roof + 11, 5, Math.max(8, h - roof - 36), 0xffebc2, 0.25);
+                rect(g, xx + 5, y + roof + 11, 2, Math.max(8, h - roof - 36), 0x263042, 0.15);
+              }
+              rect(g, x + w * 0.28, y + roof * 0.5, Math.min(w * 0.45, 105), 3, 0xffe5b5, 0.29);
+            } else if (cafe) {
+              rect(g, x + 10, y + roof + 9, Math.max(8, w - 20), 5, 0xffd2a3, 0.32);
+              for (let xx = x + 12; xx < x + w - 16; xx += 15) {
+                rect(g, xx, y + roof + 10, 7, 4, 0xffffff, 0.28);
+              }
+            } else if (timber) {
+              for (let yy = y + roof + 8; yy < y + h - 12; yy += 12)
+                for (let xx = x + 12 + (((yy / 12) | 0) % 2) * 10; xx < x + w - 9; xx += 33) {
+                  rect(g, xx, yy, 19, 1, 0x392e31, 0.15);
+                  rect(g, xx + 4, yy + 2, 8, 1, 0xfff0ca, 0.11);
+                }
+            }
+            // A distinct physical entrance: never draw across the door itself.
+            const dc = b.door * 32 + 16;
+            rect(g, dc - 16, y + h - 4, 32, 3, 0x1b2634, 0.25);
+            rect(g, dc - 9, y + h - 16, 3, 2, 0xffe6a5, 0.67);
+            rect(g, dc + 6, y + h - 16, 3, 2, 0xffe6a5, 0.67);
+          }
+          function v11Interior(g, s) {
+            drawInterior(g, s);
+            const W = s.w * 32,
+              H = s.h * 32;
+            const stone = s.floor === 'stone' || s.floor === 'mine';
+            // Architectural details and natural-light shafts in wall band.
+            rect(g, 7, 65, W - 14, 4, 0x0a1a29, 0.18);
+            rect(g, 8, 68, W - 16, 2, 0xffebcb, 0.12);
+            for (let x = 24; x < W - 28; x += 64) {
+              rect(g, x, 3, 1, 45, 0xffffff, 0.12);
+              rect(g, x + 2, 5, 2, 39, 0x10243a, 0.15);
+            }
+            for (const obj of s.items || []) {
+              const x = obj.x * 32,
+                y = obj.y * 32,
+                w = obj.w * 32,
+                h = obj.h * 32;
+              // Existing furniture only: visual details cannot create a new obstacle.
+              if (['table', 'counter', 'desk', 'schooldesk'].includes(obj.k)) {
+                rect(g, x + 5, y + 4, Math.max(2, w - 10), 2, 0xffffff, 0.16);
+                if (w >= 62) {
+                  rect(g, x + 8, y + 8, 18, 11, 0xf9ebd7, 0.23);
+                  rect(g, x + 11, y + 11, 13, 1, 0x42516b, 0.33);
+                }
+                if (w >= 92) {
+                  oval(g, x + w - 19, y + 12, 12, 8, 0xfdf7de, 0.4);
+                  oval(g, x + w - 19, y + 12, 7, 5, 0x684b44, 0.4);
+                }
+              } else if (obj.k === 'chair') {
+                rect(g, x + 8, y + 8, Math.max(4, w - 16), 2, 0xffffff, 0.18);
+              } else if (obj.k === 'shelf' || obj.k === 'goods') {
+                for (let j = 0; j < Math.floor((w - 14) / 16); j++) {
+                  rect(
+                    g,
+                    x + 7 + j * 16,
+                    y + 6,
+                    3 + (j % 2) * 2,
+                    12,
+                    [0xf5ca88, 0x83b5db, 0xd7ac9f, 0x99c99f][j % 4],
+                    0.42,
+                  );
+                }
+              } else if (obj.k === 'bed' || obj.k === 'hospbed') {
+                rect(g, x + 7, y + 8, Math.max(4, w - 14), 2, 0xffffff, 0.21);
+                rect(g, x + 6, y + h - 8, Math.max(4, w - 12), 1, 0x111d2a, 0.24);
+              } else if (obj.k === 'rug') {
+                for (let yy = y + 13; yy < y + h - 12; yy += 14) {
+                  rect(g, x + 9, yy, Math.max(1, w - 18), 1, 0xffffff, 0.07);
+                }
+              } else if (obj.k === 'crystal') {
+                line(g, x + w * 0.5, y + 4, x + w * 0.6, y + Math.max(8, h - 6), 0xe5ffff, 0.44);
+                rect(g, x + w * 0.5, y + 6, 2, 6, 0xffffff, 0.45);
+              } else if (obj.k === 'forge' || obj.k === 'fireplace') {
+                for (let j = 0; j < 3; j++)
+                  rect(g, x + 8 + j * 10, y + 9 + (j % 2) * 5, 3, 7, 0xffd28e, 0.45);
+              }
+            }
+            // Transparent wall-edge inset and restrained warm windows; keep center of room unoccluded.
+            rect(g, 8, H - 6, W - 16, 2, 0xfff1cb, 0.12);
+            rect(g, 5, 70, 2, H - 78, 0x101c28, 0.18);
+            rect(g, W - 7, 70, 2, H - 78, 0x101c28, 0.18);
+            if (stone) rect(g, 9, 72, W - 18, 1, 0x80e4d5, 0.12);
+            // V14.2: authored visual style for the room's actual building identity.
+            // All strokes are paint on the cached room texture. No walkability/collision changes.
+            let roomName = s.__lqVisualName;
+            if (!roomName) {
+              roomName = Object.keys(_r).find((name) => _r[name] === s) ||
+                (s.labels && s.labels[0] && s.labels[0].text) || 'Interior';
+              s.__lqVisualName = roomName;
+            }
+            const rn = String(roomName).toLowerCase();
+            const isHeritage = /oriaris|cottage|granary|brown family/i.test(rn);
+            const isCreative = /gallery|art|mural|photo|canvas|backbeat|studio/i.test(rn);
+            const isMedical = /hospital|first-aid|clinic/i.test(rn);
+            const isEducation = /library|school/i.test(rn);
+            const isIndustry = /mine|smithy|freight|tool|gem|rail|quarry/i.test(rn);
+            const isHome = /home|house|apartment|cottage|hotel|inn/i.test(rn);
+            const isFood = /cafe|bakery|market|restaurant|corner shop/i.test(rn);
+            const isCivic = /hall|bank|post office|police|church|fire station/i.test(rn);
+            const theme = isCreative ? 'creative' : isHeritage ? 'heritage' : isMedical ? 'medical' :
+              isEducation ? 'education' : isIndustry ? 'industrial' : isFood ? 'food' :
+              isCivic ? 'civic' : isHome ? 'home' : 'neutral';
+            const accentMap = {
+              creative: 0xef81bf, heritage: 0xe3c494, medical: 0x80d0d7,
+              education: 0xc4b18a, industrial: 0x85b4bb, food: 0xf0c388,
+              civic: 0xd8c9a4, home: 0xd0b295, neutral: 0xc1c9d2,
+            };
+            const accent=accentMap[theme];
+            const dark=theme === 'industrial' ? 0x253943 : theme === 'creative' ? 0x423753 : 0x57463d;
+            // Architectural baseboards and wall panel separation under original furniture.
+            rect(g, 7, 63, W-14, 3, dark, .36);
+            rect(g, 7, 68, W-14, 2, accent, .30);
+            rect(g, 7, 73, W-14, 2, 0xffffff, .12);
+            rect(g, 8, H-15, W-16, 3, dark, .24);
+            rect(g, 8, H-12, W-16, 1, accent, .16);
+            // Narrow architectural border shadows and skirting: no floor-space obstruction.
+            for (const px of [13,W-16]) {
+              rect(g, px, 80, 3, Math.max(0,H-98), dark, .14);
+              rect(g, px+1, 82, 1, Math.max(0,H-100), 0xffffff, .11);
+            }
+            // Wall panels with tiny material-specific marks.
+            for (let px=25;px<W-25;px+=64) {
+              rect(g, px, 8, 37, 2, accent, .23);
+              rect(g, px+2, 12, 1, 28, dark, .16);
+              rect(g, px+33, 12, 1, 28, dark, .14);
+              rect(g, px+4, 42, 29, 1, accent, .20);
+              if (theme==='heritage' || theme==='home') {
+                rect(g,px+2,48,32,2,0xa27e59,.20);
+                line(g,px+4,15,px+27,38,0x76573d,.08,1);
+              } else if (theme==='creative') {
+                for(let i=0;i<3;i++) rect(g,px+6+i*9,17+(i%2)*7,6,11,
+                  [0xfaa0c9,0x75decf,0xf5d37b][i],.28);
+              } else if (theme==='industrial') {
+                rect(g,px+5,34,23,2,0xb1c5c7,.24);
+                for(let i=0;i<3;i++) rect(g,px+8+i*8,18,2,2,0xf2e1bd,.35);
+              } else {
+                rect(g,px+6,18,24,16,accent,.06);
+              }
+            }
+            // Signature crest/institution panel above the furnishing band.
+            const crestX=W/2, crestY=31;
+            oval(g,crestX,crestY,46,36,accent,.08);
+            if(theme==='medical') {
+              rect(g,crestX-4,crestY-15,8,30,0xf8ffff,.75);
+              rect(g,crestX-15,crestY-4,30,8,0xf8ffff,.75);
+              rect(g,crestX-2,crestY-13,4,26,0xc75555,.89);
+              rect(g,crestX-13,crestY-2,26,4,0xc75555,.89);
+            } else if(theme==='education') {
+              rect(g,crestX-18,crestY-9,16,19,0xd3b987,.74);
+              rect(g,crestX+2,crestY-9,16,19,0xe3cda9,.78);
+              line(g,crestX,crestY-8,crestX,crestY+10,0x584a3e,.8,2);
+              line(g,crestX-17,crestY-10,crestX-1,crestY-6,0xffffff,.3,1);
+              line(g,crestX+1,crestY-6,crestX+17,crestY-10,0xffffff,.3,1);
+            } else if(theme==='creative') {
+              for(let j=0;j<4;j++) {
+                const px=crestX+(j-1.5)*10;
+                rect(g,px,crestY-12+j%2*4,7,19,
+                  [0xffbc66,0x81d9c8,0xf388b8,0x9f8de9][j],.78);
+              }
+              dot(g,0xffffff,crestX,crestY-15,2,.65);
+            } else if(theme==='industrial') {
+              g.fillStyle(0x7fd7cf,.68).fillTriangle(crestX,crestY-17,crestX-12,crestY+9,crestX+11,crestY+9);
+              g.fillStyle(0xdbfcf5,.54).fillTriangle(crestX,crestY-17,crestX-12,crestY+9,crestX-2,crestY+8);
+            } else if(theme==='heritage') {
+              rect(g,crestX-15,crestY-11,30,22,0x76523d,.81);
+              g.fillStyle(0xd6b782,.81).fillTriangle(crestX-18,crestY-11,crestX+18,crestY-11,crestX,crestY-23);
+              rect(g,crestX-3,crestY-1,6,11,0xf5d9a4,.45);
+            } else if(theme==='food') {
+              oval(g,crestX,crestY,31,21,0xffefd7,.77);
+              oval(g,crestX,crestY,21,12,0x9b7350,.69);
+              rect(g,crestX-11,crestY+11,22,3,accent,.85);
+              dot(g,0xf9eee0,crestX-5,crestY-2,3,.66);
+            } else if(theme==='civic') {
+              oval(g,crestX,crestY,32,32,0x5d6679,.62);
+              oval(g,crestX,crestY,25,25,accent,.44);
+              rect(g,crestX-4,crestY-9,8,18,0xf8e2b8,.51);
+              rect(g,crestX-12,crestY+5,24,4,0xeed7ae,.54);
+            } else {
+              oval(g,crestX,crestY,20,20,accent,.34);
+            }
+            // Floor craftsmanship only: micro highlights along tiles and carpet edges.
+            // Do not draw large furniture-sized shapes in walkable tiles.
+            if (theme==='creative') {
+              for(let ty=3;ty<s.h-1;ty+=2) for(let tx=1;tx<s.w-1;tx+=2) {
+                const hsh=hash(tx,ty,s.w*9+s.h);
+                if(hsh<.73)continue;
+                rect(g,tx*32+4+(hsh*9|0),ty*32+15,8,2,
+                  [0xe8a9d4,0x90cfcc,0xeacc9b][(tx+ty)%3],.18);
+              }
+            } else if (s.floor==='wood') {
+              for(let yy=102;yy<H-14;yy+=32) for(let xx=22;xx<W-20;xx+=88) {
+                rect(g,xx+(yy%64),yy,18,1,0xffe6ba,.10);
+                rect(g,xx+(yy%64)+20,yy+3,10,1,0x3b281e,.1);
+              }
+            } else if (s.floor==='tile'||s.floor==='checker'||s.floor==='stone') {
+              for(let yy=96;yy<H-16;yy+=64) for(let xx=18;xx<W-16;xx+=64) {
+                rect(g,xx,yy,7,1,accent,.11);
+                rect(g,xx,yy,1,7,accent,.11);
+              }
+            }
+            // Extra detail on EXISTING furniture only, preserving room furniture footprint.
+            for(const obj of s.items||[]){
+              const px=obj.x*32,py=obj.y*32,pw=obj.w*32,ph=obj.h*32;
+              if(['shelf','goods','rack'].includes(obj.k)) {
+                rect(g,px+4,py+3,Math.max(3,pw-8),2,accent,.28);
+                for(let i=0;i<Math.min(9,Math.floor((pw-14)/11));i++)
+                  rect(g,px+8+i*11,py+10+(i%2)*3,4,7,
+                    [0xe3c68c,0xb5d2ce,0xa7c4ee,0xd6a9a0][i%4],.53);
+              } else if(['desk','counter','table'].includes(obj.k)) {
+                rect(g,px+4,py+2,Math.max(4,pw-8),2,0xffffff,.18);
+                if(pw>60) {
+                  rect(g,px+8,py+8,12,8,0xf4e8cf,.46);
+                  line(g,px+10,py+11,px+18,py+11,0x6d8492,.41,1);
+                }
+              } else if(obj.k==='plant') {
+                dot(g,0xd2f4af,px+16,py+8,3,.47);
+                dot(g,0xf2e49e,px+11,py+14,2,.35);
+              } else if(obj.k==='rug') {
+                rect(g,px+4,py+4,Math.max(4,pw-8),2,accent,.16);
+                rect(g,px+4,py+ph-6,Math.max(4,pw-8),2,accent,.16);
+              }
+            }
+          }
+
+          /* ===== MINERALS CENTRAL STATION: modern station south of Minerals Town (solid colours, no translucent overlays) ===== */
+          function drawStation(g, a) {
+            if (a.id !== 'mining-town' && a.id !== 'english-town') return;
+            const T = 32;
+            const K = {
+              ink: 0x1b2630,
+              steel: 0x2f3d48,
+              steel2: 0x4a5a66,
+              steel3: 0x7b8b96,
+              con: 0xcfd4d3,
+              con2: 0xc2c9c9,
+              con3: 0xa9b2b4,
+              seam: 0x97a1a4,
+              white: 0xf3f6f4,
+              teal: 0x16b3a5,
+              teal2: 0x0f857d,
+              glass: 0x8fdcd6,
+              glass2: 0x62b9b8,
+              glassDk: 0x2d6f78,
+              amber: 0xf3b94d,
+              red: 0xd9534f,
+              green: 0x58c26a,
+              roofA: 0x5b6a74,
+              roofB: 0x4a5862,
+              bal: 0x8a8478,
+              bal2: 0x726c62,
+              tie: 0x4a3a2c,
+              tie2: 0x5f4a37,
+              rail: 0xdde3e6,
+              wood: 0xb98a52,
+              wood2: 0x9c723f,
+              soil: 0x5a3f2c,
+            };
+            const R = (x, y, w, h, c) => rect(g, x, y, w, h, c, 1);
+            const pave = (x0, y0, x1, y1, c1, c2, sm) => {
+              for (let y = y0; y <= y1; y++)
+                for (let x = x0; x <= x1; x++) {
+                  const h = hash(x, y, 41);
+                  R(x * T, y * T, T, T, (x + y) & 1 ? c1 : c2);
+                  R(x * T, y * T + T - 1, T, 1, sm);
+                  R(x * T + T - 1, y * T, 1, T, sm);
+                  if (h > 0.88) R(x * T + 8 + (((h * 40) | 0) % 12), y * T + 10, 5, 1, sm);
+                }
+            };
+            // Ground: forecourt, side walks, concourse, gateway, platforms.
+            pave(4, 47, 55, 51, K.con, K.con2, K.seam);
+            R(4 * T, 47 * T, 52 * T, 4, K.con3);
+            pave(4, 52, 10, 62, K.con2, K.con, K.seam);
+            pave(51, 52, 55, 62, K.con2, K.con, K.seam);
+            pave(11, 58, 50, 62, 0xd8dcdb, 0xcdd2d1, K.seam);
+            pave(28, 52, 32, 57, 0xb9c1c2, 0xafb8b9, K.seam);
+            pave(4, 63, 55, 64, 0xbcc3c3, 0xb2baba, 0x9aa3a5);
+            pave(4, 67, 55, 68, 0xbcc3c3, 0xb2baba, 0x9aa3a5);
+            R(30 * T + 10, 52 * T, 12, 11 * T, K.teal);
+            R(4 * T, 64 * T + T - 8, 52 * T, 6, K.amber);
+            R(4 * T, 64 * T + T - 2, 52 * T, 2, K.ink);
+            R(4 * T, 67 * T + 2, 52 * T, 6, K.amber);
+            R(4 * T, 68 * T + T - 8, 52 * T, 6, K.amber);
+            // Tracks.
+            const track = (ty) => {
+              const y = ty * T,
+                W = a.w * T;
+              R(0, y, W, 2 * T, K.bal);
+              for (let xx = 0; xx < W; xx += 16)
+                if (hash(xx >> 4, ty, 57) > 0.5) R(xx, y, 16, 2 * T, K.bal2);
+              for (let xx = 4; xx < W; xx += 14) {
+                R(xx, y + 6, 6, 2 * T - 12, K.tie);
+                R(xx, y + 6, 2, 2 * T - 12, K.tie2);
+              }
+              R(0, y + 12, W, 4, K.rail);
+              R(0, y + 16, W, 2, K.steel3);
+              R(0, y + 44, W, 4, K.rail);
+              R(0, y + 48, W, 2, K.steel3);
+            };
+            track(65);
+            track(69);
+            R(0, 71 * T, a.w * T, 8, K.bal2);
+            // Hall: roof, glass curtain wall, sign band.
+            const hall = (xa, xb) => {
+              const x = xa * T,
+                w = (xb - xa + 1) * T,
+                ry = 52 * T,
+                fy = 55 * T;
+              R(x, ry, w, 3 * T, K.roofA);
+              for (let xx = x + 16; xx < x + w; xx += 16) R(xx, ry + 4, 1, 3 * T - 12, K.roofB);
+              for (let xx = x + 48; xx < x + w; xx += 96) R(xx, ry + 4, 2, 3 * T - 12, K.steel3);
+              R(x + 10, ry + 14, w - 20, 34, K.steel);
+              R(x + 13, ry + 17, w - 26, 28, K.glassDk);
+              R(x + 13, ry + 17, w - 26, 14, K.glass2);
+              for (let xx = x + 13; xx < x + w - 13; xx += 26) {
+                R(xx, ry + 17, 2, 28, K.steel2);
+                R(xx + 8, ry + 20, 3, 10, K.glass);
+              }
+              R(x, ry, w, 5, K.con3);
+              R(x, ry + 3 * T - 26, w, 10, K.con);
+              R(x, ry + 3 * T - 16, w, 3, K.ink);
+              R(x, ry + 3 * T - 13, w, 5, K.con3);
+              R(x, fy, w, 28, 0x24505a);
+              R(x, fy, w, 3, K.teal);
+              R(x, fy + 25, w, 3, K.ink);
+              for (let xx = x + 8; xx < x + w - 8; xx += 64) {
+                R(xx, fy + 10, 3, 3, K.amber);
+                R(xx + 32, fy + 10, 3, 3, K.white);
+              }
+              R(x, fy + 28, w, 68, K.con3);
+              R(x + 4, fy + 32, w - 8, 56, K.glass2);
+              for (let xx = x + 4; xx < x + w - 4; xx += 32) R(xx, fy + 32, 2, 56, K.steel2);
+              R(x + 4, fy + 56, w - 8, 2, K.steel2);
+              for (let xx = x + 14; xx < x + w - 20; xx += 96) {
+                R(xx, fy + 36, 5, 18, K.glass);
+                R(xx + 9, fy + 40, 3, 10, K.glass);
+                R(xx, fy + 60, 5, 22, K.glass);
+              }
+              R(x, fy + 90, w, 6, K.steel);
+              R(x, 58 * T, w, 5, K.con3);
+            };
+            hall(11, 27);
+            hall(33, 50);
+            R(11 * T - 4, 52 * T, 4, 6 * T, K.steel);
+            R(51 * T, 52 * T, 4, 6 * T, K.steel);
+            // Sign band details: departure boards and train pictograms.
+            const board = (tx) => {
+              const x = tx * T,
+                y = 55 * T + 4;
+              R(x, y, 6 * T, 20, 0x10161c);
+              R(x, y, 6 * T, 2, K.steel2);
+              R(x + 4, y + 17, 6 * T - 8, 2, K.amber);
+            };
+            board(21);
+            board(35);
+            for (const tx of [12, 48]) {
+              const x = tx * T + 4,
+                y = 55 * T + 8;
+              R(x, y, 24, 10, K.white);
+              for (let k = 0; k < 3; k++) R(x + 3 + k * 7, y + 2, 4, 4, K.glassDk);
+              R(x + 2, y + 10, 4, 3, K.steel);
+              R(x + 18, y + 10, 4, 3, K.steel);
+            }
+            // Gateway: steel frame, LED headers, columns.
+
+            // Twin clock towers.
+            R(28 * T - 6, 55 * T, 5 * T + 12, 10, K.steel);
+            R(28 * T - 6, 55 * T + 10, 5 * T + 12, 3, K.teal);
+            const tower = (tx) => {
+              const x = tx * T,
+                y = 47 * T;
+              R(x, y + 34, 96, 5 * T - 34, K.con);
+              R(x + 86, y + 34, 10, 5 * T - 34, K.con3);
+              R(x, y + 34, 6, 5 * T - 34, K.white);
+              R(x + 34, y + 58, 28, 84, K.steel);
+              R(x + 37, y + 61, 22, 78, K.glassDk);
+              R(x + 37, y + 61, 22, 36, K.glass2);
+              R(x + 46, y + 61, 3, 78, K.steel2);
+              for (let k = 0; k < 3; k++) {
+                R(x + 12, y + 62 + k * 28, 12, 16, K.glassDk);
+                R(x + 72, y + 62 + k * 28, 12, 16, K.glassDk);
+              }
+              R(x - 6, y, 108, 40, K.steel);
+              R(x - 6, y, 108, 5, K.teal);
+              oval(g, x + 48, y + 22, 34, 34, K.ink);
+              oval(g, x + 48, y + 22, 30, 30, K.white);
+              line(g, x + 48, y + 22, x + 48, y + 11, K.ink, 1, 2);
+              line(g, x + 48, y + 22, x + 56, y + 26, K.ink, 1, 2);
+              R(x - 10, y - 8, 116, 8, K.steel2);
+              R(x + 44, y - 14, 8, 6, K.amber);
+            };
+            tower(25);
+            tower(33);
+            // Plaza dressing.
+            const planter = (tx, ty) => {
+              const x = tx * T,
+                y = ty * T;
+              R(x, y, 3 * T, 2 * T, K.con3);
+              R(x + 4, y + 4, 3 * T - 8, 2 * T - 12, K.soil);
+              R(x, y + 2 * T - 8, 3 * T, 8, K.steel2);
+              for (let i = 0; i < 7; i++) {
+                const px = x + 10 + i * 12,
+                  py = y + 14 + ((i * 7) % 3) * 8;
+                oval(g, px, py, 14, 12, i % 2 ? 0x4aa85c : 0x6fcf7a);
+                if (i % 3 === 0) R(px - 2, py - 8, 3, 3, [K.amber, K.red, 0xf2f2f2][(i / 3) | 0]);
+              }
+            };
+            planter(14, 48);
+            planter(44, 48);
+            const lamp = (tx, ty) => {
+              const x = tx * T,
+                y = ty * T;
+              R(x + 10, y + 26, 12, 5, K.steel2);
+              R(x + 14, y + 6, 4, 22, K.steel);
+              R(x + 8, y + 2, 16, 7, K.steel2);
+              R(x + 10, y + 4, 12, 3, K.amber);
+            };
+            lamp(20, 49);
+            lamp(40, 49);
+            // Concourse fixtures.
+            const counter = (tx, ty, tw) => {
+              const x = tx * T,
+                y = ty * T,
+                w = tw * T;
+              R(x, y, w, 13, 0xe9edea);
+              R(x, y + 13, w, 19, K.steel2);
+              R(x, y + 16, w, 3, K.teal);
+              R(x, y + 29, w, 3, K.ink);
+              for (let xx = x + 10; xx < x + w - 24; xx += 48) {
+                R(xx, y + 2, 20, 8, K.ink);
+                R(xx + 2, y + 4, 16, 4, K.green);
+              }
+              R(x + 2, y - 4, w - 4, 5, K.glass);
+            };
+            counter(15, 59, 6);
+            counter(41, 59, 6);
+            const bench = (tx, ty, tw) => {
+              const x = tx * T,
+                y = ty * T,
+                w = tw * T;
+              R(x, y + 4, w, 7, K.wood2);
+              R(x, y + 12, w, 9, K.wood);
+              for (let xx = x + 16; xx < x + w; xx += 16) R(xx, y + 12, 1, 9, K.wood2);
+              R(x + 4, y + 21, 5, 9, K.steel);
+              R(x + w - 9, y + 21, 5, 9, K.steel);
+              R(x, y + 28, w, 3, K.con3);
+            };
+            bench(23, 60, 4);
+            bench(34, 60, 4);
+            const kiosk = (tx, ty, tc) => {
+              const x = tx * T,
+                y = ty * T,
+                w = 3 * T;
+              R(x, y + 14, w, 50, 0xeceeee);
+              for (let i = 0; i < 6; i++) R(x + i * 16, y, 16, 16, i % 2 ? K.white : tc);
+              R(x, y + 16, w, 3, K.ink);
+              R(x + 8, y + 24, w - 16, 22, K.glassDk);
+              R(x + 8, y + 24, w - 16, 9, K.glass2);
+              R(x + 4, y + 46, w - 8, 6, K.wood);
+              R(x + 14, y + 40, 6, 6, K.amber);
+              R(x + 60, y + 40, 6, 6, K.red);
+              R(x, y + 56, w, 8, K.steel2);
+            };
+            kiosk(11, 60, K.teal);
+            kiosk(48, 60, K.amber);
+            const column = (tx, ty) => {
+              const x = tx * T,
+                y = ty * T;
+              R(x + 10, y + 4, 12, 26, K.steel);
+              R(x + 13, y + 4, 3, 26, K.steel3);
+              R(x + 5, y, 22, 6, K.steel2);
+              R(x + 6, y + 26, 20, 6, K.con3);
+            };
+            column(21, 62);
+            column(40, 62);
+            const fare = (tx, ty) => {
+              const x = tx * T,
+                y = ty * T;
+              R(x + 7, y + 8, 18, 22, K.steel2);
+              R(x + 7, y + 8, 18, 5, K.white);
+              R(x + 13, y + 16, 6, 3, K.green);
+              R(x + 9, y + 26, 14, 4, K.ink);
+            };
+            for (let tx = 22; tx <= 27; tx++) fare(tx, 62);
+            for (let tx = 34; tx <= 39; tx++) fare(tx, 62);
+            // Passenger train (Platform 1 side): white EMU with teal stripe.
+            {
+              const x = 15 * T,
+                y = 65 * T,
+                w = 32 * T,
+                car = w / 4;
+              R(x, y + 2, w, 16, 0xdde3e2);
+              for (let xx = x + 20; xx < x + w - 20; xx += 64) {
+                R(xx, y + 6, 22, 8, K.steel3);
+                R(xx + 2, y + 8, 18, 2, K.con);
+              }
+              R(x, y + 18, w, 40, K.white);
+              R(x, y + 24, w, 14, K.glassDk);
+              R(x, y + 24, w, 3, K.glass2);
+              for (let xx = x + 10; xx < x + w; xx += 20) R(xx, y + 24, 3, 14, K.white);
+              R(x, y + 42, w, 6, K.teal);
+              R(x, y + 58, w, 6, K.steel2);
+              for (let c = 0; c < 4; c++)
+                for (const d of [28, car / 2 - 10, car - 48]) {
+                  const dx = x + car * c + d;
+                  R(dx, y + 20, 22, 38, 0xc9d3d6);
+                  R(dx + 3, y + 24, 16, 14, K.glassDk);
+                  R(dx + 10, y + 20, 2, 38, K.steel2);
+                }
+              for (let c = 1; c < 4; c++) R(x + car * c - 3, y + 2, 6, 60, K.ink);
+              oval(g, x + 4, y + 34, 36, 62, K.white);
+              oval(g, x + w - 4, y + 34, 36, 62, K.white);
+              R(x - 8, y + 24, 12, 14, K.ink);
+              R(x + w - 4, y + 24, 12, 14, K.ink);
+              R(x - 6, y + 42, 5, 5, K.amber);
+              R(x + w + 1, y + 42, 5, 5, K.amber);
+            }
+            // Ore express (Platform 2 side): teal locomotive + five hopper wagons loaded with ore.
+            {
+              const x0 = 22 * T,
+                y = 69 * T;
+              R(x0, y + 2, 160, 14, 0x3b4a55);
+              oval(g, x0 + 40, y + 9, 22, 10, K.steel);
+              oval(g, x0 + 90, y + 9, 22, 10, K.steel);
+              oval(g, x0 + 135, y + 9, 16, 8, K.steel);
+              R(x0, y + 16, 160, 40, 0x1b8f8a);
+              R(x0, y + 16, 160, 5, 0x23b3ab);
+              R(x0, y + 44, 160, 6, K.amber);
+              R(x0 + 10, y + 22, 30, 14, K.ink);
+              R(x0 + 13, y + 25, 24, 5, K.glass2);
+              for (let k = 0; k < 4; k++) {
+                R(x0 + 60 + k * 22, y + 22, 12, 16, 0x146f6b);
+                R(x0 + 60 + k * 22, y + 22, 2, 16, 0x23b3ab);
+              }
+              R(x0, y + 56, 160, 8, K.ink);
+              R(x0 + 2, y + 34, 4, 6, K.amber);
+              for (let i = 0; i < 5; i++) {
+                const wx = x0 + 160 + i * 160;
+                R(wx + 4, y + 4, 152, 58, 0x6b4a36);
+                R(wx + 8, y + 7, 144, 22, 0x2a3035);
+                for (let k = 0; k < 11; k++) {
+                  const px = wx + 14 + k * 13,
+                    py = y + 12 + (k % 3) * 3;
+                  oval(g, px, py, 16, 10, [0x5d6a72, 0x7b8f95, 0x2e7d7a, 0x8a6a3a][k % 4]);
+                  R(px - 2, py - 3, 3, 2, 0xdfe7e6);
+                }
+                R(wx + 4, y + 30, 152, 26, 0x7a5640);
+                R(wx + 4, y + 30, 152, 3, 0x8e6850);
+                for (let xx = wx + 20; xx < wx + 150; xx += 28) R(xx, y + 33, 2, 22, 0x5c3f2d);
+                R(wx + 10, y + 56, 140, 6, K.ink);
+                R(wx, y + 30, 4, 6, K.ink);
+              }
+            }
+          }
+          function stationLabels(s) {
+            if (s.area.id !== 'mining-town' && s.area.id !== 'english-town') return;
+            const T = 32,
+              mk = (txt, tx, py, color, bg) =>
+                s.areaObjs.push(
+                  s.add
+                    .text(tx * T, py, txt, {
+                      fontSize: '12px',
+                      color,
+                      backgroundColor: bg,
+                      padding: { x: 4, y: 2 },
+                    })
+                    .setOrigin(0.5)
+                    .setDepth(12),
+                );
+            mk(
+              s.area.id === 'mining-town'
+                ? 'MINERALS CENTRAL STATION'
+                : 'ENGLISH TOWN CENTRAL STATION',
+              30.5,
+              51 * T + 10,
+              '#ffffff',
+              '#1b2630',
+            );
+            mk('TICKETS', 17.5, 55 * T + 14, '#ffffff', '#16b3a5');
+            mk('CARGO & PARCELS', 44, 55 * T + 14, '#1b2630', '#f3b94d');
+            mk('DEPARTURES', 24, 55 * T + 14, '#f3b94d', '#10161c');
+            mk('DEPARTURES', 38, 55 * T + 14, '#f3b94d', '#10161c');
+            mk('CAFE', 12.5, 60 * T - 8, '#ffffff', '#0f857d');
+            mk('NEWS & SNACKS', 49.5, 60 * T - 8, '#1b2630', '#f3b94d');
+            mk('PLATFORM 1', 8, 63 * T + 10, '#ffffff', '#1b2630');
+            mk('PLATFORM 2', 8, 67 * T + 10, '#ffffff', '#1b2630');
+            const top = (key, x0, y0, w, h, draw) => {
+              if (!s.textures.exists(key)) {
+                const g = s.add.graphics(),
+                  L = (x, y, ww, hh, c) => rect(g, x, y, ww, hh, c, 1);
+                draw(L);
+                g.generateTexture(key, w, h);
+                g.destroy();
+              }
+              s.areaObjs.push(s.add.image(x0, y0, key).setOrigin(0).setDepth(10.6));
+            };
+            top('lq-st-gate', 28 * T - 6, 52 * T, 5 * T + 12, 6 * T, (L) => {
+              L(6, 0, 5, 6 * T, 0x2f3d48);
+              L(5 * T + 1, 0, 5, 6 * T, 0x2f3d48);
+              L(0, 0, 5 * T + 12, 12, 0x2f3d48);
+              L(0, 12, 5 * T + 12, 4, 0x16b3a5);
+            });
+            const pillar = (L) => {
+              L(10, 4, 12, 26, 0x2f3d48);
+              L(13, 4, 3, 26, 0x7b8b96);
+              L(5, 0, 22, 6, 0x4a5a66);
+              L(6, 26, 20, 6, 0xa9b2b4);
+            };
+            top('lq-st-pillar', 13 * T, 62 * T, T, T, pillar);
+            s.areaObjs.push(
+              s.add
+                .image(48 * T, 62 * T, 'lq-st-pillar')
+                .setOrigin(0)
+                .setDepth(10.6),
+            );
+          }
+          return {
+            drawTerrain: v11Terrain,
+            drawLandscape: v11Landscape,
+            drawBuilding: v11Building,
+            drawInterior: v11Interior,
+            drawStation,
+            stationLabels,
+            createLights,
+            destroy,
+            tick,
+          };
+        })();
+
+        /* ===== END V9 CINEMATIC GRAPHICS ===== */
+
+        /* V53 — SIX NEW PLAYABLE MAORAI INTERIORS.
+           The original V52 had six outdoor buildings but no matching _r room entries.
+           This fills the missing interiors inside the original Phaser room engine.
+           The exit is always at the central south edge; stage and quest IDs are preserved. */
+        Object.assign(_r, {
+          'THE ELDER’S CANOPY': {
+            w:20,h:15,floor:'wood',f1:0x7e9363,f2:0x99a66e,wall:0x41684b,
+            items:[
+              Q('glass',8,0,4,2),Q('paint',2,0,4,2),Q('paint',14,0,4,2),
+              Q('altar',8,3,4,2),Q('pew',3,5,3,1,0x756644),Q('pew',14,5,3,1,0x756644),
+              Q('pew',2,8,4,1,0x806b49),Q('pew',14,8,4,1,0x806b49),
+              Q('rug',7,6,6,5,0xb0ae7b),Q('shelf',1,3,3,1),Q('shelf',16,3,3,1),
+              Q('table',3,11,3,1,0x977951),Q('table',14,11,3,1,0x977951),
+              Q('plant',1,11),Q('plant',18,11),Q('lantern',6,2),Q('lantern',13,2)
+            ],spots:{},guests:[],labels:[{x:10,y:1,text:'ELDERS · MEMORY CANOPY'},{x:10,y:3,text:'THE ROOT SEAT'}]
+          },
+          'COUNCIL ROOT HALL': {
+            w:24,h:16,floor:'wood',f1:0x92a477,f2:0x7b925f,wall:0x416b4a,
+            items:[
+              Q('paint',2,0,4,2),Q('glass',10,0,4,2),Q('paint',18,0,4,2),
+              Q('pew',4,4,4,1,0x766544),Q('pew',16,4,4,1,0x766544),
+              Q('pew',2,7,4,1,0x766544),Q('pew',18,7,4,1,0x766544),
+              Q('table',9,6,6,2,0xa98e61),Q('rug',8,8,8,5,0xb6b77b),
+              Q('shelf',1,3,3,1),Q('shelf',20,3,3,1),Q('plant',2,11),Q('plant',21,11),
+              Q('lantern',5,2),Q('lantern',18,2),Q('desk',3,12,3,1,0x836a4b),Q('desk',18,12,3,1,0x836a4b)
+            ],spots:{},guests:[],labels:[{x:12,y:1,text:'COUNCIL OF MAORAI'},{x:12,y:3,text:'VOICE OF THE ROOTS'}]
+          },
+          'WILDFRUIT MARKET': {
+            w:22,h:13,floor:'wood',f1:0xb4a373,f2:0x8a9967,wall:0x47734b,
+            items:[
+              Q('glass',9,0,4,2),Q('poster',2,0,4,2),Q('menu',16,0,4,2),
+              Q('counter',1,3,5,1,0x846748),Q('counter',16,3,5,1,0x846748),
+              Q('goods',2,4,3,1,0xcac37e),Q('goods',17,4,3,1,0xd4aa72),
+              Q('shelf',1,6,4,1),Q('shelf',17,6,4,1),
+              Q('table',2,8,3,1,0x9e7653),Q('table',17,8,3,1,0x9e7653),
+              Q('rug',8,5,6,5,0xd9c88b),Q('crate',1,9),Q('crate',20,9),Q('plant',6,3),Q('plant',15,3)
+            ],spots:{},guests:[],labels:[{x:11,y:1,text:'WILDFRUIT · COMMUNITY MARKET'},{x:4,y:2,text:'FRESH HARVEST'},{x:18,y:2,text:'DRIED FRUIT'}]
+          },
+          'ROOT HOME · VAELA': {
+            w:16,h:12,floor:'wood',f1:0x8da06c,f2:0xa5a87d,wall:0x476c4d,
+            items:[
+              Q('glass',6,0,4,2),Q('paint',1,0,3,2),Q('shelf',12,2,3,1),
+              Q('fireplace',2,3,3,2),Q('bed',11,4,3,2),Q('table',4,6,3,1,0x977955),
+              Q('chair',4,7),Q('chair',6,7),Q('rug',6,7,5,3,0xb7c391),
+              Q('plant',1,7),Q('plant',14,7),Q('crate',2,9),Q('shelf',1,2,2,1),
+              Q('lantern',7,2)
+            ],spots:{},guests:[],labels:[{x:8,y:1,text:'VAELA · ROOT HOME'},{x:12,y:3,text:'FAMILY REST'},{x:3,y:3,text:'HEARTH'}]
+          },
+          'EXPLORER OUTPOST': {
+            w:20,h:14,floor:'wood',f1:0xafa277,f2:0x7c9878,wall:0x456a59,
+            items:[
+              Q('poster',2,0,4,2),Q('glass',8,0,4,2),Q('clock',16,0,2,2),
+              Q('desk',2,3,5,1,0x8b7250),Q('desk',13,3,5,1,0x8b7250),
+              Q('chair',3,4),Q('chair',15,4),Q('shelf',1,7,4,1),Q('shelf',15,7,4,1),
+              Q('table',5,6,4,1,0xa38c5f),Q('table',12,6,3,1,0xa38c5f),
+              Q('rug',8,8,4,4,0xd2c39a),Q('crate',2,10),Q('crate',17,10),Q('locker',16,5,2,2),
+              Q('plant',1,3),Q('lantern',10,2)
+            ],spots:{},guests:[],labels:[{x:10,y:1,text:'SKYFINCH · FIELD OUTPOST'},{x:4,y:2,text:'ROUTE MAP'},{x:16,y:2,text:'RESEARCH'}]
+          },
+          'ROOT HOME · TALORI': {
+            w:18,h:13,floor:'wood',f1:0x8fa87b,f2:0x6c8e6d,wall:0x426749,
+            items:[
+              Q('glass',7,0,4,2),Q('paint',2,0,3,2),Q('plant',15,2),
+              Q('bed',2,4,3,2),Q('bed',13,4,3,2),Q('table',6,5,6,1,0xa58b61),
+              Q('chair',7,6),Q('chair',10,6),Q('rug',6,7,6,4,0xacc58f),
+              Q('shelf',1,8,3,1),Q('shelf',14,8,3,1),Q('plant',1,3),Q('plant',16,9),
+              Q('lantern',6,2),Q('lantern',12,2),Q('crate',3,10)
+            ],spots:{},guests:[],labels:[{x:9,y:1,text:'TALORI · CANOPY DWELLING'},{x:4,y:3,text:'REST'},{x:14,y:3,text:'HERB GARDEN'}]
+          }
+        });
+        
+
+        /* LIFEQUEST V53 — SIGNATURE INTERIOR ARCHITECTURE
+           A true plan-and-render system. Existing exterior, sprite sheet and story IDs are untouched.
+           Every theme owns its own architecture, zoning and material grammar.
+        */
+        const LQ53 = (() => {
+          'use strict';
+          const THEMES = {
+            'english-town':       {id:'civic',title:'Lived-in city / human scale',wall:0x45647a,floor:0xc4ad89,shade:0x8b745d,ink:0x253b50,accent:0xeac27d},
+            'mining-town':        {id:'industrial',title:'Mine foundry / structural steel',wall:0x3a4754,floor:0x83817e,shade:0x555c62,ink:0x202d37,accent:0x84d7cc},
+            'english-town-past':  {id:'heritage',title:'70 years ago / timber and memory',wall:0x987c59,floor:0xb99b72,shade:0x826447,ink:0x4e3929,accent:0xf6d196},
+            'oriaris-trail-1':    {id:'ranger',title:'Trail shelter / natural woven timber',wall:0x806c53,floor:0x9d8b66,shade:0x63543d,ink:0x334836,accent:0xbad7a0},
+            'oriaris-trail-2':    {id:'ranger',title:'Trail shelter / natural woven timber',wall:0x806c53,floor:0x9d8b66,shade:0x63543d,ink:0x334836,accent:0xbad7a0},
+            'oriaris-trail-3':    {id:'ranger',title:'Trail shelter / natural woven timber',wall:0x806c53,floor:0x9d8b66,shade:0x63543d,ink:0x334836,accent:0xbad7a0},
+            'oriaris-camp':       {id:'ranger',title:'Camp shelter / timber and firelight',wall:0x806c53,floor:0x9d8b66,shade:0x63543d,ink:0x334836,accent:0xbad7a0},
+            'art-district':       {id:'atelier',title:'Asymmetric creative studios',wall:0x353956,floor:0xe3c4b9,shade:0xbb91a6,ink:0x42405a,accent:0xffdb87},
+            'tech-co':            {id:'tech',title:'Glass and data / collaboration grid',wall:0x142e44,floor:0x94bbc4,shade:0x3c778b,ink:0x14364c,accent:0x79e7ed},
+            'old-oriaris':        {id:'royal',title:'Ceremonial palace / axial symmetry',wall:0x58435a,floor:0xd3c4a6,shade:0xa38f79,ink:0x413347,accent:0xf1d28b},
+            'wish-valley':        {id:'living',title:'Maorai living-root / organic architecture',wall:0x365a43,floor:0x8a986c,shade:0x506c4c,ink:0x254937,accent:0xd5e6a0},
+            'vocalt-greedy-land': {id:'bazaar',title:'Merchant guild / trade-specialized shops',wall:0x614456,floor:0xc5a47e,shade:0x906c5e,ink:0x443749,accent:0xf4ca78}
+          };
+          const color = (n) => (Number(n)||0) & 0xffffff;
+          function hash(text) { let h=2166136261>>>0; for(const c of String(text)) {h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0;} return h>>>0; }
+          function classify(area, name) {
+            const s=String(name||'').toLowerCase();
+            if(area==='vocalt-greedy-land') {
+              if(/metal|forge|copper|smith/.test(s))return 'metal';
+              if(/jewel|sapphire|gem/.test(s))return 'jewels';
