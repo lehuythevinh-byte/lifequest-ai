@@ -7,7 +7,7 @@
 
 *Học tiếng Anh không chỉ qua bài tập, mà qua những tình huống trong một thế giới sống động.*
 
-[Phiên bản V77](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) · [Các phiên bản V75–V76](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-apikey-20261116) · [V70](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-20261116)
+[V77 Beyond Conversation (bản trên GitHub)](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) · [Các phiên bản V75–V76](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-apikey-20261116) · [V70](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-20261116)
 
 </div>
 
@@ -16,6 +16,48 @@
 LIFEQUEST AI là dự án game nhập vai giáo dục hỗ trợ học sinh luyện tiếng Anh qua khám phá thế giới, tương tác với nhân vật (NPC) và hoàn thành nhiệm vụ bằng ngôn ngữ. Người chơi thực hành giao tiếp trong những bối cảnh như mua sắm, hỏi đường, làm việc, nghệ thuật và tìm hiểu văn hóa.
 
 Dự án kết hợp đồ họa pixel-art 2D, nhiệm vụ theo ngữ cảnh, luyện từ vựng, phản hồi ngôn ngữ và hội thoại AI. Mục tiêu là tạo môi trường thực hành tiếng Anh có ý nghĩa, phù hợp với trình độ người học.
+
+## V77 — Living World Interface (gói phát hành mới)
+
+**Explore a world. Find your voice. Make English part of your story.**
+
+Gói V77 Living World Interface ngày 20/11/2026 là bản nâng cấp từ V76 Natural Subtext Dialogue, khác với bản V77 Beyond Conversation đã lưu trên GitHub. Gói mới giữ nguyên thế giới, nhân vật, nhiệm vụ và cơ chế lưu, tập trung làm mới cách người chơi trò chuyện, học ngôn ngữ và khám phá.
+
+| Hệ thống | Nội dung |
+| --- | --- |
+| Dialogue | Khung thoại theo vùng, chân dung từ sprite thật, gợi ý có thể sửa |
+| Language | Tra từ trong câu, nghĩa Anh–Việt, sửa lỗi, hỗ trợ đọc ẩn ý |
+| Memory | Lưu câu đáng nhớ và xem lại lịch sử từng NPC |
+| Interview | Phỏng vấn theo lượt với NPC chính và tối đa ba cư dân gần đó |
+| Quick / Deep / Story | Chế độ trò chuyện tùy chọn |
+| Field journal & Atlas | Nhật ký, la bàn, thẻ vùng minh họa, minimap 1×/2×/3× |
+| Living interface | Camera hội thoại, ánh sáng theo thời điểm, bong bóng thoại, ba mức đồ họa |
+
+Ví dụ: gặp Lily ở Sunny Cafe, gọi cà phê bằng tiếng Anh, tra từ *coffee*, lưu vào sổ từ vựng và giữ lại câu nói trong Memory. Game kiểm tra điều kiện nhiệm vụ trước khi cấp thưởng.
+
+### Hướng dẫn cho gói Living World Interface
+
+Sau khi có đầy đủ gói mã nguồn mới, giải nén và mở `index.html` để chơi ngoại tuyến. Hoặc dùng Node.js 20 trở lên:
+
+```bash
+npm run build
+npm test
+npm start
+```
+
+Mở http://localhost:10000. Cấu hình Render Web Service của **gói mới**:
+
+| Thiết lập | Giá trị |
+| --- | --- |
+| Build Command | `node v77/build.cjs` |
+| Start Command | `node server.cjs` |
+| Health Check Path | `/health` |
+| GEMINI_API_KEY | Secret trong Environment của backend |
+| GEMINI_MODEL | `gemini-2.5-flash` (mặc định cấu hình) |
+
+Gói mới có HTML độc lập, tài nguyên pixel art, máy chủ Node, mã dựng từ V76, bộ QA Chromium và ảnh chụp thực tế. Kiểm tra cục bộ đã xác nhận bản dựng khớp SHA-256 `726c0540654ab5888eae078694eaa411ed77ba4a8202e713d274f33224c3ee2b`, 45 script hợp lệ và relay chạy với Gemini giả lập. Chưa xác nhận Gemini thật hoặc deploy gói mới trên Render.
+
+**Trạng thái phát hành:** tài liệu này giới thiệu gói mới đã được chuẩn bị và kiểm thử cục bộ; mã Living World Interface chưa được tải đầy đủ lên repository. Không sử dụng lệnh build trên cho nhánh Beyond Conversation cũ.
 
 ## Tính năng chính
 
@@ -26,7 +68,7 @@ Dự án kết hợp đồ họa pixel-art 2D, nhiệm vụ theo ngữ cảnh, l
 - Tích hợp Google Gemini qua backend; chế độ offline dựa trên quy tắc khi AI không khả dụng.
 - V77 bổ sung lịch sử hội thoại, sổ cụm từ, hộ chiếu văn hóa và bản tin thế giới.
 
-Tính năng cụ thể phụ thuộc vào phiên bản. Nhánh main chứa nền tảng English Town cũ; các phiên bản mở rộng được lưu trong những nhánh riêng.
+Tính năng cụ thể phụ thuộc vào phiên bản; các mục điều khiển và triển khai bên dưới dành cho bản đang lưu trên GitHub, không phải gói Living World Interface mới. Nhánh main chứa nền tảng English Town cũ; các phiên bản mở rộng được lưu trong những nhánh riêng.
 
 ## Thế giới của LIFEQUEST AI (V77)
 
@@ -51,7 +93,7 @@ Tính năng cụ thể phụ thuộc vào phiên bản. Nhánh main chứa nền
 | V76 | Hội thoại tự nhiên, cách nói ẩn ý và cá tính NPC | [V76](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-apikey-20261116/v76) |
 | V77 | Beyond Conversation — Replay, Passport, Herald, mood chips | [V77](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) |
 
-V77 là bản mới nhất xác định được trong repository này; không đồng nghĩa với việc mọi tính năng dự kiến đã hoàn thành.
+V77 Beyond Conversation là bản mới nhất xác định được trong repository này; không đồng nghĩa với việc mọi tính năng dự kiến đã hoàn thành.
 
 ## Điều khiển (V77)
 
@@ -81,7 +123,7 @@ Mở http://localhost:3000. Để cấu hình Gemini cho bản main, đặt bi�
 
 Công nghệ: React, TypeScript, Phaser, Vite, Tailwind CSS, Express. Các bản V70–V77 có kiến trúc HTML/JavaScript độc lập và cấu hình triển khai riêng.
 
-## Chạy V77 trên máy
+## Chạy V77 Beyond Conversation trên máy
 
 Yêu cầu Node.js 22, Git, shell hỗ trợ `sh` và `sha256sum` (Linux/WSL hoặc môi trường tương đương).
 
@@ -94,7 +136,7 @@ node v77/backend/server.cjs
 
 Mở http://localhost:10000. Bước build ghép 53 phần mã nguồn thành `v77/game.html` và kiểm tra SHA-256. Không chạy trực tiếp bằng `file://`.
 
-## Triển khai V77 lên Render
+## Triển khai V77 Beyond Conversation lên Render
 
 | Thiết lập | Giá trị |
 | --- | --- |
