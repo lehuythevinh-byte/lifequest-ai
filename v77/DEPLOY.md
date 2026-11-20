@@ -1,1 +1,3 @@
-See the deployment and local running instructions in [README.md](README.md). The V77.3 production build uses `sh v77/build.sh` and `node v77/backend/server.cjs` from the repository root. Do not run the older living/build.cjs for this release.
+# V77.4 Atelier Portraits
+
+Existing Render service tracks `deploy/lifequest-v77`. Build: `sh v77/build.sh`. Start: `node v77/backend/server.cjs`. Keep Gemini credentials in Render Environment. See [README.md](README.md).

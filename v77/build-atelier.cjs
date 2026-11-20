@@ -1,0 +1,14 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const d=__dirname,hash=x=>crypto.createHash('sha256').update(x).digest('hex');
+const names=fs.readdirSync(path.join(d,'ember-ink')).filter(n=>/^part-\d\d\.txt$/.test(n)).sort();
+if(names.length!==26)throw Error('Expected 26 source fragments');
+const base=names.map(n=>fs.readFileSync(path.join(d,'ember-ink',n),'utf8')).join('');
+if(hash(base)!=='79aa6e3c626a2c1ab5c02b7d5db2fef7a9081d5e450d91a986821bea15028ba9')throw Error('Base integrity mismatch');
+const edits=JSON.parse(fs.readFileSync(path.join(d,'atelier-portraits.patch.json'),'utf8'));
+const lines=base.split('\n');
+for(const e of [...edits].reverse())lines.splice(e.start-1,e.end-e.start+1,...e.lines);
+const game=lines.join('\n'),expected=fs.readFileSync(path.join(d,'game.sha256'),'utf8').trim().split(/\s+/)[0];
+if(hash(game)!==expected)throw Error('V77.4 integrity mismatch');
+fs.writeFileSync(path.join(d,'game.html'),game);
+console.log('V77.4 Atelier Portraits reconstructed:',hash(game));

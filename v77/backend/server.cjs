@@ -11,7 +11,7 @@ const gamePath = path.join(__dirname, '../game.html');
 const game = fs.readFileSync(gamePath);
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const gameHash = hash(game);
-const release = 'V77.3-Ember-and-Ink';
+const release = 'V77.4-Atelier-Portraits';
 const pinnedHash = fs.readFileSync(path.join(__dirname, '../game.sha256'), 'utf8').trim().split(/\s+/)[0];
 const EXPECTED_SHA = pinnedHash.trim().toLowerCase();
 if (gameHash !== EXPECTED_SHA) throw new Error('V77 source integrity mismatch: ' + gameHash);
