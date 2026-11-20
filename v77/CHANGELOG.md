@@ -1,5 +1,11 @@
 # Changelog — LIFEQUEST AI
 
+## V77 — Living World Interface · 2026-11-20
+
+- Added regional conversation panels, resident portraits, and Dialogue, Language and Memory tabs to the Beyond Conversation web release.
+- Moved Replay into Memory. Archived words open the Language lookup during a conversation. The notebook, passport and Herald still read the existing save.
+- Hid the interior shortcut and Vocalt preview during conversations. AI-reported moods appear next to replies and update the speaker’s portrait.
+
 ## V77 — Beyond Conversation (Phase 1) · 2026-11-19
 
 Base: V76 (V75 patches applied to the SHA-verified v70 "dream-gate" source). V77 is

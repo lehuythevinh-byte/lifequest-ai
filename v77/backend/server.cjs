@@ -11,7 +11,9 @@ const gamePath = path.join(__dirname, '../game.html');
 const game = fs.readFileSync(gamePath);
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const gameHash = hash(game);
-const EXPECTED_SHA = (process.env.LQ77_SHA256 || 'a406c737942257140270081d87d5fd0d62af602df0c7c58e2f5fb8cae3b2013f').trim().toLowerCase();
+const release = 'V77-Living-World-Interface';
+const pinnedHash = fs.readFileSync(path.join(__dirname, '../game.sha256'), 'utf8').trim().split(/\s+/)[0];
+const EXPECTED_SHA = (process.env.LQ77_SHA256 || pinnedHash).trim().toLowerCase();
 if (gameHash !== EXPECTED_SHA) throw new Error('V77 source integrity mismatch: ' + gameHash);
 
 const PORT = Number(process.env.PORT || 10000);
@@ -133,12 +135,12 @@ function checkLimits(req) {
 http.createServer(async (req, res) => {
   try {
     if (['/', '/index.html', '/game.html'].includes(req.url.split('?')[0]) && ['GET', 'HEAD'].includes(req.method)) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': game.length, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'X-LifeQuest-Release': 'V77-Beyond-Conversation' });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': game.length, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'X-LifeQuest-Release': release });
       res.end(req.method === 'HEAD' ? undefined : game);
       return;
     }
     if (req.url === '/health') {
-      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', release: 'V77-Beyond-Conversation', sha256: gameHash, configured: !!GEMINI_API_KEY });
+      respond(res, 200, { service: 'lifequest-gemini-proxy', status: 'running', release, sha256: gameHash, configured: !!GEMINI_API_KEY });
       return;
     }
     if (req.url !== '/api/gemini') {

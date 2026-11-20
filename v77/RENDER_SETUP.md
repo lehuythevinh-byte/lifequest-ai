@@ -1,3 +1,14 @@
 # V77 Render deployment
 
-The game is stored in 53 byte-exact ordered parts. Build: `sh v77/build.sh`; start: `node v77/backend/server.cjs`. The build verifies the original SHA-256. Set GEMINI_API_KEY in Render Environment, never in Git.
+The existing service builds branch `deploy/lifequest-v77` from the repository root.
+
+| Setting | Value |
+| --- | --- |
+| Build command | `sh v77/build.sh` |
+| Start command | `node v77/backend/server.cjs` |
+| Health endpoint | `/health` |
+
+The build verifies the 53 Beyond Conversation source parts, incorporates the Living
+World Interface and checks the final HTML against `v77/game.sha256`. The running
+service reports `V77-Living-World-Interface` and the same hash at `/health`.
+Online AI uses the service’s existing `GEMINI_API_KEY` environment variable.

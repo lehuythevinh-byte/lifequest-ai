@@ -130,7 +130,9 @@ See AI_SYSTEM.md for the security model and DEPLOY.md for hosting.
 v70/dream-gate/parts (53 txt)  →  SHA-verified base
         → V75 patches  →  V76 patch  →  V76 HTML
         → V77 internal edits (title, services export, mood schema/prompt/chip, brand)
-        → inject lq77-module.js  →  v77/game.html  (SHA a406c737…)
+        → Beyond Conversation source in v77/parts (SHA a406c737…)
+        → v77/living/build.cjs incorporates lq77-module.js, interface and artwork
+        → v77/game.html (SHA-256 in v77/game.sha256)
 ```
 
 The root-level `index.html`, `server.ts`, `netlify.toml`, `render.yaml`, and

@@ -1,6 +1,7 @@
 # Deployment Guide — LIFEQUEST AI V77
 
-V77 ships two supported hosting paths. Both keep `GEMINI_API_KEY` **server-side only**.
+The V77 web release runs on the existing Render service `lifequest-ai-v77`.
+Its branch is `deploy/lifequest-v77`. The Gemini key lives in the service environment.
 
 > Important: the repository **root** `netlify.toml`, `render.yaml`, `server.ts`, and
 > `netlify/functions/gemini.ts` belong to an older/other project (they contain merge
@@ -13,8 +14,8 @@ V77 ships two supported hosting paths. Both keep `GEMINI_API_KEY` **server-side 
 ```bash
 # from the project root
 git add v77
-git commit -m "LifeQuest V77 — Beyond Conversation (game, secure relay, docs)"
-git push origin main
+git commit -m "Update LifeQuest V77 web release"
+git push origin HEAD:refs/heads/deploy/lifequest-v77
 ```
 
 Never commit a real key. `.env.example` is a template only; real secrets go in the
@@ -24,23 +25,14 @@ host's environment settings. Add a `.gitignore` entry for `.env` if you create o
 
 ## 1. Render (recommended: one service serves game + relay)
 
-The Node relay uses **built-ins only** — no packages, no build step. It serves the
-SHA-verified game and the `/api/gemini` proxy from the same origin (so CORS is simple).
+The Node build assembles the HTML. The relay serves that file and the `/api/gemini`
+endpoint from the same origin. Both use Node built-ins.
 
-### Option A — Blueprint
-1. Copy `v77/render.yaml` to the **repository root** as `render.yaml` (Render reads
-   blueprints from root), or point Render at it.
-2. In Render: **New → Blueprint**, connect the repo.
-3. Set the secret env var `GEMINI_API_KEY` in the dashboard (it is `sync: false` in the
-   blueprint, so it is never stored in git).
-4. Deploy. Health check: `/health`.
-
-### Option B — Manual service
-- **New → Web Service**, connect the repo.
-- **Root Directory:** `v77`
+### Existing service settings
+- **Root Directory:** repository root (empty)
 - **Runtime:** Node
-- **Build Command:** `echo "No build required"`
-- **Start Command:** `node backend/server.cjs`
+- **Build Command:** `sh v77/build.sh`
+- **Start Command:** `node v77/backend/server.cjs`
 - **Health Check Path:** `/health`
 - Environment:
   - `NODE_VERSION = 22.22.1`
@@ -49,14 +41,17 @@ SHA-verified game and the `/api/gemini` proxy from the same origin (so CORS is s
   - `AI_DAILY_REQUEST_LIMIT = 50`, `AI_PER_IP_HOURLY_LIMIT = 12`
   - `ALLOWED_ORIGIN` — leave unset for same-origin (game + relay on this service). Set
     it only if the frontend is hosted elsewhere.
-  - `LQ77_SHA256` — leave unset to use the baked-in hash; set only if you rebuild.
+  - `LQ77_SHA256` — optional explicit override of the final hash in `v77/game.sha256`.
 
 Play at `https://<your-service>.onrender.com/`. The game probes `/api/gemini`; with a
 key set, chat uses live AI; without it, chat honestly shows `Offline (rules)`.
 
 ---
 
-## 2. Netlify (static game + secure Function)
+## 2. Netlify (historical packaging)
+
+The earlier Netlify package includes the configuration and function described below.
+This deployment branch publishes the Render relay.
 
 ### Configure
 1. In Netlify: **Add new site → Import from Git**, connect the repo.
@@ -83,6 +78,7 @@ fallback, safe errors).
 ## 3. Local development
 
 ```bash
+sh v77/build.sh
 # Full experience (game + relay), Node built-ins only:
 GEMINI_API_KEY=your_key node v77/backend/server.cjs   # http://localhost:10000
 
@@ -97,14 +93,13 @@ Localhost origins are allowed by the relay when `NODE_ENV !== 'production'`.
 ## 4. Rebuilding game.html after editing the module
 
 ```bash
-node v77/inject-module.mjs                 # re-injects lq77-module.js into game.html
-# compute the new SHA-256:
-node -e "const c=require('crypto'),f=require('fs');console.log(c.createHash('sha256').update(f.readFileSync('v77/game.html')).digest('hex'))"
-# update EXPECTED_SHA default in v77/backend/server.cjs (or set LQ77_SHA256 env), then restart.
+node v77/living/build.cjs
+(cd v77 && sha256sum game.html)
 ```
 
-The Render relay refuses to serve a file whose SHA does not match — this guards against
-shipping a tampered or stale build.
+After reviewing a change to the generated HTML, record its new digest in
+`v77/game.sha256`. Run `sh v77/build.sh` to check the committed digest. The relay
+compares the served bytes with that digest at startup.
 
 ---
 

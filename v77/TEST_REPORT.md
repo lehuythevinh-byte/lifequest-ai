@@ -1,5 +1,18 @@
 # Test Report — LIFEQUEST AI V77
 
+## Living World Interface · 2026-11-20
+
+Chromium opened the built HTML through the Node relay. The HTML and `/health`
+matched the release hash in `game.sha256`. Pressing E near Sam in the Post Office
+opened his portrait and three conversation tabs. The interior shortcut and Vocalt
+preview were hidden. Asking for a stamp completed the mission using offline rules.
+Memory opened Sam’s Replay. Saving a phrase, looking up “stamp”, and reopening the
+game retained the notebook entry and mission progress. Passport showed eight
+entries and Herald opened from the hub. A local fixture exercised mood display
+and portrait expression. The browser reported no script errors during the run.
+
+## Beyond Conversation baseline
+
 Date: 2026-11-19 · Build SHA-256:
 `a406c737942257140270081d87d5fd0d62af602df0c7c58e2f5fb8cae3b2013f`
 

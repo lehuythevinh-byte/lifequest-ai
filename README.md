@@ -24,7 +24,7 @@ Dự án kết hợp đồ họa pixel-art 2D, nhiệm vụ theo ngữ cảnh, l
 - Hệ thống nhiệm vụ, tiến trình khám phá và nội dung văn hóa.
 - Luyện từ vựng, nghe và phản hồi ngôn ngữ.
 - Tích hợp Google Gemini qua backend; chế độ offline dựa trên quy tắc khi AI không khả dụng.
-- V77 bổ sung lịch sử hội thoại, sổ cụm từ, hộ chiếu văn hóa và bản tin thế giới.
+- Khi gặp cư dân, ba thẻ Dialogue, Language và Memory cho phép trò chuyện, tra từ và xem lại câu đã học. Trong Memory, chọn Replay để mở lịch sử và sổ cụm từ của cư dân đó.
 
 Tính năng cụ thể phụ thuộc vào phiên bản. Nhánh main chứa nền tảng English Town cũ; các phiên bản mở rộng được lưu trong những nhánh riêng.
 
@@ -49,7 +49,7 @@ Tính năng cụ thể phụ thuộc vào phiên bản. Nhánh main chứa nền
 | V70 | Dream Gate và bản HTML độc lập | [V70](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-20261116) |
 | V75 | Hội thoại NPC nhận biết chủ đề và ngữ cảnh | [V75](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-apikey-20261116/v75) |
 | V76 | Hội thoại tự nhiên, cách nói ẩn ý và cá tính NPC | [V76](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v70-apikey-20261116/v76) |
-| V77 | Beyond Conversation — Replay, Passport, Herald, mood chips | [V77](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) |
+| V77 | Living World Interface — chân dung cư dân, tra từ, Replay, Passport và Herald | [V77](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) |
 
 V77 là bản mới nhất xác định được trong repository này; không đồng nghĩa với việc mọi tính năng dự kiến đã hoàn thành.
 
@@ -77,7 +77,7 @@ sh v77/build.sh
 node v77/backend/server.cjs
 ```
 
-Mở http://localhost:10000. Bước build ghép 53 phần mã nguồn thành `v77/game.html` và kiểm tra SHA-256. Không chạy trực tiếp bằng `file://`.
+Mở http://localhost:10000. Bước build xác minh 53 phần mã nguồn Beyond Conversation, ghép giao diện Living World và đối chiếu tệp `v77/game.html` với `v77/game.sha256`.
 
 ## Triển khai V77 lên Render
 

@@ -164,7 +164,7 @@ function baseOverlayOpen() {
     return el && el.style.display === 'block';
   });
 }
-function openPanel(el) { closePanels(); el.style.display = 'block'; }
+function openPanel(el) { closePanels(); el.style.display = 'block'; el.querySelector('.lq77-close')?.focus({preventScroll:true}); }
 function closeButton(el, extra) {
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'lq77-close'; b.textContent = '✕ Close';
@@ -173,6 +173,10 @@ function closeButton(el, extra) {
   return b;
 }
 function openHelperWith(word) {
+  if (window.LQ77Dialogue?.getState().open) {
+    closePanels();
+    if (window.LQ77Dialogue.lookup(word)) return;
+  }
   const helper = document.getElementById('helper');
   const input = helper?.querySelector('input');
   const ask = document.getElementById('helper-ask');
@@ -559,10 +563,10 @@ function installMenu() {
     newsBtn = mk('📰 Herald', 'T', openNews);
     mk('🕮 Replay talks', 'L', () => openReplay(getScene()?.chat?.npc?.id || ''));
   }
-  const hint = document.querySelector('#chat .hint');
+  const hint = document.querySelector('#lq77-memory .lq77-tools') || document.querySelector('#chat .hint');
   if (hint && !hint.querySelector('[data-lq77-replay]')) {
     const b = document.createElement('button');
-    b.type = 'button'; b.id = 'lq77-chat-replay'; b.setAttribute('data-lq77-replay', '1');
+    b.type = 'button'; b.id = 'lq77-chat-replay'; b.className = 'lq77-tool'; b.setAttribute('data-lq77-replay', '1');
     b.title = 'Re-read your past conversations with this person';
     b.textContent = '🕮 Replay';
     b.onclick = () => openReplay(getScene()?.chat?.npc?.id || '');
