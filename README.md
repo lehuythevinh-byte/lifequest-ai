@@ -1,23 +1,24 @@
-# LIFEQUEST AI V77.4 — Atelier Portraits
+# LIFEQUEST AI V77.5 — Faces of Life
 
 *Explore a world. Find your voice. Make English part of your story.*
 
-LifeQuest AI is an educational pixel-art RPG for practising English through regional exploration, NPC conversations and quests. V77.4 focuses on character portrait quality, without replacing the world sprites or changing the quest mechanics of V77.3.
+LifeQuest AI is an educational 2D pixel-art RPG for English conversation, contextual learning and regional quests. This release extends V77.4 Atelier Portraits without replacing world sprites or modifying mission or map logic.
 
-[Play on Render](https://lifequest-ai-v77.onrender.com) · [Source](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) · [Server health](https://lifequest-ai-v77.onrender.com/health)
+[Play on Render](https://lifequest-ai-v77.onrender.com) · [Release source](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) · [Server health](https://lifequest-ai-v77.onrender.com/health)
 
-## New in V77.4
+## Faces of Life
 
-- Native 128 × 128 pixel busts: separate integer-grid rendering rather than enlarging 24 × 38 world sprites.
-- Character appearance derived from the original `Nr` data (skin, hair, clothes, caps, helmets, glasses, aprons, collars and beards). Face contours and fabric detail are artistic interpretations; they are not claims about an NPC's undocumented features.
-- For other NPCs that have an accessible live sprite, a palette-derived interpretation is explicitly labelled. If no reliable color data is available, the UI displays an initial instead of inventing a portrait.
-- Ten visually distinct expression frames across eleven mood labels; unassessed and neutral share a neutral face. Mood source remains visible; no AI emotion is claimed when one is unavailable.
-- Enlarged portrait stage, responsive layout, bounded portrait cache and original V77.3 authoritative price/mission logic.
-- No change to the map movement sprites, mission conditions, progress, or region unlocks.
+- 59 explicitly designed individual face profiles: seven contour types, eye spacing, lid shape, brow depth, nose proportions, mouth dimensions and individual marks. Additional identities use a deterministic profile derived from their stable ID/name.
+- 40 supported emotional tones (plus unknown), with distinct rasterized expression geometry. Unknown deliberately uses the neutral face. Five character profiles produced 40 distinct images in the expression test.
+- Individual reaction styles (warm, bright, reserved, wry and gentle). NPC occupation informs context, not a compulsory facial structure or temperament.
+- Original skin/hair/clothing palette and existing accessories retained wherever available. Unsupported custom sprites use a labelled palette interpretation or unavailable state. Lord Vocalt has his distinctive curled moustache, dark-red coat and white rose.
+- 128 × 128 logical pixel canvas; no smoothing. World movement sprites remain intact.
+- Extended the AI prompt, enum, response validator and replay mood markers. Missing or invalid moods remain unassessed. Regional scripted dialogs do not imply online AI assessment.
+- Added the shared portrait renderer to regional career, Vocalt citizen and Wish Valley civilian panels; these integrations have not been exercised in a full gameplay session.
 
-## Play locally
+## Local development
 
-Clone the release branch and build with Node 20+. The generated `v77/game.html` may also be opened as a standalone preview.
+Node.js 20+ recommended. Clone the release branch and reconstruct the exact HTML. Open it offline for a preview, or serve it via the backend:
 
 ```sh
 git clone -b deploy/lifequest-v77 https://github.com/lehuythevinh-byte/lifequest-ai.git
@@ -26,33 +27,33 @@ sh v77/build.sh
 node v77/backend/server.cjs
 ```
 
-Open http://localhost:10000 and check http://localhost:10000/health. `GEMINI_API_KEY` must be set in the server environment for online dialogue; never commit it to Git.
+Open http://localhost:10000. `/health` provides the current release and game SHA-256. Real online AI requires `GEMINI_API_KEY` configured on the server, never committed to Git.
 
-## Render (existing service, repository root)
+## Render deployment
+
+The existing LifeQuest service tracks `deploy/lifequest-v77`. The build reconstructs V77.5 from 26 verified V77.3 HTML fragments and two exact release patches, checking the base, intermediate and final SHA-256 hashes.
 
 | Setting | Value |
 |---|---|
-| Root Directory | empty |
+| Root Directory | repository root |
 | Build Command | `sh v77/build.sh` |
 | Start Command | `node v77/backend/server.cjs` |
-| Health Check Path | `/health` |
-| GEMINI_API_KEY | secret, configure in Render Environment |
-| GEMINI_MODEL | `gemini-2.5-flash` (default) |
+| Health Check | `/health` |
+| GEMINI_API_KEY | secret environment variable |
+| GEMINI_MODEL | gemini-2.5-flash (default) |
 
-The repository reconstructs the exact V77.4 HTML from verified V77.3 source fragments and eight source edits, verifies both SHA-256 hashes and checks backend syntax. No API keys are included.
+## Source structure
 
-## Source layout
-
-- `v77/game.html` — generated self-contained game.
+- `v77/game.html` — generated self-contained integrated game.
 - `v77/ember-ink/` — verified base HTML fragments.
-- `v77/atelier-portraits.patch.json` — eight exact source edits, including the new renderer and CSS.
-- `v77/build-atelier.cjs` — deterministic reconstruction and integrity checks.
-- `v77/backend/server.cjs` — backend and Gemini relay.
-- `v77/game.sha256` — pinned integrity hash.
-- `v77/TEST_REPORT.md` — test scope and limitations.
+- `v77/atelier-portraits.patch.json` — V77.4 renderer and layout changes.
+- `v77/faces-of-life.patch.json` — V77.5 renderer, individual profiles, expressions and regional integration changes.
+- `v77/build-faces.cjs` — deterministic reconstruction and integrity checks.
+- `v77/backend/server.cjs` — Gemini relay and game hosting.
+- `v77/TEST_REPORT.md` — verified test results and limitations.
 
-## Testing and limitations
+## Scope
 
-The isolated dialogue fixture uses original core NPC appearance data and simulated dialogue. The 12 tested NPCs have different visual outputs; 10 visually distinct mood frames were verified; viewport layouts were checked at 1280×800, 390×844 and 844×390. The Node server started locally and its health response was checked. Full world traversal, separate custom-map dialogue overlays and real Gemini responses have not been verified. Portraits are procedurally illustrated, not hand-painted assets for every NPC.
+Portraits are procedurally drawn rather than 59 individually hand-painted portraits. Test images are actual renderer output, not full-game screenshots. The main dialogue fixture and shared regional rendering function passed tests; full-world movement, custom regional dialogue paths and real Gemini requests have not been end-to-end tested. See the server health endpoint for the version currently deployed.
 
-Release SHA-256: `6b6aa915fc7152137e78783c6aa7aee8975dc69e3b56701fae79e4e88b2a27a5`
+Release SHA-256: `f8655eeef410b5a71e9bf23169bde6c62ef1a9ce9a3f9312fb31c829f5457306`

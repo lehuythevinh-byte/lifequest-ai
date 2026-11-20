@@ -1,7 +1,9 @@
-# V77.4 QA
+# V77.5 — Verification
 
-- Chromium isolated dialogue fixture: 1280×800, 390×844, 844×390; send control within viewport; no fixture page errors.
-- 128 × 128 canvas, 12 tested core NPC looks, 10 visual mood frames across 11 states; neutral and unknown share a neutral face.
-- Stamp price fixture: false $2 corrected to catalog $10.
-- 36 executable scripts passed Node syntax checks; local server health and exact HTML reconstruction verified.
-- Not verified: full world traversal, separate regional dialogue systems, live Gemini. Portraits are procedural, not individually hand-painted.
+- 36 executable inline JavaScript blocks passed `node --check` in release creation.
+- Chromium isolated main dialogue fixture: 1280×800, 390×844 and 844×390; send control within viewport, no fixture page errors.
+- 59/59 identity outputs distinct with identical skin, hair and clothes in the neutral fixture. Visual nonidentity is not a guarantee of artistic quality or universal uniqueness.
+- 40/40 distinct expressions for each of Sam, Priya, Jonah, Lord Vocalt and Saelun; unknown deliberately equals neutral.
+- Main fixture: 12 NPC appearances distinct; missing data clears previous portrait; stamp price corrected from $2 to catalog $10.
+- Shared regional portrait API fixture verified 128×128 canvas, label and mood source.
+- Full-game traversal, every regional conversation and live Gemini remain unverified.
