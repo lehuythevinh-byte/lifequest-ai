@@ -1,9 +1,8 @@
-# V77.5 — Verification
+# V78.1 Listening World — QA
 
-- 36 executable inline JavaScript blocks passed `node --check` in release creation.
-- Chromium isolated main dialogue fixture: 1280×800, 390×844 and 844×390; send control within viewport, no fixture page errors.
-- 59/59 identity outputs distinct with identical skin, hair and clothes in the neutral fixture. Visual nonidentity is not a guarantee of artistic quality or universal uniqueness.
-- 40/40 distinct expressions for each of Sam, Priya, Jonah, Lord Vocalt and Saelun; unknown deliberately equals neutral.
-- Main fixture: 12 NPC appearances distinct; missing data clears previous portrait; stamp price corrected from $2 to catalog $10.
-- Shared regional portrait API fixture verified 128×128 canvas, label and mood source.
-- Full-game traversal, every regional conversation and live Gemini remain unverified.
+- 37 nonempty embedded scripts pass Node syntax check in the release package.
+- 30/30 controlled conversation/mission gate cases pass, plus three checks for gem price and Art District connector exercises.
+- Chromium isolated dialogue fixture: 1280×800, 390×844, 844×390, 360×640. No page errors in fixture; Send within viewport.
+- Six distinct renderer motion frames; five age categories; observed six live animation frames; motion-off remained stable.
+- ZIP integrity and exact reconstruction from V77.5 verified locally, target SHA-256 8c9ce6e06eea9bb4931b0d5e50c2a4e0741e7be816c49d7dc165b7aea726ff45.
+- These are fixture checks, not complete gameplay or live Gemini end-to-end tests. Offline rules do not understand arbitrary English.

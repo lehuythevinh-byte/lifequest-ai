@@ -11,7 +11,7 @@ const gamePath = path.join(__dirname, '../game.html');
 const game = fs.readFileSync(gamePath);
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const gameHash = hash(game);
-const release = 'V77.5-Faces-of-Life';
+const release = 'V78.1-Listening-World';
 const pinnedHash = fs.readFileSync(path.join(__dirname, '../game.sha256'), 'utf8').trim().split(/\s+/)[0];
 const EXPECTED_SHA = pinnedHash.trim().toLowerCase();
 if (gameHash !== EXPECTED_SHA) throw new Error('V77 source integrity mismatch: ' + gameHash);
@@ -197,5 +197,5 @@ http.createServer(async (req, res) => {
     if (!res.headersSent) respond(res, 500, { error: 'Internal server error' });
   }
 }).listen(PORT, '0.0.0.0', () => {
-  console.log('[lifequest-relay] V77 ready on port', PORT, 'key configured:', Boolean(GEMINI_API_KEY), 'sha256:', gameHash);
+  console.log('[lifequest-relay] V78.1 ready on port', PORT, 'key configured:', Boolean(GEMINI_API_KEY), 'sha256:', gameHash);
 });
