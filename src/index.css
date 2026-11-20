@@ -1,30 +1,5 @@
 @import "tailwindcss";
 
-<<<<<<< HEAD
-@layer base {
-  body {
-    font-family: 'Be Vietnam Pro', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  }
-  code, pre, .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-  }
-}
-
-/* Custom scrollbars for cybernetic forensic feel */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #101C32;
-}
-::-webkit-scrollbar-thumb {
-  background: #1f3554;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #55DDF2;
-=======
 html, body {
   color: #eee;
   background: #111;
@@ -706,5 +681,4 @@ html, body {
   padding: 10px 6px 2px;
   font-size: 12px;
   line-height: 1.4;
->>>>>>> 742ed336759c7e8e3d93fa5cf05858a7a92fd3da
 }
