@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-# Netlify serves the Vite frontend and runs the Express API through a Function.
-=======
 
->>>>>>> 742ed336759c7e8e3d93fa5cf05858a7a92fd3da
 [build]
   command = "npm run build"
   publish = "dist"
@@ -11,20 +7,9 @@
 [build.environment]
   NODE_VERSION = "22"
 
-<<<<<<< HEAD
-[functions]
-  node_bundler = "esbuild"
-
-# Keep /api/* ahead of the SPA fallback. The extra /api segment is preserved
-# so Express receives its existing /api/health, /api/scan and /api/chat paths.
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api/api/:splat"
-=======
 [[redirects]]
   from = "/api/gemini"
   to = "/.netlify/functions/gemini"
->>>>>>> 742ed336759c7e8e3d93fa5cf05858a7a92fd3da
   status = 200
   force = true
 
