@@ -1,0 +1,3634 @@
+t.add('out');
+        document.body.classList.remove('lq-filming');
+        cap.classList.remove('show');
+        card.classList.remove('show');
+        sc.events.off('update', tick);
+        actors.destroy();
+        cam.zoomTo(zoom0, 600, 'Sine.easeInOut', true);
+        cam.startFollow(sc.player, true, 0.1, 0.1);
+        if (kb) kb.enabled = true;
+        setTimeout(() => {
+          root.remove();
+          filming = false;
+          resolve(true);
+        }, 850);
+      };
+      const onKey = (e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          next();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          finish();
+        }
+      };
+      window.addEventListener('keydown', onKey, true);
+      cap.addEventListener('click', next);
+      root.querySelector('.skip').addEventListener('click', finish);
+      const first = lines[0].cam || [sc.player.x / 32, sc.player.y / 32];
+      cam.centerOn(first[0] * 32 + 16, first[1] * 32 + 16);
+      if (scene.act && lines[0].act) scene.act(lines[0].act);
+      card.classList.add('show');
+      setTimeout(() => {
+        if (ended) return;
+        card.classList.remove('show');
+        cap.classList.add('show');
+        next();
+      }, 2600);
+    });
+  }
+
+  // ---- lead-in film --------------------------------------------------------------------------------------------------
+  function play() {
+    return runFilm({
+      card: { small: 'Chapter 2', big: '70 Years Ago', sub: 'Chương 2 · 70 năm trước' },
+      lines: FILM,
+      setup(sc, actors) {
+        const RC = rnd(42);
+        const crowd = [];
+        for (let i = 0; i < 16; i++)
+          crowd.push({
+            x: (22.5 + (i % 8) * 1.25 + RC() * 0.5) * 32,
+            y: (11.6 + Math.floor(i / 8) * 1.3 + RC() * 0.4) * 32,
+            c: [0x7a6a58, 0x6b7280, 0x8a7a5a, 0x5d6b5a][i % 4],
+            h: [0x3b2a1e, 0x6b5a45, 0x2a2a2a, 0x8a7a6a][(i * 3) % 4],
+          });
+        const gus = { x: 30.5 * 32, y: 8.1 * 32, on: false, away: 0, t0: 0 };
+        let cheer = 0;
+        let showCrowd = false;
+        return {
+          tick(time) {
+            if (showCrowd)
+              crowd.forEach((p, i) => drawPerson(actors, p.x, p.y - (cheer ? Math.abs(Math.sin(time * 0.012 + i)) * 5 : 0), p.c, p.h));
+            if (gus.t0) gus.away = Math.min(1, (performance.now() - gus.t0) / 1600);
+            if (gus.on && gus.away < 1) {
+              const gy = gus.y - gus.away * 64;
+              drawPerson(actors, gus.x, gy, 0x2f3540, 0x4a2e1c, 0x7d2e2e); // dark brown hair: Gusest was only 20
+              crest(actors, gus.x, gy - 1, 0.9);
+            }
+          },
+          act(a, skipping) {
+            if (a === 'crowd') showCrowd = true;
+            if (a === 'gusest') gus.on = true;
+            if (a === 'cheer') cheer = 1;
+            if (a === 'leave') {
+              cheer = 0;
+              gus.t0 = performance.now();
+              if (!skipping) toast('🍞 Food for every family', 'Bread and rice', 'Bánh mì và gạo cho mọi nhà');
+            }
+            if (a === 'end') showCrowd = false;
+          },
+        };
+      },
+    }).then((ran) => {
+      if (!ran) return;
+      startChapter();
+      const t = todayTask();
+      toast('📜 Day 1 / 14', t ? 'Follow the golden light: ' + t.where + '.' : 'Oriaris Village', 'Mỗi ngày đi tới ánh sáng vàng, đọc chuyện hôm nay, rồi về ngủ ở Brown Family Home.');
+    });
+  }
+
+  // ---- the fourteen days -------------------------------------------------------------------------------------------
+  // Each day (1–13): a golden light appears somewhere; there the player reads what happened that day (past tense),
+  // learns its past verbs and answers one question. Then they sleep in the Brown Family Home (bed, E) to start the
+  // next day. Waking up on day 14 plays the ending (the young soldier runs in with the flag, the colours come back).
+  // opts[0] is the right answer (the card shuffles them).
+  const DAYS = [
+    { at: [25, 17], where: 'the village well', en: 'On the first day, the women carried water from the well to every house.', vi: 'Ngày đầu tiên, các bà các chị gánh nước từ giếng về từng nhà.', verbs: [['carried', 'carry']], q: 'Where did the water come from?', opts: ['the well', 'the river', 'the lake'] },
+    { at: [45, 17], where: 'the east rice fields', en: 'On day two, the children helped in the rice fields. They worked until noon.', vi: 'Ngày thứ hai, bọn trẻ ra đồng giúp cấy lúa. Chúng làm đến trưa.', verbs: [['helped', 'help'], ['worked', 'work']], q: 'When did the children stop working?', opts: ['at noon', 'at night', 'early in the morning'] },
+    { at: [18, 29], where: 'the south gate', en: 'On day three, the men repaired the south wall. They carried big stones all day.', vi: 'Ngày thứ ba, đàn ông sửa bức tường phía nam. Họ khiêng đá lớn cả ngày.', verbs: [['repaired', 'repair'], ['carried', 'carry']], q: 'What did the men repair?', opts: ['the south wall', 'the well', 'the hall'] },
+    { at: [8, 8], where: 'the granary', en: "On day four, Lord Gusest's soldiers brought rice to the granary.", vi: 'Ngày thứ tư, lính của Lãnh chúa Gusest chở gạo đến kho thóc.', verbs: [['brought', 'bring']], q: 'What did the soldiers bring?', opts: ['rice', 'bread', 'water'] },
+    { at: [45, 11], where: 'the east gate', en: 'On day five, a guard saw smoke in the north. Everyone was afraid.', vi: 'Ngày thứ năm, một lính gác thấy khói ở phía bắc. Ai cũng sợ hãi.', verbs: [['saw', 'see'], ['was', 'be']], q: 'What did the guard see?', opts: ['smoke', 'a bird', 'a horse'] },
+    { at: [29, 17], where: 'the market stall', en: 'On day six, the baker made bread for everyone. Nobody paid for it.', vi: 'Ngày thứ sáu, bác thợ bánh làm bánh mì cho mọi người. Không ai phải trả tiền.', verbs: [['made', 'make'], ['paid', 'pay']], q: 'Who made the bread?', opts: ['the baker', 'the farmer', 'the guard'] },
+    { at: [30, 8], where: 'Oriaris Hall', en: 'On day seven, a messenger came with a letter. The knights were still fighting.', vi: 'Ngày thứ bảy, một người đưa tin mang thư đến. Các kỵ sĩ vẫn đang chiến đấu.', verbs: [['came', 'come'], ['were', 'be']], q: 'What did the messenger bring?', opts: ['a letter', 'a flag', 'some food'] },
+    { at: [18, 41], where: 'the south rice fields', en: 'On day eight, it rained all day. The rice fields were full of water.', vi: 'Ngày thứ tám, trời mưa suốt cả ngày. Ruộng lúa ngập đầy nước.', verbs: [['rained', 'rain'], ['were', 'be']], q: 'What was the weather like?', opts: ['rainy', 'sunny', 'snowy'] },
+    { at: [31, 18], where: 'the market', en: 'On day nine, the market had only potatoes. People shared them.', vi: 'Ngày thứ chín, chợ chỉ còn khoai tây. Mọi người chia nhau ăn.', verbs: [['had', 'have'], ['shared', 'share']], q: 'What did the market have?', opts: ['only potatoes', 'a lot of fish', 'only rice'] },
+    { at: [7, 22], where: 'the hen house', en: 'On day ten, a little girl found three eggs and gave them to the guards.', vi: 'Ngày thứ mười, một cô bé tìm được ba quả trứng và đem cho lính gác.', verbs: [['found', 'find'], ['gave', 'give']], q: 'How many eggs did she find?', opts: ['three', 'two', 'ten'] },
+    { at: [17, 29], where: 'the south watchtower', en: 'On day eleven, the guards lit more torches. The night was long and cold.', vi: 'Ngày thứ mười một, lính gác thắp thêm đuốc. Đêm dài và lạnh.', verbs: [['lit', 'light'], ['was', 'be']], q: 'What did the guards light?', opts: ['torches', 'candles', 'the houses'] },
+    { at: [25, 29], where: 'the Brown Family Home', en: 'On day twelve, Mrs. Brown waited at the door all evening. Her son did not come.', vi: 'Ngày thứ mười hai, bà Brown đứng đợi ở cửa suốt buổi tối. Con trai bà không về.', verbs: [['waited', 'wait'], ['did not come', 'not come']], q: 'Who waited at the door?', opts: ['Mrs. Brown', 'Lord Gusest', 'the baker'] },
+    { at: [31, 8], where: 'Oriaris Hall', en: 'On day thirteen, everyone went to Oriaris Hall and prayed for peace.', vi: 'Ngày thứ mười ba, mọi người đến Oriaris Hall và cầu nguyện cho hòa bình.', verbs: [['went', 'go'], ['prayed', 'pray']], q: 'Where did everyone go?', opts: ['Oriaris Hall', 'the rice fields', 'the well'] },
+  ];
+  const LAST_DAY = 14;
+
+  function chapter() {
+    const d = data();
+    return d && d.ch ? d.ch : null;
+  }
+  function startChapter() {
+    const d = data();
+    if (!d || d.ch || d.done) return;
+    d.ch = { day: 1, ok: {}, started: Date.now() };
+    save();
+  }
+  function todayTask() {
+    const d = data();
+    const ch = d && d.ch;
+    if (!ch || d.done || ch.day >= LAST_DAY) return null;
+    return Object.assign({ day: ch.day }, DAYS[ch.day - 1]);
+  }
+  // The golden-light reading card of the day.
+  const cardDone = () => {
+    const ch = chapter();
+    return !!(ch && ch.ok[ch.day]);
+  };
+  // The whole day: the reading card and the letters of the messenger (js/front.js).
+  const todayDone = () => cardDone() && (!window.LQFront || window.LQFront.dayDone());
+
+  const DAY_CSS = `
+#lq-day-hud{position:fixed;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9040;background:#1d1a14ee;border:2px solid #c9a24a;border-radius:999px;padding:7px 16px;color:#f4ecd6;font:650 13px/1.3 system-ui,'Segoe UI',sans-serif;box-shadow:0 6px 18px #0008;max-width:calc(100vw - 32px);text-align:center;pointer-events:none}
+#lq-day-hud[hidden]{display:none}
+#lq-day-hud b{color:#f3c14b}
+#lq-day{position:fixed;inset:0;z-index:10030;display:grid;place-items:center;background:#0007;font-family:system-ui,'Segoe UI',sans-serif}
+#lq-day .box{width:min(560px,calc(100vw - 32px));box-sizing:border-box;background:linear-gradient(170deg,#2a251c,#1b1813);border:2px solid #c9a24a;border-radius:16px;padding:16px 18px 14px;color:#f4ecd6;box-shadow:0 14px 40px #000b}
+#lq-day .tag{font:800 12px system-ui,sans-serif;letter-spacing:.08em;color:#e0c27a;text-transform:uppercase}
+#lq-day .en{margin:8px 0 4px;font:600 19px/1.45 Georgia,'Times New Roman',serif}
+#lq-day .en b{color:#f3c14b;font-weight:800}
+#lq-day .vi{margin:0 0 10px;font:14px/1.4 system-ui,sans-serif;color:#bfb6a0}
+#lq-day .verbs{font:13px/1.5 system-ui,sans-serif;background:#ffffff0d;border-radius:10px;padding:7px 10px;margin-bottom:12px}
+#lq-day .verbs span{display:inline-block;margin-right:12px;white-space:nowrap}
+#lq-day .verbs b{color:#f3c14b}
+#lq-day .q{font:700 15px system-ui,sans-serif;margin-bottom:8px}
+#lq-day .opts{display:grid;gap:7px}
+#lq-day .opts button{background:#3a3226;color:#f4ecd6;border:1px solid #6b5a3a;border-radius:10px;padding:9px 12px;font:600 15px system-ui,sans-serif;text-align:left;cursor:pointer}
+#lq-day .opts button:hover{border-color:#e0c27a}
+#lq-day .opts button.no{border-color:#b5523b;background:#4a2a22;animation:lqShake .3s}
+#lq-day .opts button.yes{border-color:#7fae5a;background:#2f4126}
+@keyframes lqShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#lq-day .fb{min-height:20px;margin-top:9px;font:600 14px/1.4 system-ui,sans-serif}
+#lq-day .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+#lq-day .row button{background:#c9a24a;color:#1d1a14;border:0;border-radius:8px;padding:7px 14px;font:800 14px system-ui,sans-serif;cursor:pointer}
+#lq-day .row button.later{background:none;color:#bfb6a0;text-decoration:underline;font-weight:600}
+`;
+  const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  // Bold the day's past verbs inside the sentence.
+  function markVerbs(text, verbs) {
+    let html = escHtml(text);
+    verbs.forEach(([past]) => {
+      html = html.replace(new RegExp('\\b(' + past.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b', 'g'), '<b>$1</b>');
+    });
+    return html;
+  }
+  let dayCard = null;
+  function closeDayCard() {
+    if (!dayCard) return;
+    dayCard.remove();
+    dayCard = null;
+    const sc = getScene();
+    const kb = sc && sc.input && sc.input.keyboard;
+    if (kb) kb.enabled = true;
+  }
+  function openDayCard(t) {
+    if (dayCard || filming) return;
+    ensureCss();
+    const sc = getScene();
+    const kb = sc && sc.input && sc.input.keyboard;
+    if (kb) {
+      kb.enabled = false;
+      try {
+        kb.resetKeys();
+      } catch (e) {}
+    }
+    const opts = t.opts.map((o, i) => ({ o, right: i === 0 })).sort(() => Math.random() - 0.5);
+    const root = document.createElement('div');
+    root.id = 'lq-day';
+    root.innerHTML =
+      `<div class="box" role="dialog" aria-label="Day ${t.day}"><div class="tag">📜 Day ${t.day} / ${LAST_DAY} · ${escHtml(t.where)}</div>` +
+      `<p class="en">${markVerbs(t.en, t.verbs)}</p><p class="vi">${escHtml(t.vi)}</p>` +
+      `<div class="verbs">📘 Past tense: ${t.verbs.map(([p, b]) => `<span><b>${escHtml(p)}</b> ← ${escHtml(b)}</span>`).join('')}</div>` +
+      `<div class="q">❓ ${escHtml(t.q)}</div><div class="opts">${opts.map((x, i) => `<button type="button" data-i="${i}">${escHtml(x.o)}</button>`).join('')}</div>` +
+      '<div class="fb"></div><div class="row"><button type="button" class="later">Later</button></div></div>';
+    document.body.appendChild(root);
+    dayCard = root;
+    const fb = root.querySelector('.fb');
+    const row = root.querySelector('.row');
+    root.querySelector('.later').onclick = closeDayCard;
+    root.querySelectorAll('.opts button').forEach((btn) => {
+      btn.onclick = () => {
+        const x = opts[Number(btn.dataset.i)];
+        if (!x.right) {
+          btn.classList.remove('no');
+          void btn.offsetWidth;
+          btn.classList.add('no');
+          fb.textContent = '✗ Not quite. Read the sentence again. · Đọc lại câu chuyện nhé.';
+          fb.style.color = '#f0a08a';
+          return;
+        }
+        btn.classList.add('yes');
+        root.querySelectorAll('.opts button').forEach((b) => (b.disabled = true));
+        const ch = chapter();
+        if (ch && !ch.ok[t.day]) {
+          ch.ok[t.day] = Date.now();
+          save();
+        }
+        fb.innerHTML = `✓ Correct! Day ${t.day} is done. Now go to the <b>Brown Family Home</b> and sleep (bed, E). <br><span style="color:#bfb6a0">Đúng rồi! Về Brown Family Home và ngủ (đến giường, nhấn E).</span>`;
+        fb.style.color = '#b8e08f';
+        row.innerHTML = '<button type="button">OK ✓</button>';
+        row.querySelector('button').onclick = closeDayCard;
+      };
+    });
+  }
+
+  // HUD line + golden light for today's place.
+  let hud = null;
+  function updateHud(sc) {
+    if (!hud) {
+      ensureCss();
+      hud = document.createElement('div');
+      hud.id = 'lq-day-hud';
+      document.body.appendChild(hud);
+    }
+    const d = inPast(sc) && data();
+    const ch = d && d.ch;
+    // also hidden while chatting (Lord Gusest, Tom Brown): it would cover the chat's input box
+    if (!ch || d.done || filming || ch.day >= LAST_DAY || (sc.chat && sc.chat.isOpen)) {
+      hud.hidden = true;
+      return;
+    }
+    const t = todayTask();
+    hud.hidden = false;
+    const mail = window.LQFront && window.LQFront.hud();
+    const parts = [];
+    if (!cardDone()) parts.push(`Today: go to <b>${escHtml(t.where)}</b> (golden light)`);
+    if (mail) parts.push(mail);
+    hud.innerHTML = todayDone()
+      ? `📜 Day <b>${ch.day}</b> / ${LAST_DAY} · 🛏 Done! Sleep in the <b>Brown Family Home</b> (bed, E)`
+      : `📜 Day <b>${ch.day}</b> / ${LAST_DAY} · ${parts.join('<br>')}`;
+  }
+  let nearDay = false;
+  function drawDayLight(sc, time) {
+    const st = sc.__lqPastDay;
+    if (!st) return;
+    st.g.clear();
+    if (!here(sc) || sc.inside || filming || !sc.player) return;
+    const t = todayTask();
+    if (!t || cardDone()) return;
+    const cx = t.at[0] * 32 + 16;
+    const cy = t.at[1] * 32 + 16;
+    const p = 0.5 + 0.5 * Math.sin(time * 0.004);
+    for (let i = 0; i < 6; i++) st.g.fillStyle(0xffd27a, 0.05 + p * 0.03).fillCircle(cx, cy, 30 - i * 4);
+    st.g.lineStyle(2, 0xffe6a8, 0.5 + p * 0.4).strokeEllipse(cx, cy + 8, 30 + p * 8, 10 + p * 3);
+    const by = cy - 26 - p * 5;
+    st.g.fillStyle(0xffe08a, 1).fillTriangle(cx - 6, by, cx + 6, by, cx, by + 9);
+    st.g.fillStyle(0xfff4d6, 1).fillCircle(cx, by - 4, 5);
+    const close = Math.hypot(sc.player.x - cx, sc.player.y - cy) < 34;
+    if (close && !nearDay) openDayCard(t);
+    nearDay = close;
+  }
+  function attachDay(sc) {
+    if (sc.__lqPastDay) return;
+    sc.__lqPastDay = { g: sc.add.graphics().setDepth(8.7) };
+    sc.events.on('update', (time) => drawDayLight(sc, time));
+    sc.events.once('shutdown', () => (sc.__lqPastDay = null));
+  }
+
+  // Bed in the Brown Family Home (game: bedNear / trySleep hooks in 10-core-characters-and-scene.js).
+  const canSleepIn = (name) => here(getScene()) && name === 'Brown Family Home';
+  function sleep(sc) {
+    if (!here(sc)) return false;
+    const d = data();
+    if (!d) return false;
+    if (d.done) {
+      toast('😴 A quiet night', 'The war is over.', 'Chiến tranh đã kết thúc. Ngủ ngon!');
+      return true;
+    }
+    startChapter();
+    const t = todayTask();
+    if (t && !cardDone()) {
+      toast('😴 Not yet', `First, go to ${t.where} (golden light).`, 'Hãy làm việc của hôm nay trước đã.');
+      return true;
+    }
+    if (t && !todayDone()) {
+      toast('😴 Not yet', "First, deliver today's letters (see the bar at the bottom).", 'Hãy giao hết thư của hôm nay trước đã.');
+      return true;
+    }
+    sc.sleeping = true;
+    save();
+    const cam = sc.cameras.main;
+    // Force the fade (another fade, e.g. from entering the house, may still be running and would block it), and
+    // finish the night on a timer too, so the player can never get stuck "sleeping".
+    let night = false;
+    const morning = () => {
+      if (night) return;
+      night = true;
+      const ch = d.ch;
+      ch.day = Math.min(LAST_DAY, ch.day + 1);
+      // The village's own calendar: no sc.newDay() here (it would add a day and the daily pay in the present).
+      sc.store.game.minutes = 420;
+      const ending = ch.day >= LAST_DAY;
+      if (ending && sc.inside) {
+        try {
+          sc.leaveBuilding();
+        } catch (e) {}
+      }
+      if (ending) sc.player.setPosition(22 * 32 + 16, 21 * 32 + 16);
+      save();
+      cam.fadeIn(900, 0, 0, 0);
+      sc.sleeping = false;
+      if (ending) setTimeout(playEnding, 1100);
+      else {
+        const nt = todayTask();
+        toast(`☀ Day ${ch.day} / ${LAST_DAY}`, nt ? `Today: go to ${nt.where}.` : '', 'Một ngày mới ở làng Oriaris.');
+      }
+    };
+    cam.once('camerafadeoutcomplete', morning);
+    cam.fade(900, 0, 0, 0, true);
+    setTimeout(morning, 1100);
+    return true;
+  }
+
+  // ---- Day 14: the ending ------------------------------------------------------------------------------------------
+  const ENDING = [
+    { cam: [18, 40], zoom: 1.1, en: 'On the fourteenth day, early in the morning, someone ran up the south road.', vi: 'Ngày thứ mười bốn, vào sáng sớm, có người chạy lên con đường phía nam.', act: 'run' },
+    { cam: [18, 27], zoom: 1.2, who: 'Young soldier', en: 'We won! The war is over! Peace is back!', vi: 'Chúng ta thắng rồi! Chiến tranh kết thúc! Hòa bình đã trở lại!' },
+    { cam: [21, 21], zoom: 1.15, en: 'He carried the victory flag. His name was Brown, the father of Mayor Brown.', vi: 'Anh mang theo lá cờ chiến thắng. Tên anh là Brown, cha của Thị trưởng Brown.', act: 'crowd' },
+    { cam: [22, 20], zoom: 1.15, en: 'Everybody cheered. His mother cried and hugged her son.', vi: 'Mọi người reo hò. Mẹ anh bật khóc và ôm chầm lấy con trai.', act: 'cheer' },
+    { cam: [24, 17], zoom: 1, en: 'From that day, March 29th was the Day of Glory.', vi: 'Từ hôm đó, ngày 29 tháng 3 trở thành Ngày Vinh Quang.', act: 'color' },
+    { cam: [24, 17], zoom: 1, en: 'The colors came back to the village, and peace came back too.', vi: 'Màu sắc trở lại với ngôi làng, và hòa bình cũng trở lại.' },
+    { cam: null, zoom: 1, who: 'Ms. Green', en: 'And that, dear, is the story of the Wall of Oriaris.', vi: 'Và đó, cháu yêu, là câu chuyện về Bức tường Oriaris.', act: 'end' },
+  ];
+  function drawSoldier(g, x, y, flagWave) {
+    drawPerson(g, x, y, 0x5c5246, 0x3b2a1e);
+    g.fillStyle(0x8e9294, 1).fillEllipse(x, y - 13, 13, 7);
+    g.fillStyle(0xaeb2b4, 1).fillRect(x - 7, y - 11, 14, 2);
+    g.fillStyle(0x4b3a26, 1).fillRect(x + 6, y - 34, 2, 44);
+    const w = Math.sin(flagWave) * 2;
+    g.fillStyle(0x9a2f2f, 1).fillTriangle(x + 8, y - 34, x + 30, y - 30 + w, x + 8, y - 20);
+    g.fillStyle(0x7d2e2e, 1).fillTriangle(x + 8, y - 26, x + 30, y - 30 + w, x + 8, y - 20);
+    crest(g, x + 15, y - 28, 0.8);
+  }
+  function playEnding() {
+    return runFilm({
+      card: { small: 'Day 14', big: 'The Day of Glory', sub: 'Ngày 14 · Ngày Vinh Quang' },
+      lines: ENDING,
+      setup(sc, actors) {
+        const RC = rnd(99);
+        const crowd = [];
+        for (let i = 0; i < 18; i++) {
+          const ang = (i / 18) * Math.PI * 2;
+          crowd.push({ x: (21 + Math.cos(ang) * 3.2) * 32, y: (20.5 + Math.sin(ang) * 1.8) * 32, c: [0x7a6a58, 0x6b7280, 0x8a7a5a, 0x5d6b5a][i % 4], h: [0x3b2a1e, 0x6b5a45, 0x2a2a2a, 0x8a7a6a][(i * 3) % 4], d: RC() });
+        }
+        const sol = { x: 18.5 * 32, y: 46 * 32, tx: 21 * 32, ty: 20.5 * 32, t0: 0 };
+        let showCrowd = false;
+        let cheer = 0;
+        return {
+          tick(time) {
+            if (showCrowd) crowd.forEach((p, i) => drawPerson(actors, p.x, p.y - (cheer ? Math.abs(Math.sin(time * 0.012 + i)) * 5 : 0), p.c, p.h));
+            if (sol.t0) {
+              const k = Math.min(1, (performance.now() - sol.t0) / 5200);
+              // up the south road, then across to the middle of the crowd
+              const yRoad = sol.y + (27 * 32 - sol.y) * Math.min(1, k / 0.75);
+              const x = k < 0.75 ? sol.x : sol.x + (sol.tx - sol.x) * ((k - 0.75) / 0.25);
+              const y = k < 0.75 ? yRoad : 27 * 32 + (sol.ty - 27 * 32) * ((k - 0.75) / 0.25);
+              const bob = k < 1 ? Math.abs(Math.sin(time * 0.02)) * 3 : cheer ? Math.abs(Math.sin(time * 0.012)) * 5 : 0;
+              drawSoldier(actors, x, y - bob, time * 0.01);
+              if (cheer && k >= 1) drawPerson(actors, x - 18, y, 0x6b5a6a, 0x8a8a8a);
+            }
+          },
+          act(a) {
+            if (a === 'run') sol.t0 = performance.now();
+            if (a === 'crowd') showCrowd = true;
+            if (a === 'cheer') cheer = 1;
+            if (a === 'color') {
+              setColor(true, 3.5);
+              const d = data();
+              if (d && !d.done) {
+                d.done = Date.now();
+                save();
+              }
+            }
+            if (a === 'end') showCrowd = false;
+          },
+        };
+      },
+    }).then(() => finishChapter());
+  }
+  function finishChapter() {
+    const sc = getScene();
+    const d = data();
+    if (d && !d.rewarded) {
+      d.done = d.done || Date.now();
+      d.rewarded = Date.now();
+      if (sc && sc.store && sc.store.game) sc.store.game.money = (Number(sc.store.game.money) || 0) + 100;
+      save();
+      toast('🏆 Chapter 2 complete!', 'The Wall of Oriaris · +$100', 'Hoàn thành Chương 2! Về hiện tại và hỏi Mr. Brown về cha của ông.');
+    }
+    setTimeout(() => {
+      const s = getScene();
+      if (s && here(s) && s.switchArea) s.switchArea('english-town', { x: 8, y: 23 }, 'Back to today · Ask Mr. Brown about his father');
+    }, 3500);
+  }
+  const isDone = () => {
+    const d = data();
+    return !!(d && d.done);
+  };
+
+  // ---- the village's own calendar ---------------------------------------------------------------------------------------
+  // Time in the present stands still while the player is in the past: the present day and clock are kept on the way in
+  // (d.present) and given back on the way out. The village counts its own days (ch.day, only by sleeping in the Brown
+  // Family Home) and keeps its own clock (d.clock). Day 1 = March 16 … Day 14 = March 29, the Day of Glory.
+  const FIRST_DATE = 15;
+  function patchNewDay(sc) {
+    if (sc.__lqPastNewDay || typeof sc.newDay !== 'function') return;
+    sc.__lqPastNewDay = true;
+    const orig = sc.newDay;
+    // Midnight in the village must not start a new day (and pay the daily money) in the present. Also not in the frame
+    // right after leaving, before calendarSync has given the present day back (d.present still set).
+    sc.newDay = function () {
+      const g = this.store && this.store.game;
+      if (inPast(this) || (g && g.ach && g.ach.past && g.ach.past.present)) return;
+      return orig.apply(this, arguments);
+    };
+  }
+  function calendarSync(sc) {
+    const g = sc.store && sc.store.game;
+    if (!g) return;
+    patchNewDay(sc);
+    if (inPast(sc)) {
+      if (sc.switching) return;
+      const d = data();
+      if (!d) return;
+      if (!d.present) {
+        d.present = { day: g.day || 1, minutes: g.minutes || 0 };
+        g.minutes = typeof d.clock === 'number' ? d.clock : 480;
+        save();
+      }
+      d.clock = g.minutes;
+    } else {
+      const d = g.ach && g.ach.past;
+      if (!d || !d.present) return;
+      g.day = d.present.day;
+      g.minutes = d.present.minutes;
+      d.present = null;
+      save();
+    }
+  }
+  function pastDate() {
+    const d = data();
+    if (d && d.done) return `March ${FIRST_DATE + LAST_DAY} · Day of Glory`;
+    const day = (d && d.ch && d.ch.day) || 1;
+    return `Day ${day}/${LAST_DAY} · March ${FIRST_DATE + day}`;
+  }
+  // For the game's HUDs: "Day N" in the present, the village date in the past.
+  function dayLabel(day) {
+    return inPast(getScene()) ? pastDate() : `Day ${day || 1}`;
+  }
+
+  // Go to the village (from the Ms. Green prelude, Ms. Green later, or ?past=1).
+  function enter(opts) {
+    const o = Object.assign({ film: true }, opts || {});
+    const sc = getScene();
+    if (!sc || !sc.switchArea) return false;
+    if (here(sc)) {
+      if (o.film) play();
+      return true;
+    }
+    const d = data();
+    if (d) {
+      d.visits = (d.visits || 0) + 1;
+      d.pendingFilm = !!o.film;
+      save();
+    }
+    sc.switchArea(ID, SPAWN, 'Chapter 2 · 70 Years Ago');
+    return true;
+  }
+
+  setInterval(() => {
+    const sc = getScene();
+    if (!sc || !sc.area) return;
+    // Check the tall sprites every frame (so they appear/disappear together with the area), hooked once per scene.
+    if (!sc.__lqPastHook && sc.events) {
+      sc.__lqPastHook = true;
+      sc.events.on('update', (time, delta) => {
+        calendarSync(sc);
+        if (here(sc)) armorNpc(sc);
+        syncTall(sc);
+        folkUpdate(sc, delta);
+        hensUpdate(sc, delta);
+      });
+    }
+    if (sc.add && sc.events && sc.player) attachDay(sc);
+    const d = here(sc) && data();
+    // After the chapter the village keeps its colours.
+    if (d && d.done && !colorBack) setColor(true);
+    applyFilter(sc);
+    checkSigns(sc);
+    updateHud(sc);
+    if (d && d.pendingFilm && !sc.switching) {
+      d.pendingFilm = false;
+      save();
+      setTimeout(play, 700);
+    } else if (d && !d.ch && !d.done && !d.pendingFilm && !filming && !sc.switching) startChapter();
+  }, 300);
+
+  const m = /[?&]past=(\d)\b/.exec(location.search);
+  if (m) {
+    const wait = setInterval(() => {
+      const sc = getScene();
+      if (sc && sc.player && sc.switchArea) {
+        clearInterval(wait);
+        setTimeout(() => enter({ film: m[1] !== '2' }), 900);
+      }
+    }, 500);
+  }
+
+  window.LQPast = {
+    id: ID,
+    area,
+    rooms: ROOMS,
+    notes: NOTES,
+    signs: SIGNS,
+    paint,
+    enter,
+    play,
+    isHere: () => here(getScene()),
+    isFilming: () => filming,
+    read: () => {
+      const d = data();
+      return d ? [...SIGNS, ...NOTES].filter((s) => d.read[s.id]).map((s) => s.id) : [];
+    },
+    setColor,
+    // Chapter 2 days (bed hooks in 10-core-characters-and-scene.js)
+    canSleepIn,
+    sleep,
+    isDone,
+    days: DAYS,
+    // Own calendar (used by the HUDs in 10, 16 and 19)
+    dayLabel,
+    pastDate,
+    // Testing the working day: LQPast.workers() lists where the children and mothers are; LQPast.setTime(6.5) = 06:30.
+    workers() {
+      const sc = getScene();
+      const st = sc && sc.__lqPastFolk;
+      return st ? st.folk.filter((p) => p.v.work).map((p) => ({ i: p.i, kind: p.v.kind, mode: p.mode, going: p.route ? p.goal : null, gone: !!p.gone, x: +(p.x / T).toFixed(1), y: +(p.y / T).toFixed(1) })) : null;
+    },
+    setTime(h) {
+      const sc = getScene();
+      if (sc && sc.store && sc.store.game) sc.store.game.minutes = Math.round(h * 60);
+    },
+    status() {
+      const d = data();
+      return d ? { day: d.ch ? d.ch.day : 0, todayDone: todayDone(), done: !!d.done, answered: d.ch ? Object.keys(d.ch.ok).length : 0 } : null;
+    },
+    playEnding,
+    // Testing: LQPast.setDay(13) jumps to a day (the task of that day still has to be answered).
+    setDay(n) {
+      const d = data();
+      if (!d) return;
+      startChapter();
+      d.ch.day = Math.max(1, Math.min(LAST_DAY - 1, n | 0));
+      save();
+    },
+    // Testing: start the chapter over (grey again, day 1).
+    reset() {
+      const d = data();
+      if (!d) return;
+      d.ch = null;
+      d.done = 0;
+      d.rewarded = 0;
+      save();
+      startChapter();
+      setColor(false);
+    },
+  };
+})();
+
+</script>
+    <!-- V24 · Old Oriaris Royal Island architectural rebuild; other worlds unchanged -->
+<script>
+
+/* LIFEQUEST AI V17 · Career Worlds - four individually designed playable Phaser maps.
+   Map 5 Tech-Co B1; Map 6 Old Oriaris B1-B2; Map 7 Wish Valley B2; Map 8 Vocalt, Greedy Land C1. */
+(function () {
+  'use strict';
+  const T = 32, W = 56, H = 34;
+  const ORDER = ['tech-co', 'old-oriaris', 'wish-valley', 'vocalt-greedy-land'];
+  const COLORS = {
+    'tech-co': { ground:0x8ac7c4,grass:0x76b4a5, path:0xc8dbdc, trim:0x7da8b3, dot:0x5c9f99, roof:0x295e8c, wall:0xe5f3ef, light:0x83e5f9, gold:0xf0c972 },
+    'old-oriaris': {ground:0xbca681,grass:0x8d9976,path:0xe6d1aa,trim:0xa18569,dot:0x806849,roof:0x885542,wall:0xf0dfbd,light:0xeccf89,gold:0xf6d18c},
+    'wish-valley': {ground:0x497d5d,grass:0x376d4c,path:0xc2a775,trim:0x58764b,dot:0x254d43,roof:0x927047,wall:0xb8a677,light:0xb7f6dc,gold:0xf7d87a},
+    'vocalt-greedy-land': {ground:0x9a818e,grass:0x7d737a,path:0xe1c8a1,trim:0xb49376,dot:0xb48d53,roof:0x673a64,wall:0xe7d5c9,light:0xffd782,gold:0xf6c95d}
+  };
+  const SPECS = {
+    'tech-co': {name:'5 · Tech-Co — Workplace English (B1)', level:'B1', title:'TECH-CO', subtitle:'Workplace English · Meetings · Bug reports · Emails', accent:'#80e5ef', start:{x:2,y:17}, landmarks:[[27,10,'INNOVATION NEXUS'],[27,26,'CO-WORK GARDEN']], buildings:[
+      {name:'TECH-CO HEADQUARTERS',x:6,y:4,w:15,h:8,door:13},{name:'MEETING STUDIO',x:35,y:4,w:15,h:8,door:42},{name:'HELP DESK',x:6,y:24,w:14,h:7,door:13},{name:'MAIL & PROJECTS',x:36,y:24,w:14,h:7,door:42}]},
+    'old-oriaris': {name:'6 · Old Oriaris — Royal Capital (B1–B2)',level:'B1–B2',title:'OLD ORIARIS · ROYAL CAPITAL',subtitle:'Royal Capital Reborn · Past Continuous · While & When',accent:'#e7c681',start:{x:44,y:54},landmarks:[[44,20,'CROWN PALACE · IMPERIAL TERRACE'],[44,55,'THE SOVEREIGN GATE'],[44,32,'GRAND FOUNTAIN COURT']], buildings:[
+      {name:'CROWN PALACE',x:28,y:6,w:32,h:13,door:44},
+      {name:'GRAND OPERA',x:8,y:25,w:17,h:11,door:16},
+      {name:'ROYAL ACADEMY',x:63,y:25,w:17,h:11,door:71},
+      {name:'GALLERY OF DYNASTIES',x:63,y:43,w:17,h:11,door:71},
+      {name:'HOUSE OF AURELIA',x:8,y:8,w:15,h:9,door:15},
+      {name:'HOUSE OF VALMONT',x:65,y:8,w:15,h:9,door:72},
+      {name:'HOUSE OF SERAPHINE',x:7,y:43,w:16,h:10,door:15},
+      {name:'HOUSE OF CORVEN',x:25,y:44,w:10,h:10,door:29}]},
+
+    'wish-valley': {name:'7 · Wish Valley — Heart of the Living World (B2)',level:'B2',title:'WISH VALLEY · AYLARA',subtitle:'Aylara Mother Falls · Navae River · Maorai · B2 Wishes',accent:'#b4f6c9',start:{x:29,y:51},landmarks:[[44,9,'AYLARA · MOTHER FALLS'],[21,27,'VAELA VILLAGE'],[69,25,'TRUNG TÂM TINH THẦN MAORAI'],[29,52,'STORMFALL · SKYFINCH-01'],[45,35,'NAVAE RIVER'],[69,46,'TALORI CANOPY'],[79,55,'MOONVEIL LAGOON']],buildings:[
+      {name:'THE ELDER’S CANOPY',x:9,y:9,w:13,h:9,door:15},
+      {name:'COUNCIL ROOT HALL',x:22,y:19,w:15,h:10,door:29},
+      {name:'WILDFRUIT MARKET',x:8,y:33,w:13,h:9,door:14},
+      {name:'ROOT HOME · VAELA',x:24,y:37,w:11,h:8,door:29},
+      {name:'EXPLORER OUTPOST',x:66,y:34,w:12,h:9,door:72},
+      {name:'ROOT HOME · TALORI',x:67,y:10,w:11,h:8,door:72}]},
+    'vocalt-greedy-land': {name:'8 · Vocalt — The City of Endless Commerce (C1)',level:'C1',title:'VOCALT · GREEDY LAND',subtitle:'Living Citizens Market · Street Stalls & Luxury Arcade',accent:'#f4dcad',start:{x:2,y:24},
+      // Four distinct socioeconomic districts; no castle wall or Golden Gate.
+      landmarks:[[40,9,'THE GRAND EXCHANGE'],[71,9,'VOCALT LEDGER SPIRE'],[12,14,'SAPPHIRE ARCADE'],[11,25,'RIBBON BAZAAR'],[39,36,'COMMON MARKET · OPEN STALLS'],[68,38,'CARAVAN QUARTER']],
+      buildings:[
+      // NORTH: luxury precinct, wide frontage + arcades + grand exchange
+      {name:'BRAM · ROYAL METALWORKS',kind:'metal',x:3,y:2,w:13,h:10,door:10,zone:'luxury'},
+      {name:'SERENA · SAPPHIRE JEWELS',kind:'jewelry',x:20,y:2,w:7,h:10,door:23,zone:'luxury'},
+      {name:'THE GRAND EXCHANGE',kind:'exchange',x:28,y:2,w:26,h:10,door:41,zone:'luxury'},
+      {name:'CHRONOS · FINE CLOCKS',kind:'clock',x:55,y:2,w:7,h:10,door:58,zone:'luxury'},
+      {name:'LORD VOCALT · LEDGER SPIRE',kind:'spire',x:66,y:2,w:12,h:10,door:72,zone:'luxury'},
+      // MID: high-volume street shopping with textiles, makers, guides and books
+      {name:'ELIRA · RIBBON & REED',kind:'fabric',x:3,y:16,w:13,h:7,door:10,zone:'bazaar'},
+      {name:'COPPERWHEEL WORKSHOP',kind:'artisan',x:20,y:16,w:14,h:7,door:27,zone:'bazaar'},
+      {name:'IVO · LEDGERS & MAPS',kind:'book',x:45,y:16,w:16,h:7,door:53,zone:'bazaar'},
+      {name:'CLOTH MARKET HOUSE',kind:'fabric',x:66,y:16,w:12,h:7,door:72,zone:'bazaar'},
+      // SOUTH: dense market with small detached canvas stalls; these are lived-in houses behind them.
+      {name:'HEARTH FAMILY HOME',kind:'townhome',x:3,y:27,w:9,h:5,door:7,zone:'residential'},
+      {name:'OAK & WILLOW HOME',kind:'townhome',x:13,y:27,w:7,h:5,door:16,zone:'residential'},
+      {name:'CLOVER FAMILY HOME',kind:'townhome',x:21,y:27,w:10,h:5,door:26,zone:'residential'},
+      {name:'GARDEN COURT HOME',kind:'townhome',x:32,y:27,w:7,h:5,door:35,zone:'residential'},
+      {name:'SAFFI FAMILY HOME',kind:'townhome',x:45,y:27,w:10,h:5,door:50,zone:'residential'},
+      {name:'SPICE LANE HOME',kind:'townhome',x:56,y:27,w:7,h:5,door:59,zone:'residential'},
+      {name:'MARTA FAMILY HOME',kind:'townhome',x:65,y:27,w:8,h:5,door:69,zone:'residential'},
+      {name:'NARROW COURT HOME',kind:'townhome',x:74,y:27,w:4,h:5,door:76,zone:'residential'},
+      // LOWER: working trade city / logistics / small taverns
+      {name:'ALBA · STREET KITCHEN',kind:'food',x:3,y:41,w:13,h:6,door:10,zone:'caravan'},
+      {name:'TERRACOTTA POTTERY',kind:'artisan',x:20,y:41,w:14,h:6,door:27,zone:'caravan'},
+      {name:'TOBIN · CARAVAN DEPOT',kind:'warehouse',x:45,y:41,w:16,h:6,door:53,zone:'caravan'},
+      {name:'COIN & CLOVE TAVERN',kind:'food',x:66,y:41,w:12,h:6,door:72,zone:'caravan'}]}
+  };
+  const ASSIGNMENTS = {
+    'tech-co': [
+      {id:'priya',name:'Priya',x:22,y:14,role:'Meeting Coordinator',color:0x3d729f,prompt:'The login page is broken! Arrange a meeting and explain the problem with a reason.',hint:'Could we meet at three? The problem is the login page because the button fails.',checks:[[/\b(meet|meeting|free|available)\b/i,'Suggest a meeting time (meet / free).'],[/\b(login|log in|page|button|problem|issue)\b/i,'Describe the login-page problem.'],[/\b(because|since|fails?|broken|doesn.t work|cannot|can.t)\b/i,'Explain why something is wrong.']]},
+      {id:'jonah',name:'Jonah',x:33,y:14,role:'Support Engineer',color:0x557a7f,prompt:'Describe the error step by step, then make a polite recommendation.',hint:'First I open the page. Then I press the button. We should check it, please.',checks:[[/\b(first|firstly)\b/i,'Start with First.'],[/\b(then|next|after that|second)\b/i,'Explain the next step.'],[/\b(should|please|could)\b/i,'Add a polite recommendation.']]},
+      {id:'erin',name:'Erin',x:27,y:22,role:'Project Manager',color:0x896d99,prompt:'Write a short work email: action requested, deadline, and a question.',hint:'Please check the login page. The deadline is tomorrow. Could you call me?',checks:[[/\b(please|could you|can you|should)\b/i,'Make a polite request.'],[/\b(deadline|tomorrow|by (monday|tuesday|wednesday|thursday|friday|saturday|sunday|noon|tonight|\d)|before)\b/i,'Add a deadline.'],[/\?|\b(could you|would you|can you|what time|when can)\b/i,'Include one question.']]}
+    ],
+    'old-oriaris': [
+      {id:'hugo',name:'Hugo',x:43,y:23,role:'Royal Steward',color:0x567284,prompt:'Tell me what the royal family was doing when the palace bells rang. Use the past continuous and when.',hint:'The king was giving a speech when the palace bells rang.',checks:[[/\b(was|were)\s+\w+ing\b/i,'Use was/were + -ing.'],[/\bwhen\b/i,'Add when.'],[/\b(king|queen|speech|bell|palace|royal|court|guest|ceremony|rang)\b/i,'Mention a royal event or ceremony.']]},
+      {id:'lila',name:'Lila',x:61,y:39,role:'Royal Historian',color:0x866ba4,prompt:'Describe two actions happening at the same time during a royal celebration, using while and past continuous.',hint:'While the guests were dancing, the musicians were playing.',checks:[[/\bwhile\b/i,'Connect the two actions with while.'],[/\b(was|were)\s+\w+ing\b/i,'Describe the first action in progress.'],[/\b(was|were)\s+\w+ing\b[\s\S]*\b(was|were)\s+\w+ing\b/i,'Use past continuous for both simultaneous actions.']]},
+      {id:'sami',name:'Sami',x:26,y:39,role:'Royal Event Coordinator',color:0xa9754f,prompt:'What were you doing when the royal guests arrived at the opera?',hint:'I was preparing the hall when the royal guests arrived.',checks:[[/\b(was|were)\s+\w+ing\b/i,'Use was/were + -ing.'],[/\bwhen\b/i,'Use when for the interruption.'],[/\b(royal|guests?|arrived|opera|event|hall|music|ceremony|preparing)\b/i,'Mention the royal celebration.']]}
+    ],
+
+    'wish-valley': [
+      {id:'anya',name:'Anya',x:19,y:31,role:'Maorai Storykeeper',color:0x9e7bb5,prompt:'What do you wish for? What would that choice cost you?',hint:'I wish I could stay. If I stayed, it would cost me the new job.',checks:[[/\bi\s+wish\b/i,'Begin with I wish.'],[/\b(if|would|could|were)\b/i,'Use a hypothetical choice.'],[/\b(cost|lose|give up|because|sacrifice|miss)\b/i,'Explain the trade-off.']]},
+      {id:'theo',name:'Theo',x:65,y:32,role:'Explorer of Talori',color:0x547e82,prompt:'I must choose: leave for my studies or stay with family. Give advice with a reason.',hint:'If I were you, I would stay because your family is here.',checks:[[/\bif\s+i\s+were\s+you\b/i,'Use If I were you.'],[/\b(would|should)\b/i,'Give your recommendation using would / should.'],[/\b(because|since|as)\b/i,'Explain your reason.']]},
+      {id:'nia',name:'Nia',x:25,y:46,role:'Maorai Nature Guide',color:0x8b6e9f,prompt:'How do you feel about your journey? Tell me why; include both confidence and uncertainty.',hint:'I feel proud because I finished the road, but I am unsure.',checks:[[/\b(feel|feeling)\b/i,'Name your feeling.'],[/\b(because|since)\b/i,'Explain the reason.'],[/\b(proud|unsure|uncertain|nervous|confident|worried|happy|afraid|if)\b/i,'Use an emotion or uncertainty word.']]}
+    ],
+    'vocalt-greedy-land': [
+      {id:'cass',name:'Cass',x:22,y:24,role:'Rare Lamp Dealer',color:0xac7967,prompt:'Lord Vocalt has collected the last lamp, and had bought it before everyone knew. Use BOTH perfect tenses.',hint:'I have never seen a lamp like that. He had already bought it.',checks:[[/\b(have|has)\s+(never\s+|already\s+|just\s+)?(seen|collected|sold|bought|found|become|learned|been|had)\b/i,'Use have/has + past participle.'],[/\bhad\s+(already\s+|never\s+)?(bought|sold|hidden|decided|collected|seen|found|been|placed)\b/i,'Use had + past participle.'],[/\b(lamp|vocalt|collection|bought|sold|seen)\b/i,'Mention the rare lamp.']]},
+      {id:'rhee',name:'Rhee',x:54,y:25,role:'Luxury Merchant',color:0x89665f,prompt:'He has sold many rare things, but had hidden his finest item before dawn. Use both perfect tenses.',hint:'He has sold many things, but he had already hidden the best one. I have found only stories.',checks:[[/\b(have|has)\s+(never\s+|already\s+|just\s+)?(seen|collected|sold|bought|found|become|learned|been|had)\b/i,'Use a present perfect form.'],[/\bhad\s+(already\s+|never\s+)?(bought|sold|hidden|decided|collected|seen|found|been|placed)\b/i,'Use a past perfect form.'],[/\b(sold|hidden|rare|things?|dawn|merchant|best|treasure)\b/i,'Refer to the merchant story.']]},
+      {id:'maren',name:'Maren',x:40,y:18,role:'Salon Curator',color:0x8d6c98,prompt:'Explain what you have learned, and what you had decided before entering the salon.',hint:'I have learned the two perfect tenses. I had decided to refuse the lamp before I entered.',checks:[[/\b(have|has)\s+(never\s+|already\s+|just\s+)?(seen|collected|sold|bought|found|become|learned|been|had)\b/i,'Use present perfect for your learning.'],[/\bhad\s+(already\s+|never\s+)?(bought|sold|hidden|decided|collected|seen|found|been|placed)\b/i,'Use past perfect for the earlier decision.'],[/\b(before|already|salon|entered|lamp|learned|refuse)\b/i,'Explain the order of events.']]}
+    ]
+  };
+  // All eight outdoor maps are open from the start. Quests still earn their normal rewards.
+  const requirements = Object.freeze({});
+  function palette(id){return COLORS[id]||COLORS['tech-co'];}
+  function col(g,c,x,y,w,h,a=1){g.fillStyle(c,a).fillRect(x,y,w,h);}
+  function ellipse(g,c,x,y,w,h,a=1){g.fillStyle(c,a).fillEllipse(x,y,w,h);}
+  function stroke(g,c,x,y,w,h,alpha=1){g.lineStyle(2,c,alpha).strokeRect(x,y,w,h);}
+  function rnd(seed){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return (seed>>>0)/4294967296;};}
+  function sign(g,cx,cy,label,dark=0x25334c){
+    const w=Math.max(72,label.length*6+20); col(g,dark,cx-w/2,cy,w,18);stroke(g,0xe5d5a3,cx-w/2,cy,w,18); g.fillStyle(0xf5e8c9,1);
+    // Lettering uses Phaser Text in scene overlays to stay crisp and readable.
+  }
+  // V18 · Tech-Co Neo-Garden Campus. Rendered entirely into the existing cached
+  // world texture; no changes to tile geometry, NPC coordinates or collisions.
+  function tBox(g,x,y,w,h,fill,edge=0x27495e){
+    col(g,edge,x,y,w,h);col(g,fill,x+3,y+3,w-6,h-6);
+  }
+  function tLine(g,color,x1,y1,x2,y2,width=2,opacity=1){
+    g.lineStyle(width,color,opacity);g.lineBetween(x1,y1,x2,y2);
+  }
+  function tTree(g,x,y,variant=0){
+    const greens=[0x305e55,0x3f7864,0x578e73,0x76ad83];
+    ellipse(g,0x254a46,x+5,y+21,58,18,.22);
+    col(g,0x735e4d,x-5,y-5,10,26);
+    col(g,0xaa8b62,x-2,y-4,3,17,.65);
+    const nodes=[[-18,-18,37,27,1],[15,-19,38,28,2],[-5,-29,41,27,3],[-17,-5,30,23,2],[12,-4,32,21,1]];
+    for(let i=0;i<nodes.length;i++){
+      const [dx,dy,w,h,k]=nodes[i];
+      ellipse(g,greens[(k+variant)%greens.length],x+dx,y+dy,w,h,.96);
+    }
+    col(g,0xb9e3aa,x-18,y-34,12,4,.65);
+    col(g,0xa2d9a5,x+9,y-28,7,3,.7);
+  }
+  function tPlanter(g,x,y,w=92){
+    ellipse(g,0x254c54,x+w/2,y+17,w+8,17,.20);
+    col(g,0x536d68,x,y+7,w,17);col(g,0x87a39c,x+3,y+8,w-6,5);
+    col(g,0x3b7b61,x+6,y+2,w-12,11);
+    for(let i=0;i<Math.max(3,Math.floor(w/14));i++){
+      let xx=x+9+i*13, yy=y+2+(i%3)*3;
+      ellipse(g,[0xeedc9c,0xe9a7ab,0xcfc0f0][i%3],xx,yy,7,7,.95);
+      col(g,0xfaf4de,xx-1,yy-1,2,2,.88);
+    }
+  }
+  function tBench(g,x,y){
+    ellipse(g,0x28545b,x+22,y+18,64,17,.2);
+    for(let j=0;j<2;j++){
+      col(g,0x4a6576,x+5,y+3+j*8,35,5);
+      col(g,0xc1a87d,x+7,y+3+j*8,31,2,.94);
+    }
+    col(g,0x455766,x+7,y+15,5,7);col(g,0x455766,x+35,y+15,5,7);
+  }
+  function tPocketGarden(g,x,y,mode=0){
+    // Four small sustainable garden pockets give the outer campus identity.
+    ellipse(g,0x28574e,x+5,y+12,108,78,.16);
+    col(g,0x477c70,x-46,y-30,96,69);
+    col(g,0xa5c4a6,x-42,y-26,88,61);
+    col(g,0x508b70,x-37,y-23,78,54);
+    for(let k=0;k<11;k++){
+      const xx=x-30+(k%4)*20+(k%2)*5;
+      const yy=y-13+Math.floor(k/4)*16;
+      ellipse(g,[0xe9b1b5,0xeccf94,0xcbd7e9][(k+mode)%3],xx,yy,7,6,.92);
+      col(g,0xf8f5dc,xx-1,yy-1,2,2,.84);
+    }
+    if(mode%2===0)tBench(g,x-20,y+18);
+    else{
+      col(g,0xcbd9cc,x-21,y+8,43,7);
+      col(g,0x416e75,x-18,y+10,37,3);
+    }
+  }
+  function tLamp(g,x,y){
+    ellipse(g,0x8cccb9,x,y+9,33,9,.13);
+    col(g,0x506b76,x-3,y-17,6,30);
+    col(g,0xb0cccf,x-5,y-18,10,3);
+    col(g,0xf5d99c,x-8,y-26,16,8,.98);
+    col(g,0xfff4ce,x-4,y-25,8,3,.92);
+  }
+  function tCorner(g,c,x,y){col(g,c,x,y,10,4);col(g,c,x,y,4,10);}
+  // V20 · TECH-CO NEON CIRCUIT DISTRICT
+  // Pure painter utilities: no new colliders, no interactive hit boxes, no external assets.
+  // These are static pixels cached in the existing area texture.
+  function tcCircuit(g,x,y,mirror=1,seed=0){
+    const cyan=0x67eff0,magenta=0xd48dff;
+    const lines=[[0,0,54,0],[54,0,54,22],[54,22,88,22],[88,22,88,34]];
+    for(const [a,b,c,d] of lines){
+      tLine(g,0x18374d,x+a*mirror+2,y+b+2,x+c*mirror+2,y+d+2,6,.55);
+      tLine(g,seed%2?magenta:cyan,x+a*mirror,y+b,x+c*mirror,y+d,2,.65);
+    }
+    for(const [a,b] of [[0,0],[54,22],[88,34]]){
+      ellipse(g,0x142f49,x+a*mirror,y+b,14,10,.95);
+      ellipse(g,seed%2?0xebbcff:0x9dfbf3,x+a*mirror,y+b,6,5,.94);
+    }
+  }
+  function tcPad(g,x,y,w=72,c=0x75dfe3){
+    col(g,0x1a354d,x,y,w,34,.96);
+    col(g,0x46697a,x+3,y+3,w-6,28);
+    col(g,0x83afba,x+5,y+5,w-10,24,.42);
+    for(const dx of [7,w-12]){
+      col(g,c,x+dx,y+6,5,3,.9);
+      col(g,c,x+dx,y+25,5,3,.9);
+    }
+    for(let i=0;i<5;i++)col(g,i%2?0x6bb6c2:0xa7d7d1,x+12+i*(w-26)/5,y+17,7,2,.72);
+  }
+  function tcSolar(g,x,y,w,h,variant=0){
+    col(g,0x182e47,x-5,y-5,w+10,h+10,.92);
+    col(g,0x37637b,x,y,w,h);
+    const cw=(w-10)/4,ch=(h-10)/3;
+    for(let yy=0;yy<3;yy++)for(let xx=0;xx<4;xx++){
+      const px=x+5+xx*cw,py=y+5+yy*ch;
+      col(g,(xx+yy+variant)%3===0?0x398fb4:0x244f7a,px,py,cw-3,ch-3);
+      col(g,0x7ae5f0,px+1,py+1,cw-5,2,.68);
+      col(g,0xb3faff,px+2,py+4,2,Math.max(2,ch-9),.43);
+    }
+  }
+  function tcTerminal(g,x,y,variant=0){
+    // Floor-mounted cyber kiosks are painted as decals, never registered as obstacles.
+    ellipse(g,0x0e2440,x+4,y+20,74,24,.35);
+    col(g,0x28475e,x-20,y+8,44,13);
+    col(g,0x81e0dd,x-16,y+10,36,3,.92);
+    col(g,0x1d3752,x-17,y-39,35,47,.97);
+    col(g,variant?0x7855ac:0x267f97,x-14,y-35,29,38,.94);
+    col(g,0xb3faff,x-11,y-32,23,3,.84);
+    for(let i=0;i<4;i++){
+      col(g,[0x79f0db,0xdba5ff,0xffd17b][(i+variant)%3],x-10,y-23+i*7,8+(i%2)*8,3,.91);
+      col(g,0xbbf5fb,x+6,y-23+i*7,5,2,.7);
+    }
+    col(g,0xc3f6ec,x-6,y+13,15,2,.96);
+  }
+  function tcGardenArray(g,x,y,w,h){
+    col(g,0x1d4759,x,y,w,h);
+    col(g,0x4f999b,x+4,y+4,w-8,h-8);
+    for(let i=0;i<Math.floor(w/27);i++){
+      const xx=x+8+i*27;
+      col(g,0x1f5967,xx,y+10,21,h-20);
+      col(g,0x79dfb2,xx+3,y+12,15,h-24,.75);
+      for(let k=0;k<3;k++){
+        col(g,0x1b725e,xx+4,y+14+k*7,13,3,.85);
+        col(g,0xc3ffda,xx+7,y+16+k*7,4,2,.7);
+      }
+    }
+    col(g,0xc9f6e4,x+4,y+3,w-8,2,.6);
+  }
+  function tcBioTree(g,x,y,v=0){
+    // Biotech trees with data-lit stems: greenery with an intentional future style.
+    const hi=[0x8df8d7,0xa4e7fc,0xd2b1ff][v%3],leaf=[0x2e7768,0x287f8f,0x6678a5][v%3];
+    ellipse(g,0x18374b,x+4,y+10,51,14,.29);
+    col(g,0x234e5c,x-5,y-23,11,39);
+    col(g,0x67bec0,x-2,y-18,3,30,.87);
+    col(g,0xe3f5dd,x-3,y-9,6,3,.78);
+    for(const [dx,dy,w,h] of [[-17,-23,28,21],[14,-26,29,22],[-1,-37,32,22]]){
+      ellipse(g,leaf,x+dx,y+dy,w,h,.93);
+      ellipse(g,hi,x+dx-5,y+dy-4,Math.max(6,w*.37),Math.max(4,h*.25),.6);
+      col(g,0xd9f8e3,x+dx-2,y+dy+3,4,2,.67);
+    }
+    col(g,0x2b4e66,x-19,y+16,39,4);
+    for(let i=0;i<4;i++)col(g,hi,x-15+i*10,y+17,4,2,.87);
+  }
+  function tcChargingDock(g,x,y,v=0){
+    ellipse(g,0x17334e,x,y+8,68,17,.3);
+    col(g,0x274765,x-27,y-12,55,25,.94);
+    col(g,0x558b97,x-23,y-9,47,20,.97);
+    col(g,0x93f9ed,x-18,y-7,35,3,.9);
+    col(g,0x1d5572,x-14,y-2,29,8);
+    for(let i=0;i<3;i++)col(g,(i+v)%3===0?0xffc4a0:0x9cf4ee,x-10+i*11,y,7,4,.84);
+    col(g,0x1c3e55,x-22,y+13,45,4);
+  }
+  function tcBus(g,x,y,accent=0x76f4f1){
+    // Decorative self-driving mobility pod; always outside NPC and door collision logic.
+    ellipse(g,0x0d2947,x,y+9,71,15,.22);
+    col(g,0x183b58,x-28,y-8,57,18);
+    col(g,0xc5e8eb,x-23,y-12,47,16);
+    col(g,0x3d83a8,x-16,y-10,31,9);
+    col(g,0xa3f7fa,x-13,y-9,8,6,.92);
+    col(g,0x91d2ff,x+3,y-9,9,6,.84);
+    col(g,accent,x-23,y+5,47,3);
+    col(g,0xffffff,x-24,y+2,7,3,.87);
+    col(g,0xffbb8b,x+19,y+2,7,3,.82);
+    for(const dx of [-19,19])ellipse(g,0x31516f,x+dx,y+11,15,6,.75);
+  }
+  function techFutureGround(g){
+    // Architectural cyber lanes and smart glass sidewalks. Draw before buildings
+    // so entrance and NPC foregrounds retain their visual priority.
+    const ww=W*T,hh=H*T;
+    // V20 signature: a graphite-maglev avenue instead of an empty pale road.
+    // Visual markings only. This must never change the 56x34 walkability graph.
+    col(g,0x1c3d5a,0,16.04*T,ww,2.93*T,.91);
+    col(g,0x264e69,0,16.25*T,ww,2.51*T,.89);
+    col(g,0x193854,0,17.21*T,ww,.56*T,.95);
+    col(g,0x6bdeeb,0,16.11*T,ww,3,.84);
+    col(g,0xd9afff,0,18.83*T,ww,3,.76);
+    for(let tx=0;tx<W;tx++){
+      const xx=tx*T;
+      col(g,tx%4===0?0xf9ce9a:0x83dff5,xx+4,17.46*T,19,3,.58);
+      if(tx%2===0){
+        col(g,0x4a8da1,xx+2,16.48*T,26,2,.49);
+        col(g,0x8af4e2,xx+9,18.42*T,14,2,.55);
+      }
+    }
+    // The cross-avenue is tiled rather than rendered as a featureless stripe.
+    col(g,0x24536d,26.17*T,0,3.8*T,hh,.76);
+    col(g,0x347086,26.5*T,0,3.13*T,hh,.77);
+    for(let ty=0;ty<H;ty++){
+      const yy=ty*T;
+      col(g,0x5edbe9,26.18*T,yy+3,3,23,.5);
+      col(g,0xcbb0ff,29.87*T,yy+5,3,21,.48);
+      if(ty%2===0)col(g,0x8de6dc,27.44*T,yy+11,35,2,.28);
+    }
+
+    for(let xx=0;xx<ww;xx+=32){
+      col(g,0x0d3248,xx,15.52*T,29,2,.33);
+      col(g,0x78f7eb,xx+5,15.54*T,17,2,.75);
+      col(g,0x17374e,xx,19.28*T,29,3,.4);
+      col(g,xx%128===0?0xd5a7ff:0x6be2f5,xx+7,19.31*T,13,2,.73);
+      if(xx%(T*3)===0){
+        col(g,0x24465d,xx+4,17.7*T,23,3,.49);
+        col(g,0x82f3f5,xx+9,17.7*T,12,2,.66);
+      }
+    }
+    for(let yy=0;yy<hh;yy+=32){
+      col(g,0x15465b,26.06*T,yy+4,3,25,.58);
+      col(g,0x78eae9,26.1*T,yy+7,2,12,.66);
+      col(g,0x193e57,30.02*T,yy+3,3,25,.55);
+      col(g,yy%96<32?0xd7aeff:0x82e1ea,30.07*T,yy+9,2,9,.66);
+    }
+    // Circuitboard plaza engraving and circuitry branching into forecourts.
+    for(const [x,y,m,k] of [[20.7,13.3,-1,0],[34.4,13.3,1,1],[20.6,21,-1,1],[34.4,21,1,0]])
+      tcCircuit(g,x*T,y*T,m,k);
+    for(const [x,y,k] of [[7,13.1,0],[18,13.1,1],[37,13.1,2],[47,13.1,0],[8,22,1],[18,22,2],[38,22,0],[47,22,1]])
+      tcPad(g,x*T,y*T,72,[0x6bf5ec,0xe2a4fc,0xffd58f][k]);
+    // Carefully clustered biotech trees and delivery docks bring human scale to
+    // the campus without crossing any building door, spawn tile or mission pad.
+    for(const [x,y,v] of [
+      [4.1,3.65,0],[22.3,3.2,1],[33.1,3.2,2],[52.1,3.65,1],
+      [4.2,11.5,2],[51.9,11.6,0],[4.1,21.05,0],[51.85,21.05,1],
+      [4.3,31.4,1],[22.1,31.3,0],[33.1,31.3,2],[51.9,31.4,2]
+    ])tcBioTree(g,x*T,y*T,v);
+    for(const [x,y,v] of [[21.45,5.5,0],[34.0,5.5,1],[21.45,29.2,2],[34.2,29.2,0]])
+      tcChargingDock(g,x*T,y*T,v);
+    // Thin perimeter light rails: safe painted markings (not physical walls).
+    for(const y of [2.7,32.5]){
+      col(g,0x163849,2*T,y*T,52*T,9,.88);
+      col(g,0x6ff7eb,2*T,y*T,52*T,2,.83);
+      for(let x=2;x<54;x++)if(x%4===0)col(g,0xce99ff,x*T,y*T+3,15,3,.94);
+    }
+    // Clustered flower gardens around terminals keep the campus human and lively.
+    for(const [x,y,w] of [[2.3,6.1,79],[51,6.1,78],[2.2,26.2,74],[51.1,26.4,76]]){
+      tcGardenArray(g,x*T,y*T,w,62);
+    }
+    // Warp portals visually say "this way to the next world" without new colliders.
+    for(const [xx,sign] of [[0.95,1],[55.05,-1]]){
+      const x=xx*T,y=17.5*T;
+      col(g,0x132c49,x-18,y-52,36,103,.44);
+      for(let i=0;i<7;i++){
+        const yy=y-43+i*14;
+        col(g,i%2?0xb8a2ff:0x78f5e6,x+sign*7-4,yy,7,5,.77);
+      }
+      col(g,0x9deeff,x-14,y-52,27,3,.78);
+      col(g,0xf8c995,x-14,y+48,27,3,.74);
+    }
+    // Deliberately nonblocking circuit medallions on three mission gathering pads.
+    for(const [x,y,i] of [[22.2,13.85,0],[33,13.85,1],[32,23.7,2]]){
+      let px=x*T,py=y*T;
+      ellipse(g,0x18364f,px,py,39,15,.5);
+      ellipse(g,[0x7cf8e4,0x92d6ff,0xe0b4ff][i],px,py,27,9,.55);
+      col(g,0xeafafa,px-8,py-1,16,2,.78);
+    }
+    // Decorative sidewalks for a polished city footprint, no invisible blockers.
+    for(const x of [3.3,52.2])for(const y of [13.1,21.8]){
+      tcTerminal(g,x*T,y*T,(x+y)|0);
+    }
+  }
+  function techFutureBuilding(g,b,index){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,d=(b.door+.5)*T;
+    const top=y+18,cy=y+h-32;
+    const accent=[0x76f9f1,0xbca3ff,0x95ebf7,0xffc38e][index];
+    // Bright perimeter / stepped metalwork gives each silhouette stronger materiality.
+    col(g,0x0d2a48,x+13,y+4,w-26,6,.82);
+    col(g,accent,x+18,y+5,w-36,3,.92);
+    col(g,0x102f49,x+9,y+Math.floor(h*.61)-13,w-18,5,.94);
+    col(g,accent,x+19,y+Math.floor(h*.61)-11,w-38,2,.72);
+    for(const side of [-1,1]){
+      const xx=side<0?x+13:x+w-23;
+      col(g,0x163d58,xx,y+18,10,Math.floor(h*.61)-31,.9);
+      for(let i=0;i<5;i++)col(g,accent,xx+3,y+26+i*22,4,7,.72);
+    }
+    // Lit storefront display next to the exact door coordinate. No collision edits.
+    const sx=d+((index%2)?-78:44);
+    col(g,0x234258,sx,cy-11,39,28);
+    col(g,0x13556c,sx+3,cy-8,33,22);
+    for(let i=0;i<3;i++){
+      col(g,[accent,0xc7f7ff,0xf6d39b][i],sx+7,cy-4+i*6,10+i*5,2,.89);
+    }
+    col(g,0xaccfdb,sx+4,cy+14,31,2,.86);
+    // Animated scan-lines are on the dynamic layer; fixed header and pinstripes are cached.
+    for(let j=0;j<7;j++){
+      const xx=x+35+j*(w-70)/7;
+      col(g,accent,xx,y+Math.floor(h*.61)+9,13,2,j%2?.46:.82);
+    }
+    // Air-duct highlights add colored underglow and depth to the building base.
+    for(let k=0;k<7;k++){
+      const px=x+21+k*(w-50)/7;
+      col(g,k%3===0?0xdcabff:accent,px,y+h-7,13,2,.72);
+    }
+
+    if(index===0){
+      // HQ: solar roof and transparent datacenter bridge.
+      tcSolar(g,x+29,top+2,110,78,0);
+      tcSolar(g,x+w-145,top+2,108,78,1);
+      col(g,0x172d4b,x+w*.39,y+38,w*.22,12);
+      col(g,0xa5f4f5,x+w*.41,y+40,w*.18,6,.86);
+      for(let i=0;i<5;i++)col(g,0xe3c6ff,x+w*.44+i*13,y+53,5,2,.9);
+    }else if(index===1){
+      // Meeting Studio: glass skylight, slim holographic conference modules.
+      for(let k=0;k<5;k++){
+        const xx=x+63+k*64;
+        col(g,0x1b476c,xx,y+65,44,24);
+        col(g,0xa8ecff,xx+3,y+68,38,3,.78);
+        for(let j=0;j<3;j++)col(g,j===k%3?0xe4c5ff:0x74d8eb,xx+5+j*12,y+78,8,5,.88);
+      }
+      col(g,0xe9f9f4,x+w/2-42,y+28,84,3,.83);
+    }else if(index===2){
+      // Support Hub: visible server heat sinks, radio sensors and service panels.
+      for(let k=0;k<4;k++){
+        const xx=x+37+k*92;
+        col(g,0x152c45,xx,y+Math.floor(h*.61)-47,53,24);
+        col(g,0x75e0e7,xx+4,y+Math.floor(h*.61)-44,45,4,.83);
+        for(let j=0;j<5;j++)col(g,0x6babc1,xx+6+j*9,y+Math.floor(h*.61)-34,5,8,.78);
+      }
+      for(let k=0;k<3;k++){
+        const xx=x+w*.3+k*58;
+        col(g,0xc4e8dd,xx,y+22,3,15,.86);
+        ellipse(g,0xf6cb93,xx+1,y+19,7,5,.9);
+      }
+    }else{
+      // Creative hub: luminous collaborative desk panels plus lush modular greenhouse.
+      tcGardenArray(g,x+22,y+Math.floor(h*.61)-44,130,33);
+      for(let k=0;k<3;k++){
+        const xx=x+178+k*64;
+        col(g,0x214f70,xx,y+37,47,52,.92);
+        col(g,0x76cbea,xx+4,y+41,39,38,.9);
+        col(g,0xe0f9f5,xx+7,y+44,32,3,.8);
+        col(g,0xbdf5e4,xx+9,y+60+k%2*6,26,2,.8);
+      }
+    }
+    // Pixel edge glow along each entry, without a large halo covering the NPC.
+    col(g,accent,d-16,y+h-60,3,48,.68);
+    col(g,accent,d+13,y+h-60,3,48,.68);
+    col(g,0xd4fff5,d-25,y+h-78,50,2,.83);
+  }
+  function techFutureNexus(g){
+    const x=27.5*T,y=9.7*T;
+    // Vertical reactor shield: 200-pixel wings with violet/blue pixel glass.
+    for(const side of [-1,1]){
+      const xx=x+side*66;
+      col(g,0x183c5b,xx-19,y-114,38,101,.94);
+      col(g,0x367e9d,xx-15,y-108,30,92,.92);
+      for(let j=0;j<6;j++){
+        col(g,j%2===0?0xbdaaff:0x92f4f2,xx-11,y-103+j*15,22,6,.82);
+        col(g,0x144b70,xx-8,y-101+j*15,16,3,.9);
+      }
+      col(g,0xf0d2fd,xx-20,y-116,40,4,.83);
+      col(g,0x67edf2,xx-23,y-17,46,6,.85);
+    }
+    // Orbiting-energy apparatus designed as part of the static landmark silhouette.
+    for(const radius of [56,74,92]){
+      g.lineStyle(3,radius===92?0xbcafff:0x76e9eb,.68);
+      g.strokeEllipse(x,y-57,radius*2,radius*.64);
+    }
+    for(let i=0;i<16;i++){
+      const a=i*Math.PI*2/16;
+      const xx=x+91*Math.cos(a),yy=y-58+29*Math.sin(a);
+      col(g,i%3===0?0xe3b4ff:0xa6e7f3,xx-3,yy-2,6,4,.82);
+    }
+    // Scalloped base and ion conduits give the tower a unique landmark silhouette.
+    for(let j=0;j<13;j++){
+      const xx=x-108+j*18;
+      col(g,j%3===0?0x9ce8f5:0x33637f,xx,y+33,15,7,.88);
+      col(g,j%4===0?0xe4b6ff:0x77dad3,xx+4,y+41,7,3,.75);
+    }
+    // Nexus core, extra parallax ridges and floating energy bridges.
+    for(const side of [-1,1]){
+      const xx=x+side*95;
+      col(g,0x163b56,xx-13,y-20,26,35);
+      col(g,0x4ca7b9,xx-9,y-17,18,27);
+      col(g,0xb6faff,xx-5,y-14,10,3,.87);
+      col(g,0xdaafff,xx-4,y-4,8,11,.8);
+      col(g,0x78eddf,xx-13,y+13,26,3);
+    }
+    col(g,0xe4c3ff,x-20,y-119,40,3,.77);
+    col(g,0xa0faf0,x-9,y-138,18,4,.78);
+    for(let j=0;j<5;j++){
+      const xx=x-39+j*20;
+      col(g,j%2?0x8cecf1:0xc7aaff,xx,y+38,10,3,.9);
+    }
+  }
+  function techFutureGarden(g){
+    const x=27.5*T,y=27.7*T;
+    // Eco-tech garden with modular digital displays while retaining trees and flowers.
+    for(const side of [-1,1]){
+      const xx=x+side*124;
+      col(g,0x284a62,xx-11,y-47,22,72);
+      col(g,0x6fd5d8,xx-8,y-44,16,66,.93);
+      for(let j=0;j<5;j++)col(g,j%2?0xe1f1dc:0x98edcb,xx-6,y-40+j*12,12,4,.85);
+      col(g,0xc1a2ff,xx-12,y+26,24,5,.82);
+    }
+    for(let i=0;i<12;i++){
+      const a=i*Math.PI/6;
+      const xx=x+Math.cos(a)*102,yy=y+Math.sin(a)*40;
+      ellipse(g,0xcaf9dd,xx,yy,6,4,.82);
+      col(g,0x297761,xx-1,yy-2,2,2);
+    }
+    for(const dx of [-88,76]){
+      col(g,0x123c53,x+dx,y-49,33,17);
+      col(g,0x69d6cf,x+dx+3,y-46,27,11);
+      col(g,0xd9f7e0,x+dx+7,y-43,16,2,.92);
+      col(g,0xc6a8ff,x+dx+7,y-39,10,2,.78);
+    }
+  }
+  // Dynamic cyber city lights — one existing Graphics object, throttled with the
+  // old effects ticker; no per-frame DOM creation, textures, listeners or timers.
+  function techFuturePulse(g,time){
+    const sec=time/1000,fast=sec*1.4,done=state(),minutes=Number(game()?.minutes??480);
+    const night=minutes<360||minutes>1110,bright=night?1:.7;
+    // Smart guidance lanes: precisely bounded moving luminous packets.
+    for(let i=0;i<23;i++){
+      const x=((i*93+time*.065)%(W*T));
+      col(g,i%4===0?0xd5adff:0xb8f9ff,x,15.55*T,12,2,.34*bright);
+      col(g,i%3===0?0xffc98c:0x6cf4e5,W*T-x-14,19.29*T,10,3,.28*bright);
+    }
+    for(let i=0;i<12;i++){
+      const yy=(i*115+time*.045)%(H*T);
+      col(g,0x9ef5ed,26.09*T,yy,2,12,.4*bright);
+      col(g,0xdab0ff,30.04*T,H*T-yy-14,2,11,.36*bright);
+    }
+    // Express pod stays on the entirely ornamental north and south overhead rails.
+    const range=50*T;
+    const px=3*T+((time*.045)%range);
+    tcBus(g,px,2.57*T+Math.sin(sec*1.6)*2,0x72f5f3);
+    tcBus(g,53*T-((time*.028)%range),32.36*T+Math.sin(sec*1.4+2)*2,0xd2a6ff);
+    // Three service drones loop locally on rooftops / above plaza, not blocking movement.
+    for(let i=0;i<3;i++){
+      const a=sec*(.35+i*.05)+i*2.1;
+      const cx=[12.8,42.7,27.5][i]*T,cy=[3.05,3.0,12.15][i]*T;
+      const xx=cx+Math.cos(a)*[78,65,73][i],yy=cy+Math.sin(a*1.4)*[15,11,26][i];
+      ellipse(g,0x1d4261,xx,yy+8,29,9,.18);
+      col(g,0x284967,xx-10,yy-3,21,9);
+      col(g,i===1?0xbba9ff:0x72f2f0,xx-6,yy-6,13,5,.9);
+      for(const side of [-1,1]){
+        col(g,0xd7f9ed,xx+side*14-5,yy-2,10,2,.78);
+        col(g,0x79dcfa,xx+side*13-1,yy+3,4,2,.82);
+      }
+    }
+    // 4 animated roof hologram monitors: flowing UI elements, not flat random sparks.
+    for(const [i,b] of SPECS['tech-co'].buildings.entries()){
+      const bx=b.x*T,by=b.y*T,w=b.w*T,roof=Math.floor(b.h*T*.61);
+      const y=by+roof-24;
+      const x=bx+((time*.02+i*83)%(w-67))+25;
+      col(g,[0x9afaff,0xc9b0ff,0xa3e6fc,0xffd49d][i],x,y,16,2,.37*bright);
+      for(let p=0;p<4;p++){
+        const xx=bx+48+p*(w-96)/4;
+        ellipse(g,p===i?0xffd99f:0x72f2e8,xx,by+11,5,4,.43*bright);
+      }
+      const status=!!done['tech-co:'+['priya','jonah','erin'][i%3]];
+      col(g,status?0x9df8d5:0xb7cdff,bx+w*.5-20,by+roof-36,40,2,(.25+.2*Math.sin(fast+i))*bright);
+    }
+    // Four holographic terminal displays on the public promenade.
+    for(const [i,x,y] of [[0,3.3,13.1],[1,52.2,13.1],[2,3.3,21.8],[3,52.2,21.8]]){
+      const px=x*T,py=y*T,scan=(time*.028+i*13)%31;
+      col(g,i%2?0xd6b7ff:0x97f9ef,px-13,py-32+scan,27,2,.38*bright);
+      col(g,0xccf5fa,px-10+Math.sin(sec+i)*3,py-26,14,2,.55*bright);
+    }
+    // Progress-sensitive nexus orbital ring, with a crisp moving energy node.
+    const x=27.5*T,y=9.7*T;
+    for(let ring=0;ring<2;ring++){
+      const r=59+ring*18,phase=sec*(ring?-.55:.73);
+      for(let j=0;j<8;j++){
+        const a=phase+j*Math.PI/4;
+        const xx=x+Math.cos(a)*r,yy=y-57+Math.sin(a)*r*.32;
+        ellipse(g,ring?0xd6b4ff:0x9dfcf1,xx,yy,7,4,.4*bright);
+      }
+    }
+    for(const [i,id] of ['priya','jonah','erin'].entries()){
+      if(!done['tech-co:'+id])continue;
+      const xx=x-32+i*27;
+      ellipse(g,0xa8ffd9,xx,y+28,21+Math.sin(fast+i)*4,11,.24*bright);
+    }
+    // Water garden becomes a living energy fountain, still readable in daylight.
+    const fx=27.5*T,fy=27.7*T;
+    ellipse(g,0xb6ffff,fx,fy-21+Math.sin(sec*2)*3,6,10,.45*bright);
+    for(let i=0;i<6;i++){
+      const a=sec*.35+i*Math.PI/3;
+      const xx=fx+Math.cos(a)*80,yy=fy+Math.sin(a)*30;
+      col(g,i%2?0x97ffcf:0xd5b3ff,xx,yy,4,2,.45*bright);
+    }
+  }
+
+  function techBuilding(g,b,index){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T, d=(b.door+.5)*T;
+    const roofH = Math.floor(h*.61);
+    const schemes=[
+      {roof:0x265574,shade:0x193b57,hi:0x5393ae,wall:0xe0ede8,frame:0x506d80,glass:0x77c3d6},
+      {roof:0x82bac4,shade:0x446f85,hi:0xc0e9df,wall:0xf0f0dd,frame:0x5d818e,glass:0x7fdae2},
+      {roof:0x29475e,shade:0x182f43,hi:0x5a8291,wall:0xdce5e3,frame:0x4a6473,glass:0x62b8c8},
+      {roof:0x46796b,shade:0x294f54,hi:0x8aaf93,wall:0xeee5d3,frame:0x8d8070,glass:0x91c9bd}
+    ];
+    const q=schemes[index];
+    // A consistent three-tier façade: shadow, solid wall, authored roof silhouette.
+    ellipse(g,0x1c3d49,x+w/2+12,y+h+9,w+24,32,.22);
+    col(g,q.frame,x+5,y+roofH-2,w-10,h-roofH+1);
+    col(g,q.wall,x+10,y+roofH+6,w-20,h-roofH-14);
+    col(g,0x45606b,x+1,y+roofH,w-2,13,.58);
+    col(g,q.shade,x+6,y+10,w-12,roofH-1);
+    col(g,q.roof,x+12,y+6,w-24,roofH-5);
+    col(g,q.hi,x+17,y+9,w-34,6,.78);
+    col(g,0x142c3f,x+9,y+roofH-9,w-18,12,.78);
+    col(g,0xe3f0de,x+15,y+roofH-11,w-30,3,.52);
+    // Regular pilasters and glass windows are on the wall, not on the roof.
+    const wy=y+roofH+21;
+    for(let i=0;i<7;i++){
+      const xx=x+32+i*(w-64)/6;
+      if(Math.abs(xx-d)<40)continue;
+      tBox(g,xx-12,wy,25,44,q.glass,q.shade);
+      col(g,0xcdf3e9,xx-8,wy+5,6,12,.60);
+      col(g,q.frame,xx-1,wy+4,2,34);
+      col(g,0x6c8b8b,xx-15,wy+44,31,5,.90);
+    }
+    // Door is always in the exact, existing tile position.
+    col(g,0x334c5d,d-23,y+h-65,46,62);
+    col(g,0xa7c5bd,d-19,y+h-60,38,57);
+    col(g,0x326b80,d-17,y+h-57,34,52);
+    col(g,0x8fd8d5,d-13,y+h-54,12,34,.90);
+    col(g,0x6fb6c1,d+3,y+h-54,9,34,.87);
+    col(g,0x264b67,d-1,y+h-54,3,51);
+    col(g,0xffe4a1,d+11,y+h-27,4,4);
+    col(g,0x4c6b73,d-29,y+h-5,58,6);
+    col(g,0xd9e4db,d-25,y+h-4,50,2,.80);
+    // Bespoke roofs, each fundamentally different: glass atrium, pavilion,
+    // service hub, warm creative studio.
+    if(index===0){
+      // Headquarters: deep blue steel lattice and striking central glass atrium.
+      for(let k=0;k<5;k++){
+        const xx=x+27+k*(w-54)/4;
+        col(g,0x16374c,xx,y+17,7,roofH-28,.90);
+        col(g,0x6cb5c4,xx+1,y+19,2,roofH-34,.85);
+      }
+      tBox(g,x+w*.26,y+35,w*.48,roofH-62,0x5eaabf,0x153a58);
+      for(let k=0;k<6;k++){
+        let xx=x+w*.28+k*(w*.44)/6;
+        col(g,k%2?0x80d3d9:0x4b94ae,xx,y+43,w*.44/6-3,roofH-79,.96);
+      }
+      col(g,0xeffff8,x+w*.30,y+47,w*.40,5,.45);
+      col(g,0x193e59,x+24,y+roofH-35,79,10,.90);
+      for(let i=0;i<3;i++) col(g,0xd9eadd,x+34+i*21,y+roofH-34,14,7,.85);
+    }else if(index===1){
+      // Meeting Studio: pale ceramic stepped roof and long glazed skylights.
+      col(g,0xc8e4df,x+25,y+25,w-50,roofH-52);
+      col(g,0x709eae,x+36,y+34,w-72,roofH-72);
+      for(let k=0;k<4;k++){
+        let yy=y+39+k*(roofH-80)/3;
+        col(g,0x477e9b,x+48,yy,w-96,11,.96);
+        col(g,0x9fe1e2,x+49,yy+2,w-98,3,.78);
+      }
+      for(let i=0;i<4;i++){
+        col(g,0xf1eade,x+25+i*(w-50)/4,y+16,8,roofH-25,.77);
+      }
+      col(g,0x4a8193,x+w/2-44,y+22,88,7);
+      col(g,0xd9e7e1,x+w/2-29,y+23,58,3,.94);
+    }else if(index===2){
+      // Help Desk: graphite service roof, three cooling cells and code panels.
+      for(let i=0;i<5;i++){
+        const xx=x+23+i*(w-46)/5;
+        col(g,0x182e40,xx,y+17,8,roofH-28,.88);
+        col(g,0x7395a0,xx+1,y+19,2,roofH-32,.56);
+      }
+      for(let i=0;i<3;i++){
+        const xx=x+75+i*(w-150)/2;
+        tBox(g,xx-37,y+36,74,62,0x496d7b,0x142f43);
+        ellipse(g,0x183c50,xx,y+67,42,42,1);
+        ellipse(g,0x93c4be,xx,y+67,27,27,.92);
+        col(g,0x28536c,xx-4,y+52,8,30);
+        col(g,0x28536c,xx-15,y+63,30,8);
+      }
+      for(let i=0;i<4;i++) col(g,0x8ce9cb,x+29+i*22,y+roofH-27,12,4,.82);
+    }else{
+      // Mail & Projects: timber-and-green roof with solar bands and mail icon.
+      for(let i=0;i<4;i++){
+        const xx=x+29+i*(w-58)/4;
+        col(g,0x234b56,xx,y+23,43,roofH-47);
+        for(let k=0;k<4;k++) col(g,0x5d9eb3,xx+5,y+29+k*19,33,13,.95);
+      }
+      col(g,0xd4d0af,x+w*.36,y+33,w*.27,58,.92);
+      col(g,0x2e6c75,x+w*.36+8,y+43,w*.27-16,34);
+      col(g,0xeff4d8,x+w*.36+10,y+45,w*.27-20,5);
+      col(g,0xc6d9cf,x+w*.46,y+65,w*.08,4);
+      for(let k=0;k<7;k++) col(g,0x90b397,x+20+k*55,y+roofH-21,24,4,.76);
+    }
+    // Carefully drawn entrance awnings, small planted accents outside walls.
+    col(g,q.shade,d-34,y+h-76,68,10);
+    col(g,q.hi,d-31,y+h-74,62,5);
+    col(g,0xfaf5dd,d-22,y+h-70,44,2,.68);
+    if(index===3){col(g,0xc4a17e,d+48,y+h-63,38,43);col(g,0xe7cba1,d+52,y+h-53,30,3);}
+    techFutureBuilding(g,b,index);
+  }
+  function techNexus(g){
+    const x=27.5*T,y=9.7*T;
+    // Four concentric mosaic rings; the tower rises within the square plaza.
+    ellipse(g,0x2b6578,x+3,y+18,194,80,.20);
+    col(g,0x578a95,x-79,y+5,158,38);
+    col(g,0xd5dbd1,x-72,y+10,144,25);
+    for(let k=0;k<7;k++){
+      let xx=x-67+k*21;
+      col(g,k%2?0xa5cac6:0x7fb2b9,xx,y+13,15,5,.86);
+    }
+    col(g,0x376f81,x-50,y-3,100,34);
+    col(g,0x9ed1c5,x-45,y+1,90,21);
+    col(g,0x25516a,x-33,y-108,66,116);
+    col(g,0x397e95,x-25,y-102,50,110);
+    col(g,0x79c7d0,x-15,y-98,19,100,.93);
+    col(g,0xb4f0de,x-13,y-97,6,86,.76);
+    col(g,0x1c4d6e,x+11,y-91,11,87);
+    for(let k=0;k<5;k++){
+      const yy=y-87+k*19;
+      col(g,0xd3f4ea,x-20,yy,38,4,.82);
+      col(g,0x2b768e,x-26,yy+5,51,4,.62);
+    }
+    // Faceted, teal beacon at the top; no strobe or full-screen flash.
+    g.fillStyle(0x28556e,1).fillTriangle(x-27,y-112,x,y-154,x+27,y-112);
+    g.fillStyle(0x7ed4cb,1).fillTriangle(x-20,y-115,x,y-145,x,y-111);
+    g.fillStyle(0xa9ead9,1).fillTriangle(x,y-145,x+20,y-115,x,y-111);
+    col(g,0xf7e4a2,x-3,y-150,6,9,.93);
+    // Physical progress indicator housing: LED status is driven by quest saves.
+    for(let k=0;k<3;k++){
+      let xx=x-32+k*27;
+      col(g,0x23445f,xx-8,y+23,18,11);
+      col(g,0x627986,xx-5,y+25,12,6,.9);
+    }
+    // V19 sculpted architectural fins, roof lights, tiled inlay and glass rails.
+    for(const side of [-1,1]){
+      const edge=x+side*43;
+      col(g,0x2b6477,edge-5,y-47,10,49);
+      col(g,0x7caeb6,edge-3,y-43,6,40);
+      col(g,0x9be8df,edge-1,y-39,2,26,.72);
+      for(let k=0;k<5;k++)col(g,0xc2ddd1,edge+side*7,y-39+k*10,10,3,.75);
+      col(g,0x2e586d,edge-13,y+5,26,5);
+      ellipse(g,0xace9d9,edge,y-50,13,8,.86);
+    }
+    for(let k=0;k<8;k++){
+      const xx=x-69+k*20;
+      col(g,k%2?0x86b9b5:0xabcac5,xx,y+15,15,4,.68);
+      col(g,0xe4f0e3,xx+2,y+16,6,1,.60);
+    }
+    techFutureNexus(g);
+  }
+  function techGarden(g){
+    const x=27.5*T,y=27.7*T;
+    ellipse(g,0x2c5b5b,x,y+12,295,130,.16);
+    col(g,0x67998a,x-131,y-59,262,110);
+    col(g,0xb5c5aa,x-123,y-53,246,98);
+    col(g,0x42765e,x-113,y-46,226,84);
+    col(g,0x75b18c,x-99,y-35,198,60);
+    // Cross-axis paved walk retains the central traversal.
+    col(g,0xc9d5cd,x-18,y-53,36,104);
+    col(g,0xdbe2d9,x-12,y-51,24,100);
+    col(g,0xb1c5b7,x-123,y-6,246,22);
+    col(g,0xe4e2ce,x-121,y-1,242,12);
+    for(let side of [-1,1]){
+      tPlanter(g,x+side*68-44,y-34,88);
+      tBench(g,x+side*81-26,y+16);
+    }
+    for(let k=0;k<16;k++){
+      let a=k*Math.PI*2/16;
+      let xx=x+Math.cos(a)*100, yy=y+Math.sin(a)*33;
+      ellipse(g,k%3===0?0xedc5ae:k%3===1?0xc7d9a9:0xc1c7e8,xx,yy,7,6,.92);
+    }
+    col(g,0x578c83,x-18,y-18,36,36,.95);
+    col(g,0xb2d5c6,x-12,y-12,24,24,.94);
+    col(g,0x6a9dab,x-7,y-7,14,14,.9);
+    col(g,0xe8f3d8,x-3,y-4,6,4,.77);
+    // V19: concentric fountain paving, pixel water jets, wood-and-steel benches.
+    for(const rr of [64,49,34]){
+      g.lineStyle(2,rr===64?0x3b756d:0xd1e6d9,.66);
+      g.strokeEllipse(x,y,rr*2,rr*.65);
+    }
+    for(const off of [-18,0,18]){
+      col(g,0xeff6df,x+off-1,y-30+(Math.abs(off)/3),3,8,.8);
+      ellipse(g,0xb8efea,x+off,y-32+(Math.abs(off)/3),7,4,.85);
+    }
+    for(const dx of [-115,115]){
+      col(g,0x315f63,x+dx-9,y+35,18,4);
+      col(g,0xd6cfaa,x+dx-12,y+29,24,6);
+      col(g,0x466c6d,x+dx-10,y+25,3,11);
+      col(g,0x466c6d,x+dx+8,y+25,3,11);
+    }
+    techFutureGarden(g);
+  }
+  function techGround(g,a){
+    const ww=W*T,hh=H*T,R=rnd(521802);
+    col(g,0x478a91,0,0,ww,hh);
+    // Authored grass patches: clustered pixels, not a dense random spray.
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const xx=x*T,yy=y*T;
+      col(g,(x*3+y*7)%11<5?0x79c5ac:0x378e8b,xx,yy,T,T,.25);
+      if((x*7+y*13)%7===0){
+        col(g,0x4e927e,xx+7,yy+11,6,2,.42);
+        col(g,0xb8d8b5,xx+17,yy+24,9,3,.55);
+      }
+    }
+    for(let k=0;k<420;k++){
+      const x=R()*ww,y=R()*hh;
+      if((x>5*T&&x<51*T)&&(y>4*T&&y<31*T))continue;
+      col(g,k%3?0x427f72:0xe6d69c,x,y,3+R()*4,2+R()*3,.25);
+    }
+    // Raised walkways of the original 56x34 traversal graph remain visible.
+    col(g,0x487f82,0,15.4*T,ww,4.2*T);
+    col(g,0x649fae,0,15.6*T,ww,3.8*T);
+    col(g,0x9dc8c7,0,15.9*T,ww,3.3*T);
+    col(g,0x4c878c,25.7*T,0,4.8*T,hh);
+    col(g,0x649aa8,25.9*T,0,4.4*T,hh);
+    col(g,0xa4ccc8,26.1*T,0,4*T,hh);
+    // Main plaza plus four building forecourts.
+    const pavements=[[21,11.6,14,12.3],[6,12,15,3],[35,12,15,3],[6,20.6,15,3.4],[35,20.6,15,3.4]];
+    for(const [x,y,w,h] of pavements){
+      col(g,0x639c98,x*T,y*T,w*T,h*T);
+      col(g,0x9cc7c6,x*T+7,y*T+7,w*T-14,h*T-14);
+      for(let ty=Math.ceil(y);ty<y+h;ty++)for(let tx=Math.ceil(x);tx<x+w;tx++){
+        const xx=tx*T,yy=ty*T;
+        if(xx<(x*T+7)||yy<(y*T+7)||xx>(x+w)*T-28||yy>(y+h)*T-28)continue;
+        tLine(g,0x90b9b2,xx+2,yy+30,xx+29,yy+30,1,.31);
+        tLine(g,0xffffff,xx+3,yy+3,xx+24,yy+3,1,.20);
+        if((tx+ty)%3===0)col(g,0x85aaa8,xx+7,yy+8,5,3,.22);
+      }
+    }
+    // Discrete curb and stepping-stone rhythm along the main road.
+    for(let x=0;x<W;x++){
+      let xx=x*T;
+      col(g,0x78a9a9,xx+2,15.5*T,26,3,.65);
+      col(g,0xf9f4df,xx+8,19.3*T,16,2,.72);
+      if(x%3===0)col(g,0xffffff,xx+12,17.3*T,12,3,.28);
+    }
+    for(let y=1;y<H-1;y++){
+      if(y>=16&&y<=19)continue;
+      col(g,0xffffff,26.12*T,y*T+13,3,12,.28);
+      col(g,0x619995,30*T-1,y*T+16,3,11,.32);
+    }
+    // Embedded circuit motif: the engraving belongs to the ground, not a blocking prop.
+    for(let sign of [-1,1]){
+      let xx=27.5*T+sign*138;
+      tLine(g,0x72b7ae,xx,13.1*T,xx,15.1*T,3,.6);
+      tLine(g,0x72b7ae,xx,13.1*T,xx-sign*45,13.1*T,3,.6);
+      ellipse(g,0xc4ead7,xx-sign*45,13.1*T,11,11,.76);
+      tLine(g,0x72b7ae,xx,21.2*T,xx,23.5*T,3,.6);
+      ellipse(g,0xd2ece0,xx,23.4*T,10,10,.68);
+    }
+    techFutureGround(g);
+    // Non-blocking perimeter landscaping and roof-side paths.
+    for(const [x,y,v] of [[2,3,0],[53,3,1],[2,29,2],[53,30,1],[3,10,3],[53,11,2],[3,23,1],[52,24,3]]){
+      tTree(g,x*T,y*T,v);
+    }
+    for(const [x,y,w] of [[6,13.8,108],[14,13.8,96],[36,13.8,98],[45,13.8,90],[6,22.5,105],[14,22.5,94],[36,22.5,95],[45,22.5,104]]){
+      tPlanter(g,x*T,y*T,w);
+    }
+    for(const [x,y] of [[20.4,12.2],[34.5,12.2],[20,22.7],[34.6,22.7],[23.1,14.8],[32,14.8]])tLamp(g,x*T,y*T);
+    for(const [x,y] of [[7,12.4],[38,12.4],[9,22],[38,22]])tBench(g,x*T,y*T);
+    // Small authored green pockets fill the perimeter without blocking paths.
+    for(const [x,y,k] of [[3.5,7,0],[52.3,7.2,1],[3.5,25.7,2],[52.3,26.1,3]]){
+      tPocketGarden(g,x*T,y*T,k);
+    }
+    // Two quiet pedestrian crossings visually connect the office courts.
+    for(const bx of [19.1,35.1]){
+      for(let k=0;k<4;k++){
+        const xx=(bx+k*.42)*T;
+        col(g,0xf9f2df,xx,16.35*T,10,2.45*T,.56);
+        col(g,0xaacac7,xx+1,16.38*T,2,2.39*T,.31);
+      }
+    }
+    a.buildings.forEach((b,i)=>techBuilding(g,b,i));
+    techNexus(g);
+    techGarden(g);
+    // Contextual platforms behind each teacher, without interactive blockers.
+    function workPad(x,y,kind){
+      const xx=x*T,yy=y*T;
+      col(g,0x476e73,xx-42,yy-12,84,44,.82);
+      col(g,0xbdd8cc,xx-39,yy-9,78,38,.96);
+      for(let i=0;i<3;i++)col(g,0x80aaa7,xx-31+i*22,yy+18,16,3,.7);
+      if(kind==='meeting'){
+        col(g,0x2c5971,xx-29,yy-7,58,18);
+        col(g,0xe1cb8c,xx-23,yy-3,46,4,.91);
+        for(let i=0;i<3;i++)col(g,0xa6e4d9,xx-18+i*16,yy+3,10,4,.8);
+      }else if(kind==='issue'){
+        col(g,0x2a4d65,xx-29,yy-8,58,21);
+        for(let i=0;i<3;i++)col(g,[0xe5ac87,0xe8d898,0x93dcc2][i],xx-23+i*17,yy-1,11,6,.91);
+      }else{
+        col(g,0x284f5e,xx-27,yy-9,54,20);
+        col(g,0xe5e6d6,xx-20,yy-5,40,12);
+        col(g,0x78b5b7,xx-15,yy,29,2);
+      }
+    }
+    workPad(22.2,12.7,'meeting');
+    workPad(33,12.7,'issue');
+    workPad(32,22.7,'mail');
+    // Company gateway and wayfinder at the east border, staying off warp tiles.
+    col(g,0x325f72,51.3*T,13.5*T,90,16);
+    col(g,0x97cdbd,51.4*T,13.58*T,84,5,.92);
+    tLine(g,0xe2e5ca,51.5*T,13.95*T,51.5*T,15*T,2,.84);
+  }
+
+  /* V21 ROYAL CAPITAL: self-contained graphics, neither reuse nor recolor other maps. */
+  const RC={ivory:0xf1dfbb,gold:0xdab766,burgundy:0x813e50,blue:0x405f7d,
+    stone:0xc1ad90,ink:0x56465a,deep:0x29374d,green:0x567052,water:0x739bb5};
+  const rRect=(g,c,x,y,w,h,a=1)=>{if(w>0&&h>0){g.fillStyle(c,a);g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}};
+  const rOval=(g,c,x,y,w,h,a=1)=>{g.fillStyle(c,a);g.fillEllipse(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+  const rLine=(g,c,ax,ay,bx,by,w=2,a=1)=>{g.lineStyle(w,c,a);g.lineBetween(ax,ay,bx,by);};
+  function royalFlower(g,x,y,i=0){
+    rRect(g,0x456348,x-1,y-3,2,9);const c=[0xe9a3b1,0xf2d590,0xb3a8d6,0xf8ece1][i%4];
+    rOval(g,c,x,y-5,8,5,.95);rRect(g,0xffe6a8,x-1,y-6,2,2);
+  }
+  function royalHedge(g,x,y,w,h=12){
+    rRect(g,0x334e40,x+3,y+4,w-6,h,0.4);rRect(g,0x405d43,x,y,w,h);
+    rRect(g,0x73966b,x+2,y+1,w-5,Math.max(3,h/2));
+    for(let a=5;a<w-5;a+=11)rRect(g,0xa6bc83,x+a,y+2,5,2,.73);
+  }
+  function royalTree(g,x,y,scale=1){
+    const c=(v)=>v*scale;
+    rOval(g,0x423b32,x+4,y+10,c(35),c(15),.25);
+    rRect(g,0x675644,x-4*scale,y-c(22),c(8),c(35));
+    rRect(g,0x9a795c,x-3*scale,y-c(21),c(2),c(29),.7);
+    rOval(g,0x334f43,x,y-c(39),c(33),c(64));
+    rOval(g,0x5e7e5a,x-c(4),y-c(43),c(26),c(55));
+    rOval(g,0x86a377,x-c(8),y-c(53),c(10),c(22),.85);
+    for(let j=0;j<4;j++)rRect(g,0xc6d4a5,x-c(9)+j*c(5),y-c(53)+j*c(8),c(4),c(3),.6);
+  }
+  function royalBollard(g,x,y){
+    rOval(g,0x4a474c,x,y+9,15,7,.23);rRect(g,0x554d58,x-3,y-11,6,22);
+    rRect(g,0xe8c988,x-5,y-17,10,8);rRect(g,0xfff6cc,x-3,y-16,6,4,.87);
+    rRect(g,0x3c3544,x-5,y-20,10,3);rRect(g,0xd7ae68,x-4,y-10,8,2);
+  }
+  function royalFlag(g,x,y,alt=false){
+    rRect(g,0x6c6e76,x,y-51,3,53);rOval(g,0xf6dd97,x+1,y-53,7,7);
+    rRect(g,alt?0x476a80:0x8d3b54,x+3,y-47,25,16);
+    rRect(g,alt?0x98b4bd:0xf6db91,x+8,y-41,11,4);
+    rRect(g,0xd6ac65,x+3,y-47,3,16);
+  }
+  function royalBench(g,x,y,flip=0){
+    const dir=flip?-1:1;
+    rOval(g,0x4a423d,x,y+8,44,10,.18);
+    rRect(g,0x6e543f,x-18,y-1,36,7);
+    rRect(g,0xc9a16e,x-16,y-3,32,3,.96);
+    rRect(g,0x5b4738,x-16*dir,y-12,4,16);
+    rRect(g,0x5b4738,x+12*dir,y-12,4,16);
+    rRect(g,0x6a4d40,x-16,y-15,32,4,.95);
+    rRect(g,0xcba97a,x-14,y-17,28,2,.82);
+  }
+  function royalPlanter(g,x,y,mode=0){
+    rOval(g,0x453a34,x,y+8,40,12,.17);
+    rRect(g,0x7d6552,x-16,y-6,32,15);
+    rRect(g,0xe6d4b6,x-14,y-5,28,9);
+    rRect(g,0xc0a27e,x-14,y+3,28,3,.86);
+    for(let k=0;k<4;k++){
+      const px=x-10+k*7,py=y-8-(k%2)*2;
+      rOval(g,mode%2?0x4e754c:0x5a824f,px,py,11,10,.96);
+      if(k!==1)rOval(g,[0xf0c49a,0xd8a1b7,0xcfd5a2,0xf5e3aa][(k+mode)%4],px+(k%2?1:-1),py-4,5,4,.85);
+    }
+  }
+  function royalCanopy(g,x,y,mode=0){
+    const aw=54,roof=mode%2?0x7a4154:0x46627a;
+    rOval(g,0x362d31,x,y+18,74,12,.18);
+    for(const dx of [-21,21]){rRect(g,0x7a644e,x+dx-2,y-6,4,28);rRect(g,0xe8dbc5,x+dx-1,y-5,2,22,.65);}
+    g.fillStyle(roof,1).fillTriangle(x-aw/2,y-4,x,y-23,x+aw/2,y-4);
+    g.fillStyle(mode%2?0xb57a85:0x87a4b9,1).fillTriangle(x-aw/2+8,y-7,x,y-18,x+aw/2-8,y-7);
+    rRect(g,0xe6cf99,x-aw/2-2,y-3,aw+4,5);
+    rRect(g,0x85684e,x-18,y+2,36,9);
+    for(let i=0;i<3;i++)rRect(g,[0xe8d3a7,0xc9e1d6,0xd9b8aa][(i+mode)%3],x-13+i*10,y+4,7,5,.94);
+  }
+  function royalMemorial(g,x,y){
+    rOval(g,0x413b39,x,y+15,64,14,.2);
+    rRect(g,0x8b7a68,x-22,y+1,44,15);
+    rRect(g,0xe8dac1,x-18,y+3,36,10);
+    rRect(g,0xbda17d,x-12,y-23,24,27);
+    rRect(g,0xf5ead6,x-9,y-21,18,21);
+    rOval(g,0xead8b2,x,y-28,34,10);
+    rRect(g,0x8d3f54,x-3,y-18,6,13);
+    rRect(g,0xffe8a5,x-1,y-15,2,8,.92);
+  }
+  function royalRuinCluster(g,x,y){
+    rOval(g,0x4b4037,x+4,y+10,70,15,.17);
+    for(const [dx,dy,w,h,c] of [[-20,-6,18,13,0xcdbca1],[-2,-10,22,17,0xb5a88e],[22,-4,15,12,0xdccdb3]]){
+      rRect(g,0x817568,x+dx,y+dy,w,h);
+      rRect(g,c,x+dx+2,y+dy+2,w-4,h-4,.93);
+      rRect(g,0xf4eee0,x+dx+3,y+dy+3,w-8,2,.4);
+    }
+    for(let i=0;i<5;i++)rOval(g,i%2?0x5f8453:0x73956a,x-24+i*13,y-8+(i%2?0:2),10,8,.9);
+  }
+
+  function royalParterre(g,x,y,w,h,flip=0){
+    // Formal parterre rather than a flat grass rectangle: carved borders,
+    // clipped hedges, mirrored scrollwork and controlled color accents.
+    rRect(g,0x8d816b,x-6,y-5,w+12,h+10,.72);
+    rRect(g,0xe4d6b8,x-3,y-3,w+6,h+6);
+    rRect(g,0x496c4b,x+5,y+5,w-10,h-10);
+    rRect(g,0x75936a,x+10,y+10,w-20,h-20);
+    royalHedge(g,x+4,y+3,w-8,9);
+    royalHedge(g,x+4,y+h-12,w-8,9);
+    const cx=x+w/2,cy=y+h/2;
+    rOval(g,0x3b5d42,cx,cy,Math.min(w*.77,150),Math.min(h*.7,90));
+    rOval(g,0xb2c19a,cx,cy,Math.min(w*.65,125),Math.min(h*.6,68));
+    rOval(g,0x53744e,cx,cy,Math.min(w*.50,99),Math.min(h*.51,49));
+    rOval(g,0xd8c59a,cx,cy,Math.min(w*.23,43),Math.min(h*.31,25));
+    rLine(g,0xc6ce9d,x+12,cy,x+w-12,cy,4,.7);
+    // Two mirrored ribbon beds, never spilling onto adjacent roads.
+    for(const side of [-1,1]){
+      const xx=cx+side*w*.28;
+      rOval(g,0x436c48,xx,cy,Math.min(w*.17,38),Math.min(h*.39,35));
+      rOval(g,0xe0ceac,xx,cy,Math.min(w*.07,18),Math.min(h*.17,17));
+      for(let j=0;j<6;j++){
+        const py=y+14+j*(h-28)/5;
+        royalFlower(g,xx+(side*5),py,(j+flip+(side>0?1:0))%4);
+      }
+    }
+    // Accent flowers on the formal outer border only.
+    for(let j=0;j<9;j++){
+      const px=x+17+j*(w-34)/8;
+      royalFlower(g,px,y+15,flip+j);
+      royalFlower(g,px,y+h-16,flip+j+2);
+    }
+  }
+
+  function royalRoadNetwork(g,routes){
+    const drawing=(border)=>{
+      for(const {path,width} of routes){
+        const size=width+(border?9:0),color=border?0x9c876b:0xe6d2af;
+        for(let i=1;i<path.length;i++){
+          const a=path[i-1],b=path[i];
+          rLine(g,color,a[0],a[1],b[0],b[1],size);
+        }
+        // Round the joints and termini to prevent broken joins on diagonals.
+        for(const pt of path)rOval(g,color,pt[0],pt[1],size,size);
+      }
+    };
+    drawing(true);
+    drawing(false);
+    // Cobble joints are intentionally small, offset and low-contrast.
+    // There are no thick centre-lines crossing junctions or sharp end caps.
+    for(const {path,width} of routes){
+      for(let i=1;i<path.length;i++){
+        const a=path[i-1],b=path[i],d=Math.hypot(b[0]-a[0],b[1]-a[1]);
+        const n=Math.max(1,Math.floor(d/36));
+        for(let j=1;j<n;j++){
+          const q=j/n,x=a[0]+(b[0]-a[0])*q,y=a[1]+(b[1]-a[1])*q;
+          rRect(g,0x9f886d,x-4,y-2,8,2,.13);
+        }
+      }
+    }
+  }
+  function royalRoad(g,path,width){royalRoadNetwork(g,[{path,width}]);}
+
+  // V27.2: paths are authored as a connected topological street graph.
+  // Separate branches never run through the occupied house footprint.
+  function v27DoorRoutes(a){
+    const t=(x,y)=>[x*T,y*T];
+    const specs=[
+      {name:'CROWN PALACE',width:57,p:[[44.5,19],[44.5,25.8]]},
+      {name:'GRAND OPERA',width:36,p:[[16.5,36],[16.5,36.75],[26.6,36.75],[30,39.8]]},
+      {name:'ROYAL ACADEMY',width:36,p:[[71.5,36],[71.5,36.75],[61.4,36.75],[58,39.8]]},
+      {name:'GALLERY OF DYNASTIES',width:37,p:[[71.5,54],[71.5,54.8],[62,54.8],[62,42],[58.2,40.1]]},
+      {name:'HOUSE OF AURELIA',width:34,p:[[15.5,17],[15.5,17.9],[24.6,17.9],[24.6,24.4],[26.3,26.1]]},
+      {name:'HOUSE OF VALMONT',width:34,p:[[72.5,17],[72.5,17.9],[63.4,17.9],[63.4,24.4],[61.7,26.1]]},
+      {name:'HOUSE OF SERAPHINE',width:35,p:[[15.5,53],[15.5,54.8],[25,54.8]]},
+      {name:'HOUSE OF CORVEN',width:35,p:[[29.5,54],[29.5,54.8],[25,54.8]]}
+    ];
+    // Single shared lane for the two southwest houses; no parallel stray
+    // outlines and no illegal path across the fortified gate tower.
+    specs.push({name:'ROYAL SOUTHWEST LANE',width:39,
+      p:[[25,54.8],[25,42.4],[30,40.1]]});
+    return specs.map(entry=>{
+      const b=a.buildings.find(v=>v.name===entry.name);
+      if(b){entry.p[0]=[b.door+.5,b.y+b.h];}
+      return {name:entry.name,path:entry.p.map(v=>t(...v)),width:entry.width};
+    });
+  }
+  function v27DoorAprons(g,a){
+    // Same physical threshold as the E-key interaction. Two very shallow
+    // steps stop at the doorstep and do not close the walking lane.
+    for(const b of a.buildings){
+      const cx=(b.door+.5)*T,y=(b.y+b.h)*T;
+      rRect(g,0xc7ac87,cx-25,y-1,50,3,.72);
+      rRect(g,0xf6e8ce,cx-22,y-1,44,2,.94);
+    }
+  }
+
+  function royalFountain(g,cx,cy){
+    // Multi-tier marble fountain scaled for an imperial ceremonial court.
+    rOval(g,0x3a3b45,cx+7,cy+24,248,117,.28);
+    rOval(g,0x8f8179,cx,cy+8,244,143);
+    rOval(g,0xf8ebd2,cx,cy+3,234,132);
+    rOval(g,0xa99072,cx,cy-1,219,117);
+    rOval(g,0x315a74,cx,cy-4,210,107);
+    rOval(g,0x5791a1,cx-6,cy-14,188,84);
+    rOval(g,0x8cc4c5,cx-15,cy-19,123,38,.6);
+    for(let j=0;j<16;j++){
+      const angle=j*Math.PI*2/16;
+      const px=cx+Math.cos(angle)*112,py=cy+Math.sin(angle)*57;
+      rRect(g,0xe8d2a9,px-5,py-3,10,6);
+      rRect(g,0xf8e7c5,px-5,py-3,7,2);
+    }
+    // Pedestal and second basin: layered elevations and sculpted edging.
+    rOval(g,0x394e5d,cx,cy-16,102,48);
+    rOval(g,0xebd6aa,cx,cy-22,105,50);
+    rOval(g,0x6396a0,cx,cy-25,83,35);
+    rRect(g,0xc2a57c,cx-14,cy-78,28,55);
+    rRect(g,0xf6e3bb,cx-8,cy-86,16,63);
+    rOval(g,0xf4dfb8,cx,cy-86,49,21);
+    rOval(g,0x81c4c8,cx,cy-89,28,10);
+    rRect(g,0xe8d5ab,cx-6,cy-118,12,31);
+    rOval(g,0xf7eccf,cx,cy-122,30,13);
+    rOval(g,0xb7eded,cx,cy-128,10,12,.86);
+    // Four small natural water spouts, no neon-like glow.
+    for(const [dx,dy] of [[-63,-9],[63,-9],[-35,21],[35,21]]){
+      rOval(g,0xb6e4e3,cx+dx,cy+dy,7,12,.78);
+      rRect(g,0xd4f4e9,cx+dx-2,cy+dy-13,4,14,.57);
+    }
+  }
+
+  // V26 · Bespoke architectural reconstruction. Independent building masses,
+  // shared stonecutting vocabulary only. All geometry stays inside prior footprints.
+  const V26={ivory:0xf1e5cf,lit:0xfff2db,stone:0xcbb695,edge:0x92795d,
+    copper:0x6d857c,slate:0x405770,burgundy:0x743b50,glass:0x6d94a1,
+    ink:0x344251,shadow:0x383b46,gold:0xc8a56e};
+  function v26Shadow(g,x,y,w,h){
+    // Only the ground-contact shadow: never surround a bespoke silhouette with
+    // a solid, rectangular underlay. The previous backplate caused the dark
+    // square artifacts seen beside the conservatory and turret.
+    rOval(g,0x493e39,x+w/2+6,y+h+3,w-18,19,.20);
+    rRect(g,0x8b795f,x+16,y+h-5,w-32,4,.20);
+  }
+  function v26Stone(g,x,y,w,h,kind=0){
+    const colors=[0xeadac0,0xe2d2b8,0xd0d0c8,0xe4d9c5,0xf0dac5];
+    const c=colors[kind]||colors[0];
+    rRect(g,0x9c8772,x,y,w,h);
+    rRect(g,c,x+5,y+4,w-10,h-7);
+    rRect(g,0xffffff,x+7,y+5,w-14,3,.2);
+    for(let j=1;j<4;j++){
+      const yy=y+10+j*(h-26)/4;
+      rRect(g,0x775d53,x+8,yy,w-16,2,.12);
+      for(let k=0;k<7;k++){
+        const xx=x+12+k*(w-24)/7+(j%2)*8;
+        rRect(g,0x8f7b63,xx,yy-10,2,10,.095);
+      }
+    }
+    rRect(g,0xf8e9d4,x+8,y+6,4,h-14,.38);
+    rRect(g,0x7c6559,x+w-11,y+6,4,h-14,.23);
+  }
+  function v26Mansard(g,x,y,w,h,shade=V26.slate,dormers=3){
+    // Multi-layer stepped mansard with visible upper crown and lower eaves.
+    rRect(g,0x293847,x+6,y+14,w-12,h-4);
+    rRect(g,shade,x+14,y+5,w-28,h-12);
+    rRect(g,0x9bb0aa,x+22,y+8,w-44,3,.38);
+    rRect(g,0x213348,x+3,y+h-21,w-6,13,.48);
+    for(let t=0;t<3;t++)rRect(g,0x243649,x+13,y+18+t*13,w-26,2,.20);
+    for(let j=0;j<dormers;j++){
+      const xx=x+w*(j+1)/(dormers+1);
+      v26Dormer(g,xx,y+18,shade,Math.min(1.12,w/(dormers*80)));
+    }
+    v24Cornice(g,x+3,y+h-5,w-6,0xceae78);
+  }
+  function v26Dormer(g,cx,y,roof=V26.slate,s=1){
+    const q=(n)=>Math.round(n*s);
+    rRect(g,0x8d795d,cx-q(15),y+q(3),q(30),q(29));
+    rRect(g,0xf5e6c9,cx-q(12),y+q(5),q(24),q(24));
+    rRect(g,0x314c61,cx-q(8),y+q(10),q(16),q(18));
+    rRect(g,0x91b1b2,cx-q(6),y+q(12),q(5),q(14),.8);
+    rRect(g,0xd7e1d5,cx+q(2),y+q(12),q(2),q(12),.38);
+    g.fillStyle(0x28384c,1).fillTriangle(cx-q(20),y+q(7),cx,y-q(12),cx+q(20),y+q(7));
+    g.fillStyle(roof,1).fillTriangle(cx-q(17),y+q(5),cx,y-q(9),cx+q(17),y+q(5));
+    rRect(g,0xf8e5be,cx-q(17),y+q(5),q(34),q(3));
+  }
+  function v26HighWindow(g,x,y,variant=0,s=1,balcony=false){
+    const k=(n)=>n*s,w=k(20),h=k(38),glass=[0x65859c,0x678b8f,0x8d7085,0x62798f][variant%4];
+    rRect(g,0x99846b,x-k(6),y-k(9),w+k(12),h+k(16));
+    rRect(g,0xfcf0d9,x-k(4),y-k(7),w+k(8),h+k(11));
+    rRect(g,0x344b60,x,y+9*s,w,h-9*s);
+    rOval(g,0x344b60,x+w/2,y+8*s,w,17*s);
+    rRect(g,glass,x+k(2),y+k(11),w-k(4),h-k(12));
+    rRect(g,0xcbe2df,x+k(4),y+k(13),k(3),h-k(19),.60);
+    rRect(g,0x152e43,x+w/2,y+k(10),k(2),h-k(10));
+    rRect(g,0x183247,x,y+k(23),w,k(2),.8);
+    rRect(g,0xe8caa0,x-k(7),y+h-k(1),w+k(14),k(5));
+    rRect(g,0x9c7c5b,x-k(8),y+h+k(3),w+k(16),k(3));
+    if(balcony){
+      rRect(g,0x9b805f,x-k(10),y+h+k(5),w+k(20),k(9));
+      for(let j=0;j<5;j++)rRect(g,0xd8b77f,x-k(6)+j*k(8),y+h+k(11),k(3),k(15));
+      rRect(g,0xf2d79c,x-k(12),y+h+k(24),w+k(24),k(4));
+    }
+  }
+  function v26Windows(g,x,y,w,count,kind=0,s=1,balcony=false){
+    for(let j=0;j<count;j++){
+      const cx=x+(j+.5)*w/count;
+      v26HighWindow(g,cx-10*s,y,kind+((j===0||j===count-1)?1:0),s,balcony&&(j%3===1));
+    }
+  }
+  function v26Portico(g,x,y,w,h,columns=4){
+    // Open arcade: columns carry the upper entablature, not an applied pattern.
+    rRect(g,0x977b60,x,y+5,w,h);
+    rRect(g,0xf1e3c8,x+5,y+5,w-10,h-10);
+    for(let j=0;j<columns;j++){
+      const xx=x+10+j*(w-20)/(columns-1);
+      royalColumn(g,xx,y+16,h-21);
+    }
+    v24Cornice(g,x-4,y,w+8,0xe0ba7d);
+    rRect(g,0x927253,x-4,y+h-4,w+8,9);
+    rRect(g,0xdcbf91,x-5,y+h+3,w+10,4);
+  }
+  function v26GrandDoor(g,b,yExtra=0,arch=0){
+    const bottom=(b.y+b.h)*T+yExtra,cx=(b.door+.5)*T;
+    const width=arch?61:52,height=arch?79:67;
+    rOval(g,0x383541,cx+3,bottom+6,100,25,.2);
+    rRect(g,0x8b725b,cx-width/2-9,bottom-height-11,width+18,height+16);
+    rRect(g,0xf5e5c9,cx-width/2-5,bottom-height-10,width+10,height+10);
+    rRect(g,0x344054,cx-width/2,bottom-height+9,width,height-9);
+    rOval(g,0x384c5c,cx,bottom-height+9,width,36);
+    rRect(g,0x714b56,cx-width/2+4,bottom-height+18,width-8,height-18);
+    rRect(g,0xd3ac77,cx-2,bottom-height+20,4,height-20);
+    for(let j=0;j<3;j++){
+      rRect(g,0x4d3844,cx-width/2+6,bottom-height+27+j*12,width-12,4,.5);
+      rRect(g,0xe4c68d,cx-width/2+10,bottom-height+29+j*12,width-20,2,.55);
+    }
+    rOval(g,0xf4d99a,cx+11,bottom-24,5,5);
+    for(let i=0;i<3;i++){
+      const step=10+i*9;
+      rRect(g,0x947b66,cx-width/2-step,bottom+i*5,width+2*step,8);
+      rRect(g,0xf6e8cf,cx-width/2-step,bottom+i*5,width+2*step,3);
+    }
+  }
+  function v26Tower(g,x,y,w,h,roof=V26.slate,round=false){
+    rRect(g,0x86796a,x+6,y+22,w-12,h-14);
+    rRect(g,round?0xa9afb2:0xeee0c8,x+10,y+20,w-20,h-22);
+    if(round){
+      rOval(g,0xc7c9c6,x+w/2,y+h/2,w-9,h*.9,.43);
+      rOval(g,0x445566,x+w/2,y+58,w*.70,28);
+    }
+    rRect(g,0x5c6980,x-4,y+8,w+8,34);
+    rRect(g,roof,x+1,y+4,w-2,31);
+    g.fillStyle(roof,1).fillTriangle(x-8,y+8,x+w/2,y-23,x+w+8,y+8);
+    rRect(g,0xe8c58e,x-6,y+34,w+12,5);
+    v26HighWindow(g,x+w/2-10,y+67,round?3:0,.9);
+    rRect(g,0x89725d,x+3,y+h-10,w-6,8);
+  }
+  function v26Relief(g,x,y,w,c=0xd1ab71){
+    rRect(g,0x6f6355,x-6,y+8,w+12,7,.65);
+    rRect(g,c,x-8,y,w+16,8);
+    rRect(g,0xffecc9,x-6,y+1,w+12,2,.7);
+    for(let i=0;i<Math.floor(w/20);i++)rRect(g,0xf1d7a8,x+8+i*20,y+9,8,5,.76);
+  }
+  function v26HeraldicClock(g,cx,cy){
+    rOval(g,0xa9844c,cx,cy,57,57);
+    rOval(g,0xf2e5cb,cx,cy-1,48,48);
+    rOval(g,0x526270,cx,cy-1,40,40);
+    for(let k=0;k<12;k++){
+      const t=k*Math.PI/6;
+      rRect(g,0xf3e2bb,cx+Math.sin(t)*16-1,cy-1-Math.cos(t)*16,2,3);
+    }
+    rLine(g,0xffe1a1,cx,cy-1,cx+6,cy-12,2);
+    rLine(g,0xffe1a1,cx,cy-1,cx-10,cy-6,2);
+  }
+  function v26Facade(g,b){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,mid=x+w/2,base=y+h;
+    v26Shadow(g,x,y,w,h);
+    if(b.name==='CROWN PALACE'){
+      // Crown Palace: coherent central corps-de-logis, lower long wings, terminal pavilions.
+      v26Stone(g,x+14,y+104,w-28,h-106,0);
+      const wingW=285;
+      for(const [sx,side] of [[x+15,-1],[x+w-15-wingW,1]]){
+        v26Stone(g,sx,y+121,wingW,h-126,0);
+        v26Mansard(g,sx-6,y+45,wingW+12,80,0x3e526b,4);
+        v26Relief(g,sx+10,y+209,wingW-20);
+        v26Windows(g,sx+12,y+231,wingW-24,5,0,.87,false);
+        v26Windows(g,sx+12,y+286,wingW-24,5,0,.93,true);
+        v26Portico(g,sx+15,y+351,wingW-30,50,6);
+        v26Tower(g,sx+(side<0?-6:wingW-96),y+34,100,155,0x44566a);
+      }
+      // Shallow central projecting block is genuinely in front of the wings.
+      v26Stone(g,mid-219,y+104,438,h-107,0);
+      v26Mansard(g,mid-230,y+34,460,90,0x354d68,7);
+      // Cupola: drum, dome, top lantern.
+      rRect(g,0xbfa584,mid-74,y+8,148,65);
+      rRect(g,0xf2e3c8,mid-62,y+15,124,54);
+      for(let z=-2;z<=2;z++)v26HighWindow(g,mid+z*23-8,y+26,0,.55);
+      rOval(g,0x304b65,mid,y+5,168,105);
+      rOval(g,0x6e899b,mid-10,y-17,110,55);
+      rRect(g,0xe0bd81,mid-9,y-77,18,37);
+      rOval(g,0xf5d48e,mid,y-80,17,13);
+      v24Gable(g,mid,y+118,240,0x526782);
+      v26Windows(g,mid-201,y+158,402,7,0,1.05,false);
+      v26Relief(g,mid-213,y+224,426,0xe0bd85);
+      v26Windows(g,mid-199,y+243,398,7,0,1.01,true);
+      v26Portico(g,mid-190,y+321,380,74,8);
+      v24Heraldry(g,mid,y+147,0xe5c486);
+      // The door must remain exactly aligned with the existing portal.
+      v26GrandDoor(g,b,0,1);
+      for(const sx of [mid-182,mid+182])v24Statue(g,sx,base-6);
+      return;
+    }
+    if(b.name==='GRAND OPERA'){
+      // Opera: convex foyer, burgundy monumental roof and wings around a stage axis.
+      v26Stone(g,x+17,y+91,w-34,h-94,4);
+      for(const sx of [x+15,x+w-116]){
+        v26Stone(g,sx,y+108,101,h-115,0);
+        v26Mansard(g,sx-7,y+44,115,67,0x743e51,2);
+        v26Windows(g,sx+8,y+162,85,2,2,.95,true);
+        v26Windows(g,sx+8,y+224,85,2,2,.88,false);
+      }
+      v26Mansard(g,mid-171,y+37,342,82,0x754151,5);
+      rOval(g,0x604454,mid,y+83,194,124);
+      rOval(g,0xa36b73,mid,y+75,163,97);
+      rOval(g,0xe7bea1,mid,y+71,121,62);
+      v24Gable(g,mid,y+135,196,0x7c3e53);
+      v26Stone(g,mid-168,y+149,336,h-152,4);
+      v26Windows(g,mid-154,y+181,308,5,2,1.02,true);
+      v26Relief(g,mid-172,y+248,344,0xe6bf87);
+      v26Portico(g,mid-150,y+261,300,72,7);
+      v24Heraldry(g,mid,y+153,0xe5bf7e);
+      v26GrandDoor(g,b,0,1);
+      v24Statue(g,x+47,base-17);v24Statue(g,x+w-47,base-17);
+      return;
+    }
+    if(b.name==='ROYAL ACADEMY'){
+      // Academy: glazed archival roof, square turrets and central clock bay.
+      v26Stone(g,x+17,y+91,w-34,h-93,0);
+      v26Mansard(g,x+25,y+39,w-50,72,0x496e69,6);
+      for(const xx of [x+11,x+w-116]){
+        v26Tower(g,xx,y+34,106,166,0x446a67);
+        v26Relief(g,xx+7,y+188,92,0xcaaa75);
+        v26HighWindow(g,xx+38,y+224,1,.9,true);
+      }
+      v26Stone(g,mid-150,y+108,300,h-113,0);
+      v24Gable(g,mid,y+125,210,0x4c736d);
+      v26HeraldicClock(g,mid,y+89);
+      v26Windows(g,mid-143,y+169,286,5,1,.97,false);
+      v26Relief(g,mid-143,y+225,286,0xbca577);
+      v26Windows(g,mid-143,y+243,286,5,1,.92,true);
+      v26Portico(g,mid-111,y+283,222,62,5);
+      v26GrandDoor(g,b);
+      return;
+    }
+    if(b.name==='GALLERY OF DYNASTIES'){
+      // Neoclassical museum: skylight roof and a single legible giant order.
+      v26Stone(g,x+13,y+88,w-26,h-91,0);
+      v26Mansard(g,x+19,y+32,w-38,70,0x526779,1);
+      for(let k=0;k<6;k++){
+        const sx=x+65+k*(w-130)/5;
+        rRect(g,0x243e55,sx-17,y+51,34,23);
+        rRect(g,0x9db9bb,sx-13,y+53,26,19,.84);
+        rRect(g,0xe0e8d9,sx-11,y+55,9,16,.62);
+      }
+      v24Gable(g,mid,y+122,278,0x4c6071);
+      v24Heraldry(g,mid,y+110,0xd9ba8d);
+      v26Relief(g,x+19,y+166,w-38,0xe5c58e);
+      v26Windows(g,x+28,y+180,w-56,7,0,1.0,false);
+      v26Portico(g,x+24,y+248,w-48,81,9);
+      for(const sx of [x+53,x+w-53])v24Statue(g,sx,base-23);
+      v26GrandDoor(g,b,0,1);
+      return;
+    }
+    if(b.name==='HOUSE OF AURELIA'){
+      // Rococo manor: lateral rose salons, central curved projection, balcony.
+      v26Stone(g,x+11,y+87,w-22,h-91,4);
+      for(const sx of [x+9,x+w-109]){
+        v26Stone(g,sx,y+82,100,h-90,4);
+        v26Mansard(g,sx-4,y+26,108,65,0x7b4055,2);
+        v26HighWindow(g,sx+37,y+149,2,1.02,true);
+        rRect(g,0xe2bc96,sx+12,y+204,75,8);
+      }
+      v26Mansard(g,mid-143,y+37,286,73,0x7f4054,4);
+      v26Windows(g,mid-136,y+127,272,5,2,.95,true);
+      rOval(g,0xa17b7e,mid,y+224,190,38);
+      rOval(g,0xe8c69f,mid,y+220,164,26);
+      v24Heraldry(g,mid,y+102,0xdfbc83);
+      v26GrandDoor(g,b);
+      return;
+    }
+    if(b.name==='HOUSE OF VALMONT'){
+      // French classical estate with two true roof towers and disciplined stone bays.
+      v26Stone(g,x+17,y+94,w-34,h-97,2);
+      v26Mansard(g,x+48,y+45,w-96,75,0x354d65,5);
+      v26Tower(g,x+10,y+35,102,153,0x374d65);
+      v26Tower(g,x+w-112,y+35,102,153,0x374d65);
+      v26Windows(g,x+121,y+153,w-242,4,3,1.04,true);
+      v26Relief(g,x+108,y+222,w-216,0xc3ac80);
+      v26Windows(g,x+121,y+238,w-242,4,3,.82,false);
+      v24Heraldry(g,mid,y+126,0xc6b28b);
+      v26GrandDoor(g,b);
+      return;
+    }
+    if(b.name==='HOUSE OF SERAPHINE'){
+      // V27.3: a genuine attached conservatory, not a full-height glass rectangle.
+      // Both wings share the plinth and eave datum; the garden room is lower than
+      // the mansion and its canopy is supported by two stone corner piers.
+      const mainW=Math.floor(w*.64), joinX=x+mainW-7;
+      const gx=joinX,gw=x+w-10-gx, plinthY=y+h-37;
+      v26Stone(g,x+10,y+86,mainW+8,h-91,4);
+      v26Mansard(g,x+6,y+34,mainW+16,69,0x8e6852,4);
+      v26Windows(g,x+23,y+142,mainW-30,4,1,.96,true);
+      v26Relief(g,x+18,y+204,mainW-14,0xccad86);
+
+      // Roof gutters and the stone connection belong to both facades.
+      rRect(g,0x8b785e,gx-8,y+111,19,h-118);
+      rRect(g,0xf5e6ce,gx-4,y+116,11,h-126);
+      // Foundation: solid stone masonry below the conservatory glazing.
+      rRect(g,0x917c67,gx-3,plinthY,gw+6,36);
+      rRect(g,0xe8d9bf,gx+1,plinthY+3,gw-2,28);
+      rRect(g,0xfbebd1,gx+5,plinthY+5,gw-12,3,.7);
+      // Greenhouse glazing has a wall face, not an opaque rectangle covering
+      // the original building. Vertical piers make the side volume structural.
+      const glassTop=y+139,glassBottom=plinthY;
+      rRect(g,0x3e635e,gx-1,glassTop-4,gw+2,glassBottom-glassTop+5);
+      rRect(g,0xbcd3bd,gx+8,glassTop+3,gw-16,glassBottom-glassTop-10);
+      for(let j=0;j<4;j++){
+        const sx=gx+12+j*(gw-28)/3;
+        rRect(g,0xe5f2dc,sx,glassTop+6,(gw-28)/3*.35,glassBottom-glassTop-14,.21);
+      }
+      for(const yy of [glassTop+52,glassTop+105]){
+        if(yy>glassBottom-14)continue;
+        rRect(g,0x486e67,gx+6,yy,gw-12,6);
+        rRect(g,0xe8e5cf,gx+8,yy+1,gw-16,2,.82);
+      }
+      const bays=4;
+      for(let j=0;j<=bays;j++){
+        const px=gx+7+j*(gw-14)/bays;
+        rRect(g,0x52756d,px-2,glassTop,5,glassBottom-glassTop);
+        rRect(g,0xe2e9d9,px-1,glassTop,2,glassBottom-glassTop-4,.85);
+      }
+      // Roof: glazed pitched canopy, crisp copper ridge and continuous eaves;
+      // its ridge is lower than the main mansard roof and neither triangle
+      // projects into the neighbouring estate or the street.
+      const eavesY=glassTop+1,apexY=y+90,midG=gx+gw/2;
+      g.fillStyle(0x3e635e,1).fillTriangle(gx-6,eavesY,midG,apexY-8,gx+gw+6,eavesY);
+      g.fillStyle(0x7fada1,1).fillTriangle(gx+4,eavesY-4,midG,apexY+3,gx+gw-4,eavesY-4);
+      g.fillStyle(0xbfd6c4,.9).fillTriangle(gx+17,eavesY-8,midG,apexY+14,midG-15,eavesY-8);
+      g.fillStyle(0xdce3cc,.30).fillTriangle(midG+12,apexY+16,midG+20,apexY+22,gx+gw-22,eavesY-6);
+      rLine(g,0x456a65,gx-7,eavesY,midG,apexY-9,6);
+      rLine(g,0x456a65,midG,apexY-9,gx+gw+7,eavesY,6);
+      rLine(g,0xe2e7d0,gx-4,eavesY-1,midG,apexY-5,2,.78);
+      rLine(g,0xe2e7d0,midG,apexY-5,gx+gw+4,eavesY-1,2,.78);
+      rRect(g,0x48675e,gx-7,eavesY-1,gw+14,9);
+      rRect(g,0xd5d3b8,gx-6,eavesY+1,gw+12,3);
+      // Stone posts close the wall-to-greenhouse seam and the exposed end.
+      for(const px of [gx-6,gx+gw-4]){
+        rRect(g,0xa99980,px,glassTop-1,10,glassBottom-glassTop+7);
+        rRect(g,0xf0e4cc,px+2,glassTop+3,6,glassBottom-glassTop-4);
+        rRect(g,0xc4a783,px-2,glassBottom-1,14,8);
+      }
+      rRect(g,0xb09a79,gx-7,y+h-8,gw+14,7);
+      rRect(g,0xf1dfbf,gx-5,y+h-8,gw+10,2);
+      v24Heraldry(g,x+mainW*.46,y+112,0xdfc28e);
+      v26GrandDoor(g,b);
+      return;
+    }
+    // V27.3 Corven: narrower western townhouse with a deliberate setback from
+    // the sovereign gate. Unlike V27.2, its turret cannot penetrate gate masonry.
+    v26Stone(g,x+12,y+91,w-27,h-95,2);
+    v26Mansard(g,x+8,y+59,w-16,74,0x515b6a,3);
+    // An asymmetric cross-gable defines the manor entrance independently of
+    // the turret; the facade stays within [x, x+w] with a small roof overhang.
+    const hallCx=x+w*.43;
+    g.fillStyle(0x364655,1).fillTriangle(hallCx-101,y+90,hallCx,y+2,hallCx+101,y+90);
+    g.fillStyle(0xb6b9b7,1).fillTriangle(hallCx-81,y+87,hallCx,y+18,hallCx+81,y+87);
+    rRect(g,0xf1e8d5,hallCx-39,y+87,78,12);
+    rRect(g,0x987e61,hallCx-40,y+98,80,5);
+    for(const rowY of [y+147,y+218])v26Windows(g,x+17,rowY,w-151,3,3,.82,false);
+    // Turret is tangent to the right bay and has its own footing and cornice.
+    const tx=x+w-99;
+    v26Tower(g,tx,y+26,90,229,0x505b6a,true);
+    rRect(g,0x988779,tx+4,base-8,84,7);
+    rRect(g,0xe0d0b9,tx+8,base-8,76,2);
+    v24Heraldry(g,hallCx,y+129,0xc9b48f);
+    v26GrandDoor(g,b);
+  }
+
+  function v26GroundFinishing(g,a){
+    // Controlled, district-aware cobbles: the single repeated 32px square is gone.
+    const R=rnd(260026),townW=a.w*T,townH=a.h*T;
+    // Low-contrast stone seams form groups, never a mechanical checker grid.
+    for(let k=0;k<440;k++){
+      const xx=144+R()*(townW-288), yy=145+R()*(townH-290);
+      const ix=Math.floor(xx/T),iy=Math.floor(yy/T);
+      if(a.buildings.some(b=>ix>b.x-1&&ix<b.x+b.w+1&&iy>b.y-1&&iy<b.y+b.h+1))continue;
+      if(Math.abs(ix-44)<3||Math.hypot((ix-44)/12,(iy-32)/8)<1.0)continue;
+      const span=10+Math.floor(R()*41),shade=R()>.62?0xf7e6c7:0x917c63;
+      rRect(g,shade,xx,yy,span,2,.075+R()*.09);
+      if(k%3===0)rRect(g,0x756952,xx+span-3,yy-6,2,6,.08);
+    }
+    // Palace garden axis: ornamental radial paving stops short of collision zones.
+    for(let i=0;i<17;i++){
+      const x=(35.2+i*1.05)*T,y=23.2*T;
+      rRect(g,0xa88e6e,x,y,20,3,.19);
+      rRect(g,0xffffff,x+2,y+1,9,1,.14);
+    }
+    // Entry-court cobbles: short staggered courses, visually subordinate to buildings.
+    for(let row=0;row<7;row++)for(let k=0;k<10;k++){
+      const xx=(37.7+k*1.34+(row%2)*.39)*T,yy=(49+row*.89)*T;
+      if(Math.abs(xx-44*T)<48)continue;
+      rRect(g,0x9b8266,xx,yy,29,2,.22);
+    }
+    // Sculpted round tree beds are away from the center, door tiles and garden paths.
+    for(const [tx,ty] of [[6.3,25],[81.7,25],[6.5,48.7],[81.8,48.7]]){
+      rOval(g,0x8b8069,tx*T,ty*T,78,39,.5);
+      rOval(g,0xe5d4b0,tx*T,ty*T-4,70,29,.9);
+      rOval(g,0x496749,tx*T,ty*T-6,58,22);
+      royalTree(g,tx*T,ty*T-.3*T,.82);
+    }
+  }
+
+  // V26: keep the tested 88×60 royal capital footprint and active quest geometry.
+  function royalGround(g,a){
+    const W2=a.w*T,H2=a.h*T,ct=(x,y)=>[x*T,y*T];
+    // Warm stone is the quiet background; architecture supplies visual complexity.
+    // Broad continuous masonry replaces the 5280 repeated tile squares.
+    rRect(g,0xbca789,0,0,W2,H2);
+    const royalRandom=rnd(26013);
+    for(let i=0;i<440;i++){
+      const px=royalRandom()*W2,py=royalRandom()*H2;
+      const shade=i%5===0?0xf2dfbb:i%3===0?0xa9977a:0xd6c4a3;
+      rRect(g,shade,px,py,35+royalRandom()*145,12+royalRandom()*70,.07+royalRandom()*.09);
+    }
+    const rw=4*T;
+    // Deep enclosing river. Bridges and quays are later drawn over water.
+    for(const [x,y,w,h] of [[0,0,W2,rw],[0,H2-rw,W2,rw],[0,0,rw,H2],[W2-rw,0,rw,H2]]){
+      rRect(g,0x395c70,x,y,w,h);
+      rRect(g,0x4f8192,x+5,y+5,w-10,h-10,.9);
+      for(let i=0;i<Math.floor((w*h)/(32*600));i++){
+        const px=x+12+((i*173+37)%(Math.max(14,w-24)));
+        const py=y+10+((i*113+29)%(Math.max(13,h-20)));
+        rRect(g,0x90c1c1,px,py,25+(i%4)*9,2,.13);
+      }
+    }
+    // Retaining walls and a shadowed inner embankment.
+    for(const yy of [rw-8,H2-rw]){
+      rRect(g,0x344950,rw-6,yy+4,W2-2*rw+12,10,.38);
+      rRect(g,0x867a70,rw-6,yy,W2-2*rw+12,8);
+      rRect(g,0xdcc9a7,rw-6,yy,W2-2*rw+12,3);
+    }
+    for(const xx of [rw-8,W2-rw]){
+      rRect(g,0x344950,xx+4,rw-8,10,H2-2*rw+16,.3);
+      rRect(g,0x91816f,xx,rw-8,8,H2-2*rw+16);
+      rRect(g,0xe1cdb0,xx,rw-8,3,H2-2*rw+16);
+    }
+    // Three broad stone bridges (the south one is the main ceremonial approach).
+    const bridgeH=(x,y,w,h)=>{
+      rRect(g,0x443a39,x-4,y+5,w+8,h+6,.34);
+      rRect(g,0x9f8668,x-6,y-6,w+12,h+12);
+      rRect(g,0xe1cead,x,y,w,h);
+      for(let j=9;j<w-7;j+=29)rRect(g,0xc5ae89,x+j,y+6,3,h-12,.42);
+      rRect(g,0xf7e4c2,x-6,y-7,w+12,7);
+      rRect(g,0x765f53,x-6,y+h,w+12,8);
+    };
+    bridgeH(40*T,H2-rw,8*T,rw+6);
+    bridgeH(0,29*T,rw+7,5*T);
+    bridgeH(W2-rw-7,29*T,rw+7,5*T);
+    // Upper terrace has a bespoke masonry base and a much clearer silhouette.
+    rRect(g,0x9d8769,26*T,5.0*T,36*T,15*T);
+    rRect(g,0xd6c2a2,26*T,5*T,36*T,14.6*T);
+    rRect(g,0x92795f,26*T,19.25*T,36*T,10);
+    for(let j=0;j<6;j++)rRect(g,j%2?0xf6e8c7:0xbdaa86,26*T,19.25*T+j*2,36*T,2,.8);
+    // Continuous network: draw every outline, then every paved core.
+    // Round joints include all branches, so streets connect without dark seams.
+    const front=[],back=[];
+    for(let i=0;i<=44;i++){
+      const a=Math.PI-(i/44)*Math.PI;
+      front.push(ct(44+22*Math.cos(a),32+10*Math.sin(a)));
+    }
+    for(let i=0;i<=28;i++){
+      const a=Math.PI-(i/28)*Math.PI;
+      back.push(ct(44+23.8*Math.cos(a),26-5.8*Math.sin(a)));
+    }
+    royalRoadNetwork(g,[
+      {path:[ct(44.5,60),ct(44.5,54),ct(44.5,47),ct(44.5,40.5),ct(44.5,33),ct(44.5,25),ct(44.5,19.5)],width:132},
+      {path:[ct(-2,31.5),ct(10,31.5),ct(21,32),ct(30,32.5)],width:69},
+      {path:[ct(58,32.5),ct(67,32),ct(78,31.5),ct(90,31.5)],width:69},
+      {path:front,width:49}, {path:back,width:38},
+      {path:[ct(20,30),ct(26,26),ct(33,21.5)],width:40},
+      {path:[ct(68,30),ct(62,26),ct(55,21.5)],width:40},
+      // Opera and Academy forecourts already merge into the crescent;
+      // a second diagonal here created pointed double-outline artefacts.
+      ...v27DoorRoutes(a)
+    ]);
+    // Court of state: oval, ceremonial paving, a readable ring around the water.
+    rOval(g,0x827361,44*T,32*T,21*T,12*T,.91);
+    rOval(g,0xf0dfbd,44*T,31.8*T,20.4*T,11.4*T);
+    rOval(g,0xcbb28a,44*T,31.8*T,17.6*T,9.0*T);
+    rOval(g,0xf7e9cf,44*T,31.8*T,16.8*T,8.2*T);
+    for(let i=0;i<32;i++){
+      const t=i*Math.PI*2/32;
+      rOval(g,0xac8f69,44*T+Math.cos(t)*9.65*T,31.8*T+Math.sin(t)*5.18*T,9,7,.55);
+    }
+    // Palace esplanade and stairs are deliberately kept free from furniture.
+    rRect(g,0xe5d4b2,35*T,20*T,18*T,5*T);
+    for(let i=0;i<7;i++){
+      rRect(g,i%2?0xfaf1db:0xcbb18a,35*T,19.4*T+i*5,18*T,3,.75);
+    }
+    // Entrance court is part of the existing axial road, not a giant
+    // square underlay that fakes a closed gate or leaves dark straight borders.
+    // Subtle longitudinal joints only within the paved axis and bridge.
+    for(const dx of [-1.55,-.62,.62,1.55]){
+      rLine(g,0xb99d7b,(44.5+dx)*T,48.7*T,(44.5+dx)*T,59.7*T,2,.16);
+    }
+    // Two large formal gardens; no random scatter or fake solid objects.
+    royalParterre(g,7.5*T,18.9*T,16*T,4.4*T,0);
+    royalParterre(g,64.5*T,18.9*T,16*T,4.4*T,1);
+    royalParterre(g,7.5*T,37.6*T,15*T,3.45*T,2);
+    royalParterre(g,65.5*T,37.6*T,15*T,3.45*T,3);
+    royalParterre(g,28*T,25.1*T,9.5*T,3.4*T,4);
+    royalParterre(g,50.5*T,25.1*T,9.5*T,3.4*T,5);
+    // Stone planting beds: a controlled number of trees read as wealth and order.
+    for(const [x,y,s] of [[5.7,13,.91],[24.5,14.2,.88],[63.5,14.2,.88],[82.3,13,.91],
+       [5.9,40.8,.86],[24.9,41.6,.86],[60.6,41.6,.86],[82.2,40.8,.86],
+       [27.0,23.1,.73],[61.0,23.1,.73],[29.2,48.3,.75],[58.8,48.3,.75]]){
+      royalTree(g,x*T,y*T,s);
+    }
+    for(const [x,y] of [[29,21],[59,21],[29,38],[59,38],[36.2,47],[51.8,47],[37,55],[51,55]])royalBollard(g,x*T,y*T);
+    // Extra civic dressing: benches, planters, canopies and memorial stones make the capital feel inhabited.
+    [[11.5,29.2,0],[17.2,29.2,1],[70.8,29.2,0],[76.5,29.2,1],[35.6,45.8,0],[52.3,45.8,1]].forEach(([x,y,f])=>royalBench(g,x*T,y*T,f));
+    [[24.7,13.7,0],[63.3,13.7,1],[24.7,41.7,2],[63.3,41.7,3],[37.3,24.8,1],[50.7,24.8,2],[41.8,54.1,0],[47.2,54.1,1]].forEach(([x,y,m])=>royalPlanter(g,x*T,y*T,m));
+    [[10.5,35.6,0],[77.5,35.6,1],[18.5,44.2,1],[69.5,44.2,0]].forEach(([x,y,m])=>royalCanopy(g,x*T,y*T,m));
+    royalMemorial(g,12.4*T,49.0*T); royalMemorial(g,76.0*T,49.0*T);
+    royalRuinCluster(g,19.8*T,50.2*T); royalRuinCluster(g,68.5*T,50.0*T);
+    // Animated royal banners are drawn independently in the live-world layer.
+    royalFountain(g,44*T,31.8*T);
+    // Roads and doorway paths have already been composited into one network.
+    // Landscape dressing never redraws their border as a stray rectangular box.
+    v26GroundFinishing(g,a);
+    // Fine-grain life after paving so it stays readable.
+    [[7.3,11.8],[81.0,11.8],[7.5,39.4],[80.8,39.4],[29.0,16.5],[58.8,16.5]].forEach(([x,y],i)=>royalPlanter(g,x*T,y*T,4+i));
+    [[13.8,33.5],[74.2,33.5],[23.0,52.0],[66.0,52.0]].forEach(([x,y],i)=>royalBench(g,x*T,y*T,i%2));
+    v27DoorAprons(g,a);
+    a.buildings.forEach(b=>v26Facade(g,b));
+    // The open arch is centred between solid support cells, matching collisions.
+    royalGate(g,44.5*T,55.5*T);
+  }
+
+  function royalWindow(g,x,y,tint=RC.blue,scale=1){
+    const w=14*scale,h=24*scale;
+    rRect(g,0x8d724f,x-3*scale,y-3*scale,w+6*scale,h+7*scale);
+    rRect(g,0xf0d29b,x-1*scale,y-1*scale,w+2*scale,h+3*scale);
+    rRect(g,tint,x,y,w,h);
+    rOval(g,tint,x+w/2,y+1*scale,w,11*scale);
+    rRect(g,0xbad4d3,x+3*scale,y+3*scale,3*scale,h-7*scale,.7);
+    rRect(g,0x2d4766,x+w/2-1*scale,y,2*scale,h);
+    rRect(g,0x90774e,x-5*scale,y+h-2*scale,w+10*scale,3*scale);
+  }
+  function royalColumn(g,x,y,h){
+    rRect(g,0x9c8a77,x+2,y+1,15,h,.6);rRect(g,0xf6e7c6,x,y,14,h);
+    rRect(g,0xc6b294,x+9,y,3,h);
+    rRect(g,0xfff2d5,x-3,y,19,5);
+    rRect(g,0xa18469,x-5,y+h-6,22,6);
+    for(let q=0;q<3;q++)rRect(g,0xdcc9a4,x+3+q*3,y+6,1,h-15);
+  }
+  function royalRoof(g,x,y,w,h,c=RC.blue){
+    rRect(g,0x252f48,x+4,y+h-1,w,13,.31);
+    rRect(g,c,x,y+6,w,h);
+    rRect(g,0x263e56,x,y+8,w,8,.7);
+    rRect(g,0x698ba1,x+6,y+9,w-12,4,.76);
+    for(let i=11;i<w-5;i+=17){rRect(g,0xb0c0bd,x+i,y+17,8,2,.55);rRect(g,0x1a364b,x+i+3,y+24,8,2,.45);}
+    rRect(g,0xe0c48d,x-4,y+h,w+8,6);
+    rRect(g,0x94744b,x-4,y+h+4,w+8,3);
+  }
+  function royalDoor(g,b,x,y,w,h){
+    const dx=(b.door+.5)*T;
+    rOval(g,0x5d5b63,dx,y+h-12,58,14,.35);
+    rRect(g,0x886c4f,dx-23,y+h-52,46,54);
+    rOval(g,0xd5b37c,dx,y+h-53,46,29);
+    rRect(g,0x493d43,dx-17,y+h-48,34,49);
+    rRect(g,0x7b5260,dx-14,y+h-45,28,44);
+    rRect(g,0xc9a568,dx-2,y+h-42,3,43);
+    for(let j=0;j<3;j++)rRect(g,0xe9c994,dx-13,y+h-31+j*9,26,2,.72);
+    rOval(g,0xffdf8e,dx+11,y+h-23,5,5);
+    rRect(g,0xefdfc3,dx-32,y+h-1,64,8);
+    rRect(g,0xbeab90,dx-38,y+h+7,76,5);
+  }
+  // V24 architectural vocabulary: mansard roofs, stone cornices, recessed arches,
+  // dormers, carved balustrades and distinctly proportioned historic façades.
+  function v24Cornice(g,x,y,w,shade=0xc4a06b){
+    rRect(g,0x7d6752,x-5,y+5,w+10,6);
+    rRect(g,shade,x-8,y,w+16,7);
+    rRect(g,0xf8e8c5,x-7,y+1,w+14,2,.9);
+    for(let xx=x+8;xx<x+w-6;xx+=18)rRect(g,0x9c7f5b,xx,y+7,6,5,.68);
+  }
+  function v24Roof(g,x,y,w,h,c=0x445d76){
+    rRect(g,0x3d3540,x+6,y+h-2,w,13,.26);
+    rRect(g,0x2c3d52,x-3,y+6,w+6,h);
+    rRect(g,c,x,y,w,h);
+    rRect(g,0xffffff,x+6,y+5,w-12,4,.10);
+    rRect(g,0x172c43,x,y+h-12,w,7,.27);
+    for(let px=x+14;px<x+w-12;px+=22){
+      rRect(g,0xc1d0ce,px,y+14,11,2,.35);
+      rRect(g,0x20374d,px+6,y+25,10,2,.35);
+    }
+    v24Cornice(g,x,y+h,w);
+  }
+  function v24Dormer(g,cx,y,c=0x465d77){
+    rRect(g,0xe9d6b5,cx-11,y+9,22,27);
+    rRect(g,0x40586f,cx-7,y+14,14,19);
+    rRect(g,0x98b7c4,cx-5,y+16,4,15,.7);
+    g.fillStyle(c,1).fillTriangle(cx-16,y+10,cx,y-6,cx+16,y+10);
+    rRect(g,0xf7e5c1,cx-13,y+10,26,3);
+  }
+  function v24Window(g,x,y,s=1,tint=0x567992,balcony=false){
+    const w=18*s,h=34*s;
+    rRect(g,0x8d7865,x-5*s,y-7*s,w+10*s,h+12*s);
+    rRect(g,0xf9e9ce,x-3*s,y-5*s,w+6*s,h+8*s);
+    rRect(g,tint,x,y,w,h);
+    rOval(g,tint,x+w/2,y+1*s,w,14*s);
+    rRect(g,0xc5e0df,x+3*s,y+4*s,3*s,h-10*s,.48);
+    rRect(g,0x2b4459,x+w*.49,y+1*s,2*s,h);
+    rRect(g,0xf5dfb6,x-7*s,y+h-3*s,w+14*s,5*s);
+    if(balcony){
+      rRect(g,0x97754f,x-9*s,y+h+3*s,w+18*s,6*s);
+      for(let i=0;i<5;i++)rRect(g,0xc7a36e,x-7*s+i*7*s,y+h+6*s,2*s,11*s);
+      rRect(g,0xe6c38d,x-8*s,y+h+14*s,w+16*s,3*s);
+    }
+  }
+  function v24Columns(g,x,y,count,gap,h){
+    for(let i=0;i<count;i++)royalColumn(g,x+i*gap,y,h);
+  }
+  function v24Gable(g,cx,y,w,roof=0x4b607a){
+    g.fillStyle(0x9b7c58,1).fillTriangle(cx-w/2-7,y+3,cx,y-42,cx+w/2+7,y+3);
+    g.fillStyle(roof,1).fillTriangle(cx-w/2,y,cx,y-36,cx+w/2,y);
+    g.fillStyle(0xe5c990,1).fillTriangle(cx-w*.26,y-3,cx,y-22,cx+w*.26,y-3);
+    rRect(g,0xf7e4be,cx-w/2-8,y+2,w+16,7);
+  }
+  function v24Statue(g,x,y){
+    rOval(g,0x292e36,x+4,y+8,31,9,.2);
+    rRect(g,0xa68d6c,x-14,y-3,28,14);
+    rRect(g,0xe8d3ab,x-11,y-8,22,9);
+    rRect(g,0xc3b8a2,x-4,y-37,8,31);
+    rRect(g,0xe6dfc6,x-7,y-29,14,15);
+    rOval(g,0xf7efd9,x,y-41,13,13);
+    rRect(g,0xdbccab,x+9,y-23,5,17);
+  }
+  function v24Heraldry(g,x,y,tint=0xd6b36e){
+    rOval(g,0x8f7456,x,y,48,34);
+    rOval(g,tint,x,y-1,43,29);
+    rRect(g,0x8d3f54,x-13,y-9,26,17);
+    for(let i=0;i<3;i++)rRect(g,0xffe4ae,x-10+i*8,y-7-(i===1?4:0),6,11);
+    rRect(g,0xffe5b0,x-13,y+6,26,3);
+  }
+  function v24Steps(g,mid,y,w=124){
+    for(let k=0;k<4;k++){
+      rRect(g,0x9d866c,mid-w/2-k*8,y+k*7,w+k*16,8);
+      rRect(g,0xf4e5c6,mid-w/2-k*8,y+k*7,w+k*16,4);
+    }
+  }
+  function royalFacade(g,b,index){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,mid=x+w/2;
+    rOval(g,0x2c2a34,mid+7,y+h+5,w+24,33,.20);
+    if(b.name==='CROWN PALACE'){
+      // Full palace composition: side pavilions, projecting centre, balconies and ceremonial steps.
+      rRect(g,0x9e8d77,x+4,y+56,w-8,h-48);
+      rRect(g,0xf7ebd7,x+12,y+59,w-24,h-59);
+      // Lateral wings and corner pavilions.
+      for(const sx of [x+2,x+w-228]){
+        rRect(g,0xe5d1ae,sx+8,y+53,218,h-51);
+        rRect(g,0xf8edd9,sx+15,y+56,204,h-61,.62);
+        v24Roof(g,sx,y+10,226,66,0x445e7a);
+        for(let j=0;j<4;j++)v24Dormer(g,sx+34+j*52,y+25,0x445d79);
+        for(let j=0;j<5;j++)v24Window(g,sx+23+j*40,y+130,1.02,0x63859c,j===1||j===3);
+        v24Cornice(g,sx+12,y+114,202,0xdab67c);
+        for(let j=0;j<4;j++)rRect(g,0xd4ba90,sx+26+j*44,y+170,28,5,.72);
+        v24Cornice(g,sx+14,y+207,198,0xcda76e);
+      }
+      // Central palace block.
+      rRect(g,0xead7b6,mid-186,y+78,372,h-73);
+      rRect(g,0xfef4e4,mid-176,y+82,352,h-86,.56);
+      v24Roof(g,mid-194,y+22,388,68,0x304b6e);
+      for(let j=0;j<7;j++)v24Dormer(g,mid-150+j*50,y+39,0x334f73);
+      v24Gable(g,mid,y+74,248,0x3f5d7e);
+      rOval(g,0x38506f,mid,y+13,96,76);
+      rOval(g,0x85a4b4,mid-8,y-3,55,28);
+      rRect(g,0xddb978,mid-35,y+39,70,10);
+      rOval(g,0xfce3a6,mid,y-24,18,16);
+      // Upper and lower window registers.
+      for(let j=0;j<6;j++)v24Window(g,mid-155+j*57,y+104,1.08,0x56788f,false);
+      for(let j=0;j<6;j++)v24Window(g,mid-160+j*58,y+153,.96,0x6a8797,true);
+      // Grand balcony.
+      rRect(g,0x9d7d59,mid-118,y+188,236,8);
+      for(let i=0;i<12;i++)rRect(g,0xd3b07a,mid-112+i*18,y+192,4,15,.88);
+      rRect(g,0xe4c38e,mid-120,y+205,240,4);
+      v24Columns(g,mid-168,y+208,9,41,94);
+      rRect(g,0xe7c892,mid-194,y+204,388,16);
+      rRect(g,0xa98962,mid-200,y+304,400,10);
+      // Side ornaments and heraldry.
+      for(const px of [mid-176,mid+176])v24Statue(g,px,y+286);
+      for(const px of [mid-118,mid+118])v24Heraldry(g,px,y+173,0xddbd82);
+      v24Heraldry(g,mid,y+177,0xe3c380);
+      royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-7,144);
+      for(const xx of [x+30,x+w-31])royalFlag(g,xx,y+h+1,xx>mid);
+      return;
+    }
+    if(b.name==='GRAND OPERA'){
+      // Opera house with rounded central hall, side stair towers and rich theatrical façade.
+      rRect(g,0xa28c79,x+5,y+66,w-10,h-61);
+      rRect(g,0xf4e2ca,x+12,y+68,w-24,h-67);
+      // Side corner blocks.
+      for(const px of [x+8,x+w-82]){
+        rRect(g,0xe6d1b0,px,y+76,74,h-77);
+        rRect(g,0xfaecd7,px+6,y+79,62,h-87,.6);
+        v24Roof(g,px-2,y+28,78,42,0x733a52);
+        v24Window(g,px+22,y+123,.98,0x8e687d,true);
+        v24Window(g,px+22,y+170,.94,0x8e687d,false);
+      }
+      v24Roof(g,x+18,y+24,w-36,54,0x763c54);
+      for(let j=0;j<5;j++)v24Dormer(g,x+53+j*(w-106)/4,y+34,0x733a52);
+      rOval(g,0x8f4c5f,mid,y+57,170,102);
+      rOval(g,0xbc6d73,mid,y+63,134,78);
+      v24Gable(g,mid,y+95,198,0x8a495b);
+      v24Cornice(g,x+20,y+142,w-40,0xddb679);
+      for(let j=0;j<7;j++)royalColumn(g,x+30+j*(w-62)/6,y+152,106);
+      for(let j=0;j<4;j++)v24Window(g,x+48+j*(w-112)/3,y+178,.98,0x946b82,true);
+      rRect(g,0x8e5b67,mid-70,y+196,140,7);
+      for(let i=0;i<7;i++)rRect(g,0xdbbf8f,mid-63+i*20,y+200,4,12,.86);
+      rRect(g,0xe6c88d,mid-72,y+212,144,4);
+      v24Heraldry(g,mid,y+131,0xe2c28b);
+      for(const px of [x+34,x+w-34])v24Statue(g,px,y+244);
+      royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-8,116);
+      return;
+    }
+    if(b.name==='ROYAL ACADEMY'){
+      // Scholarly palace with twin towers, library core and more layered frontage.
+      rRect(g,0xb6a991,x+5,y+60,w-10,h-56);
+      rRect(g,0xf4ebd8,x+12,y+60,w-24,h-61);
+      v24Roof(g,x+18,y+21,w-36,57,0x4f726d);
+      for(let j=0;j<6;j++)v24Dormer(g,x+49+j*(w-99)/5,y+31,0x416660);
+      // Twin side pavilions.
+      for(const px of [x+5,x+w-88]){
+        rRect(g,0xc7bb9e,px,y+49,83,145);
+        rRect(g,0xefe6ce,px+7,y+51,69,138);
+        v24Roof(g,px-4,y+7,91,42,0x476a65);
+        v24Window(g,px+29,y+97,1.10,0x739aa1,true);
+        v24Window(g,px+29,y+146,.96,0x739aa1,false);
+      }
+      // Central body.
+      rRect(g,0xe8ddc3,mid-119,y+88,238,h-84);
+      rRect(g,0xfdf6e8,mid-108,y+91,216,h-97,.52);
+      v24Gable(g,mid,y+73,154,0x526d69);
+      for(let j=0;j<7;j++)v24Window(g,x+104+j*(w-212)/6,y+122,1.05,0x628a95,false);
+      for(let j=0;j<6;j++)v24Window(g,x+108+j*(w-220)/5,y+167,.92,0x7196a2,true);
+      v24Columns(g,mid-114,y+217,6,44,69);
+      rRect(g,0xa28b67,mid-90,y+201,180,6);
+      for(let i=0;i<9;i++)rRect(g,0xd6b177,mid-84+i*20,y+206,4,11,.84);
+      rRect(g,0xe5c88c,mid-92,y+217,184,4);
+      v24Heraldry(g,mid,y+144,0xd7bb89);
+      // Clocks / observatory emblems.
+      for(const cx of [x+46,x+w-46]){rOval(g,0xe8d3aa,cx,y+73,26,26);rOval(g,0x5b6570,cx,y+73,16,16);rRect(g,0xffefbf,cx-1,y+63,2,9);rRect(g,0xffefbf,cx,y+73,6,2);}
+      royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-6,112);
+      return;
+    }
+    if(b.name==='GALLERY OF DYNASTIES'){
+      // Museum façade: long colonnade, skylight roof and statues framing the forecourt.
+      rRect(g,0xaa9e8d,x+3,y+63,w-6,h-60);
+      rRect(g,0xf8efdb,x+11,y+65,w-22,h-68);
+      v24Roof(g,x+13,y+22,w-26,61,0x546882);
+      for(let j=0;j<5;j++){
+        const px=x+50+j*(w-101)/4;
+        rRect(g,0x7996a2,px-14,y+31,28,26,.82);
+        rRect(g,0xcdd8ce,px-10,y+35,20,17,.56);
+      }
+      v24Gable(g,mid,y+92,190,0x4e637a);
+      rRect(g,0xe5d6b8,x+24,y+112,w-48,85);
+      rRect(g,0xfcf5e6,x+30,y+115,w-60,70,.52);
+      for(let j=0;j<6;j++)v24Window(g,x+40+j*(w-84)/5,y+135,1.03,0x6c889b,false);
+      for(let j=0;j<6;j++)royalColumn(g,x+28+j*(w-56)/5,y+208,72);
+      v24Cornice(g,x+22,y+197,w-44,0xcfab72);
+      rRect(g,0xa48560,mid-70,y+188,140,6);
+      for(let i=0;i<7;i++)rRect(g,0xd8b37a,mid-63+i*18,y+193,4,10,.84);
+      rRect(g,0xe6c88f,mid-71,y+203,142,4);
+      for(const px of [x+34,x+w-34])v24Statue(g,px,y+236);
+      v24Heraldry(g,mid,y+150,0xdfc084);
+      royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-8,112);
+      return;
+    }
+    if(b.name==='HOUSE OF AURELIA'){
+      // A refined rose manor with end bays, balcony and elegant rhythm.
+      rRect(g,0xad9684,x+5,y+47,w-10,h-41);
+      rRect(g,0xfae5cd,x+12,y+50,w-24,h-52);
+      for(const px of [x+5,x+w-69]){
+        rRect(g,0xeacdb0,px,y+66,64,112);
+        rRect(g,0xfef2e2,px+6,y+70,52,99,.55);
+        v24Roof(g,px-4,y+6,72,61,0x7d3f57);
+        v24Window(g,px+20,y+118,1.00,0x6b90a3,true);
+      }
+      v24Roof(g,x+12,y+22,w-24,65,0x793c53);
+      for(let i=0;i<4;i++)v24Dormer(g,x+58+i*(w-117)/3,y+31,0x733b52);
+      for(let i=0;i<5;i++)v24Window(g,x+38+i*(w-77)/4,y+128,1.05,0x698ea2,i===1||i===3);
+      rRect(g,0x9c7c59,mid-48,y+165,96,6);for(let i=0;i<5;i++)rRect(g,0xd5b07a,mid-42+i*18,y+170,4,11,.84);rRect(g,0xe7c58d,mid-50,y+181,100,4);
+      v24Heraldry(g,mid,y+111,0xe7bc80);
+      royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-6,74);
+      return;
+    }
+    if(b.name==='HOUSE OF VALMONT'){
+      // Cool-toned manor with towered ends, restrained nobility and a study-like character.
+      rRect(g,0x95a7a8,x+4,y+50,w-8,h-45);
+      rRect(g,0xebece3,x+12,y+53,w-24,h-54);
+      for(const px of [x+3,x+w-78]){
+        rRect(g,0xcfdcd7,px,y+39,75,154);
+        rRect(g,0xf3f4ee,px+6,y+42,63,141,.54);
+        v24Roof(g,px-4,y+3,83,46,0x324963);
+        v24Window(g,px+26,y+111,1.08,0x86b3bc,true);
+      }
+      v24Roof(g,x+8,y+18,w-16,60,0x354d6b);
+      for(let i=0;i<4;i++)v24Dormer(g,x+114+i*(w-228)/3,y+30,0x34506b);
+      for(let i=0;i<4;i++)v24Window(g,x+92+i*(w-184)/3,y+141,1.05,0x628ca6,i===1||i===2);
+      rRect(g,0x8f7960,mid-44,y+177,88,6);for(let i=0;i<5;i++)rRect(g,0xcaa879,mid-38+i*16,y+182,4,10,.82);rRect(g,0xe5c892,mid-46,y+192,92,4);
+      v24Cornice(g,x+70,y+201,w-140,0xcbab74);
+      v24Heraldry(g,mid,y+120,0xd6c390);
+      royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-6,72);
+      return;
+    }
+    if(b.name==='HOUSE OF SERAPHINE'){
+      // Estate with warm masonry and a generous conservatory wing.
+      rRect(g,0xc5b196,x+4,y+49,w-8,h-44);
+      rRect(g,0xfaead3,x+11,y+52,w-22,h-55);
+      v24Roof(g,x+4,y+22,w*.69,61,0x96674f);
+      for(let i=0;i<3;i++)v24Dormer(g,x+60+i*69,y+32,0x92654e);
+      const gx=x+w*.69-10,gw=w*.31+10;
+      rRect(g,0x748e84,gx,y+76,gw,h-88);
+      rRect(g,0xabcfbf,gx+6,y+83,gw-12,h-101,.9);
+      for(let i=0;i<5;i++)rRect(g,0xe1ead4,gx+12+i*(gw-24)/4,y+82,3,h-104);
+      g.fillStyle(0x83a393,1).fillTriangle(gx-8,y+79,gx+gw/2,y+38,gx+gw+8,y+79);
+      for(let i=0;i<4;i++)v24Window(g,x+39+i*49,y+142,1.04,0x708e98,i===1||i===2);
+      rRect(g,0xa78663,mid-42,y+176,84,6);for(let i=0;i<5;i++)rRect(g,0xd9b47d,mid-36+i*15,y+181,4,9,.82);rRect(g,0xe9ca8f,mid-44,y+190,88,4);
+      v24Heraldry(g,x+w*.37,y+117,0xe6c395);
+      royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-6,78);
+      return;
+    }
+    // Corven: austere stone manor with stepped gable, porch and round turret.
+    rRect(g,0x7b7e84,x+5,y+53,w-10,h-48);
+    rRect(g,0xcdcecb,x+12,y+56,w-24,h-59);
+    v24Roof(g,x+6,y+29,w-12,61,0x555c69);
+    for(let i=0;i<4;i++)v24Dormer(g,x+48+i*(w-96)/3,y+37,0x59606d);
+    g.fillStyle(0x70757d,1).fillTriangle(mid-100,y+58,mid,y-12,mid+100,y+58);
+    g.fillStyle(0xc0c2c1,1).fillTriangle(mid-70,y+57,mid,y+6,mid+70,y+57);
+    for(let i=0;i<4;i++)v24Window(g,x+40+i*(w-82)/3,y+150,1.04,0x718ea5,true);
+    rOval(g,0x6a6e77,x+w-47,y+102,86,82);
+    rRect(g,0xacb0b2,x+w-77,y+103,62,h-108);
+    v24Roof(g,x+w-84,y+56,76,46,0x4d5668);
+    // Entrance porch.
+    rRect(g,0xb3a592,mid-36,y+164,72,38);rRect(g,0xf0eadc,mid-30,y+168,60,28,.55);
+    v24Roof(g,mid-42,y+143,84,26,0x4f5664);
+    v24Heraldry(g,mid,y+132,0xcbb58a);
+    royalDoor(g,b,x,y,w,h);v24Steps(g,mid,y+h-6,78);
+  }
+
+  function royalGate(g,cx,cy){
+    // V39 Sovereign Gate: taller towers, flanking walls, forecourt statuary and a more ceremonial silhouette.
+    // Geometry still respects waterBarriers(): tower tiles 37..39 / 49..51,
+    // supports 41 / 47 and open walking lanes 42..46.
+    const xL=37*T,xR=49*T,top=49*T,bottom=56*T;
+    // Forecourt plinth and steps make the approach feel important without blocking the passage.
+    for(let i=0;i<4;i++){
+      rRect(g,i%2?0x9e8668:0xbda07b,39*T-i*7,56*T+3+i*6,11*T+i*14,7);
+      rRect(g,0xf3e6cf,39*T-i*7,56*T+3+i*6,11*T+i*14,3,.74);
+    }
+    for(const [sx,alt] of [[xL,false],[xR,true]]){
+      const roof=alt?0x58718a:0x435f7d;
+      rOval(g,0x55493e,sx+48,bottom+4,114,18,.23);
+      rRect(g,0x8b745b,sx-4,top+11,3*T+8,bottom-top-8);
+      rRect(g,0xf0e2ca,sx+4,top+16,3*T-8,bottom-top-20);
+      rRect(g,0xd4b189,sx+2,bottom-17,3*T-4,8);
+      rRect(g,0x8d6a52,sx+2,bottom-9,3*T-4,7);
+      // Secondary belfry tier
+      rRect(g,0xa48d70,sx+18,top-18,60,32);
+      rRect(g,0xf5e7cf,sx+23,top-14,50,24);
+      rRect(g,0xc7a677,sx+20,top-18,56,5);
+      // Main roof + crown roof
+      g.fillStyle(0x34485c,1).fillTriangle(sx-11,top+18,sx+48,top-45,sx+3*T+11,top+18);
+      g.fillStyle(roof,1).fillTriangle(sx-6,top+16,sx+48,top-34,sx+3*T+6,top+16);
+      g.fillStyle(0x2f4256,1).fillTriangle(sx+10,top-12,sx+48,top-51,sx+86,top-12);
+      g.fillStyle(alt?0x7ea0b3:0x6e8da2,1).fillTriangle(sx+18,top-12,sx+48,top-41,sx+78,top-12);
+      rRect(g,0xe2c79c,sx-7,top+16,3*T+14,6);
+      v26HighWindow(g,sx+39,top+42,alt?1:0,.9);
+      v26HighWindow(g,sx+39,top+103,alt?2:0,.88);
+      rRect(g,0x7e5d48,sx+16,top-5,16,19); rRect(g,0xead8b8,sx+19,top-2,10,12);
+      rRect(g,0x7e5d48,sx+64,top-5,16,19); rRect(g,0xead8b8,sx+67,top-2,10,12);
+      v24Heraldry(g,sx+48,top+102,0xd7b678);
+      royalFlag(g,sx+48,top-40,alt);
+      royalFlag(g,sx+18,top-10,!alt);
+      royalFlag(g,sx+78,top-10,alt);
+    }
+    // Flanking curtain walls visually widen the gate ensemble.
+    for(const [x,w] of [[33*T,4*T],[52*T,4*T]]){
+      rRect(g,0x9b8264,x,52*T+6,w,2*T-6);
+      rRect(g,0xf1e3c9,x+4,52*T+11,w-8,2*T-18);
+      for(let k=0;k<4;k++)rRect(g,0xceae7f,x+8+k*28,52*T+7,14,5,.92);
+      rRect(g,0x7d654d,x-2,56*T-4,w+4,5);
+    }
+    // Solid end supports occupy one tile each; no hidden wall in the opening.
+    for(const tile of [41,47]){
+      const x=tile*T;
+      rRect(g,0x998168,x-1,53*T-8,T+2,3*T+12);
+      rRect(g,0xefe0c7,x+4,53*T-5,T-8,3*T+4);
+      rRect(g,0xceaa77,x-6,53*T-12,T+12,10);
+      rRect(g,0x88674e,x-5,56*T-7,T+10,8);
+      rRect(g,0xf9efdb,x+10,53*T+11,12,28,.35);
+    }
+    const ax=41*T,aw=7*T;
+    rRect(g,0x8f7458,ax-2,50*T+20,aw+4,58);
+    rRect(g,0xf1e3c9,ax+5,50*T+25,aw-10,46);
+    v24Cornice(g,ax-1,50*T+11,aw+2,0xd6b77d);
+    g.fillStyle(0x405c79,1).fillTriangle(ax-8,50*T+12,cx,50*T-63,ax+aw+8,50*T+12);
+    g.fillStyle(0x7291a0,1).fillTriangle(ax+10,50*T+8,cx,50*T-46,ax+aw-10,50*T+8);
+    v24Heraldry(g,cx,50*T+45,0xe2be80);
+    // Arch remains open.
+    const archY=53*T+26,rx=3*T,ry=54;
+    const arc=(color,width,dx=0,dy=0)=>{
+      for(let j=0;j<32;j++){
+        const a=Math.PI-j*Math.PI/32,b=a-Math.PI/32;
+        rLine(g,color,cx+dx+rx*Math.cos(a),archY+dy-ry*Math.sin(a),cx+dx+rx*Math.cos(b),archY+dy-ry*Math.sin(b),width);
+      }
+    };
+    arc(0x675246,17,0,4);
+    arc(0xcaa983,14,0,1);
+    arc(0xf8e7cc,5,0,-3);
+    for(let j=1;j<11;j++){
+      const a=Math.PI-j*Math.PI/11,px=cx+rx*Math.cos(a),py=archY-ry*Math.sin(a);
+      const dx=4*Math.cos(a),dy=-4*Math.sin(a);
+      rLine(g,0x9b8063,px-dx,py-dy,px+dx,py+dy,1,.60);
+    }
+    rRect(g,0xf2dfc1,cx-7,archY-ry-7,14,7);
+    rRect(g,0xa68c6b,cx-7,archY-ry,14,2,.5);
+    // Gate lamps and statuary at the approach.
+    for(const [lx,ly] of [[39.4,54.9],[49.6,54.9]]) royalBollard(g,lx*T,ly*T);
+    v24Statue(g,38.2*T,56.0*T-8); v24Statue(g,50.8*T,56.0*T-8);
+    royalPlanter(g,36.0*T,55.4*T,2); royalPlanter(g,53.0*T,55.4*T,3);
+  }
+
+  function royalCarriage(g,x,y,mode=0){
+    const sign=mode?-1:1;
+    rOval(g,0x242831,x,y+21,112,21,.27);
+    rRect(g,0x4e3b43,x-34,y-11,62,28);
+    rRect(g,mode?0x526174:0x793f54,x-31,y-24,56,22);
+    rRect(g,0xe1bc7d,x-34,y-28,62,6);
+    rRect(g,0xf3ddb7,x-24,y-19,20,13);
+    rRect(g,0x6a8598,x-3,y-19,19,13);
+    rRect(g,0xf1d9a8,x-30,y+13,62,5);
+    for(const d of [-19,19]){
+      rOval(g,0x33333b,x+d,y+19,20,21);
+      rOval(g,0xa98f70,x+d,y+19,9,9);
+    }
+    const hx=x+52*sign;
+    rRect(g,0x94714f,hx-13,y-11,26,21);
+    rRect(g,0xb48b61,hx+sign*12-11,y-19,14,17);
+    rRect(g,0x372d30,hx+sign*11,y-27,7,13);
+    for(const dx of [-8,8])rRect(g,0x463b39,hx+dx,y+9,4,17);
+    rLine(g,0xdbc395,x+24*sign,y+1,hx-14*sign,y+1,3,.9);
+    rRect(g,0xe9c889,x-10,y-24,7,3);
+  }
+  function royalPulse(g,time,a){
+    const s=time*.001,w=a?.w||88,h=a?.h||60;
+    const fx=44*T,fy=31.8*T;
+    // Three elegant fountain ripple rings. Small, capped and cheap to render.
+    for(let k=0;k<3;k++){
+      const r=15+((time*.012+k*21)%72);
+      g.lineStyle(2,0xe5faf3,.05+.19*(1-r/90));
+      g.strokeEllipse(fx,fy-5,r*1.5,r*.55);
+    }
+    rOval(g,0xebfff0,fx,fy-64-Math.sin(s*2)*2,7,8,.8);
+    // Gate lantern breath and ceremonial gleam.
+    for(const [gx,gy] of [[39.4*T,54.9*T],[49.6*T,54.9*T],[44.5*T,50.2*T]]){
+      const rr=18+Math.sin(s*2+gx*.01)*3;
+      g.lineStyle(2,0xf9efc1,.07); g.strokeEllipse(gx,gy,rr,rr*.55);
+      rOval(g,0xfff6cf,gx,gy-18-Math.sin(s*2+gy*.01),7,6,.55);
+    }
+    // Slow perimeter water: every ripple stays inside a water band, never on stone.
+    const usableX=(w-11)*T,usableY=(h-11)*T;
+    for(let k=0;k<18;k++){
+      const ph=(time*(.013+(k%4)*.002)+k*149)%usableX;
+      const px=5*T+ph;
+      const x2=5*T+((ph+300)%usableX);
+      const alpha=.09+(Math.sin(s*1.1+k*2)+1)*.04;
+      rOval(g,0xd4eff0,px,(1.9+(k%3)*.65)*T,28+k%4*8,3,alpha);
+      rOval(g,0xa9dce0,x2,(h-2.1-(k%3)*.5)*T,33+k%3*8,3,alpha);
+    }
+    for(let k=0;k<11;k++){
+      const ph=(time*.014+k*137)%usableY;
+      const y=5*T+ph;
+      rOval(g,0xb8e0e0,(1.6+(k%3)*.7)*T,y,4,24+k%4*8,.12);
+      rOval(g,0xb8e0e0,(w-1.7-(k%3)*.65)*T,5*T+((ph+180)%usableY),4,24+k%4*8,.12);
+    }
+    // Carriages follow short stretches of the lower crescent road, never cross
+    // the formal gardens. Smooth yoyo motion avoids teleporting at route ends.
+    const sway=(Math.sin(time*.00038)+1)*.5;
+    royalCarriage(g,(30+7*sway)*T,(40.5+.8*sway)*T,Math.cos(time*.00038)<0?1:0);
+    royalCarriage(g,(58-7*sway)*T,(40.5+.8*sway)*T,Math.cos(time*.00038)>0?1:0);
+    const mins=Number(game()?.minutes??480),night=mins>1040||mins<355;
+    if(night){
+      for(const [x,y] of [[29,21],[59,21],[29,38],[59,38],[36,47],[52,47]]){
+        rOval(g,0xffd995,x*T,y*T-26,54,44,.045+(Math.sin(s*1.4+x)+1)*.012);
+      }
+    }
+    // Drifting petals and plaza birds add subtle life to the capital.
+    for(let i=0;i<8;i++){
+      const px=(33+Math.sin(time*.00042+i*1.3)*18 + i*2.1)%w, py=27+Math.cos(time*.00035+i*.7)*10;
+      rOval(g,i%2?0xf0d0d4:0xf4e5b6,px*T,py*T,7,4,.40);
+    }
+    for(let i=0;i<6;i++){
+      const bx=(16+i*9+Math.sin(s*1.2+i)*2.2)*T, by=(34+Math.cos(s*1.5+i*.8)*1.4)*T;
+      rOval(g,0x3f444b,bx,by,9,4,.45); rOval(g,0xd9ddd9,bx+1,by-1,6,2,.35);
+    }
+  }
+
+  // V26 · Live animation uses one scene-owned Graphics layer. No animated
+  // elements are baked into the 88×60 static texture; no texture generation
+  // takes place inside the per-frame drawing loop.
+  function v26Banner(g,x,y,time,blue=false,small=false){
+    const ph=time*.0016+x*.0008,wind=Math.sin(ph)*4+Math.sin(ph*.43)*2;
+    const height=small?37:58, width=small?24:43;
+    rRect(g,0x5d6066,x,y-height,3,height);
+    rOval(g,0xeacb86,x+1,y-height,7,7);
+    const by=y-height+9;
+    for(let k=0;k<4;k++){
+      const shift=Math.round(Math.sin(ph+k*.75)*3+(k/3)*wind);
+      const yy=by+k*(small?4:6);
+      rRect(g,blue?0x415b78:0x7b3d54,x+3+shift,yy,width-k*3,small?5:7);
+      rRect(g,blue?0x8eafba:0xba7e87,x+6+shift,yy+1,width-k*5-2,1,.74);
+    }
+    rRect(g,0xe2c58d,x+10+Math.round(wind*.3),by+6,12,4);
+    rRect(g,0xffe5af,x+13+Math.round(wind*.3),by+5,3,7,.86);
+  }
+  function v26Carriage(g,cx,cy,mirror,time,style=0){
+    // Both the wheels and the horse have articulated cyclic gait.
+    const dir=mirror?-1:1,phase=time*.0105+style*1.5,
+      lift=Math.abs(Math.sin(phase))*2.1,spoke=phase*.9;
+    const body=style?0x4b5e72:0x763b50,steel=0x333a43;
+    rOval(g,0x282a31,cx,cy+20,128,21,.24);
+    const bx=cx-25*dir;
+    for(const ox of [-23,23]){
+      const wx=bx+ox,wy=cy+16;
+      rOval(g,steel,wx,wy,24,24);
+      rOval(g,0xc3a075,wx,wy,16,16);
+      rOval(g,0x33363d,wx,wy,10,10);
+      for(let k=0;k<4;k++){
+        const a=spoke+k*Math.PI/2;
+        rLine(g,0xe2c28f,wx,wy,wx+Math.cos(a)*7,wy+Math.sin(a)*7,2);
+      }
+    }
+    rRect(g,0x604d48,bx-37,cy-17-lift,74,31);
+    rRect(g,body,bx-33,cy-39-lift,66,34);
+    rRect(g,0xd6b47e,bx-37,cy-40-lift,74,7);
+    for(const xx of [-21,7]){
+      rRect(g,0xe9d5b7,bx+xx,cy-30-lift,19,16);
+      rRect(g,0x70949f,bx+xx+3,cy-27-lift,13,11);
+      rRect(g,0xcce4df,bx+xx+4,cy-26-lift,4,8,.56);
+    }
+    rRect(g,0xe7c789,bx-38,cy+5-lift,76,6);
+    rRect(g,0x342d37,bx-14,cy-46-lift,30,7);
+    // Horse body, neck, mane and reins.
+    const hx=bx+71*dir,hy=cy-1;
+    rOval(g,0x8c674d,hx,hy,46,27);
+    rRect(g,0xb48a63,hx+6*dir-7,hy-22,18,25);
+    rRect(g,0xb58d69,hx+20*dir-7,hy-27,16,14);
+    rRect(g,0x46383b,hx+20*dir-6,hy-39,4,12);
+    rOval(g,0x332f35,hx+27*dir,hy-24,3,3);
+    rLine(g,0xd6b98f,bx+31*dir,cy-17,hx-14*dir,hy-12,2);
+    // Four legs with out-of-phase ankle, not static vertical rectangles.
+    for(let i=0;i<4;i++){
+      const ax=hx+([-13,-4,10,17][i])*dir;
+      const swing=Math.sin(phase+(i%2?Math.PI:0)+(i>1?Math.PI*.45:0))*6;
+      rLine(g,0x74543e,ax,hy+9,ax+swing*.65,hy+20,4);
+      rLine(g,0x403336,ax+swing*.65,hy+20,ax+swing,hy+25-(i%2)*2,3);
+    }
+    rRect(g,0xe9c691,bx-2,cy-41-lift,4,3);
+  }
+  function v26FlyingBird(g,x,y,phase){
+    const flap=Math.sin(phase)*5;
+    rRect(g,0x4f5660,x-2,y,5,3);
+    rLine(g,0xb9bdc0,x,y,x-8,y-3-flap,2,.86);
+    rLine(g,0xb9bdc0,x,y,x+8,y-3-flap,2,.86);
+  }
+  function v26Pulse(g,time,a){
+    const s=time*.001,w=a?.w||88,h=a?.h||60,TW=w*T,TH=h*T;
+    const cx=44*T,cy=31.8*T;
+    // Moving fountain sheets and cascading droplets.
+    for(let k=0;k<4;k++){
+      const r=19+((time*.017+k*22)%85),alpha=.04+.23*(1-r/110);
+      g.lineStyle(2,0xdbfff0,Math.max(.01,alpha));g.strokeEllipse(cx,cy-7,r*1.9,r*.65);
+    }
+    for(let k=0;k<8;k++){
+      const theta=k*Math.PI/4,hh=(time*.027+k*10)%51;
+      const px=cx+Math.cos(theta)*30;
+      const py=cy-73+hh;
+      rRect(g,0xd0fff5,px,py,2,5,.24+.26*(1-hh/52));
+    }
+    // Water ripples are short streaks in bands, never ellipses on pavement.
+    for(let side=0;side<4;side++)for(let i=0;i<13;i++){
+      const p=(time*(.009+(i%3)*.002)+i*233+side*47);
+      let xx,yy,dx,dy;
+      if(side<2){
+        xx=145+p%(TW-290);yy=side===0?(1.2+i%3*.77)*T:(h-1.1-i%3*.65)*T;
+        dx=11+(i%4)*6;dy=0;
+      }else{
+        xx=side===2?(1.1+i%3*.75)*T:(w-1.1-i%3*.68)*T;
+        yy=145+p%(TH-290);dx=0;dy=10+(i%3)*7;
+      }
+      rLine(g,0xc1e6e2,xx,yy,xx+dx,yy+dy,2,.12+.075*Math.sin(s+i));
+      rRect(g,0xffffff,xx,yy,side<2?5:2,side<2?1:5,.06);
+    }
+    // Banner physics, controlled stagger; flag has 4 independent cloth strips.
+    for(const [x,y,blue] of [[24,20,false],[64,20,true],[26,37,false],[62,37,true],
+      [38,49.5,false],[50,49.5,true],[35.1,20,false],[52.9,20,true]])
+      v26Banner(g,x*T,y*T,time,blue,true);
+    for(const dx of [-180,180])v26Banner(g,cx+dx,55.5*T-228,time,dx>0,false);
+    // Six different wave phases across the central palace's crown.
+    for(const [x,y] of [[28.8,18.8],[59.2,18.8],[42.1,7.5],[45.9,7.5]])
+      v26Banner(g,x*T,y*T,time,x>44,false);
+    // Two slower carriages travel on the wide lower crescent. Smooth turn at ends.
+    const phase=time*.00032,unit=(1-Math.cos(phase))/2,
+      eased=unit*unit*(3-2*unit),forward=Math.sin(phase)>=0;
+    v26Carriage(g,(30.5+6.5*eased)*T,(40.1+.7*eased)*T,!forward,time,0);
+    v26Carriage(g,(57.5-6.5*eased)*T,(40.1+.7*eased)*T,forward,time+800,1);
+    // A light flock only, fully inside the plaza and garden sky area.
+    for(let i=0;i<4;i++){
+      const tx=(38.1+i*3.7+(time*.000012*(i+1))%1.7)*T;
+      const ty=(27.1+Math.sin(s*.5+i)*.65)*T;
+      v26FlyingBird(g,tx,ty,s*3+i*2.2);
+    }
+    const mins=Number(game()?.minutes??480),night=mins>1040||mins<355;
+    if(night){
+      for(const [x,y] of [[29,21],[59,21],[29,38],[59,38],[36,47],[52,47]])
+        rOval(g,0xffd995,x*T,y*T-25,54,42,.038+(Math.sin(s*1.2+x)+1)*.011);
+    }
+  }
+
+  const v26AmbientActors = new WeakMap();
+  const V26_WALKERS=[
+    {role:'guard',name:'Royal Guard',at:[40,54],route:[[40,54],[40,55]],coat:0x4c637d},
+    {role:'guard',name:'Royal Guard',at:[48,54],route:[[48,54],[48,55]],coat:0x4c637d},
+    {role:'steward',name:'Palace Attendant',at:[39,24],route:[[39,24],[38,25],[39,25]],coat:0x75516b},
+    {role:'steward',name:'Palace Attendant',at:[50,24],route:[[50,24],[49,25],[50,25]],coat:0x75516b},
+    {role:'scholar',name:'Academy Scholar',at:[68,38],route:[[68,38],[68,39],[70,39],[68,39]],coat:0x4e736f},
+    {role:'visitor',name:'Opera Visitor',at:[17,37],route:[[17,37],[19,36],[23,36]],coat:0x884b61},
+    {role:'visitor',name:'Opera Visitor',at:[23,37],route:[[23,37],[25,37],[25,39]],coat:0x884b61},
+    {role:'noble',name:'Noble Resident',at:[35,39],route:[[35,39],[37,40],[37,41]],coat:0x78617f},
+    {role:'noble',name:'Noble Resident',at:[54,39],route:[[54,39],[51,40],[51,41]],coat:0x78617f},
+    {role:'gardener',name:'Royal Gardener',at:[25,40],route:[[25,40],[27,40],[27,41]],coat:0x537159},
+    {role:'merchant',name:'Court Merchant',at:[30,26],route:[[30,26],[28,26],[26,27],[28,27]],coat:0x936548},
+    {role:'merchant',name:'Court Merchant',at:[58,26],route:[[58,26],[60,26],[62,27],[60,27]],coat:0x936548},
+    {role:'chronicler',name:'Royal Chronicler',at:[63,40],route:[[63,40],[61,40],[59,39],[61,39]],coat:0x546681},
+    {role:'musician',name:'Court Musician',at:[28,40],route:[[28,40],[30,40],[31,39],[29,39]],coat:0x8a4f66},
+    {role:'page',name:'Palace Page',at:[44,23],route:[[44,23],[43,24],[45,24],[44,25]],coat:0x8b7558},
+    {role:'pilgrim',name:'Pilgrim Visitor',at:[44,47],route:[[44,47],[42,48],[46,48],[44,49]],coat:0x6e7757}
+  ];
+  function v26TownspersonTexture(sc,role,dir,frame){
+    const key=`lq26_people_${role}_${dir}_${frame}`;
+    if(sc.textures.exists(key))return key;
+    const g=sc.add.graphics(),paint=(color,x,y,w,h)=>g.fillStyle(color,1).fillRect(x,y,w,h);
+    const type=V26_WALKERS.find(a=>a.role===role),coat=type?.coat||0x5a6f82;
+    const skin=role==='guard'?0xe0b391:role==='gardener'?0xc58d6f:0xe3ac8a;
+    const hair=role==='noble'?0x6c5049:0x343746;
+    const gait=frame===1?3:frame===2?-3:0,side=dir==='left'||dir==='right';
+    paint(0x2e3039,7,44,19,2);
+    paint(0x353743,9+gait,39,6,6);paint(0x353743,19-gait,39,6,6);
+    paint(0x343b48,10,29,5,12);paint(0x343b48,19,29,5,12);
+    paint(coat,8,20,18,15);
+    paint(0xd7bc92,14,20,5,11);
+    paint(coat,5,21+(gait>0?2:0),4,12);paint(coat,26,21+(gait<0?2:0),4,12);
+    paint(skin,6,31,3,3);paint(skin,27,31,3,3);
+    if(role==='guard'){
+      paint(0xd6b77b,8,23,18,2);paint(0xd6b77b,16,25,2,10);
+      paint(0x344252,7,9,21,3);paint(0xcbb47f,10,5,15,5);
+    }else if(role==='noble'){
+      paint(0xe2cfb3,7,30,20,9);paint(coat,6,35,22,6);
+      paint(0xd4b98a,10,20,3,15);
+    }else if(role==='gardener'){
+      paint(0x8e7b59,8,20,17,4);paint(0xd2bf8e,9,7,17,4);
+      paint(0x697653,6,30,4,10);
+    }else if(role==='scholar'){
+      paint(0xe8d49f,7,27,7,7);paint(0x647a8a,9,28,4,4);
+    }else if(role==='visitor'){
+      paint(0xeac88d,8,20,3,11);paint(0xeac88d,23,20,3,11);
+    }
+    paint(skin,12,10,12,12);
+    if(dir==='up')paint(hair,10,7,16,12);
+    else if(side){paint(hair,11,6,15,7);paint(hair,dir==='left'?10:23,12,3,8);}
+    else{
+      paint(hair,10,6,15,7);paint(hair,10,12,3,6);paint(hair,23,12,3,6);
+      paint(0x2b2731,14,16,2,frame===3?1:2);
+      paint(0x2b2731,21,16,2,frame===3?1:2);
+    }
+    if(frame===3)paint(0xd8bba2,9,23,2,2);
+    g.generateTexture(key,32,48);g.destroy();
+    try{sc.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);}catch(_){ }
+    return key;
+  }
+  function v26AttachTownspeople(sc){
+    // Re-create ambient sprites on each visit. The Phaser scene object can be
+    // reused after switchArea() destroys its previous area objects.
+    const previous=v26AmbientActors.get(sc)||[];
+    for(const old of previous){
+      if(old.sprite?.active)old.sprite.destroy();
+      if(old.label?.active)old.label.destroy();
+    }
+    v26AmbientActors.delete(sc);
+    sc.__v26LastNPCFrame=null;
+    const actors=[];
+    for(const [i,t] of V26_WALKERS.entries()){
+      const [tx,ty]=t.at;
+      if(!inBounds(sc.area,tx,ty))continue;
+      const xy=techPos(tx,ty);
+      const sprite=sc.add.image(xy.x,xy.y,v26TownspersonTexture(sc,t.role,'down',0))
+        .setOrigin(.5,.93).setDepth(9);
+      const label=sc.add.text(xy.x,xy.y-51,t.name,{
+        fontFamily:'Georgia,serif',fontSize:'11px',color:'#f5e7c9',
+        backgroundColor:'#3c3743cc',padding:{x:5,y:2}
+      }).setOrigin(.5,1).setDepth(12).setVisible(false);
+      sc.areaObjs.push(sprite,label);
+      actors.push({t,x:xy.x,y:xy.y,sprite,label,face:'down',phase:i,route:0,
+        path:[],moving:false,nextMove:i*530});
+    }
+    v26AmbientActors.set(sc,actors);
+  }
+  function v26UpdateTownspeople(sc,time){
+    const actors=v26AmbientActors.get(sc);if(!actors||sc.switching)return;
+    const show=!sc.inside,px=sc.player?.x??0,py=sc.player?.y??0;
+    const dt=Math.min(80,Math.max(0,time-(sc.__v26LastNPCFrame??time)));
+    sc.__v26LastNPCFrame=time;
+    for(const a of actors){
+      a.sprite.setVisible(show);a.label.setVisible(show&&Math.hypot(px-a.x,py-a.y)<105);
+      if(!show)continue;
+      if(a.path.length===0&&time>=a.nextMove){
+        a.route=(a.route+1)%a.t.route.length;
+        const target=a.t.route[a.route];
+        a.path=actorPath(sc,a,target[0],target[1]);
+        a.nextMove=time+(a.t.role==='guard'?15000:3000+((a.route+3)*2700));
+      }
+      a.moving=a.path.length>0;
+      if(a.moving){
+        const next=a.path[0],dx=next.x-a.x,dy=next.y-a.y,d=Math.hypot(dx,dy),step=dt*(a.t.role==='guard'?16:24)/1000;
+        if(d<=step+.1){a.x=next.x;a.y=next.y;a.path.shift();}
+        else if(d>0){a.x+=dx/d*step;a.y+=dy/d*step;}
+        a.face=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up');
+        a.phase+=dt/165;
+      }
+      const frame=a.moving?1+(Math.floor(a.phase)%2):((Math.floor(time/2300+a.phase)%13===0)?3:0);
+      const tex=v26TownspersonTexture(sc,a.t.role,a.face,frame);
+      if(a.sprite.texture.key!==tex)a.sprite.setTexture(tex);
+      a.sprite.setPosition(a.x,a.y);
+      a.label.setPosition(a.x,a.y-52);
+    }
+  }
+
+  /* V21: Royal NPC behavior reuses ET's four-direction state machine principles.
+     One authoritative actor position is shared by render, hitbox, E and touch. */
+  const royalActors = new WeakMap();
+  let royalIntroShown=false;
+  function showRoyalIntro(sc){
+    if(royalIntroShown||!document.body||document.getElementById('lq21-royal-intro'))return;
+    royalIntroShown=true;
+    const el=document.createElement('div');el.id='lq21-royal-intro';
+    el.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:120;display:flex;align-items:flex-start;justify-content:center;padding-top:7vh;box-sizing:border-box;background:linear-gradient(180deg,rgba(27,25,39,.66),transparent 37%,transparent 78%,rgba(22,21,34,.20));color:#f6e9d1;font-family:Georgia,serif;text-align:center';
+    el.innerHTML='<div style="padding:14px 26px;background:linear-gradient(90deg,transparent,rgba(57,43,56,.9),transparent);text-shadow:0 2px 12px #1c1526"><div style="font:600 11px system-ui;letter-spacing:.28em;color:#e1c080">A JOURNEY THROUGH THE ROYAL CAPITAL</div><div style="font-size:clamp(23px,4vw,45px);font-weight:700;letter-spacing:.08em">OLD ORIARIS</div><div id="lq26-scene-title" style="font:italic 13px Georgia;color:#fff0d1">The River of Kings</div><button id="lq21-royal-skip" style="pointer-events:auto;margin-top:9px;padding:6px 14px;border:1px solid #d9be86;border-radius:7px;background:#3b344a;color:#fff2d3;cursor:pointer">Skip cinematic</button></div>';
+    document.body.appendChild(el);
+    const cam=sc?.cameras?.main,zoom0=cam?.zoom||1;
+    const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    const timers=[];let done=false;
+    const clear=()=>{
+      if(done)return;done=true;
+      timers.forEach(clearTimeout);
+      window.removeEventListener('keydown',onKey,true);
+      el.remove();
+      if(cam&&sc?.area?.id==='old-oriaris'&&sc.player?.active&&!sc.switching){
+        try{cam.pan(sc.player.x,sc.player.y,450,'Sine.easeOut',true);
+          cam.zoomTo(zoom0,450,'Sine.easeOut',true);
+          cam.startFollow(sc.player,true,.10,.10);}catch(_){ }
+      }
+    };
+    const onKey=(e)=>{if(e.key==='Escape'){e.preventDefault();clear();}};
+    window.addEventListener('keydown',onKey,true);
+    el.querySelector('#lq21-royal-skip').onclick=clear;
+    if(!cam||reduced||sc?.area?.id!=='old-oriaris'){
+      timers.push(setTimeout(clear,reduced?650:1500));return;
+    }
+    try{cam.stopFollow();}catch(_){ }
+    const shots=[
+      {x:44,y:57,z:.95,title:'I · The Royal River'},
+      {x:44,y:54,z:1.08,title:'II · The Sovereign Gate'},
+      {x:44,y:45,z:.98,title:'III · The Ceremonial Forecourt'},
+      {x:44,y:32,z:.92,title:'IV · The Grand Fountain Court'},
+      {x:17,y:37,z:.88,title:'V · The Opera Quarter'},
+      {x:70,y:37,z:.88,title:'VI · The Academy Quarter'},
+      {x:44,y:18,z:.84,title:'VII · The Crown Palace'}
+    ];
+    shots.forEach((shot,i)=>timers.push(setTimeout(()=>{
+      if(done||sc?.area?.id!=='old-oriaris'||sc.inside){clear();return;}
+      const label=el.querySelector('#lq26-scene-title');if(label)label.textContent=shot.title;
+      try{cam.pan((shot.x+.5)*T,(shot.y+.5)*T,860,'Sine.easeInOut',true);
+        cam.zoomTo(Math.min(zoom0,shot.z),860,'Sine.easeInOut',true);}catch(_){clear();}
+    },i*820+40)));
+    timers.push(setTimeout(clear,6200));
+  }
+
+  const ROYAL_SCHEDULE = {
+    hugo:[
+      {until:620,site:'palace',tile:[44,21],activity:'WORK'},
+      {until:790,site:'parade',tile:[40,25],activity:'WORK'},
+      {until:1070,site:'palace',tile:[46,22],activity:'WORK'},
+      {until:1440,site:'royal-gate',tile:[44,50],activity:'REST'}],
+    lila:[
+      {until:630,site:'academy',tile:[70,38],activity:'WORK'},
+      {until:810,site:'gallery',tile:[71,41],activity:'WORK'},
+      {until:1100,site:'academy',tile:[68,39],activity:'WORK'},
+      {until:1440,site:'garden',tile:[60,40],activity:'REST'}],
+    sami:[
+      {until:610,site:'opera',tile:[16,38],activity:'WORK'},
+      {until:780,site:'court',tile:[29,39],activity:'WORK'},
+      {until:1080,site:'opera',tile:[20,38],activity:'WORK'},
+      {until:1440,site:'garden',tile:[24,41],activity:'REST'}]
+  };
+
+  function royalTexture(sc,t,dir,frame){
+    const key=`lq21_royal_${t.id}_${dir}_${frame}`;
+    if(sc.textures.exists(key))return key;
+    const gfx=sc.add.graphics();
+    const rect=(color,x,y,w,h)=>gfx.fillStyle(color,1).fillRect(x,y,w,h);
+    const skin=t.id==='sami'?0xc99376:t.id==='lila'?0xdda983:0xe9b791;
+    const hair=t.id==='lila'?0x493a4c:t.id==='sami'?0x543b35:0x3d3b44;
+    const primary=t.id==='hugo'?0x557482:t.id==='lila'?0x6f597f:0x813e50;
+    const shadow=t.id==='hugo'?0x304455:t.id==='lila'?0x493b60:0x4b3140;
+    const gold=0xe5c88c,shirt=0xf2e6ce;
+    const side=dir==='left'||dir==='right',stride=frame===1?2:frame===2?-2:0;
+    rect(0x423d4b,7,44,19,2);
+    rect(0x3c3440,9+stride,39,6,6);rect(0x3c3440,18-stride,39,6,6);
+    rect(shadow,10,29,5,11);rect(shadow,18,29,5,11);
+    rect(primary,8,20,17,14);rect(shadow,8,31,17,3);
+    rect(primary,5,23+(stride>0?1:0),4,10);
+    rect(primary,24,23+(stride<0?1:0),4,10);
+    rect(skin,6,31,3,3);rect(skin,25,31,3,3);
+    // Elegant waistcoat, cravat, heraldic pin and cape hem.
+    rect(shirt,14,20,5,12);rect(gold,16,22,2,9);
+    rect(gold,9,20,2,9);rect(gold,22,20,2,9);
+    rect(gold,20,25,3,3);
+    if(t.id==='lila'){
+      rect(0x9d88ad,7,33,19,5);rect(0xdcc4ed,12,21,2,8);
+      rect(0xc1a8ca,5,35,22,3);
+    }else if(t.id==='sami'){
+      rect(0xab6070,7,33,19,4);
+      rect(0xf2ddb5,8,29,6,3);
+    }else{
+      rect(0xa1b6be,10,22,5,5);
+      rect(0xdcb77a,8,35,17,2);
+    }
+    rect(skin,11,9,12,12);
+    if(dir==='up'){
+      rect(hair,9,7,16,12);rect(0x2e2a36,10,7,14,4);rect(hair,11,18,12,3);
+    }else if(side){
+      rect(hair,10,6,14,7);
+      rect(hair,dir==='left'?10:21,11,3,9);
+      rect(0x2f2b33,dir==='left'?11:21,14,2,2);
+    }else{
+      rect(hair,9,6,16,7);rect(hair,9,12,3,7);rect(hair,22,12,3,7);
+      rect(0x242431,10,6,13,3);
+      const eye=frame===3?1:2;
+      rect(0x342b39,13,15,2,eye);rect(0x342b39,19,15,2,eye);
+      rect(0xcc827e,16,19,3,1);
+    }
+    if(t.id==='hugo')rect(0xd6b97f,12,5,10,3);
+    if(t.id==='sami')rect(0xd6a86d,9,6,16,2);
+    gfx.generateTexture(key,32,48);gfx.destroy();
+    try{sc.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);}catch(_){ }
+    return key;
+  }
+  function royalActor(sc,t){
+    const p=techPos(t.x,t.y);
+    const image=sc.add.image(p.x,p.y,royalTexture(sc,t,'down',0)).setOrigin(.5,.93).setDepth(10);
+    const label=sc.add.text(p.x,p.y-49,`${t.name} ✦`,{
+      fontFamily:'system-ui,Arial',fontSize:'12px',fontStyle:'bold',color:'#fff0cb',
+      backgroundColor:'#433247e8',padding:{x:6,y:3}
+    }).setOrigin(.5,1).setDepth(12);
+    const zone=sc.add.zone(p.x,p.y-14,40,54).setDepth(11).setInteractive({cursor:'pointer'});
+    const actor={t,x:p.x,y:p.y,image,label,zone,face:'down',phase:0,path:[],mode:'IDLE',site:'',lastSchedule:-1,lastWander:0};
+    zone.on('pointerdown',()=>{
+      if(canTalk(sc,t))open(t);else sc.quests?.toast?.([`Walk closer to ${t.name} to talk.`]);
+    });
+    sc.areaObjs.push(image,label,zone);
+    return actor;
+  }
+  function getRoyalAgents(sc){return sc&&royalActors.get(sc)||null;}
+  function syncRoyalIndoor(sc){
+    const agents=getRoyalAgents(sc);if(!agents)return;
+    const visible=!sc.inside;
+    for(const a of agents.values()){
+      a.image.setVisible(visible);a.label.setVisible(visible);
+      a.zone.setVisible(visible).setActive(visible);
+      if(!visible)a.path=[];
+    }
+  }
+  function updateRoyalAgents(sc,time){
+    const agents=getRoyalAgents(sc);if(!agents||sc.switching)return;
+    if(sc.inside){syncRoyalIndoor(sc);return;}
+    syncRoyalIndoor(sc);
+    const dt=Math.min(80,Math.max(0,time-(sc.__royalNpcLastTime??time)));
+    sc.__royalNpcLastTime=time;
+    const minutes=Number(sc.store?.game?.minutes??480);
+    for(const a of agents.values()){
+      const list=ROYAL_SCHEDULE[a.t.id];
+      const slot=list.find(v=>minutes<v.until)||list[list.length-1];
+      if(a.site!==slot.site||a.lastSchedule!==slot.until){
+        a.site=slot.site;a.lastSchedule=slot.until;
+        a.path=actorPath(sc,a,...slot.tile);
+      }
+      const chatting=isDialogOpen()&&activeTask?.id===a.t.id;
+      if(chatting)a.mode='TALK';
+      else if(a.path.length){
+        a.mode='WALK';const goal=a.path[0];
+        const dx=goal.x-a.x,dy=goal.y-a.y,d=Math.hypot(dx,dy),speed=44*dt/1000;
+        if(d<speed+.6){a.x=goal.x;a.y=goal.y;a.path.shift();}
+        else {a.x+=dx/d*speed;a.y+=dy/d*speed;}
+        a.face=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up';
+      }else{
+        a.mode=slot.activity;
+        if(time-a.lastWander>11000){
+          a.lastWander=time+(a.t.id.length*179);
+          const px=Math.floor(a.x/T),py=Math.floor(a.y/T);
+          const spots=[[px,py],[px+1,py],[px,py+1],[px-1,py],[px,py-1]];
+          const dest=spots[(Math.floor(time/11000)+a.t.id.length)%spots.length];
+          if(inBounds(sc.area,...dest))a.path=actorPath(sc,a,...dest);
+        }
+      }
+      if(a.mode==='WALK')a.phase+=dt/190;
+      const frame=a.mode==='WALK'?1+(Math.floor(a.phase)%2):(Math.floor(time/2700+a.t.id.length)%11===0?3:0);
+      const key=royalTexture(sc,a.t,a.face,frame);
+      if(a.image.texture.key!==key)a.image.setTexture(key);
+      a.image.setPosition(a.x,a.y);a.label.setPosition(a.x,a.y-49);
+      const name=`${a.t.name} ${state()[`old-oriaris:${a.t.id}`]?'✓':'✦'}`;
+      if(a.label.text!==name)a.label.setText(name);
+      a.zone.setPosition(a.x,a.y-14);
+    }
+  }
+
+  function building(g,b,p,id,index){
+    if(id==='tech-co'){techBuilding(g,b,index);return;}
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T;
+    ellipse(g,0x16243a,x+w/2+7,y+h-2,w+20,29,.22);
+    const roof=id==='old-oriaris'?[0x895a48,0x765146,0x895d4a,0x8a694d][index]:id==='wish-valley'?[0x8b78b8,0x6b8eac,0x9c82b6,0x83a18a][index]:id==='vocalt-greedy-land'?[0x70364f,0x74516a,0x845253,0x68425d][index]:[0x376f9e,0x5487aa,0x337494,0x365b8d][index];
+    col(g,0x4c5260,x+8,y+31,w-16,h-29,.18);
+    col(g,p.wall,x+4,y+34,w-8,h-36);
+    col(g,0xffffff,x+11,y+39,w-24,3,.24);
+    col(g,roof,x,y+9,w,31); col(g,0x23354b,x,y+8,w,4,.28);
+    col(g,0xffffff,x+9,y+12,w-18,4,.24);col(g,0x101721,x+8,y+38,w-16,4,.16);
+    for(let i=0;i<Math.floor((w-45)/27);i++){
+      let px=x+22+i*27;
+      for(let k=0;k<2;k++){
+        const wy=y+50+k*43;
+        if (wy+26>y+h-13)continue;
+        col(g,0x334e62,px,wy,15,24);
+        col(g,p.light,px+2,wy+2,11,18,.95);
+        col(g,0xc5eff0,px+2,wy+2,4,5,.65);
+        col(g,0x354b64,px+7,wy+1,2,20);
+        col(g,0x415866,px-2,wy+21,19,4);
+      }
+    }
+    const dx=(b.door+.5)*T;
+    col(g,0x303641,dx-16,y+h-49,32,49);
+    col(g,0xcba97f,dx-14,y+h-45,28,45,.93);
+    col(g,0x35485c,dx-11,y+h-42,22,43);
+    col(g,p.light,dx+7,y+h-22,3,3);
+    col(g,0x7c8790,dx-21,y+h-4,42,5,.8);
+    // Roof ridges / skylights add distinct materials rather than recoloring plain rectangles.
+    for(let k=0;k<Math.floor(w/44);k++){
+      let xx=x+21+k*44;
+      col(g,0x182c41,xx,y+20,27,4,.22);
+      col(g,0xffffff,xx+3,y+18,20,2,.22);
+    }
+    if(id==='vocalt-greedy-land'){
+      for(let k=0;k<7;k++){ const xx=x+(k+.5)*w/7; col(g,0xf5ce62,xx,y+8,4,34,.85); }
+      ellipse(g,0xf8d576,x+w/2,y+7,w*.25,14,.76);
+    }else if(id==='tech-co'){
+      for(let k=0;k<3;k++) col(g,0x8eebf7,x+16+k*32,y+16,22,12,.75);
+    }else if(id==='old-oriaris'){
+      for(let k=0;k<5;k++) col(g,0xd7a96b,x+14+k*48,y+20,18,3,.75);
+    }else{
+      for(let k=0;k<4;k++) ellipse(g,0xc6a3e9,x+22+k*57,y+23,13,5,.66);
+    }
+  }
+  /* V28 · WISH VALLEY / LIVING ROOT ARCHITECTURE
+     Bespoke geometry, drawn into the existing Phaser terrain texture.
+     All six facades have independent silhouettes, consistent doorway targets,
+     no borrowed sprites and no dependency on a new renderer. */
+  const WV_MATERIAL={
+    ink:0x182d29,deep:0x254337,cedar:0x5a4430,wood:0x80603d,amber:0xc7a36b,
+    linen:0xe1ce98,vine:0x4d7648,leaf:0x537d4b,light:0x8cac67,
+    moss:0x386443,shadow:0x193a31,water:0x9bc9b2,slate:0x667167
+  };
+  function wvPoly(g,color,arr,alpha=1){
+    g.fillStyle(color,alpha);
+    g.fillPoints(arr.map(p=>({x:Math.round(p[0]),y:Math.round(p[1])})),true);
+  }
+  function wvPath(g,color,weight,pts,alpha=1){
+    g.lineStyle(weight,color,alpha);
+    g.strokePoints(pts.map(p=>({x:Math.round(p[0]),y:Math.round(p[1])})),false,false);
+  }
+  function wvBranches(g,x,y,r,order=0){
+    // An irregular ancient tree with buttress roots (not a rectangle trunk).
+    const trunk=[0x554634,0x695137,0x4f4934][order%3];
+    ellipse(g,0x0c302b,x+14,y+5,r*.75,22,.30);
+    wvPoly(g,0x352f26,[[x-18,y],[x-14,y-99],[x-7,y-159],[x+12,y-166],[x+23,y-90],[x+18,y]],.98);
+    wvPoly(g,trunk,[[x-13,y],[x-9,y-105],[x-3,y-153],[x+11,y-150],[x+13,y-81],[x+13,y]],1);
+    wvPath(g,0xab8750,3,[[x-3,y-117],[x-3,y-67],[x+2,y-21]],.55);
+    for(const dir of [-1,1]){
+      wvPoly(g,0x483c2e,[[x,y-34],[x+dir*10,y-61],[x+dir*49,y-123],[x+dir*60,y-119],[x+dir*17,y-52]],.95);
+      wvPoly(g,trunk,[[x+dir*9,y-20],[x+dir*23,y-13],[x+dir*47,y+7],[x+dir*53,y+13],[x+dir*12,y+2]],1);
+    }
+  }
+  function wvCrown(g,cx,cy,w,h,s=0){
+    const C=[0x244d39,0x316443,0x427c4d,0x5f9259,0x78a566];
+    // The dappled tiered treetop has deliberate clustered volumes and leaf clusters.
+    ellipse(g,0x173f32,cx+12,cy+12,w*1.10,h*.83,.6);
+    for(let i=0;i<11;i++){
+      const ang=i*2.399+s*.27,rad=(i%4+1)/5;
+      const x=cx+Math.cos(ang)*w*.36*rad,y=cy+Math.sin(ang)*h*.35*rad;
+      ellipse(g,C[(i+s)%C.length],x,y,w*(.29+(i%3)*.028),h*(.41+(i%2)*.04),.98);
+      ellipse(g,0xc5cf88,x-w*.06,y-h*.17,w*.055,h*.038,.25);
+    }
+    for(let i=0;i<16;i++){
+      const x=cx+Math.sin(i*1.57+s)*w*.39,y=cy+Math.cos(i*.89)*h*.32;
+      ellipse(g,i%3?0x86a767:0xb8c47e,x,y,5+(i%4)*2,3+(i%2)*2,.44);
+    }
+  }
+  function wvLiana(g,x,y,len,phase=0){
+    wvPath(g,0x294c30,3,[[x,y],[x+9,y+len*.3],[x+Math.sin(phase+2)*7,y+len*.65],[x+2,y+len]],.9);
+    for(let t=.24;t<.96;t+=.21){
+      ellipse(g,0x598a4c,x+(Math.sin(t*8+phase)*6),y+len*t,11,5,.9);
+    }
+  }
+  function wvFloor(g,b,{round=false,rail=true}={}){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,base=y+h-21;
+    ellipse(g,0x0e322c,x+w*.52,base+26,w+50,39,.46);
+    // Curved/buttressed stilt platform: undersides, joists and a stepped entry.
+    for(let k=0;k<5;k++){
+      let px=x+28+(w-56)*k/4;
+      wvPoly(g,0x3e382b,[[px-5,base-28],[px+7,base-28],[px+13,base+19],[px-13,base+22]],.98);
+      col(g,0x8c714e,px-4,base-19,4,28,.65);
+    }
+    wvPoly(g,0x332f29,[[x+19,base-20],[x+w-18,base-20],[x+w-4,base-6],[x+w-28,base+8],[x+22,base+8],[x+5,base-6]]);
+    wvPoly(g,0x88643b,[[x+19,base-24],[x+w-18,base-24],[x+w-9,base-12],[x+9,base-12]]);
+    for(let k=0;k<12;k++){
+      const xx=x+22+k*(w-44)/12;
+      col(g,k%2?0xbe965e:0xa47e4e,xx,base-20,Math.max(4,(w-45)/12-2),5,.64);
+    }
+    if(rail){
+      for(let k=0;k<=8;k++){
+        const px=x+23+k*(w-46)/8;
+        col(g,0x513f2e,px-2,base-44,5,29,.92);
+      }
+      wvPath(g,0xc49d66,4,[[x+23,base-37],[x+w-23,base-37]],.94);
+    }
+    const door=(b.door+.5)*T;
+    // Leave a clear 1+ tile approach and a visually continuous stair to y+h.
+    for(let t=0;t<3;t++){
+      const step=32+t*8;
+      col(g,0x3e352a,door-step/2,base-2+t*9,step,8,.95);
+      col(g,0xb99560,door-step/2+2,base-1+t*9,step-4,4,.96);
+    }
+  }
+  function wvWall(g,b,{inset=23,top=78,stone=false}={}){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,base=y+h-40;
+    wvPoly(g,stone?0x4c574d:0x514634,[[x+inset,y+top+5],[x+w-inset,y+top+5],[x+w-inset+6,base],[x+inset-6,base]],1);
+    wvPoly(g,stone?0x879081:0xa88b5c,[[x+inset+9,y+top+12],[x+w-inset-9,y+top+12],[x+w-inset-9,base-6],[x+inset+9,base-6]],1);
+    for(let t=0;t<5;t++){
+      const px=x+inset+15+t*(w-2*inset-28)/4;
+      col(g,stone?0x6b776a:0x5a4631,px,y+top+9,6,Math.max(8,base-y-top-15),.92);
+      col(g,0xe9d09c,px+1,y+top+16,2,25,.32);
+    }
+    if(stone){
+      for(let i=0;i<26;i++){
+        let xx=x+inset+8+(i*43)%(w-2*inset-16),yy=y+top+26+(i*23)%Math.max(23,base-y-top-34);
+        col(g,i%2?0x53665a:0xc1c19d,xx,yy,10+(i%3)*4,3,.3);
+      }
+    }else{
+      for(let i=0;i<9;i++){
+        let yy=y+top+20+i*12;
+        if(yy>base-13)break;
+        wvPath(g,i%2?0x7b613f:0xd3ac71,2,[[x+inset+10,yy],[x+w-inset-10,yy]],.3);
+      }
+    }
+  }
+  function wvWindow(g,x,y,s=1,style=0){
+    const w=28*s,h=34*s;
+    if(style===1){
+      wvPoly(g,0x45372a,[[x-w*.62,y+h+4*s],[x-w*.60,y+4*s],[x,y-10*s],[x+w*.60,y+4*s],[x+w*.62,y+h+4*s]]);
+      wvPoly(g,0xb39462,[[x-w*.48,y+h],[x-w*.46,y+6*s],[x,y-3*s],[x+w*.46,y+6*s],[x+w*.48,y+h]],.98);
+      wvPoly(g,0x88b8aa,[[x-w*.34,y+h-5*s],[x-w*.32,y+10*s],[x,y+2*s],[x+w*.32,y+10*s],[x+w*.34,y+h-5*s]],.92);
+      wvPath(g,0xe8d49c,2*s,[[x,y+3*s],[x,y+h-4*s]],.82);
+      wvPath(g,0xe8d49c,2*s,[[x-w*.22,y+h*.56],[x+w*.22,y+h*.56]],.58);
+      ellipse(g,0xf4efc2,x-4*s,y+5*s,8*s,3*s,.35);
+      return;
+    }
+    if(style===2){
+      col(g,0x3f3329,x-w/2-7*s,y-6*s,w+14*s,h+14*s);
+      col(g,0xb08a55,x-w/2-4*s,y-3*s,w+8*s,h+8*s,.98);
+      col(g,0x78a8a2,x-w/2,y+2*s,w,h-6*s,.92);
+      for(let i=0;i<3;i++)col(g,0x5d4732,x-w/2+5*s+i*(w/3),y+2*s,2*s,h-6*s,.86);
+      wvPath(g,0xe5cb94,2*s,[[x-w/2+2*s,y+h*.48],[x+w/2-2*s,y+h*.48]],.7);
+      col(g,0x6e8f54,x-w/2-2*s,y+h+2*s,w+4*s,4*s,.9);
+      return;
+    }
+    if(style===3){
+      wvPoly(g,0x403429,[[x-w*.58,y+h+5*s],[x-w*.60,y+8*s],[x-w*.2,y-4*s],[x+w*.42,y+4*s],[x+w*.55,y+h+4*s]]);
+      wvPoly(g,0xaa8856,[[x-w*.45,y+h],[x-w*.44,y+10*s],[x-w*.15,y+2*s],[x+w*.33,y+8*s],[x+w*.42,y+h-2*s]],.98);
+      wvPoly(g,0x8ec0ae,[[x-w*.31,y+h-5*s],[x-w*.30,y+13*s],[x-w*.09,y+7*s],[x+w*.21,y+11*s],[x+w*.28,y+h-7*s]],.93);
+      wvPath(g,0xe9ddb0,2*s,[[x-w*.05,y+10*s],[x-w*.02,y+h-8*s]],.7);
+      ellipse(g,0xf3efc9,x-5*s,y+9*s,8*s,3*s,.32);
+      col(g,0x6d5b3d,x-w*.38,y+h+3*s,w*.78,4*s,.85);
+      return;
+    }
+    if(style===4){
+      col(g,0x40362d,x-w/2-5*s,y-5*s,w+10*s,h+10*s);
+      col(g,0x8ea39d,x-w/2,y,w,h,.94);
+      col(g,0x5a6f75,x-w/2+5*s,y+7*s,w-10*s,h-12*s,.78);
+      wvPath(g,0xcdb182,2*s,[[x,y],[x,y+h]],.84);
+      wvPath(g,0xcdb182,2*s,[[x-w/2+3*s,y+h*.5],[x+w/2-3*s,y+h*.5]],.64);
+      for(let k=0;k<3;k++)ellipse(g,0x4f7d50,x-w*.35+k*w*.18,y+h+3*s,7*s,4*s,.85);
+      return;
+    }
+    if(style===5){
+      ellipse(g,0x3d3329,x,y+h*.5,w+10*s,h+16*s,.98);
+      ellipse(g,0xab8d59,x,y+h*.5,w+2*s,h+8*s,.98);
+      ellipse(g,0x90c6b0,x,y+h*.5,w-8*s,h-2*s,.93);
+      ellipse(g,0x5a7d75,x,y+h*.56,w-12*s,h-8*s,.72);
+      wvPath(g,0xe6d4a2,2*s,[[x,y+4*s],[x,y+h-3*s]],.82);
+      wvPath(g,0xe6d4a2,2*s,[[x-w*.16,y+h*.5],[x+w*.16,y+h*.5]],.66);
+      return;
+    }
+    col(g,0x42382b,x-w/2-5*s,y-5*s,w+10*s,h+10*s);
+    col(g,0x99c9ac,x-w/2,y,w,h,.94);
+    col(g,0x4b8d85,x-w/2+4*s,y+6*s,w-8*s,h-10*s,.77);
+    wvPath(g,0xd9bf85,3*s,[[x,y],[x,y+h]],.93);
+    col(g,0xf5e6b1,x-w/2+4*s,y+3*s,8*s,3*s,.58);
+    col(g,0x806342,x-w/2-6*s,y+h+3*s,w+12*s,5*s);
+  }
+  function wvDoor(g,b,scale=1,style=0){
+    const x=(b.door+.5)*T,base=(b.y+b.h)*T-20,
+      w=33*scale,h=58*scale;
+    if(style===1){
+      wvPath(g,0x56422e,15,[[x-w*.9,base-2],[x-w*.74,base-h*.45],[x-w*.55,base-h*.78],[x-w*.18,base-h*.95]],.88);
+      wvPath(g,0x56422e,15,[[x+w*.9,base-2],[x+w*.74,base-h*.45],[x+w*.55,base-h*.78],[x+w*.18,base-h*.95]],.88);
+      wvPath(g,0xb28d58,3,[[x-w*.92,base-5],[x-w*.68,base-h*.56],[x-w*.18,base-h*.92]],.56);
+      wvPath(g,0xb28d58,3,[[x+w*.92,base-5],[x+w*.68,base-h*.56],[x+w*.18,base-h*.92]],.56);
+      wvPoly(g,0x433629,[[x-w/2-8,base],[x-w/2-8,base-h+17],[x,base-h-14],[x+w/2+8,base-h+17],[x+w/2+8,base]]);
+      wvPoly(g,0xc19b62,[[x-w/2-3,base-2],[x-w/2-3,base-h+17],[x,base-h-5],[x+w/2+3,base-h+17],[x+w/2+3,base-2]]);
+      wvPoly(g,0x1d302b,[[x-w/2+4,base-4],[x-w/2+4,base-h+20],[x,base-h+8],[x+w/2-4,base-h+20],[x+w/2-4,base-4]]);
+      ellipse(g,0xe7d69a,x,base-h-4,16,9,.7);ellipse(g,0xfff3b5,x,base-h-5,6,3,.7);
+    }else if(style===2){
+      col(g,0x3d3228,x-w/2-14,base-h+6,w+28,11); col(g,0x8e6f46,x-w/2-11,base-h+10,w+22,6,.96);
+      wvPoly(g,0x433628,[[x-w/2-12,base],[x-w/2-12,base-h+14],[x,base-h-18],[x+w/2+12,base-h+14],[x+w/2+12,base]]);
+      wvPoly(g,0xb18e59,[[x-w/2-5,base-2],[x-w/2-5,base-h+18],[x,base-h-8],[x+w/2+5,base-h+18],[x+w/2+5,base-2]]);
+      col(g,0x183028,x-w/2+1,base-h+17,w/2-3,h-22,.96); col(g,0x183028,x+2,base-h+17,w/2-3,h-22,.96);
+      col(g,0x7a5f39,x-1,base-h+18,2,h-21,.8); ellipse(g,0xf5d791,x-w*.18,base-h*.43,5,5,.95); ellipse(g,0xf5d791,x+w*.18,base-h*.43,5,5,.95);
+    }else if(style===3){
+      col(g,0x4d3b2b,x-w/2-5,base-h+7,w+10,8,.95);
+      wvPoly(g,0x3a3026,[[x-w/2-6,base],[x-w/2-4,base-h+16],[x+w/2+8,base-h+18],[x+w/2+6,base]]);
+      wvPoly(g,0xb59058,[[x-w/2+1,base-2],[x-w/2+1,base-h+18],[x+w/2+2,base-h+20],[x+w/2+2,base-2]],.97);
+      col(g,0x20342f,x-w/2+6,base-h+19,w-11,h-25,.92);
+      for(let i=0;i<4;i++)wvPath(g,0x6a915b,2,[[x-w*.35+i*8,base-h+12],[x-w*.30+i*8,base-h-5]],.5);
+      col(g,0xa0534e,x-w/2+5,base-h+21,7,16,.88); col(g,0x4a8d71,x+w/2-12,base-h+24,7,12,.88);
+    }else if(style===4){
+      wvPoly(g,0x43372a,[[x-w/2-8,base],[x-w/2-6,base-h+17],[x-w*.13,base-h+2],[x+w/2+8,base-h+16],[x+w/2+8,base]]);
+      wvPoly(g,0xb99560,[[x-w/2-3,base-2],[x-w/2-2,base-h+19],[x-w*.08,base-h+10],[x+w/2+3,base-h+18],[x+w/2+3,base-2]]);
+      wvPoly(g,0x17302b,[[x-w/2+5,base-4],[x-w/2+6,base-h+20],[x+w/2-5,base-h+17],[x+w/2-5,base-4]]);
+      for(let i=0;i<4;i++)wvPath(g,0x8a7347,2,[[x-w*.25+i*7,base-h+18],[x-w*.18+i*7,base-h+6]],.65);
+      ellipse(g,0xf0d082,x+w*.17,base-h*.42,5,5,.92);
+    }else if(style===5){
+      wvPoly(g,0x3d3c36,[[x-w/2-10,base],[x-w/2-12,base-h+11],[x-w*.23,base-h+2],[x+w/2+12,base-h+14],[x+w/2+11,base]]);
+      wvPoly(g,0x9ea180,[[x-w/2-5,base-2],[x-w/2-7,base-h+16],[x-w*.16,base-h+8],[x+w/2+7,base-h+18],[x+w/2+7,base-2]],.95);
+      col(g,0x1c2f30,x-w/2+4,base-h+18,w-8,h-22,.94);
+      col(g,0x6a573d,x-w/2+2,base-h+25,4,h-31,.84); col(g,0x6a573d,x+w/2-6,base-h+22,4,h-28,.84);
+      wvPath(g,0xc3bf9c,2,[[x-w*.34,base-h+4],[x-w*.44,base-h-13]],.8); wvPath(g,0xc3bf9c,2,[[x+w*.28,base-h+6],[x+w*.43,base-h-9]],.8);
+    }else if(style===6){
+      wvPath(g,0x5a462f,4,[[x-w*.62,base-h+14],[x-w*.82,base-h-2],[x-w*.92,base-h-26]],.82); wvPath(g,0x5a462f,4,[[x+w*.62,base-h+14],[x+w*.82,base-h-2],[x+w*.92,base-h-26]],.82);
+      wvPoly(g,0x41352a,[[x-w/2-9,base],[x-w/2-9,base-h+16],[x,base-h-11],[x+w/2+9,base-h+16],[x+w/2+9,base]]);
+      wvPoly(g,0xbe9a61,[[x-w/2-3,base-2],[x-w/2-3,base-h+18],[x,base-h-3],[x+w/2+3,base-h+18],[x+w/2+3,base-2]]);
+      wvPoly(g,0x17312d,[[x-w/2+4,base-4],[x-w/2+4,base-h+17],[x,base-h+9],[x+w/2-4,base-h+17],[x+w/2-4,base-4]]);
+      for(let i=0;i<3;i++)wvPath(g,0x8e7a4f,2,[[x-w*.26+i*9,base-h+20],[x-w*.2+i*9,base-h+5]],.6);
+      ellipse(g,0xf6d084,x+8,base-h*.43,6,6,.92);
+    }else{
+      wvPoly(g,0x3d3328,[[x-w/2-7,base],[x-w/2-7,base-h+15],[x,base-h-12],[x+w/2+7,base-h+15],[x+w/2+7,base]]);
+      wvPoly(g,0xb18b53,[[x-w/2-2,base-2],[x-w/2-2,base-h+15],[x,base-h-4],[x+w/2+2,base-h+15],[x+w/2+2,base-2]]);
+      wvPoly(g,0x152b29,[[x-w/2+4,base-4],[x-w/2+4,base-h+15],[x,base-h+7],[x+w/2-4,base-h+15],[x+w/2-4,base-4]]);
+      col(g,0x725638,x+2,base-h+26,3,h-30,.78);
+      ellipse(g,0xf6d084,x+8,base-h*.43,6,6,.92);
+    }
+    for(let i=0;i<3;i++)col(g,0x533d2e,x-w/2-4+i*2,base+3+i*3,w+8-i*4,3,.9);
+  }
+  function wvLeafRoof(g,cx,top,w,height,variant=0){
+    const dark=[0x2b4d36,0x315843,0x354d3a,0x3b6447,0x344f40,0x275544][variant%6],
+      middle=[0x476c44,0x5a744c,0x668253,0x5d7953,0x6a8754,0x436d56][variant%6],
+      bright=[0x8b9b5e,0x9aa76a,0x90ad72,0x8da66b,0x9cac7b,0x719d7c][variant%6];
+    // Layered thatch/leaf tectonics: organic scalloped eaves + luminous ridgelines.
+    const shoulder=top+height*.74;
+    wvPoly(g,0x203a2f,[[cx-w*.54,shoulder+9],[cx-w*.45,top+height*.37],[cx-w*.2,top+height*.13],[cx,top-11],[cx+w*.27,top+height*.23],[cx+w*.51,shoulder+7],[cx+w*.38,shoulder+25],[cx-w*.41,shoulder+25]]);
+    wvPoly(g,dark,[[cx-w*.53,shoulder],[cx-w*.38,top+height*.33],[cx-w*.12,top+height*.12],[cx,top-18],[cx+w*.21,top+height*.17],[cx+w*.49,shoulder],[cx+w*.40,shoulder+12],[cx+w*.25,shoulder+4],[cx+w*.09,shoulder+17],[cx-w*.05,shoulder+5],[cx-w*.26,shoulder+20],[cx-w*.42,shoulder+8]]);
+    wvPoly(g,middle,[[cx-w*.43,shoulder-11],[cx-w*.25,top+height*.28],[cx,top-13],[cx+w*.26,top+height*.3],[cx+w*.40,shoulder-7],[cx+w*.22,shoulder+1],[cx+w*.03,shoulder-4],[cx-w*.18,shoulder+3]]);
+    wvPoly(g,bright,[[cx-w*.26,top+height*.32],[cx-8,top-9],[cx+w*.26,top+height*.32],[cx+w*.14,top+height*.35],[cx,top+height*.13],[cx-w*.14,top+height*.37]],.78);
+    for(let i=-4;i<=4;i++){
+      const xx=cx+i*w*.098;
+      const yy=top+height*(.57+Math.abs(i)*.038);
+      wvPath(g,i%2?0x31583f:0xc8c18b,i%2?3:2,[[cx,top+height*.1],[xx,yy]],i%2?.39:.38);
+      ellipse(g,i%2?0xadc489:0x799d69,xx,yy,8+(i%2)*3,4,.78);
+    }
+    // Shingled leaves: six staggered rows of small clustered plant tiles.
+    // Kept inside roof's perspective silhouette; avoid a flat monotone triangle.
+    for(let row=0;row<6;row++){
+      const progress=(row+.5)/6;
+      const span=w*(.055+.36*progress),yy=top+height*(.17+.57*progress);
+      const count=Math.max(4,Math.floor(span/11));
+      for(let j=0;j<count;j++){
+        const xx=cx-span/2+(j+.4)*span/count + (row%2)*3;
+        const tint=(j+row+variant)%4===0?0xc2c78b:(j+variant)%3===0?0x91ac6c:0x365e42;
+        ellipse(g,tint,xx,yy+Math.sin(j*1.7+row)*2,8+(j%2)*2,4+(j%3),.18+((j+row)%3)*.07);
+      }
+    }
+    for(let j=0;j<6;j++){
+      const x=cx+(j-2.5)*w*.16,y=shoulder+4+(j%2)*3;
+      if(j%2===0)wvLiana(g,x,y,20+(j%3)*14,j);
+    }
+  }
+  function wvPendant(g,x,y,c=0xf2ce79){
+    wvPath(g,0x543c27,2,[[x,y],[x,y+21]]);
+    ellipse(g,0x312f24,x,y+25,17,22,.96);
+    ellipse(g,c,x,y+25,11,14,.93);
+    ellipse(g,0xfff5b5,x-2,y+23,4,5,.83);
+  }
+  function wvBasket(g,x,y,fruit=0xe1bb72,leaf=0x5a8d54){
+    ellipse(g,0x5b4631,x,y+8,24,12,.95);
+    wvPath(g,0xc7a26d,2,[[x-8,y+6],[x,y-2],[x+8,y+6]],.72);
+    for(let i=0;i<4;i++){
+      const px=x-7+i*5,py=y+6+(i%2)*2;
+      ellipse(g,fruit,px,py,6,6,.9);
+      ellipse(g,leaf,px-1,py-5,5,3,.72);
+    }
+  }
+  function wvPlanter(g,x,y,w=32){
+    col(g,0x5a4532,x-w/2,y,w,8,.96);
+    col(g,0xb08b59,x-w/2+2,y,w-4,3,.7);
+    for(let i=0;i<Math.max(3,Math.floor(w/9));i++){
+      const px=x-w*.36+i*(w*.72/Math.max(2,Math.floor(w/9)-1));
+      ellipse(g,i%2?0x4c7f4e:0x6a9a62,px,y-2-(i%2),10,8,.88);
+      if(i%3===0)ellipse(g,0xcfd07f,px+1,y-6,4,4,.78);
+    }
+  }
+  function wvCarvedBeam(g,x,y,w=58){
+    col(g,0x5f4932,x-w/2,y,w,7,.95);
+    for(let i=0;i<5;i++){
+      const px=x-w*.33+i*(w*.165);
+      wvPath(g,i%2?0xd2b07b:0x8f7447,1.6,[[px-4,y+3],[px,y+1],[px+4,y+3]],.72);
+    }
+  }
+  function wvGroundArt(g,b,i){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,door=(b.door+.5)*T,base=y+h;
+    // Terrain pedestal that visually locks each structure into the ground.
+    ellipse(g,0x0d2926,x+w*.52,base+18,w+96,60,.48);
+    wvPoly(g,0x37533e,[[x-26,base+6],[x+14,base-16],[x+w*.17,base-25],[door-34,base-19],[door-14,base-7],[door+14,base-7],[door+34,base-19],[x+w*.84,base-24],[x+w-10,base-14],[x+w+32,base+8],[x+w+18,base+24],[x-14,base+26]],.95);
+    wvPoly(g,0x6b654d,[[x-18,base+3],[x+18,base-12],[x+w*.18,base-17],[door-28,base-13],[door-12,base-4],[door+12,base-4],[door+28,base-13],[x+w*.81,base-16],[x+w-17,base-10],[x+w+22,base+6],[x+w+11,base+17],[x-8,base+19]],.82);
+    // A clear earthen-ramp approach aligned to the door and platform steps.
+    wvPoly(g,0x765f3e,[[door-34,base+34],[door-24,base+12],[door-16,base-2],[door+16,base-2],[door+24,base+12],[door+34,base+34],[door+18,base+42],[door-18,base+42]],.96);
+    wvPoly(g,0xa68a58,[[door-24,base+31],[door-17,base+13],[door-10,base+3],[door+10,base+3],[door+17,base+13],[door+24,base+31],[door+13,base+36],[door-13,base+36]],.94);
+    // Embedded stepping stones make the entrance feel more handcrafted and alive.
+    for(let s=0;s<5;s++){
+      const py=base+6+s*9,px=door+Math.sin(s*1.4+i)*((s%2)?8:-8);
+      ellipse(g,s%2?0x7f866f:0x9aa087,px,py,17-(s%2)*2,9,.9);
+      ellipse(g,0xc9ccb2,px-2,py-2,5,3,.34);
+    }
+    // Retaining roots and embedded boulders, keeping the entrance corridor open.
+    for(const dir of [-1,1]){
+      wvPath(g,0x3e382c,7,[[door+dir*44,base+14],[door+dir*69,base+8],[door+dir*92,base+18],[door+dir*111,base+31]],.84);
+      wvPath(g,0x8f7447,3,[[door+dir*44,base+11],[door+dir*69,base+5],[door+dir*92,base+14]],.52);
+    }
+    for(let j=0;j<8;j++){
+      const side=j<4?-1:1,band=j%4,px=door+side*(64+band*21),py=base+8+band*9;
+      ellipse(g,band%2?0x4b5d51:0x617165,px,py,23-band*2,14-band,.9);
+      ellipse(g,0xc2be9e,px-4,py-3,7,3,.35);
+      if(band!==0)ellipse(g,0x447149,px+2,py-8,11,6,.74);
+    }
+    // Small forest-floor groupings kept outside the central approach.
+    for(let j=0;j<18;j++){
+      const side=j%2?-1:1,spread=46+(j%4)*7;
+      let px=door+side*spread+Math.cos(j*1.82)*14,py=y+62+(j*37)%(h-35);
+      if(Math.abs(px-door)<42&&py>base-5)continue;
+      ellipse(g,j%3?0x326144:0x457849,px,py,12+(j%4)*4,8+(j%3)*5,.81);
+      if(j%4===0)ellipse(g,0xb9bf80,px+3,py-4,5,4,.85);
+      if(j%5===0)ellipse(g,0xdfd989,px-1,py-8,4,4,.72);
+    }
+    for(let m=0;m<7;m++){
+      const px=door-56+m*18,py=base+34+(m%2)*4;
+      if(Math.abs(px-door)<22)continue;
+      ellipse(g,m%2?0x4b8d54:0x6aa366,px,py,11,7,.78);
+      if(m%3===0)ellipse(g,0xcb8f66,px+2,py-5,3,4,.68);
+      if(m%4===1)ellipse(g,0xa1e0c8,px-2,py-4,3,3,.6);
+    }
+    // Thin path seams tie the platform visually back into the broader village tracks.
+    wvPath(g,0x8e8159,2,[[door-18,base+22],[door-21,base+8],[door-10,base-8]],.8);
+    wvPath(g,0x8e8159,2,[[door+18,base+22],[door+21,base+8],[door+10,base-8]],.8);
+  }
+  function wvRootArches(g,b,style=0){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,c=(b.door+.5)*T;
+    // Roots are load-bearing architecture: sweeping living columns and intertwined arches.
+    const paths=[
+      [[x+16,y+h-5],[x+48,y+h-36],[x+55,y+154],[x+79,y+107],[x+w*.38,y+92]],
+      [[x+w-18,y+h-5],[x+w-48,y+h-35],[x+w-56,y+160],[x+w-80,y+118],[x+w*.63,y+92]]
+    ];
+    for(const pts of paths){
+      wvPath(g,0x2f392c,24,pts,.93);
+      wvPath(g,style===1?0x816345:0x806a48,16,pts,.96);
+      wvPath(g,0xba9964,3,pts.map(([px,py])=>[px-3,py-4]),.60);
+      for(let k=1;k<=3;k++){
+        const [xx,yy]=pts[k];
+        ellipse(g,0x537c4c,xx+8,yy-15,19,11,.78);
+        ellipse(g,0x91ad65,xx+6,yy-20,7,4,.61);
+      }
+    }
+    // Roots never cross the door or the 32px approach tile.
+    for(const dir of [-1,1]){
+      wvPath(g,0x4a4130,7,[[c+dir*58,y+h-37],[c+dir*86,y+h-18],[c+dir*109,y+h+5]],.85);
+    }
+  }
+  function wvBarkPod(g,cx,cy,w,h,shade=0){
+    const border=[0x41392d,0x414631,0x344436][shade%3],face=[0x8f7248,0x95794d,0x957d52][shade%3];
+    // Rounded woven arboreal pods. The side walls curve rather than form a rectangle.
+    wvPoly(g,border,[[cx-w*.49,cy+h*.28],[cx-w*.48,cy-h*.12],[cx-w*.31,cy-h*.45],[cx,cy-h*.52],[cx+w*.33,cy-h*.39],[cx+w*.50,cy-h*.05],[cx+w*.49,cy+h*.33],[cx+w*.34,cy+h*.48],[cx-w*.33,cy+h*.48]]);
+    wvPoly(g,face,[[cx-w*.39,cy+h*.23],[cx-w*.38,cy-h*.13],[cx-w*.26,cy-h*.35],[cx,cy-h*.42],[cx+w*.25,cy-h*.33],[cx+w*.37,cy-h*.11],[cx+w*.38,cy+h*.25],[cx+w*.26,cy+h*.36],[cx-w*.26,cy+h*.36]]);
+    for(let i=0;i<9;i++){
+      const px=cx-w*.30+i*w*.075;
+      wvPath(g,i%2?0x5f4c35:0xc4a977,2,[[px,cy-h*.18],[px+Math.sin(i*3)*6,cy+h*.25]],.4);
+    }
+  }
+  function wvCanopyFringe(g,cx,y,w,variant=0){
+    // Pixel clusters, fronds and hanging leaf tips soften straight gables.
+    for(let i=0;i<23;i++){
+      const t=(i+0.5)/23,px=cx-w*.48+t*w*.96;
+      const py=y+8+6*Math.sin(t*12)+5*Math.cos(t*25+variant);
+      if(i%4!==0){
+        wvPoly(g,i%3?0x406c44:0x608951,[[px-9,py-3],[px+7,py-7],[px+12,py+3],[px,py+12],[px-9,py+3]],.93);
+        col(g,0xafbe79,px-2,py-2,6,2,.59);
+      }else wvLiana(g,px,py,18+(i%3)*8,i);
+    }
+  }
+  function wvElderCanopy(g,b){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,cx=(b.door+.5)*T,base=y+h;
+    const left=x+34,right=x+w-36;
+    // V32: structural composition. Rear trunks support the hall, not the door facade.
+    ellipse(g,0x132d29,cx,base+2,w*.92,29,.43);
+    // Living cliff-side buttress roots are anchored into rock and remain outside windows.
+    for(const side of [-1,1]){
+      const anchor=side<0?left-18:right+18;
+      wvPoly(g,0x3f382b,[[anchor-27,y+103],[anchor-15,y+28],[anchor+side*7,y-12],[anchor+side*20,y+19],[anchor+23,y+120],[anchor+26,y+h-19],[anchor-30,y+h-13]],.98);
+      wvPoly(g,0x765a3c,[[anchor-20,y+110],[anchor-10,y+31],[anchor+side*6,y+5],[anchor+side*13,y+32],[anchor+15,y+130],[anchor+14,y+h-22],[anchor-18,y+h-20]],.94);
+      wvPath(g,0xb59763,3,[[anchor-6,y+36],[anchor-3,y+95],[anchor+2,y+169],[anchor+side*7,base-31]],.52);
+      for(let j=0;j<3;j++){
+        const rx=anchor+side*(12+j*16);
+        wvPath(g,0x453c2c,8-j,[[anchor+side*6,base-52],[rx,base-28],[rx+side*17,base-7]],.85);
+        wvPath(g,0x977b4c,2,[[anchor+side*9,base-46],[rx+side*2,base-24]],.48);
+      }
+    }
+    // Background trees are visible behind roof edges, without covering the facade.
+    wvCrown(g,x+w*.14,y+12,w*.33,83,1);
+    wvCrown(g,x+w*.87,y+3,w*.34,91,3);
+    wvFloor(g,b,{rail:false});
+    // Layered circular wall body, visually continuous with the wooden deck.
+    wvPoly(g,0x2b342b,[[x+47,y+97],[x+w-48,y+96],[x+w-35,y+162],[x+w-39,base-47],[x+39,base-47],[x+33,y+160]],1);
+    wvPoly(g,0x98764a,[[x+51,y+104],[x+w-52,y+103],[x+w-46,y+163],[x+w-48,base-49],[x+47,base-49],[x+45,y+164]],1);
+    wvPoly(g,0xb29363,[[x+64,y+111],[x+w-64,y+110],[x+w-57,y+157],[x+w-59,base-53],[x+57,base-53],[x+58,y+157]],.98);
+    // Vertical posts are narrower and stop before the porch (no floating poles).
+    for(const xx of [x+65,x+w-65]){
+      col(g,0x4c3929,xx-6,y+112,12,base-y-154,.94);
+      col(g,0xd0ad77,xx-3,y+119,3,base-y-171,.42);
+      ellipse(g,0x526f47,xx,y+118,16,8,.75);
+    }
+    for(let i=0;i<8;i++){
+      const yy=y+125+i*13;
+      if(yy>base-57)break;
+      wvPath(g,i%2?0xe1c793:0x705839,1.5,[[x+75,yy],[x+w-75,yy]],.25);
+    }
+    // Separate hip roof layers; foliage is confined to eaves and never crosses windows.
+    wvLeafRoof(g,cx,y-6,w*.86,103,0);
+    wvPath(g,0x362f25,8,[[x+47,y+98],[cx,y+81],[x+w-48,y+98]],.94);
+    wvPath(g,0xc1a66c,3,[[x+50,y+93],[cx,y+76],[x+w-51,y+93]],.66);
+    for(let j=0;j<18;j++){
+      const t=(j+.5)/18,xx=x+47+t*(w-94),yy=y+98+Math.sin(t*Math.PI)*(-8);
+      // Hanging foliage only in the outer 25% so windows remain readable.
+      if(t<.23 || t>.77){
+        wvPoly(g,j%2?0x4d7847:0x6d9458,[[xx-5,yy],[xx+6,yy-4],[xx+7,yy+6],[xx,yy+14],[xx-6,yy+7]],.88);
+      }
+    }
+    // Two modest, symmetrical leaf-lintel windows, solidly seated in the wall.
+    for(const wx of [x+w*.27,x+w*.73]){
+      wvWindow(g,wx,y+139,1.04,1);
+      wvPath(g,0x3b3327,5,[[wx-24,y+138],[wx,y+126],[wx+24,y+138]],.96);
+      wvPath(g,0xc4a16b,2,[[wx-20,y+135],[wx,y+128],[wx+20,y+135]],.9);
+      col(g,0x6d5638,wx-22,y+176,44,5,.93);
+      for(let j=-1;j<=1;j++)ellipse(g,0x4b7d4c,wx+j*11,y+175,14,7,.78);
+      // Narrow wooden shutters and carved lintel, avoiding oversized glowing panes.
+      wvPoly(g,0x6b5436,[[wx-29,y+143],[wx-22,y+143],[wx-22,y+169],[wx-29,y+175]],.9);
+      wvPoly(g,0x765d3b,[[wx+22,y+143],[wx+30,y+142],[wx+30,y+175],[wx+22,y+169]],.9);
+      for(const side of [-1,1])wvPath(g,0xc5a46c,1.5,[[wx+side*26,y+147],[wx+side*25,y+168]],.5);
+    }
+    // Wood-lattice motifs and planter shelves reinforce the lived-in forest home.
+    for(let k=0;k<12;k++){
+      const xx=x+72+k*(w-144)/11;
+      if(Math.abs(xx-cx)<52||Math.abs(xx-(x+w*.27))<34||Math.abs(xx-(x+w*.73))<34)continue;
+      wvPath(g,k%2?0x725936:0xceb285,1.4,[[xx,y+141],[xx+3,y+161]],.32);
+    }
+    for(let side of [-1,1]){
+      const xx=cx+side*89;
+      wvPath(g,0x9a8154,3,[[xx,y+183],[xx+side*9,y+209],[xx+side*14,y+225]],.64);
+      ellipse(g,0x54814e,xx+side*12,y+216,19,11,.76);
+    }
+    // Carved sacred lintel and small warm lights beneath overhang.
+    ellipse(g,0x4c4532,cx,y+144,42,16,.9);
+    ellipse(g,0xc2ac75,cx,y+143,27,10,.91);
+    wvPath(g,0x39775e,3,[[cx-7,y+144],[cx,y+138],[cx+7,y+144],[cx,y+150],[cx-7,y+144]],.95);
+    for(const px of [x+76,x+w-76])wvPendant(g,px,y+119,0xf6d487);
+    // Door is rendered last: visible opening at the actual interaction tile.
+    wvDoor(g,b,1.24,1);
+    // Attached steps with side rails, uninterrupted earth approach below.
+    for(let k=0;k<3;k++){
+      const yy=base-12+k*9,half=25+k*4;
+      col(g,0x3d3428,cx-half-2,yy,half*2+4,8,.99);
+      col(g,0xa78956,cx-half,yy,half*2,4,.98);
+    }
+    for(const side of [-1,1]){
+      wvPath(g,0x5b4a32,4,[[cx+side*36,base+12],[cx+side*42,base+28],[cx+side*48,base+34]],.84);
+      ellipse(g,0x467a4a,cx+side*59,base+13,20,10,.83);
+    }
+  }
+  function wvCouncilHall(g,b){
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,cx=x+w*.5;
+    wvBranches(g,x+22,y+h-42,120,1);wvBranches(g,x+w-22,y+h-42,120,0);
+    // Massive crowns frame the civic longhouse rather than an isolated pavilion.
+    wvCrown(g,x+w*.10,y+46,w*.37,122,2);
+    wvCrown(g,x+w*.90,y+29,w*.42,135,3);
+    wvFloor(g,b);wvWall(g,b,{inset:27,top:104});
+    // A three-wing hall built from arches and vaulted overlapping leaf gables.
+    for(const i of [-1,1]){
+      const sx=cx+i*w*.305;
+      wvLeafRoof(g,sx,y+70,w*.44,94,1);
+      wvPoly(g,0x3c5237,[[sx-30,y+174],[sx-25,y+122],[sx,y+91],[sx+29,y+123],[sx+29,y+175]],.62);
+      wvWindow(g,sx,y+164,.9,2);
+    }
+    wvLeafRoof(g,cx,y+10,w*.71,125,1);
+    // Root buttresses and central council seal distinguish it from regular dwellings.
+    for(const dir of [-1,1]){
+      wvPoly(g,0x584a34,[[cx+dir*94,y+205],[cx+dir*116,y+222],[cx+dir*142,y+h-27],[cx+dir*114,y+h-36]]);
+      wvPath(g,0xa38a57,3,[[cx+dir*94,y+204],[cx+dir*111,y+236]],.6);
+    }
+    ellipse(g,0x584b35,cx,y+121,60,52,.96);
+    ellipse(g,0xe6c485,

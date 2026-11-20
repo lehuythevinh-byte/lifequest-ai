@@ -1,104 +1,102 @@
-# LIFEQUEST AI V77 — Living World Interface
+<div align="center">
 
-An AI-powered, open-world **educational English RPG**. You explore a living pixel-art
-world, talk to residents in English, complete their wishes, and watch the world
-remember what you did. The Living World Interface brings resident portraits,
-regional artwork and a three-tab conversation panel to the Beyond Conversation
-release. The replay archive, cultural passport and town newspaper use your existing save.
+# LIFEQUEST AI
+### V77.3 — Ember & Ink
+
+**English learning through exploration, conversation and adventure**
+
+*Explore a world. Find your voice. Make English part of your story.*
+
+[Chơi LifeQuest AI](https://lifequest-ai-v77.onrender.com) · [Mã nguồn V77.3](https://github.com/lehuythevinh-byte/lifequest-ai/tree/deploy/lifequest-v77/v77) · [Kiểm tra phiên bản máy chủ](https://lifequest-ai-v77.onrender.com/health)
+
+`Educational RPG` · `2D Pixel Art` · `AI NPCs` · `CEFR A1–C1`
+
+</div>
+
+## Tầm nhìn
+
+LifeQuest AI là trò chơi nhập vai giáo dục giúp học sinh thực hành tiếng Anh qua những tình huống có ý nghĩa. Thay vì chỉ học từ vựng và ngữ pháp riêng lẻ, người chơi khám phá thế giới, gặp cư dân, giải quyết vấn đề và dùng tiếng Anh để hoàn thành nhiệm vụ.
+
+## Ember & Ink — điểm nổi bật của V77.3
+
+| Hệ thống | Trải nghiệm |
+|---|---|
+| Dialogue Theatre | Sân khấu RPG, phong cảnh pixel-art, ánh sáng theo đồng hồ game, bong bóng hội thoại và các thẻ học ngôn ngữ. |
+| NPC expressions | Chân dung từ sprite gốc; biểu cảm mắt, mày, miệng khi hình học khuôn mặt phù hợp; nhãn cảm xúc và nguồn xác định. |
+| Contextual conversation | NPC nhận ngữ cảnh khu vực, nhiệm vụ và danh mục kinh tế. Không gán giá giả cho món hàng chưa xác định. |
+| AI Teacher | Phản hồi ngữ pháp, gợi ý câu và luyện nói tiếng Anh. |
+| Relationship | Điểm quan hệ thực tế từ -20 đến 100; thông tin nhiệm vụ và lượt gặp dựa trên trạng thái game. |
+| Conversation Replay | Xem lại cuộc trò chuyện, lưu cụm từ hữu ích vào sổ tay. |
+| Cultural Passport | Tám dấu vùng dựa trên tiến trình và hoạt động có thật trong game. |
+| LifeQuest Herald | Bản tin tổng hợp các sự kiện đã ghi nhận trong thế giới. |
+
+V77.3 giữ bản đồ, nhân vật, nhiệm vụ, cơ chế mở khóa và phong cách sprite gốc. Cảm xúc chưa xác định được hiển thị rõ; phản hồi offline không được mô tả là AI trực tuyến.
+
+## Tám vùng đất — tám bối cảnh giao tiếp
+
+| Vùng | CEFR | Nội dung |
+|---|---|---|
+| English Town | A1–A2 | Đời sống thường ngày, chào hỏi, mua sắm, hỏi đường. |
+| Minerals Town | A2 | Khám phá và giao tiếp trong thị trấn khai khoáng. |
+| Oriaris · 70 Years Ago | A2–B1 | Lịch sử, ký ức và kể chuyện. |
+| Art District | B1 | Nghệ thuật và trải nghiệm sáng tạo. |
+| Tech-Co | B1 | Giao tiếp công việc và xử lý vấn đề. |
+| Old Oriaris | B1–B2 | Bí ẩn kinh đô cũ và câu chuyện quá khứ. |
+| Wish Valley | B2 | Thiên nhiên, cộng đồng, điều ước và lời khuyên. |
+| Vocalt · Greedy Land | B2–C1 | Thương mại, đàm phán và giao tiếp phức tạp. |
+
+Các vùng mở theo tiến trình của trò chơi; không phải tất cả đều mở ngay khi bắt đầu.
+
+## Cách chơi
+
+- WASD / phím mũi tên: di chuyển.
+- E: tương tác với NPC.
+- Enter: gửi câu trả lời; Esc: thoát hội thoại.
+- G: menu; L: Replay; P: Cultural Passport; T: Herald.
+- Hãy thử giao tiếp với Sam ở bưu điện: hỏi giá tem, rồi thực hiện mục tiêu gửi thư.
+
+## Kiến trúc và chạy cục bộ
+
+HTML/JavaScript + pixel-art ở frontend; Node.js dùng thư viện chuẩn ở backend, chuyển tiếp yêu cầu đến Google Gemini bằng API key phía máy chủ. Nếu thiếu key hoặc AI không khả dụng, game có chế độ offline theo quy tắc.
+
+```bash
+git clone -b deploy/lifequest-v77 https://github.com/lehuythevinh-byte/lifequest-ai.git
+cd lifequest-ai
+sh v77/build.sh
+node v77/backend/server.cjs
+```
+
+Truy cập http://localhost:10000. Không mở trực tiếp bằng file:// vì trình nạp game có thể cần HTTP.
+
+| Đường dẫn | Vai trò |
+|---|---|
+| v77/ember-ink/ | 26 phần mã nguồn HTML chính xác của bản phát hành |
+| v77/build.sh | Ghép game.html, xác thực SHA-256, kiểm tra backend |
+| v77/game.sha256 | Mã kiểm tra tính toàn vẹn của game |
+| v77/backend/server.cjs | Máy chủ game và Gemini relay |
+| v77/V77_3_RELEASE.md | Ghi chú riêng của phiên bản |
+| v77/living/ | Mã bản Living World Interface trước đó, không dùng khi build V77.3 |
+
+## Triển khai Render
+
+| Cấu hình | Giá trị |
+|---|---|
+| Branch | deploy/lifequest-v77 |
+| Root Directory | để trống |
+| Build Command | sh v77/build.sh |
+| Start Command | node v77/backend/server.cjs |
+| Health endpoint | /health |
+| GEMINI_API_KEY | Secret trong Environment của Render |
+| GEMINI_MODEL | gemini-2.5-flash (mặc định) |
+
+Không ghi API key vào GitHub. Build và backend kiểm tra hash đã ghim trong game.sha256; biến LQ77_SHA256 cũ không cần dùng cho bản này.
+
+## Kiểm thử và giới hạn
+
+Bản phát hành đã có kiểm thử fixture trình duyệt với dữ liệu mô phỏng, ba kích thước màn hình, các trạng thái biểu cảm, giá danh mục và điểm quan hệ âm. Chưa xác nhận toàn bộ gameplay end-to-end với mọi NPC hoặc Gemini thật. AI có thể sai; thông tin nhiệm vụ và kinh tế cần lấy từ dữ liệu game. Kiểm tra /health để phân biệt phiên bản được triển khai với phiên bản chỉ lưu trên GitHub.
+
+**SHA-256:** `79aa6e3c626a2c1ab5c02b7d5db2fef7a9081d5e450d91a986821bea15028ba9`
 
 ---
 
-## What V77 adds (all playable now)
-
-| Feature | What it does | How to open |
-|---|---|---|
-| **NPC mood chips** | When live AI replies, it may report a mood (`happy`, `curious`, `worried`, …). The chat shows a small mood chip next to the reply. Moods are whitelisted; offline replies show **no** chip. | Automatic in chat |
-| **Dialogue, Language and Memory** | Talk to a resident, look up an English word or revisit what you have learned. The portrait uses the resident’s in-game sprite. | `E` near a resident |
-| **Conversation Replay + phrase notebook** | Re-read past talks per resident, look up a word, hear it spoken, and save phrases to the notebook. | `L`, hub menu, or **Memory → Replay** in chat |
-| **Cultural Passport** | 8 region stamps. A stamp is earned by *living* a region's story (complete a mission, help a resident, join a festival, restore a Time Echo) — not by walking in. Evidence is shown for every stamp. | `P` or hub menu |
-| **The LifeQuest Herald** | A newspaper compiled from **recorded world events** (no invented news). Shows what changed, your CEFR level, and an honest disclaimer. | `T` or hub menu |
-
-All three panels are reachable from the **active hub** (`☰ Menu (G)` → the V77 entries
-at the bottom of the nav) and from keyboard shortcuts `P` / `T` / `L`.
-
-## What V77 deliberately does NOT change
-
-- Quests, money, prices, shop stock, unlocks, map locks, region positions.
-- NPC names, personas, greetings, goals, affinity, or per-NPC memory (`store.mem`).
-- The original pixel-art NPC sprite style and world generation.
-- The save format — V77 only **adds** a `game.v77` block; existing saves load unchanged.
-
-## Quick start (play locally)
-
-The game is a single self-contained HTML file. It needs to be served over **http://**
-(not `file://`, because the loader fetches its own source slices).
-
-```bash
-sh v77/build.sh
-
-# Option A — the secure Node relay (serves the game AND the Gemini proxy, built-ins only)
-node v77/backend/server.cjs
-# open http://localhost:10000
-
-# Option B — any static server (offline rules only, no AI key needed)
-cd v77 && python -m http.server 8080
-# open http://localhost:8080/game.html
-```
-
-Without a server-side `GEMINI_API_KEY`, the game probes the relay, sees no key, and
-falls back to **offline rules**, clearly labelled `Offline (rules)` in the chat header.
-Nothing is disguised as live AI.
-
-## Live AI (optional, secure)
-
-The Gemini key lives **only** in the server environment — never in the HTML/JS, never
-sent to the browser. See [AI_SYSTEM.md](AI_SYSTEM.md) and [DEPLOY.md](DEPLOY.md).
-
-```bash
-# Render / local Node relay
-GEMINI_API_KEY=your_key node v77/backend/server.cjs
-```
-
-The frontend posts `{ model, body }` to a relative `/api/gemini`; the relay validates,
-rate-limits, and forwards to Gemini with the key in a request **header**.
-
-## Controls (V77 additions)
-
-- `P` — Cultural Passport
-- `T` — The LifeQuest Herald
-- `L` — Conversation Replay (current resident if you're chatting)
-- `☰ Menu (G)` → 📔 Passport / 📰 Herald / 🕮 Replay talks
-- In chat, **Memory → Replay** opens the current resident's archive.
-
-Existing controls are unchanged: `WASD`/arrows move, `E` talk, `G` hub, `B` economy,
-`H/J/K/Q/F8` legacy panels, `Escape` close.
-
-## Deliverables in this folder
-
-- `parts/` — the 53 source parts of Beyond Conversation.
-- `lq77-module.js` — the conversation archive, notebook, passport and newspaper.
-- `living/` — the interface source, art and build script.
-- `game.html` — the playable single-file game generated by `sh v77/build.sh`.
-- `backend/server.cjs` — Node built-ins-only game server + secure Gemini relay (Render).
-- `.env.example` — environment template (no real secrets).
-- Docs: [README](README.md) · [CHANGELOG](CHANGELOG.md) · [ARCHITECTURE](ARCHITECTURE.md) ·
-  [WORLD_LORE](WORLD_LORE.md) · [AI_SYSTEM](AI_SYSTEM.md) · [TEST_REPORT](TEST_REPORT.md) ·
-  [DEPLOY](DEPLOY.md).
-
-## Integrity
-
-The build verifies the SHA-256 of the joined source parts before applying the
-interface. Both the build and the relay check the final HTML against `game.sha256`.
-The running relay reports its release name and artifact hash at `/health`.
-
-## Honest limitations
-
-- **Live AI path is untested in this build** — no API key was available during
-  development. The relay, validation, rate limits, and offline fallback are tested;
-  the actual Gemini round-trip needs a key. See [TEST_REPORT.md](TEST_REPORT.md).
-- Several master-prompt features are **deferred** (group conversation, Dream Architect,
-  Story Studio, Language Council, six new regions, debate arena, …). V77 is Phase 1.
-- Ambient loop-driven systems were verified by manually stepping the game loop because
-  the automated browser viewport is hidden (rAF paused). See [TEST_REPORT.md](TEST_REPORT.md).
-
-No fake buttons, no placeholder features, no fabricated test results.
+**LIFEQUEST AI — Learn by living the story.**

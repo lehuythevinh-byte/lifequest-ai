@@ -1,0 +1,2202 @@
+r=i.baseTileHeight,s=i.tilemapLayer,n=0;return s&&(e||(e=s.scene.cameras.main),n=s.y+e.scrollY*(1-s.scrollFactorY),r*=s.scaleY),n+t*r}},77366(t,e,i){var r=i(7386),s=i(75508);t.exports=function(t,e,i,n,a,o){if(a){var h,l=r(t,e,i,n,null,o),u=0;for(h=0;h<a.length;h++)u+=a[h].weight;if(!(u<=0))for(h=0;h<l.length;h++){for(var d=s.RND.frac()*u,c=0,f=-1,p=0;p<a.length;p++)if(d<=(c+=a[p].weight)){var g=a[p].index;f=Array.isArray(g)?g[Math.floor(s.RND.frac()*g.length)]:g;break}l[h].index=f}}}},10095(t,e,i){var r=i(85896),s=new(i(26099));t.exports=function(t,e,i,n){return r(t,0,e,s,i,n),s.x}},85896(t,e,i){var r=i(26099);t.exports=function(t,e,i,s,n,a){void 0===i&&(i=!0),s||(s=new r);var o=a.baseTileWidth,h=a.baseTileHeight,l=a.tilemapLayer;l&&(n||(n=l.scene.cameras.main),t-=l.x+n.scrollX*(1-l.scrollFactorX),e-=l.y+n.scrollY*(1-l.scrollFactorY),o*=l.scaleX,h*=l.scaleY);var u=t/o,d=e/h;return i&&(u=Math.floor(u),d=Math.floor(d)),s.set(u,d)}},63288(t,e,i){var r=i(85896),s=new(i(26099));t.exports=function(t,e,i,n){return r(0,t,e,s,i,n),s.y}},81086(t,e,i){t.exports={CalculateFacesAt:i(72023),CalculateFacesWithin:i(42573),CheckIsoBounds:i(33528),Copy:i(1785),CreateFromTiles:i(78419),CullBounds:i(19545),CullTiles:i(30003),Fill:i(35137),FilterTiles:i(40253),FindByIndex:i(52692),FindTile:i(66151),ForEachTile:i(97560),GetCullTilesFunction:i(43305),GetTileAt:i(7423),GetTileAtWorldXY:i(60540),GetTileCorners:i(55826),GetTileCornersFunction:i(11758),GetTilesWithin:i(7386),GetTilesWithinShape:i(91141),GetTilesWithinWorldXY:i(96523),GetTileToWorldXFunction:i(39167),GetTileToWorldXYFunction:i(62e3),GetTileToWorldYFunction:i(5984),GetWorldToTileXFunction:i(96113),GetWorldToTileXYFunction:i(16926),GetWorldToTileYFunction:i(55762),HasTileAt:i(45091),HasTileAtWorldXY:i(24152),HexagonalCullBounds:i(90454),HexagonalCullTiles:i(9474),HexagonalGetTileCorners:i(27229),HexagonalTileToWorldXY:i(19951),HexagonalWorldToTileXY:i(86625),IsInLayerBounds:i(62991),IsometricCullTiles:i(14018),IsometricTileToWorldXY:i(14127),IsometricWorldToTileXY:i(96897),PutTileAt:i(71558),PutTileAtWorldXY:i(26303),PutTilesAt:i(14051),Randomize:i(77389),RemoveTileAt:i(63557),RemoveTileAtWorldXY:i(94178),RenderDebug:i(15533),ReplaceByIndex:i(27987),RunCull:i(32483),SetCollision:i(57068),SetCollisionBetween:i(37266),SetCollisionByExclusion:i(75661),SetCollisionByProperty:i(64740),SetCollisionFromCollisionGroup:i(63307),SetLayerCollisionIndex:i(9589),SetTileCollision:i(20576),SetTileIndexCallback:i(79583),SetTileLocationCallback:i(93254),Shuffle:i(32903),StaggeredCullBounds:i(61325),StaggeredCullTiles:i(54503),StaggeredTileToWorldXY:i(97202),StaggeredTileToWorldY:i(28054),StaggeredWorldToTileXY:i(15108),StaggeredWorldToTileY:i(51900),SwapByIndex:i(86560),TileToWorldX:i(97281),TileToWorldXY:i(70326),TileToWorldY:i(29650),WeightedRandomize:i(77366),WorldToTileX:i(10095),WorldToTileXY:i(85896),WorldToTileY:i(63288)}},91907(t){t.exports={ORTHOGONAL:0,ISOMETRIC:1,STAGGERED:2,HEXAGONAL:3}},21829(t,e,i){var r={ORIENTATION:i(91907)};t.exports=r},62501(t,e,i){var r=i(79291),s=i(21829),n={Components:i(81086),Parsers:i(57442),Formats:i(80341),ImageCollection:i(16536),ParseToTilemap:i(31989),Tile:i(23029),Tilemap:i(49075),TilemapCreator:i(45939),TilemapFactory:i(46029),Tileset:i(33629),TilemapLayerBase:i(44731),TilemapLayer:i(20442),TilemapGPULayer:i(53180),Orientation:i(91907),LayerData:i(14977),MapData:i(87010),ObjectLayer:i(48700)};n=r(!1,n,s.ORIENTATION),t.exports=n},14977(t,e,i){var r=i(83419),s=i(91907),n=i(95540),a=new r({initialize:function(t){void 0===t&&(t={}),this.name=n(t,"name","layer"),this.id=n(t,"id",0),this.x=n(t,"x",0),this.y=n(t,"y",0),this.width=n(t,"width",0),this.height=n(t,"height",0),this.tileWidth=n(t,"tileWidth",0),this.tileHeight=n(t,"tileHeight",0),this.baseTileWidth=n(t,"baseTileWidth",this.tileWidth),this.baseTileHeight=n(t,"baseTileHeight",this.tileHeight),this.orientation=n(t,"orientation",s.ORTHOGONAL),this.widthInPixels=n(t,"widthInPixels",this.width*this.baseTileWidth),this.heightInPixels=n(t,"heightInPixels",this.height*this.baseTileHeight),this.alpha=n(t,"alpha",1),this.visible=n(t,"visible",!0),this.properties=n(t,"properties",[]),this.indexes=n(t,"indexes",[]),this.collideIndexes=n(t,"collideIndexes",[]),this.callbacks=n(t,"callbacks",[]),this.bodies=n(t,"bodies",[]),this.data=n(t,"data",[]),this.tilemapLayer=n(t,"tilemapLayer",null),this.hexSideLength=n(t,"hexSideLength",0),this.staggerAxis=n(t,"staggerAxis","y"),this.staggerIndex=n(t,"staggerIndex","odd")}});t.exports=a},87010(t,e,i){var r=i(83419),s=i(91907),n=i(95540),a=new r({initialize:function(t){void 0===t&&(t={}),this.name=n(t,"name","map"),this.width=n(t,"width",0),this.height=n(t,"height",0),this.infinite=n(t,"infinite",!1),this.tileWidth=n(t,"tileWidth",0),this.tileHeight=n(t,"tileHeight",0),this.widthInPixels=n(t,"widthInPixels",this.width*this.tileWidth),this.heightInPixels=n(t,"heightInPixels",this.height*this.tileHeight),this.format=n(t,"format",null),this.orientation=n(t,"orientation",s.ORTHOGONAL),this.renderOrder=n(t,"renderOrder","right-down"),this.version=n(t,"version","1"),this.properties=n(t,"properties",{}),this.layers=n(t,"layers",[]),this.images=n(t,"images",[]),this.objects=n(t,"objects",[]),Array.isArray(this.objects)||(this.objects=[]),this.collision=n(t,"collision",{}),this.tilesets=n(t,"tilesets",[]),this.imageCollections=n(t,"imageCollections",[]),this.tiles=n(t,"tiles",[]),this.hexSideLength=n(t,"hexSideLength",0),this.staggerAxis=n(t,"staggerAxis","y"),this.staggerIndex=n(t,"staggerIndex","odd")}});t.exports=a},48700(t,e,i){var r=i(83419),s=i(95540),n=new r({initialize:function(t){void 0===t&&(t={}),this.name=s(t,"name","object layer"),this.id=s(t,"id",0),this.opacity=s(t,"opacity",1),this.properties=s(t,"properties",{}),this.propertyTypes=s(t,"propertytypes",{}),this.type=s(t,"type","objectgroup"),this.visible=s(t,"visible",!0),this.objects=s(t,"objects",[]),Array.isArray(this.objects)||(this.objects=[])}});t.exports=n},6641(t,e,i){var r=i(91907);t.exports=function(t){return"isometric"===(t=t.toLowerCase())?r.ISOMETRIC:"staggered"===t?r.STAGGERED:"hexagonal"===t?r.HEXAGONAL:r.ORTHOGONAL}},46177(t,e,i){var r=i(80341),s=i(2342),n=i(82593),a=i(46594),o=i(87021);t.exports=function(t,e,i,h,l,u){var d;switch(e){case r.ARRAY_2D:d=s(t,i,h,l,u);break;case r.CSV:d=n(t,i,h,l,u);break;case r.TILED_JSON:d=a(t,i,u);break;case r.WELTMEISTER:d=o(t,i,u);break;default:console.warn("Unrecognized tilemap data format: "+e),d=null}return d}},2342(t,e,i){var r=i(80341),s=i(14977),n=i(87010),a=i(23029);t.exports=function(t,e,i,o,h){for(var l=new s({tileWidth:i,tileHeight:o}),u=new n({name:t,tileWidth:i,tileHeight:o,format:r.ARRAY_2D,layers:[l]}),d=[],c=e.length,f=0,p=0;p<e.length;p++){d[p]=[];for(var g=e[p],m=0;m<g.length;m++){var v=parseInt(g[m],10);isNaN(v)||-1===v?d[p][m]=h?null:new a(l,-1,m,p,i,o):d[p][m]=new a(l,v,m,p,i,o)}0===f&&(f=g.length)}return u.width=l.width=f,u.height=l.height=c,u.widthInPixels=l.widthInPixels=f*i,u.heightInPixels=l.heightInPixels=c*o,l.data=d,u}},82593(t,e,i){var r=i(80341),s=i(2342);t.exports=function(t,e,i,n,a){var o=e.trim().split("\n").map(function(t){return t.split(",")}),h=s(t,o,i,n,a);return h.format=r.CSV,h}},6656(t,e,i){var r=i(14977),s=i(23029);t.exports=function(t,e){for(var i=[],n=0;n<t.layer.length;n++){for(var a=t.layer[n],o=new r({name:a.name,width:a.width,height:a.height,tileWidth:a.tilesize,tileHeight:a.tilesize,visible:1===a.visible}),h=[],l=[],u=0;u<a.data.length;u++){for(var d=0;d<a.data[u].length;d++){var c,f=a.data[u][d]-1;c=f>-1?new s(o,f,d,u,a.tilesize,a.tilesize):e?null:new s(o,-1,d,u,a.tilesize,a.tilesize),h.push(c)}l.push(h),h=[]}o.data=l,i.push(o)}return i}},96483(t,e,i){var r=i(33629);t.exports=function(t){for(var e=[],i=[],s=0;s<t.layer.length;s++){var n=t.layer[s],a=n.tilesetName;""!==a&&-1===i.indexOf(a)&&(i.push(a),e.push(new r(a,0,n.tilesize,n.tilesize,0,0)))}return e}},87021(t,e,i){var r=i(80341),s=i(87010),n=i(6656),a=i(96483);t.exports=function(t,e,i){if(0===e.layer.length)return console.warn("No layers found in the Weltmeister map: "+t),null;for(var o=0,h=0,l=0;l<e.layer.length;l++)e.layer[l].width>o&&(o=e.layer[l].width),e.layer[l].height>h&&(h=e.layer[l].height);var u=new s({width:o,height:h,name:t,tileWidth:e.layer[0].tilesize,tileHeight:e.layer[0].tilesize,format:r.WELTMEISTER});return u.layers=n(e,i),u.tilesets=a(e),u}},52833(t,e,i){t.exports={ParseTileLayers:i(6656),ParseTilesets:i(96483),ParseWeltmeister:i(87021)}},57442(t,e,i){t.exports={FromOrientationString:i(6641),Parse:i(46177),Parse2DArray:i(2342),ParseCSV:i(82593),Impact:i(52833),Tiled:i(96761)}},51233(t,e,i){var r=i(79291);t.exports=function(t){for(var e,i,s,n,a,o=0;o<t.layers.length;o++){e=t.layers[o],n=null;for(var h=0;h<e.data.length;h++){a=e.data[h];for(var l=0;l<a.length;l++)null===(i=a[l])||i.index<0||(s=t.tiles[i.index][2],n=t.tilesets[s],i.width=n.tileWidth,i.height=n.tileHeight,n.tileProperties&&n.tileProperties[i.index-n.firstgid]&&(i.properties=r(i.properties,n.tileProperties[i.index-n.firstgid])))}}}},41868(t){t.exports=function(t){for(var e=window.atob(t),i=e.length,r=new Array(i/4),s=0;s<i;s+=4)r[s/4]=(e.charCodeAt(s)|e.charCodeAt(s+1)<<8|e.charCodeAt(s+2)<<16|e.charCodeAt(s+3)<<24)>>>0;return r}},84101(t,e,i){var r=i(33629);t.exports=function(t){var e,i,s=[];for(e=0;e<t.imageCollections.length;e++)for(var n=t.imageCollections[e].images,a=0;a<n.length;a++){var o=n[a],h={x:0,y:o.height-t.tileHeight};(i=new r(o.image,o.gid,o.width,o.height,0,0,void 0,void 0,h)).updateTileData(o.width,o.height),t.tilesets.push(i)}for(e=0;e<t.tilesets.length;e++)for(var l=(i=t.tilesets[e]).tileMargin,u=i.tileMargin,d=0,c=0,f=0,p=i.firstgid;p<i.firstgid+i.total&&(s[p]=[l,u,e],l+=i.tileWidth+i.tileSpacing,++d!==i.total)&&(++c!==i.columns||(l=i.tileMargin,u+=i.tileHeight+i.tileSpacing,c=0,++f!==i.rows));p++);return s}},79677(t,e,i){var r=i(95540);t.exports=function(t,e,i){if(!e)return{i:0,layers:t.layers,name:"",opacity:1,visible:!0,x:0,y:0};var s=e.x+r(e,"startx",0)*t.tilewidth+r(e,"offsetx",0),n=e.y+r(e,"starty",0)*t.tileheight+r(e,"offsety",0);return{i:0,layers:e.layers,name:i.name+e.name+"/",opacity:i.opacity*e.opacity,visible:i.visible&&e.visible,x:i.x+s,y:i.y+n}}},29920(t){var e=2147483648,i=1073741824,r=536870912;t.exports=function(t){var s=Boolean(t&e),n=Boolean(t&i),a=Boolean(t&r);t&=536870911;var o=0,h=!1;return s&&n&&a?(o=Math.PI/2,h=!0):s&&n&&!a?(o=Math.PI,h=!1):s&&!n&&a?(o=Math.PI/2,h=!1):!s||n||a?!s&&n&&a?(o=3*Math.PI/2,h=!1):s||!n||a?s||n||!a?s||n||a||(o=0,h=!1):(o=3*Math.PI/2,h=!0):(o=Math.PI,h=!0):(o=0,h=!0),{gid:t,flippedHorizontal:s,flippedVertical:n,flippedAntiDiagonal:a,rotation:o,flipped:h}}},12635(t,e,i){var r=i(95540),s=i(79677);t.exports=function(t){for(var e=[],i=[],n=s(t);n.i<n.layers.length||i.length>0;)if(n.i>=n.layers.length){if(i.length<1){console.warn("TilemapParser.parseTiledJSON - Invalid layer group hierarchy");break}n=i.pop()}else{var a=n.layers[n.i];if(n.i++,"imagelayer"===a.type){var o=r(a,"offsetx",0)+r(a,"startx",0),h=r(a,"offsety",0)+r(a,"starty",0);e.push({name:n.name+a.name,image:a.image,x:n.x+o+a.x,y:n.y+h+a.y,alpha:n.opacity*a.opacity,visible:n.visible&&a.visible,properties:r(a,"properties",{})})}else if("group"===a.type){var l=s(t,a,n);i.push(n),n=l}}return e}},46594(t,e,i){var r=i(51233),s=i(84101),n=i(91907),a=i(62644),o=i(80341),h=i(6641),l=i(87010),u=i(12635),d=i(22611),c=i(28200),f=i(24619);t.exports=function(t,e,i){var p=a(e),g=new l({width:p.width,height:p.height,name:t,tileWidth:p.tilewidth,tileHeight:p.tileheight,orientation:h(p.orientation),format:o.TILED_JSON,version:p.version,properties:p.properties,renderOrder:p.renderorder,infinite:p.infinite});if(g.orientation===n.HEXAGONAL)if(g.hexSideLength=p.hexsidelength,g.staggerAxis=p.staggeraxis,g.staggerIndex=p.staggerindex,"y"===g.staggerAxis){var m=(g.tileHeight-g.hexSideLength)/2;g.widthInPixels=g.tileWidth*(g.width+.5),g.heightInPixels=g.height*(g.hexSideLength+m)+m}else{var v=(g.tileWidth-g.hexSideLength)/2;g.widthInPixels=g.width*(g.hexSideLength+v)+v,g.heightInPixels=g.tileHeight*(g.height+.5)}g.layers=c(p,i),g.images=u(p);var y=f(p);return g.tilesets=y.tilesets,g.imageCollections=y.imageCollections,g.objects=d(p),g.tiles=s(g),r(g),g}},52205(t,e,i){var r=i(18254),s=i(29920),n=function(t){return{x:t.x,y:t.y}},a=["id","name","type","rotation","properties","visible","x","y","width","height"];t.exports=function(t,e,i){void 0===e&&(e=0),void 0===i&&(i=0);var o=r(t,a);if(o.x+=e,o.y+=i,t.gid){var h=s(t.gid);o.gid=h.gid,o.flippedHorizontal=h.flippedHorizontal,o.flippedVertical=h.flippedVertical,o.flippedAntiDiagonal=h.flippedAntiDiagonal}else t.polyline?o.polyline=t.polyline.map(n):t.polygon?o.polygon=t.polygon.map(n):t.ellipse?o.ellipse=t.ellipse:t.text?o.text=t.text:t.point?o.point=!0:o.rectangle=!0;return o}},22611(t,e,i){var r=i(95540),s=i(52205),n=i(48700),a=i(79677);t.exports=function(t){for(var e=[],i=[],o=a(t);o.i<o.layers.length||i.length>0;)if(o.i>=o.layers.length){if(i.length<1){console.warn("TilemapParser.parseTiledJSON - Invalid layer group hierarchy");break}o=i.pop()}else{var h=o.layers[o.i];if(o.i++,h.opacity*=o.opacity,h.visible=o.visible&&h.visible,"objectgroup"===h.type){h.name=o.name+h.name;for(var l=o.x+r(h,"startx",0)+r(h,"offsetx",0),u=o.y+r(h,"starty",0)+r(h,"offsety",0),d=[],c=0;c<h.objects.length;c++){var f=s(h.objects[c],l,u);d.push(f)}var p=new n(h);p.objects=d,e.push(p)}else if("group"===h.type){var g=a(t,h,o);i.push(o),o=g}}return e}},28200(t,e,i){var r=i(41868),s=i(91907),n=i(79677),a=i(6641),o=i(95540),h=i(14977),l=i(29920),u=i(23029);t.exports=function(t,e){for(var i=o(t,"infinite",!1),d=[],c=[],f=n(t);f.i<f.layers.length||c.length>0;)if(f.i>=f.layers.length){if(c.length<1){console.warn("TilemapParser.parseTiledJSON - Invalid layer group hierarchy");break}f=c.pop()}else{var p=f.layers[f.i];if(f.i++,"tilelayer"===p.type)if(p.compression)console.warn("TilemapParser.parseTiledJSON - Layer compression is unsupported, skipping layer '"+p.name+"'");else{if(p.encoding&&"base64"===p.encoding){if(p.chunks)for(var g=0;g<p.chunks.length;g++)p.chunks[g].data=r(p.chunks[g].data);p.data&&(p.data=r(p.data)),delete p.encoding}var m,v,y,x,T,w,S=[],b=0;if(i){var C=o(p,"startx",0)+p.x,E=o(p,"starty",0)+p.y;(m=new h({name:f.name+p.name,id:p.id,x:f.x+o(p,"offsetx",0)+C*t.tilewidth,y:f.y+o(p,"offsety",0)+E*t.tileheight,width:p.width,height:p.height,tileWidth:t.tilewidth,tileHeight:t.tileheight,alpha:f.opacity*p.opacity,visible:f.visible&&p.visible,properties:o(p,"properties",[]),orientation:a(t.orientation)})).orientation===s.HEXAGONAL&&(m.hexSideLength=t.hexsidelength,m.staggerAxis=t.staggeraxis,m.staggerIndex=t.staggerindex,"y"===m.staggerAxis?(T=(m.tileHeight-m.hexSideLength)/2,m.widthInPixels=m.tileWidth*(m.width+.5),m.heightInPixels=m.height*(m.hexSideLength+T)+T):(w=(m.tileWidth-m.hexSideLength)/2,m.widthInPixels=m.width*(m.hexSideLength+w)+w,m.heightInPixels=m.tileHeight*(m.height+.5)));for(var A=0;A<p.height;A++){S[A]=[null];for(var _=0;_<p.width;_++)S[A][_]=null}for(A=0,k=p.chunks.length;A<k;A++)for(var M=p.chunks[A],R=M.x-C,P=M.y-E,O=0,L=0,D=M.data.length;L<D;L++){var F=b+R,I=O+P;(v=l(M.data[L])).gid>0?((y=new u(m,v.gid,F,I,t.tilewidth,t.tileheight)).rotation=v.rotation,y.flipX=v.flipped,S[I][F]=y):(x=e?null:new u(m,-1,F,I,t.tilewidth,t.tileheight),S[I][F]=x),++b===M.width&&(O++,b=0)}}else{(m=new h({name:f.name+p.name,id:p.id,x:f.x+o(p,"offsetx",0)+p.x,y:f.y+o(p,"offsety",0)+p.y,width:p.width,height:p.height,tileWidth:t.tilewidth,tileHeight:t.tileheight,alpha:f.opacity*p.opacity,visible:f.visible&&p.visible,properties:o(p,"properties",[]),orientation:a(t.orientation)})).orientation===s.HEXAGONAL&&(m.hexSideLength=t.hexsidelength,m.staggerAxis=t.staggeraxis,m.staggerIndex=t.staggerindex,"y"===m.staggerAxis?(T=(m.tileHeight-m.hexSideLength)/2,m.widthInPixels=m.tileWidth*(m.width+.5),m.heightInPixels=m.height*(m.hexSideLength+T)+T):(w=(m.tileWidth-m.hexSideLength)/2,m.widthInPixels=m.width*(m.hexSideLength+w)+w,m.heightInPixels=m.tileHeight*(m.height+.5)));for(var N=[],B=0,k=p.data.length;B<k;B++)(v=l(p.data[B])).gid>0?((y=new u(m,v.gid,b,S.length,t.tilewidth,t.tileheight)).rotation=v.rotation,y.flipX=v.flipped,N.push(y)):(x=e?null:new u(m,-1,b,S.length,t.tilewidth,t.tileheight),N.push(x)),++b===p.width&&(S.push(N),b=0,N=[])}m.data=S,d.push(m)}else if("group"===p.type){var U=n(t,p,f);c.push(f),f=U}}return d}},24619(t,e,i){var r=i(33629),s=i(16536),n=i(52205),a=i(57880);t.exports=function(t){for(var e,i=[],o=[],h=null,l=0;l<t.tilesets.length;l++){var u=t.tilesets[l];if(u.source)console.warn("External tilesets unsupported. Use Embed Tileset and re-export");else if(u.image){var d=new r(u.name,u.firstgid,u.tilewidth,u.tileheight,u.margin,u.spacing,void 0,void 0,u.tileoffset);if(t.version>1){var c=void 0,f=void 0;if(Array.isArray(u.tiles)){c=c||{},f=f||{};for(var p=0;p<u.tiles.length;p++){var g=u.tiles[p];if(g.properties){var m={};g.properties.forEach(function(t){m[t.name]=t.value}),f[g.id]=m}if(g.objectgroup&&((c[g.id]||(c[g.id]={})).objectgroup=g.objectgroup,g.objectgroup.objects)){var v=g.objectgroup.objects.map(function(t){return n(t)});c[g.id].objectgroup.objects=v}g.animation&&((c[g.id]||(c[g.id]={})).animation=g.animation),g.type&&((c[g.id]||(c[g.id]={})).type=g.type)}for(var y in c){var x=c[y].animation;if(x){for(var T=0,w=0;w<x.length;w++)x[w].startTime=T,T+=x[w].duration;c[y].animationDuration=T}}}Array.isArray(u.wangsets)&&(c=c||{},f=f||{},a(u.wangsets,c)),c&&(d.tileData=c,d.tileProperties=f)}else if(u.tileproperties&&(d.tileProperties=u.tileproperties),u.tiles)for(e in d.tileData=u.tiles,d.tileData){var S=d.tileData[e].objectgroup;if(S&&S.objects){var b=S.objects.map(function(t){return n(t)});d.tileData[e].objectgroup.objects=b}}d.updateTileData(u.imagewidth,u.imageheight),i.push(d)}else{var C=new s(u.name,u.firstgid,u.tilewidth,u.tileheight,u.margin,u.spacing,u.properties),E=0;for(p=0;p<u.tiles.length;p++){var A=(g=u.tiles[p]).image,_=parseInt(g.id,10),M=u.firstgid+_,R=g.imagewidth,P=g.imageheight;C.addImage(M,A,R,P),E=Math.max(_,E)}C.maxId=E,o.push(C)}h&&(h.lastgid=u.firstgid-1),h=u}return{tilesets:i,imageCollections:o}}},57880(t){t.exports=function(t,e){for(var i=0;i<t.length;i++){var r=t[i],s=i;if(r.name&&""!==r.name&&(s=r.name),Array.isArray(r.wangtiles)&&r.wangtiles.length>0){var n,a,o,h={},l={};if(Array.isArray(r.edgecolors))for(n=0;n<r.edgecolors.length;n++)o=1+n,""!==(a=r.edgecolors[n]).name&&(h[o]=a.name);if(Array.isArray(r.cornercolors))for(n=0;n<r.cornercolors.length;n++)o=1+n,""!==(a=r.cornercolors[n]).name&&(l[o]=a.name);if(Array.isArray(r.colors))for(n=0;n<r.colors.length;n++)o=1+n,""!==(a=r.colors[n]).name&&(h[o]=l[o]=a.name);for(var u=[h,l,h,l,h,l,h,l],d=0;d<r.wangtiles.length;d++){var c=r.wangtiles[d],f=e[c.tileid]||(e[c.tileid]={});f=f.wangid||(f.wangid={});for(var p=[],g=0;g<Math.min(u.length,c.wangid.length);g++)if(0!==(a=c.wangid[g])){var m=u[g][a];void 0===m?p.push(a):p.push(m)}else p.push(void 0);f[s]=p}}}}},96761(t,e,i){t.exports={AssignTileProperties:i(51233),Base64Decode:i(41868),BuildTilesetIndex:i(84101),CreateGroupLayer:i(79677),ParseGID:i(29920),ParseImageLayers:i(12635),ParseJSONTiled:i(46594),ParseObject:i(52205),ParseObjectLayers:i(22611),ParseTileLayers:i(28200),ParseTilesets:i(24619)}},33385(t,e,i){var r=i(83419),s=i(37277),n=i(44594),a=i(94880),o=i(72905),h=new r({initialize:function(t){this.scene=t,this.systems=t.sys,this.now=0,this.startTime=0,this.timeScale=1,this.paused=!1,this._active=[],this._pendingInsertion=[],this._pendingRemoval=[],t.sys.events.once(n.BOOT,this.boot,this),t.sys.events.on(n.START,this.start,this)},boot:function(){this.now=this.systems.game.loop.time,this.systems.events.once(n.DESTROY,this.destroy,this)},start:function(){this.startTime=this.systems.game.loop.time;var t=this.systems.events;t.on(n.PRE_UPDATE,this.preUpdate,this),t.on(n.UPDATE,this.update,this),t.once(n.SHUTDOWN,this.shutdown,this)},addEvent:function(t){var e;if(t instanceof a){if(e=t,this.removeEvent(e),e.elapsed=e.startAt,e.hasDispatched=!1,e.repeatCount=-1===e.repeat||e.loop?999999999999:e.repeat,e.delay<=0&&e.repeatCount>0)throw new Error("TimerEvent infinite loop created via zero delay")}else e=new a(t);return this._pendingInsertion.push(e),e},delayedCall:function(t,e,i,r){return this.addEvent({delay:t,callback:e,args:i,callbackScope:r})},clearPendingEvents:function(){return this._pendingInsertion=[],this},removeEvent:function(t){Array.isArray(t)||(t=[t]);for(var e=0;e<t.length;e++){var i=t[e];o(this._pendingRemoval,i),o(this._pendingInsertion,i),o(this._active,i)}return this},removeAllEvents:function(){return this._pendingRemoval=this._pendingRemoval.concat(this._active),this},preUpdate:function(){var t=this._pendingRemoval.length,e=this._pendingInsertion.length;if(0!==t||0!==e){var i,r;for(i=0;i<t;i++){r=this._pendingRemoval[i];var s=this._active.indexOf(r);s>-1&&this._active.splice(s,1),r.destroy()}for(i=0;i<e;i++)r=this._pendingInsertion[i],this._active.push(r);this._pendingRemoval.length=0,this._pendingInsertion.length=0}},update:function(t,e){if(this.now=t,!this.paused){e*=this.timeScale;for(var i=0;i<this._active.length;i++){var r=this._active[i];if(!r.paused&&(r.elapsed+=e*r.timeScale,r.elapsed>=r.delay)){var s=r.elapsed-r.delay;if(r.elapsed=r.delay,!r.hasDispatched&&r.callback&&(r.hasDispatched=!0,r.callback.apply(r.callbackScope,r.args)),r.repeatCount>0){if(r.repeatCount--,s>=r.delay)for(;s>=r.delay&&r.repeatCount>0;)r.callback&&r.callback.apply(r.callbackScope,r.args),s-=r.delay,r.repeatCount--;r.elapsed=s,r.hasDispatched=!1}else r.hasDispatched&&this._pendingRemoval.push(r)}}}},shutdown:function(){var t;for(t=0;t<this._pendingInsertion.length;t++)this._pendingInsertion[t].destroy();for(t=0;t<this._active.length;t++)this._active[t].destroy();for(t=0;t<this._pendingRemoval.length;t++)this._pendingRemoval[t].destroy();this._active.length=0,this._pendingRemoval.length=0,this._pendingInsertion.length=0;var e=this.systems.events;e.off(n.PRE_UPDATE,this.preUpdate,this),e.off(n.UPDATE,this.update,this),e.off(n.SHUTDOWN,this.shutdown,this)},destroy:function(){this.shutdown(),this.scene.sys.events.off(n.START,this.start,this),this.scene=null,this.systems=null}});s.register("Clock",h,"time"),t.exports=h},96120(t,e,i){var r=i(83419),s=i(50792),n=i(39429),a=i(95540),o=i(44594),h=i(89809),l=new r({Extends:s,initialize:function(t,e){s.call(this),this.scene=t,this.systems=t.sys,this.elapsed=0,this.timeScale=1,this.paused=!0,this.complete=!1,this.totalComplete=0,this.loop=0,this.iteration=0,this.events=[];var i=this.systems.events;i.on(o.PRE_UPDATE,this.preUpdate,this),i.on(o.UPDATE,this.update,this),i.once(o.SHUTDOWN,this.destroy,this),e&&this.add(e)},preUpdate:function(t,e){this.paused||(this.elapsed+=e*this.timeScale)},update:function(){if(!this.paused&&!this.complete){var t,e,i=this.events,r=!1,s=this.systems;for(t=0;t<i.length;t++){var n=i[t];if(!n.complete&&n.time<=this.elapsed){if(n.complete=!0,this.totalComplete++,e=n.target?n.target:this,n.if&&!n.if.call(e,n))continue;if(n.once&&(r=!0),n.set&&n.target)for(var a in n.set)n.target[a]=n.set[a];this.iteration&&n.repeat++,n.loop&&n.repeat&&n.loop.call(e),n.tween&&(n.tweenInstance=s.tweens.add(n.tween)),n.sound&&("string"==typeof n.sound?s.sound.play(n.sound):s.sound.play(n.sound.key,n.sound.config)),n.event&&this.emit(n.event,e),n.run&&n.run.call(e),n.stop&&this.stop()}}if(r)for(t=0;t<i.length;t++)i[t].complete&&i[t].once&&(i.splice(t,1),t--);var o=0;for(t=0;t<i.length;t++)i[t].complete||o++;0===o&&(i.length>0||this.totalComplete>0)&&(0!==this.loop&&(-1===this.loop||this.loop>this.iteration)?(this.iteration++,this.reset(!0)):this.complete=!0),this.complete&&this.emit(h.COMPLETE,this)}},play:function(t){return void 0===t&&(t=!0),this.paused=!1,this.complete=!1,this.totalComplete=0,t&&this.reset(),this},pause:function(){this.paused=!0;for(var t=this.events,e=0;e<t.length;e++){var i=t[e];i.tweenInstance&&(i.tweenInstance.paused=!0)}return this},repeat:function(t){return void 0!==t&&!0!==t||(t=-1),!1===t&&(t=0),this.loop=t,this},resume:function(){this.paused=!1;for(var t=this.events,e=0;e<t.length;e++){var i=t[e];i.tweenInstance&&(i.tweenInstance.paused=!1)}return this},stop:function(){return this.paused=!0,this.complete=!0,this},reset:function(t){void 0===t&&(t=!1),this.elapsed=0,t||(this.iteration=0);for(var e=this.events,i=0;i<e.length;i++){var r=e[i];r.complete=!1,t||(r.repeat=0),r.tweenInstance&&r.tweenInstance.stop()}return this.play(!1)},add:function(t){Array.isArray(t)||(t=[t]);var e=this.events,i=0;e.length>0&&(i=e[e.length-1].time);for(var r=0;r<t.length;r++){var s=t[r],n=a(s,"at",0),o=a(s,"in",null);null!==o&&(n=this.elapsed+o);var h=a(s,"from",null);null!==h&&(n=i+h),e.push({complete:!1,time:n,repeat:0,if:a(s,"if",null),run:a(s,"run",null),loop:a(s,"loop",null),event:a(s,"event",null),target:a(s,"target",null),set:a(s,"set",null),tween:a(s,"tween",null),sound:a(s,"sound",null),once:a(s,"once",!1),stop:a(s,"stop",!1)}),i=n}return this.complete=!1,this},clear:function(){for(var t=this.events,e=0;e<t.length;e++){var i=t[e];i.tweenInstance&&i.tweenInstance.stop()}return t.length=0,this.elapsed=0,this.paused=!0,this},isPlaying:function(){return!this.paused&&!this.complete},getProgress:function(){return Math.min(this.totalComplete,this.events.length)/this.events.length},destroy:function(){var t=this.systems.events;t.off(o.PRE_UPDATE,this.preUpdate,this),t.off(o.UPDATE,this.update,this),t.off(o.SHUTDOWN,this.destroy,this),this.clear(),this.scene=null,this.systems=null}});n.register("timeline",function(t){return new l(this.scene,t)}),t.exports=l},94880(t,e,i){var r=i(83419),s=i(95540),n=new r({initialize:function(t){this.delay=0,this.repeat=0,this.repeatCount=0,this.loop=!1,this.callback,this.callbackScope,this.args,this.timeScale=1,this.startAt=0,this.elapsed=0,this.paused=!1,this.hasDispatched=!1,this.reset(t)},reset:function(t){if(this.delay=s(t,"delay",0),this.repeat=s(t,"repeat",0),this.loop=s(t,"loop",!1),this.callback=s(t,"callback",void 0),this.callbackScope=s(t,"callbackScope",this),this.args=s(t,"args",[]),this.timeScale=s(t,"timeScale",1),this.startAt=s(t,"startAt",0),this.paused=s(t,"paused",!1),this.elapsed=this.startAt,this.hasDispatched=!1,this.repeatCount=-1===this.repeat||this.loop?999999999999:this.repeat,this.delay<=0&&this.repeatCount>0)throw new Error("TimerEvent infinite loop created via zero delay");return this},getProgress:function(){return this.elapsed/this.delay},getOverallProgress:function(){if(this.repeat>0){var t=this.delay+this.delay*this.repeat;return(this.elapsed+this.delay*(this.repeat-this.repeatCount))/t}return this.getProgress()},getRepeatCount:function(){return this.repeatCount},getElapsed:function(){return this.elapsed},getElapsedSeconds:function(){return.001*this.elapsed},getRemaining:function(){return this.delay-this.elapsed},getRemainingSeconds:function(){return.001*this.getRemaining()},getOverallRemaining:function(){return this.delay*(1+this.repeatCount)-this.elapsed},getOverallRemainingSeconds:function(){return.001*this.getOverallRemaining()},remove:function(t){void 0===t&&(t=!1),this.elapsed=this.delay,this.hasDispatched=!t,this.repeatCount=0},destroy:function(){this.callback=void 0,this.callbackScope=void 0,this.args=[]}});t.exports=n},35945(t){t.exports="complete"},89809(t,e,i){t.exports={COMPLETE:i(35945)}},90291(t,e,i){t.exports={Clock:i(33385),Events:i(89809),Timeline:i(96120),TimerEvent:i(94880)}},40382(t,e,i){var r=i(72905),s=i(83419),n=i(43491),a=i(88032),o=i(37277),h=i(44594),l=i(93109),u=i(8462),d=i(8357),c=i(43960),f=i(26012),p=new s({initialize:function(t){this.scene=t,this.events=t.sys.events,this.timeScale=1,this.paused=!1,this.processing=!1,this.tweens=[],this.time=0,this.startTime=0,this.nextTime=0,this.prevTime=0,this.maxLag=500,this.lagSkip=33,this.gap=1e3/240,this.events.once(h.BOOT,this.boot,this),this.events.on(h.START,this.start,this)},boot:function(){this.events.once(h.DESTROY,this.destroy,this)},start:function(){this.timeScale=1,this.paused=!1,this.startTime=Date.now(),this.prevTime=this.startTime,this.nextTime=this.gap,this.events.on(h.UPDATE,this.update,this),this.events.once(h.SHUTDOWN,this.shutdown,this)},create:function(t){Array.isArray(t)||(t=[t]);for(var e=[],i=0;i<t.length;i++){var r=t[i];r instanceof u||r instanceof c?e.push(r):Array.isArray(r.tweens)?e.push(f(this,r)):e.push(d(this,r))}return 1===e.length?e[0]:e},add:function(t){var e=t,i=this.tweens;return e instanceof u||e instanceof c||(e=Array.isArray(e.tweens)?f(this,e):d(this,e)),i.push(e.reset()),e},addMultiple:function(t){for(var e,i=[],r=this.tweens,s=0;s<t.length;s++)(e=t[s])instanceof u||e instanceof c||(e=Array.isArray(e.tweens)?f(this,e):d(this,e)),r.push(e.reset()),i.push(e);return i},chain:function(t){var e=f(this,t);return this.tweens.push(e.init()),e},getChainedTweens:function(t){return t.getChainedTweens()},has:function(t){return this.tweens.indexOf(t)>-1},existing:function(t){return this.has(t)||this.tweens.push(t.reset()),this},addCounter:function(t){var e=a(this,t);return this.tweens.push(e.reset()),e},stagger:function(t,e){return l(t,e)},setLagSmooth:function(t,e){return void 0===t&&(t=1/1e-8),void 0===e&&(e=0),this.maxLag=t,this.lagSkip=Math.min(e,this.maxLag),this},setFps:function(t){return void 0===t&&(t=240),this.gap=1e3/t,this.nextTime=1e3*this.time+this.gap,this},getDelta:function(t){var e=Date.now()-this.prevTime;e>this.maxLag&&(this.startTime+=e-this.lagSkip),this.prevTime+=e;var i=this.prevTime-this.startTime,r=i-this.nextTime,s=i-1e3*this.time;return r>0||t?(i/=1e3,this.time=i,this.nextTime+=r+(r>=this.gap?4:this.gap-r)):s=0,s},tick:function(){return this.step(!0),this},update:function(){this.paused||this.step(!1)},step:function(t){void 0===t&&(t=!1);var e=this.getDelta(t);if(!(e<=0)){var i,r;this.processing=!0;var s=[],n=this.tweens;for(i=0;i<n.length;i++)(r=n[i]).update(e)&&s.push(r);var a=s.length;if(a&&n.length>0){for(i=0;i<a;i++){r=s[i];var o=n.indexOf(r);o>-1&&(r.isPendingRemove()||r.isDestroyed())&&(n.splice(o,1),r.destroy())}s.length=0}this.processing=!1}},remove:function(t){return this.processing?t.setPendingRemoveState():(r(this.tweens,t),t.setRemovedState()),this},reset:function(t){return this.existing(t),t.seek(),t.setActiveState(),this},makeActive:function(t){return this.existing(t),t.setActiveState(),this},each:function(t,e){var i,r=[null];for(i=1;i<arguments.length;i++)r.push(arguments[i]);return this.tweens.forEach(function(i){r[0]=i,t.apply(e,r)}),this},getTweens:function(){return this.tweens.slice()},getTweensOf:function(t){for(var e=[],i=this.tweens,r=(t=Array.isArray(t)?n(t):[t]).length,s=0;s<i.length;s++)for(var a=i[s],o=0;o<r;o++)!a.isDestroyed()&&a.hasTarget(t[o])&&e.push(a);return e},getGlobalTimeScale:function(){return this.timeScale},setGlobalTimeScale:function(t){return this.timeScale=t,this},isTweening:function(t){for(var e,i=this.tweens,r=0;r<i.length;r++)if((e=i[r]).isPlaying()&&e.hasTarget(t))return!0;return!1},killAll:function(){for(var t=this.processing?this.getTweens():this.tweens,e=0;e<t.length;e++)t[e].destroy();return this.processing||(t.length=0),this},killTweensOf:function(t){for(var e=this.getTweensOf(t),i=0;i<e.length;i++)e[i].destroy();return this},pauseAll:function(){return this.paused=!0,this},resumeAll:function(){return this.paused=!1,this},shutdown:function(){this.killAll(),this.tweens=[],this.events.off(h.UPDATE,this.update,this),this.events.off(h.SHUTDOWN,this.shutdown,this)},destroy:function(){this.shutdown(),this.events.off(h.START,this.start,this),this.scene=null,this.events=null}});o.register("TweenManager",p,"tweens"),t.exports=p},57355(t){t.exports=function(t,e,i){return t&&t.hasOwnProperty(e)?t[e]:i}},6113(t,e,i){var r=i(62640),s=i(35355);t.exports=function(t,e){var i=r.Power0;if("string"==typeof t)if(r.hasOwnProperty(t))i=r[t];else{var n="";if(t.indexOf(".")){var a=(n=t.substring(t.indexOf(".")+1)).toLowerCase();"in"===a?n="easeIn":"out"===a?n="easeOut":"inout"===a&&(n="easeInOut")}t=s(t.substring(0,t.indexOf(".")+1)+n),r.hasOwnProperty(t)&&(i=r[t])}else"function"==typeof t&&(i=t);if(!e)return i;var o=e.slice(0);return o.unshift(0),function(t){return o[0]=t,i.apply(this,o)}}},91389(t,e,i){var r=i(89318),s=i(77259),n={bezier:r,catmull:s,catmullrom:s,linear:i(28392)};t.exports=function(t){if(null===t)return null;var e=n.linear;return"string"==typeof t?n.hasOwnProperty(t)&&(e=n[t]):"function"==typeof t&&(e=t),e}},55292(t){t.exports=function(t,e,i){var r;t.hasOwnProperty(e)?r="function"===typeof t[e]?function(i,r,s,n,a,o){return t[e](i,r,s,n,a,o)}:function(){return t[e]}:r="function"==typeof i?i:function(){return i};return r}},82985(t,e,i){var r=i(81076);t.exports=function(t){var e,i=[];if(t.hasOwnProperty("props"))for(e in t.props)"_"!==e.substring(0,1)&&i.push({key:e,value:t.props[e]});else for(e in t)-1===r.indexOf(e)&&"_"!==e.substring(0,1)&&i.push({key:e,value:t[e]});return i}},62329(t,e,i){var r=i(35154);t.exports=function(t){var e=r(t,"targets",null);return null===e||("function"==typeof e&&(e=e.call()),Array.isArray(e)||(e=[e])),e}},17777(t,e,i){var r=i(30976),s=i(99472);function n(t){return!!t.getActive&&"function"==typeof t.getActive}function a(t){return!!t.getStart&&"function"==typeof t.getStart}function o(t){return!!t.getEnd&&"function"==typeof t.getEnd}var h=function(t,e){var i,l,u=function(t,e,i){return i},d=function(t,e,i){return i},c=null,f=typeof e;if("number"===f)u=function(){return e};else if(Array.isArray(e))d=function(){return e[0]},u=function(){return e[e.length-1]};else if("string"===f){var p=e.toLowerCase(),g="random"===p.substring(0,6),m="int"===p.substring(0,3);if(g||m){var v=p.indexOf("("),y=p.indexOf(")"),x=p.indexOf(",");if(!(v&&y&&x))throw new Error("invalid random() format");var T=parseFloat(p.substring(v+1,x)),w=parseFloat(p.substring(x+1,y));u=g?function(){return s(T,w)}:function(){return r(T,w)}}else{p=p[0];var S=parseFloat(e.substr(2));switch(p){case"+":u=function(t,e,i){return i+S};break;case"-":u=function(t,e,i){return i-S};break;case"*":u=function(t,e,i){return i*S};break;case"/":u=function(t,e,i){return i/S};break;default:u=function(){return parseFloat(e)}}}}else if("function"===f)u=e;else if("object"===f)if(a(l=e)||o(l)||n(l))n(e)&&(c=e.getActive),o(e)&&(u=e.getEnd),a(e)&&(d=e.getStart);else if(e.hasOwnProperty("value"))i=h(t,e.value);else{var b=e.hasOwnProperty("to"),C=e.hasOwnProperty("from"),E=e.hasOwnProperty("start");if(b&&(C||E)){if(i=h(t,e.to),E){var A=h(t,e.start);i.getActive=A.getEnd}if(C){var _=h(t,e.from);i.getStart=_.getEnd}}}return i||(i={getActive:c,getEnd:u,getStart:d}),i};t.exports=h},88032(t,e,i){var r=i(70402),s=i(69902),n=i(23568),a=i(57355),o=i(6113),h=i(95540),l=i(55292),u=i(35154),d=i(17777),c=i(269),f=i(8462);t.exports=function(t,e,i){if(e instanceof f)return e.parent=t,e;i=void 0===i?s:c(s,i);var p=h(e,"from",0),g=h(e,"to",1),m=[{value:p}],v=h(e,"delay",i.delay),y=h(e,"easeParams",i.easeParams),x=h(e,"ease",i.ease),T=d("value",g),w=new f(t,m),S=w.add(0,"value",T.getEnd,T.getStart,T.getActive,o(h(e,"ease",x),h(e,"easeParams",y)),l(e,"delay",v),h(e,"duration",i.duration),a(e,"yoyo",i.yoyo),h(e,"hold",i.hold),h(e,"repeat",i.repeat),h(e,"repeatDelay",i.repeatDelay),!1,!1);S.start=p,S.current=p,w.completeDelay=n(e,"completeDelay",0),w.loop=Math.round(n(e,"loop",0)),w.loopDelay=Math.round(n(e,"loopDelay",0)),w.paused=a(e,"paused",!1),w.persist=a(e,"persist",!1),w.isNumberTween=!0,w.callbackScope=u(e,"callbackScope",w);for(var b=r.TYPES,C=0;C<b.length;C++){var E=b[C],A=u(e,E,!1);if(A){var _=u(e,E+"Params",[]);w.setCallback(E,A,_)}}return w}},93109(t,e,i){var r=i(6113),s=i(35154),n=i(36383);t.exports=function(t,e){var i;void 0===e&&(e={});var a=s(e,"start",0),o=s(e,"ease",null),h=s(e,"grid",null),l=s(e,"from",0),u="first"===l,d="center"===l,c="last"===l,f="number"==typeof l,p=Array.isArray(t),g=p?parseFloat(t[0]):parseFloat(t),m=p?parseFloat(t[1]):0,v=Math.max(g,m);if(p&&(a+=g),h){var y=h[0],x=h[1],T=0,w=0,S=0,b=0,C=[];c?(T=y-1,w=x-1):f?(T=l%y,w=Math.floor(l/y)):d&&(T=(y-1)/2,w=(x-1)/2);for(var E=n.MIN_SAFE_INTEGER,A=0;A<x;A++){C[A]=[];for(var _=0;_<y;_++){S=T-_,b=w-A;var M=Math.sqrt(S*S+b*b);M>E&&(E=M),C[A][_]=M}}}var R=o?r(o):null;return i=h?function(t,e,i,r){var s,n=0,o=r%y,h=Math.floor(r/y);if(o>=0&&o<y&&h>=0&&h<x&&(n=C[h][o]),p){var l=m-g;s=R?n/E*l*R(n/E):n/E*l}else s=R?n*g*R(n/E):n*g;return s+a}:function(t,e,i,r,s){var n,o,h;(s--,u?n=r:d?n=Math.abs(s/2-r):c?n=s-r:f&&(n=Math.abs(l-r)),p)?(h=d?(m-g)/s*(2*n):(m-g)/s*n,o=R?h*R(n/s):h):o=R?s*v*R(n/s):n*g;return o+a},i}},8357(t,e,i){var r=i(70402),s=i(69902),n=i(23568),a=i(57355),o=i(6113),h=i(95540),l=i(91389),u=i(55292),d=i(82985),c=i(62329),f=i(35154),p=i(17777),g=i(269),m=i(8462);t.exports=function(t,e,i){if(e instanceof m)return e.parent=t,e;i=void 0===i?s:g(s,i);var v=c(e);!v&&i.targets&&(v=i.targets);for(var y=d(e),x=h(e,"delay",i.delay),T=h(e,"duration",i.duration),w=h(e,"easeParams",i.easeParams),S=h(e,"ease",i.ease),b=h(e,"hold",i.hold),C=h(e,"repeat",i.repeat),E=h(e,"repeatDelay",i.repeatDelay),A=a(e,"yoyo",i.yoyo),_=a(e,"flipX",i.flipX),M=a(e,"flipY",i.flipY),R=h(e,"interpolation",i.interpolation),P=function(t,e,i,r){if("texture"===i){var s=r,n=void 0;Array.isArray(r)?(s=r[0],n=r[1]):r.hasOwnProperty("value")?(s=r.value,Array.isArray(r.value)?(s=r.value[0],n=r.value[1]):"string"==typeof r.value&&(s=r.value)):"string"==typeof r&&(s=r),t.addFrame(e,s,n,u(r,"delay",x),h(r,"duration",T),h(r,"hold",b),h(r,"repeat",C),h(r,"repeatDelay",E),a(r,"flipX",_),a(r,"flipY",M))}else{var d=p(i,r),c=l(h(r,"interpolation",R));t.add(e,i,d.getEnd,d.getStart,d.getActive,o(h(r,"ease",S),h(r,"easeParams",w)),u(r,"delay",x),h(r,"duration",T),a(r,"yoyo",A),h(r,"hold",b),h(r,"repeat",C),h(r,"repeatDelay",E),a(r,"flipX",_),a(r,"flipY",M),c,c?r:null)}},O=new m(t,v),L=0;L<y.length;L++)for(var D=y[L].key,F=y[L].value,I=0;I<v.length;I++){v[I]&&("scale"!==D||v[I].hasOwnProperty("scale")?P(O,I,D,F):(P(O,I,"scaleX",F),P(O,I,"scaleY",F)))}O.completeDelay=n(e,"completeDelay",0),O.loop=Math.round(n(e,"loop",0)),O.loopDelay=Math.round(n(e,"loopDelay",0)),O.paused=a(e,"paused",!1),O.persist=a(e,"persist",!1),O.callbackScope=h(e,"callbackScope",O);for(var N=r.TYPES,B=0;B<N.length;B++){var k=N[B],U=f(e,k,!1);if(U){var z=f(e,k+"Params",[]);O.setCallback(k,U,z)}}return O}},26012(t,e,i){var r=i(70402),s=i(23568),n=i(57355),a=i(62329),o=i(35154),h=i(8357),l=i(43960);t.exports=function(t,e){if(e instanceof l)return e.parent=t,e;var i,u=new l(t);u.startDelay=o(e,"delay",0),u.completeDelay=s(e,"completeDelay",0),u.loop=Math.round(s(e,"loop",o(e,"repeat",0))),u.loopDelay=Math.round(s(e,"loopDelay",o(e,"repeatDelay",0))),u.paused=n(e,"paused",!1),u.persist=n(e,"persist",!1),u.callbackScope=o(e,"callbackScope",u);var d=r.TYPES;for(i=0;i<d.length;i++){var c=d[i],f=o(e,c,!1);if(f){var p=o(e,c+"Params",[]);u.setCallback(c,f,p)}}var g=o(e,"tweens",null);if(Array.isArray(g)){var m=[],v=a(e),y=void 0;for(v&&(y={targets:v}),i=0;i<g.length;i++)m.push(h(u,g[i],y));u.add(m)}return u}},30231(t,e,i){t.exports={GetBoolean:i(57355),GetEaseFunction:i(6113),GetInterpolationFunction:i(91389),GetNewValue:i(55292),GetProps:i(82985),GetTargets:i(62329),GetValueOp:i(17777),NumberTweenBuilder:i(88032),StaggerBuilder:i(93109),TweenBuilder:i(8357)}},73685(t){t.exports="active"},98540(t){t.exports="complete"},67233(t){t.exports="loop"},2859(t){t.exports="pause"},98336(t){t.exports="repeat"},25764(t){t.exports="resume"},32193(t){t.exports="start"},84371(t){t.exports="stop"},70766(t){t.exports="update"},55659(t){t.exports="yoyo"},842(t,e,i){t.exports={TWEEN_ACTIVE:i(73685),TWEEN_COMPLETE:i(98540),TWEEN_LOOP:i(67233),TWEEN_PAUSE:i(2859),TWEEN_RESUME:i(25764),TWEEN_REPEAT:i(98336),TWEEN_START:i(32193),TWEEN_STOP:i(84371),TWEEN_UPDATE:i(70766),TWEEN_YOYO:i(55659)}},43066(t,e,i){var r={States:i(86353),Builders:i(30231),Events:i(842),TweenManager:i(40382),Tween:i(8462),TweenData:i(48177),TweenFrameData:i(42220),BaseTween:i(70402),TweenChain:i(43960)};t.exports=r},70402(t,e,i){var r=i(83419),s=i(50792),n=i(842),a=i(86353),o=new r({Extends:s,initialize:function(t){s.call(this),this.parent=t,this.data=[],this.totalData=0,this.startDelay=0,this.hasStarted=!1,this.timeScale=1,this.loop=0,this.loopDelay=0,this.loopCounter=0,this.completeDelay=0,this.countdown=0,this.state=a.PENDING,this.paused=!1,this.callbacks={onActive:null,onComplete:null,onLoop:null,onPause:null,onRepeat:null,onResume:null,onStart:null,onStop:null,onUpdate:null,onYoyo:null},this.callbackScope,this.persist=!1},setTimeScale:function(t){return this.timeScale=t,this},getTimeScale:function(){return this.timeScale},isPlaying:function(){return!this.paused&&this.isActive()},isPaused:function(){return this.paused},pause:function(){return this.paused||(this.paused=!0,this.dispatchEvent(n.TWEEN_PAUSE,"onPause")),this},resume:function(){return this.paused&&(this.paused=!1,this.dispatchEvent(n.TWEEN_RESUME,"onResume")),this},makeActive:function(){this.parent.makeActive(this),this.dispatchEvent(n.TWEEN_ACTIVE,"onActive")},onCompleteHandler:function(){this.setPendingRemoveState(),this.dispatchEvent(n.TWEEN_COMPLETE,"onComplete")},complete:function(t){return void 0===t&&(t=0),t?(this.setCompleteDelayState(),this.countdown=t):this.onCompleteHandler(),this},completeAfterLoop:function(t){return void 0===t&&(t=0),this.loopCounter>t&&(this.loopCounter=t),this},remove:function(){return this.parent&&this.parent.remove(this),this},stop:function(){return!this.parent||this.isRemoved()||this.isPendingRemove()||this.isDestroyed()||(this.dispatchEvent(n.TWEEN_STOP,"onStop"),this.setPendingRemoveState()),this},updateLoopCountdown:function(t){this.countdown-=t,this.countdown<=0&&(this.setActiveState(),this.dispatchEvent(n.TWEEN_LOOP,"onLoop"))},updateStartCountdown:function(t){return this.startDelay-=t,this.startDelay<=0&&(this.setActiveState(),this.hasStarted=!0,this.dispatchEvent(n.TWEEN_START,"onStart"),t=0),t},updateCompleteDelay:function(t){this.countdown-=t,this.countdown<=0&&this.onCompleteHandler()},setCallback:function(t,e,i){return void 0===i&&(i=[]),this.callbacks.hasOwnProperty(t)&&(this.callbacks[t]={func:e,params:i}),this},setPendingState:function(){this.state=a.PENDING},setActiveState:function(){this.state=a.ACTIVE,this.hasStarted=!1},setLoopDelayState:function(){this.state=a.LOOP_DELAY},setCompleteDelayState:function(){this.state=a.COMPLETE_DELAY},setStartDelayState:function(){this.state=a.START_DELAY,this.countdown=this.startDelay,this.hasStarted=!1},setPendingRemoveState:function(){this.state=a.PENDING_REMOVE},setRemovedState:function(){this.state=a.REMOVED},setFinishedState:function(){this.state=a.FINISHED},setDestroyedState:function(){this.state=a.DESTROYED},isPending:function(){return this.state===a.PENDING},isActive:function(){return this.state===a.ACTIVE},isLoopDelayed:function(){return this.state===a.LOOP_DELAY},isCompleteDelayed:function(){return this.state===a.COMPLETE_DELAY},isStartDelayed:function(){return this.state===a.START_DELAY},isPendingRemove:function(){return this.state===a.PENDING_REMOVE},isRemoved:function(){return this.state===a.REMOVED},isFinished:function(){return this.state===a.FINISHED},isDestroyed:function(){return this.state===a.DESTROYED},destroy:function(){this.data&&this.data.forEach(function(t){t.destroy()}),this.removeAllListeners(),this.callbacks=null,this.data=null,this.parent=null,this.setDestroyedState()}});o.TYPES=["onActive","onComplete","onLoop","onPause","onRepeat","onResume","onStart","onStop","onUpdate","onYoyo"],t.exports=o},95042(t,e,i){var r=i(83419),s=i(842),n=i(86353),a=new r({initialize:function(t,e,i,r,s,n,a,o,h,l){this.tween=t,this.targetIndex=e,this.duration=r<=0?.01:r,this.totalDuration=0,this.delay=0,this.getDelay=i,this.yoyo=s,this.hold=n,this.repeat=a,this.repeatDelay=o,this.repeatCounter=0,this.flipX=h,this.flipY=l,this.progress=0,this.elapsed=0,this.state=0,this.isCountdown=!1},getTarget:function(){return this.tween.targets[this.targetIndex]},setTargetValue:function(t){void 0===t&&(t=this.current),this.tween.targets[this.targetIndex][this.key]=t},setCreatedState:function(){this.state=n.CREATED,this.isCountdown=!1},setDelayState:function(){this.state=n.DELAY,this.isCountdown=!0},setPendingRenderState:function(){this.state=n.PENDING_RENDER,this.isCountdown=!1},setPlayingForwardState:function(){this.state=n.PLAYING_FORWARD,this.isCountdown=!1},setPlayingBackwardState:function(){this.state=n.PLAYING_BACKWARD,this.isCountdown=!1},setHoldState:function(){this.state=n.HOLD_DELAY,this.isCountdown=!0},setRepeatState:function(){this.state=n.REPEAT_DELAY,this.isCountdown=!0},setCompleteState:function(){this.state=n.COMPLETE,this.isCountdown=!1},isCreated:function(){return this.state===n.CREATED},isDelayed:function(){return this.state===n.DELAY},isPendingRender:function(){return this.state===n.PENDING_RENDER},isPlayingForward:function(){return this.state===n.PLAYING_FORWARD},isPlayingBackward:function(){return this.state===n.PLAYING_BACKWARD},isHolding:function(){return this.state===n.HOLD_DELAY},isRepeating:function(){return this.state===n.REPEAT_DELAY},isComplete:function(){return this.state===n.COMPLETE},setStateFromEnd:function(t){this.yoyo?this.onRepeat(t,!0,!0):this.repeatCounter>0?this.onRepeat(t,!0,!1):this.setCompleteState()},setStateFromStart:function(t){this.repeatCounter>0?this.onRepeat(t,!1):this.setCompleteState()},reset:function(){var t=this.tween,e=t.totalTargets,i=this.targetIndex,r=t.targets[i],s=this.key;this.progress=0,this.elapsed=0,this.delay=this.getDelay(r,s,0,i,e,t),this.repeatCounter=-1===this.repeat?n.MAX:this.repeat,this.setPendingRenderState();var a=this.duration+this.hold;this.yoyo&&(a+=this.duration);var o=a+this.repeatDelay;this.totalDuration=this.delay+a,-1===this.repeat?(this.totalDuration+=o*n.MAX,t.isInfinite=!0):this.repeat>0&&(this.totalDuration+=o*this.repeat),this.totalDuration>t.duration&&(t.duration=this.totalDuration),this.delay<t.startDelay&&(t.startDelay=this.delay),this.delay>0&&(this.elapsed=this.delay,this.setDelayState())},onRepeat:function(t,e,i){var r=this.tween,n=r.totalTargets,a=this.targetIndex,o=r.targets[a],h=this.key,l="texture"!==h;if(this.elapsed=t,this.progress=t/this.duration,this.flipX&&o.toggleFlipX(),this.flipY&&o.toggleFlipY(),l&&(e||i)&&(this.start=this.getStartValue(o,h,this.start,a,n,r)),i)return this.setPlayingBackwardState(),void this.dispatchEvent(s.TWEEN_YOYO,"onYoyo");this.repeatCounter--,l&&(this.end=this.getEndValue(o,h,this.start,a,n,r)),this.repeatDelay>0?(this.elapsed=this.repeatDelay-t,l&&(this.current=this.start,o[h]=this.current),this.setRepeatState()):(this.setPlayingForwardState(),this.dispatchEvent(s.TWEEN_REPEAT,"onRepeat"))},destroy:function(){this.tween=null,this.getDelay=null,this.setCompleteState()}});t.exports=a},69902(t){t.exports={targets:null,delay:0,duration:1e3,ease:"Power0",easeParams:null,hold:0,repeat:0,repeatDelay:0,yoyo:!1,flipX:!1,flipY:!1,persist:!1,interpolation:null}},81076(t){t.exports=["callbackScope","completeDelay","delay","duration","ease","easeParams","flipX","flipY","hold","interpolation","loop","loopDelay","onActive","onActiveParams","onComplete","onCompleteParams","onLoop","onLoopParams","onPause","onPauseParams","onRepeat","onRepeatParams","onResume","onResumeParams","onStart","onStartParams","onStop","onStopParams","onUpdate","onUpdateParams","onYoyo","onYoyoParams","paused","persist","props","repeat","repeatDelay","targets","yoyo"]},8462(t,e,i){var r=i(70402),s=i(83419),n=i(842),a=i(44603),o=i(39429),h=i(36383),l=i(86353),u=i(48177),d=i(42220),c=new s({Extends:r,initialize:function(t,e){r.call(this,t),this.targets=e,this.totalTargets=e.length,this.isSeeking=!1,this.isInfinite=!1,this.elapsed=0,this.totalElapsed=0,this.duration=0,this.progress=0,this.totalDuration=0,this.totalProgress=0,this.isNumberTween=!1},add:function(t,e,i,r,s,n,a,o,h,l,d,c,f,p,g,m){var v=new u(this,t,e,i,r,s,n,a,o,h,l,d,c,f,p,g,m);return this.totalData=this.data.push(v),v},addFrame:function(t,e,i,r,s,n,a,o,h,l){var u=new d(this,t,e,i,r,s,n,a,o,h,l);return this.totalData=this.data.push(u),u},getValue:function(t){void 0===t&&(t=0);var e=null;return this.data&&(e=this.data[t].current),e},hasTarget:function(t){return this.targets&&-1!==this.targets.indexOf(t)},updateTo:function(t,e,i){if(void 0===i&&(i=!1),"texture"!==t)for(var r=0;r<this.totalData;r++){var s=this.data[r];s.key===t&&(s.isPlayingForward()||s.isPlayingBackward())&&(s.end=e,i&&(s.start=s.current))}return this},restart:function(){switch(this.state){case l.REMOVED:case l.FINISHED:this.seek(),this.parent.makeActive(this);break;case l.PENDING:case l.PENDING_REMOVE:this.parent.reset(this);break;case l.DESTROYED:console.warn("Cannot restart destroyed Tween",this);break;default:this.seek()}return this.paused=!1,this.hasStarted=!1,this},nextState:function(){if(this.loopCounter>0)this.elapsed=0,this.progress=0,this.loopCounter--,this.initTweenData(!0),this.loopDelay>0?(this.countdown=this.loopDelay,this.setLoopDelayState()):(this.setActiveState(),this.dispatchEvent(n.TWEEN_LOOP,"onLoop"));else{if(!(this.completeDelay>0))return this.onCompleteHandler(),!0;this.countdown=this.completeDelay,this.setCompleteDelayState()}return!1},onCompleteHandler:function(){this.progress=1,this.totalProgress=1,r.prototype.onCompleteHandler.call(this)},play:function(){return this.isDestroyed()?(console.warn("Cannot play destroyed Tween",this),this):((this.isPendingRemove()||this.isFinished())&&this.seek(),this.paused=!1,this.setActiveState(),this)},seek:function(t,e,i){if(void 0===t&&(t=0),void 0===e&&(e=16.6),void 0===i&&(i=!1),this.isDestroyed())return console.warn("Cannot seek destroyed Tween",this),this;i||(this.isSeeking=!0),this.reset(!0),this.initTweenData(!0),this.setActiveState(),this.dispatchEvent(n.TWEEN_ACTIVE,"onActive");var r=this.paused;if(this.paused=!1,t>0){for(var s=Math.floor(t/e),a=t-s*e,o=0;o<s;o++)this.update(e);a>0&&this.update(a)}return this.paused=r,this.isSeeking=!1,this},initTweenData:function(t){void 0===t&&(t=!1),this.duration=0,this.startDelay=h.MAX_SAFE_INTEGER;for(var e=this.data,i=0;i<this.totalData;i++)e[i].reset(t);this.duration=Math.max(this.duration,.01);var r=this.duration,s=this.completeDelay,n=this.loopCounter,a=this.loopDelay;this.totalDuration=n>0?r+s+(r+a)*n:r+s},reset:function(t){return void 0===t&&(t=!1),this.elapsed=0,this.totalElapsed=0,this.progress=0,this.totalProgress=0,this.loopCounter=this.loop,-1===this.loop&&(this.isInfinite=!0,this.loopCounter=l.MAX),t||(this.initTweenData(),this.setActiveState(),this.dispatchEvent(n.TWEEN_ACTIVE,"onActive")),this},update:function(t){if(this.isPendingRemove()||this.isDestroyed())return!this.persist||(this.setFinishedState(),!1);if(this.paused||this.isFinished())return!1;if(t*=this.timeScale*this.parent.timeScale,this.isLoopDelayed())return this.updateLoopCountdown(t),!1;if(this.isCompleteDelayed())return this.updateCompleteDelay(t),!1;this.hasStarted||(t=this.updateStartCountdown(t));var e=!1;if(this.isActive())for(var i=this.data,r=0;r<this.totalData;r++)i[r].update(t)&&(e=!0);this.elapsed+=t,this.progress=Math.min(this.elapsed/this.duration,1),this.totalElapsed+=t,this.totalProgress=Math.min(this.totalElapsed/this.totalDuration,1),e||this.nextState();var s=this.isPendingRemove();return s&&this.persist&&(this.setFinishedState(),s=!1),s},forward:function(t){return this.update(t),this},rewind:function(t){return this.update(-t),this},dispatchEvent:function(t,e){if(!this.isSeeking){if(this.emit(t,this,this.targets),!this.callbacks)return;var i=this.callbacks[e];i&&i.func.apply(this.callbackScope,[this,this.targets].concat(i.params))}},destroy:function(){r.prototype.destroy.call(this),this.targets=null}});o.register("tween",function(t){return this.scene.sys.tweens.add(t)}),a.register("tween",function(t){return this.scene.sys.tweens.create(t)}),t.exports=c},43960(t,e,i){var r=i(72905),s=i(70402),n=i(83419),a=i(842),o=i(44603),h=i(39429),l=i(86353),u=new n({Extends:s,initialize:function(t){s.call(this,t),this.currentTween=null,this.currentIndex=0},init:function(){return this.loopCounter=-1===this.loop?l.MAX:this.loop,this.setCurrentTween(0),this.startDelay>0&&!this.isStartDelayed()?this.setStartDelayState():this.setActiveState(),this},add:function(t){var e=this.parent.create(t);Array.isArray(e)||(e=[e]);for(var i=this.data,r=0;r<e.length;r++){var s=e[r];s.parent=this,i.push(s.reset())}return this.totalData=i.length,this},remove:function(t){return r(this.data,t),t.setRemovedState(),t===this.currentTween&&this.nextTween(),this.totalData=this.data.length,this},hasTarget:function(t){for(var e=this.data,i=0;i<this.totalData;i++)if(e[i].hasTarget(t))return!0;return!1},restart:function(){return this.isDestroyed()?(console.warn("Cannot restart destroyed TweenChain",this),this):(this.isRemoved()&&this.parent.makeActive(this),this.resetTweens(),this.paused=!1,this.init())},reset:function(t){return t.seek(),t.setActiveState(),this},makeActive:function(t){return t.reset(),t.setActiveState(),this},nextState:function(){if(this.loopCounter>0)this.loopCounter--,this.resetTweens(),this.loopDelay>0?(this.countdown=this.loopDelay,this.setLoopDelayState()):(this.setActiveState(),this.dispatchEvent(a.TWEEN_LOOP,"onLoop"));else{if(!(this.completeDelay>0))return this.onCompleteHandler(),!0;this.countdown=this.completeDelay,this.setCompleteDelayState()}return!1},play:function(){return this.isDestroyed()?(console.warn("Cannot play destroyed TweenChain",this),this):((this.isPendingRemove()||this.isPending())&&this.resetTweens(),this.paused=!1,this.startDelay>0&&!this.isStartDelayed()?this.setStartDelayState():this.setActiveState(),this)},resetTweens:function(){for(var t=this.data,e=this.totalData,i=0;i<e;i++)t[i].reset(!1);this.setCurrentTween(0)},update:function(t){if(this.isPendingRemove()||this.isDestroyed())return!this.persist||(this.setFinishedState(),!1);if(this.isFinished()||this.paused)return!1;if(t*=this.parent.timeScale,this.isLoopDelayed())return this.updateLoopCountdown(t),!1;if(this.isCompleteDelayed())return this.updateCompleteDelay(t),!1;this.hasStarted||(t=this.updateStartCountdown(t));var e=!1;return this.isActive()&&this.currentTween&&(this.currentTween.update(t)&&this.nextTween()&&this.nextState(),(e=this.isPendingRemove())&&this.persist&&(this.setFinishedState(),e=!1)),e},nextTween:function(){return this.currentIndex++,this.currentIndex===this.totalData||(this.setCurrentTween(this.currentIndex),!1)},setCurrentTween:function(t){this.currentIndex=t,this.currentTween=this.data[t],this.currentTween.setActiveState()},dispatchEvent:function(t,e){this.emit(t,this);var i=this.callbacks[e];i&&i.func.apply(this.callbackScope,[this].concat(i.params))},destroy:function(){s.prototype.destroy.call(this),this.currentTween=null}});h.register("tweenchain",function(t){return this.scene.sys.tweens.chain(t)}),o.register("tweenchain",function(t){return this.scene.sys.tweens.create(t)}),t.exports=u},48177(t,e,i){var r=i(95042),s=i(45319),n=i(83419),a=i(842),o=new n({Extends:r,initialize:function(t,e,i,s,n,a,o,h,l,u,d,c,f,p,g,m,v){r.call(this,t,e,h,l,u,d,c,f,p,g),this.key=i,this.getActiveValue=a,this.getEndValue=s,this.getStartValue=n,this.ease=o,this.start=0,this.previous=0,this.current=0,this.end=0,this.interpolation=m,this.interpolationData=v},reset:function(t){r.prototype.reset.call(this);var e=this.tween.targets[this.targetIndex],i=this.key;t&&(e[i]=this.start),this.start=0,this.previous=0,this.current=0,this.end=0,this.getActiveValue&&(e[i]=this.getActiveValue(e,i,0))},update:function(t){var e=this.tween,i=e.totalTargets,r=this.targetIndex,n=e.targets[r],o=this.key;if(!n||n.isDestroyed)return this.setCompleteState(),!1;if(this.isCountdown&&(this.elapsed-=t,this.elapsed<=0&&(this.elapsed=0,t=0,this.isDelayed()?this.setPendingRenderState():this.isRepeating()?(this.setPlayingForwardState(),this.dispatchEvent(a.TWEEN_REPEAT,"onRepeat")):this.isHolding()&&this.setStateFromEnd(0))),this.isPendingRender())return this.start=this.getStartValue(n,o,n[o],r,i,e),this.end=this.getEndValue(n,o,this.start,r,i,e),this.current=this.start,n[o]=this.start,this.setPlayingForwardState(),!0;var h=this.isPlayingForward(),l=this.isPlayingBackward();if(h||l){var u=this.elapsed,d=this.duration,c=0,f=!1;(u+=t)>=d?(c=u-d,u=d,f=!0):u<0&&(u=0);var p=s(u/d,0,1);this.elapsed=u,this.progress=p,this.previous=this.current,h||(p=1-p);var g=this.ease(p);this.interpolation?this.current=this.interpolation(this.interpolationData,g):this.current=this.start+(this.end-this.start)*g,n[o]=this.current,f&&(h?(e.isNumberTween&&(this.current=this.end,n[o]=this.current),this.hold>0?(this.elapsed=this.hold,this.setHoldState()):this.setStateFromEnd(c)):(e.isNumberTween&&(this.current=this.start,n[o]=this.current),this.setStateFromStart(c))),this.dispatchEvent(a.TWEEN_UPDATE,"onUpdate")}return!this.isComplete()},dispatchEvent:function(t,e){var i=this.tween;if(!i.isSeeking){var r=i.targets[this.targetIndex],s=this.key,n=this.current,a=this.previous;i.emit(t,i,s,r,n,a);var o=i.callbacks[e];o&&o.func.apply(i.callbackScope,[i,r,s,n,a].concat(o.params))}},destroy:function(){r.prototype.destroy.call(this),this.getActiveValue=null,this.getEndValue=null,this.getStartValue=null,this.ease=null}});t.exports=o},42220(t,e,i){var r=i(95042),s=i(45319),n=i(83419),a=i(842),o=new n({Extends:r,initialize:function(t,e,i,s,n,a,o,h,l,u,d){r.call(this,t,e,n,a,!1,o,h,l,u,d),this.key="texture",this.startTexture=null,this.endTexture=i,this.startFrame=null,this.endFrame=s,this.yoyo=0!==h},reset:function(t){r.prototype.reset.call(this);var e=this.tween.targets[this.targetIndex];this.startTexture||(this.startTexture=e.texture.key,this.startFrame=e.frame.name),t&&e.setTexture(this.startTexture,this.startFrame)},update:function(t){var e=this.tween,i=this.targetIndex,r=e.targets[i];if(!r)return this.setCompleteState(),!1;if(this.isCountdown&&(this.elapsed-=t,this.elapsed<=0&&(this.elapsed=0,t=0,this.isDelayed()?this.setPendingRenderState():this.isRepeating()?(this.setPlayingForwardState(),this.dispatchEvent(a.TWEEN_REPEAT,"onRepeat")):this.isHolding()&&this.setStateFromEnd(0))),this.isPendingRender())return this.startTexture&&r.setTexture(this.startTexture,this.startFrame),this.setPlayingForwardState(),!0;var n=this.isPlayingForward(),o=this.isPlayingBackward();if(n||o){var h=this.elapsed,l=this.duration,u=0,d=!1;(h+=t)>=l?(u=h-l,h=l,d=!0):h<0&&(h=0);var c=s(h/l,0,1);this.elapsed=h,this.progress=c,d&&(n?(r.setTexture(this.endTexture,this.endFrame),this.hold>0?(this.elapsed=this.hold,this.setHoldState()):this.setStateFromEnd(u)):(r.setTexture(this.startTexture,this.startFrame),this.setStateFromStart(u))),this.dispatchEvent(a.TWEEN_UPDATE,"onUpdate")}return!this.isComplete()},dispatchEvent:function(t,e){var i=this.tween;if(!i.isSeeking){var r=i.targets[this.targetIndex],s=this.key;i.emit(t,i,s,r);var n=i.callbacks[e];n&&n.func.apply(i.callbackScope,[i,r,s].concat(n.params))}},destroy:function(){r.prototype.destroy.call(this),this.startTexture=null,this.endTexture=null,this.startFrame=null,this.endFrame=null}});t.exports=o},86353(t){t.exports={CREATED:0,DELAY:2,PENDING_RENDER:4,PLAYING_FORWARD:5,PLAYING_BACKWARD:6,HOLD_DELAY:7,REPEAT_DELAY:8,COMPLETE:9,PENDING:20,ACTIVE:21,LOOP_DELAY:22,COMPLETE_DELAY:23,START_DELAY:24,PENDING_REMOVE:25,REMOVED:26,FINISHED:27,DESTROYED:28,MAX:999999999999}},83419(t){function e(t,e,i){var r=i?t[e]:Object.getOwnPropertyDescriptor(t,e);return!i&&r.value&&"object"==typeof r.value&&(r=r.value),!(!r||!function(t){return!!t.get&&"function"==typeof t.get||!!t.set&&"function"==typeof t.set}(r))&&(void 0===r.enumerable&&(r.enumerable=!0),void 0===r.configurable&&(r.configurable=!0),r)}function i(t,e){var i=Object.getOwnPropertyDescriptor(t,e);return!!i&&(i.value&&"object"==typeof i.value&&(i=i.value),!1===i.configurable)}function r(t,r,s,a){for(var o in r)if(r.hasOwnProperty(o)){var h=e(r,o,s);if(!1!==h){if(i((a||t).prototype,o)){if(n.ignoreFinals)continue;throw new Error("cannot override final property '"+o+"', set Class.ignoreFinals = true to skip")}Object.defineProperty(t.prototype,o,h)}else t.prototype[o]=r[o]}}function s(t,e){if(e){Array.isArray(e)||(e=[e]);for(var i=0;i<e.length;i++)r(t,e[i].prototype||e[i])}}function n(t){var e,i;if(t||(t={}),t.initialize){if("function"!=typeof t.initialize)throw new Error("initialize must be a function");e=t.initialize,delete t.initialize}else if(t.Extends){var n=t.Extends;e=function(){n.apply(this,arguments)}}else e=function(){};t.Extends?(e.prototype=Object.create(t.Extends.prototype),e.prototype.constructor=e,i=t.Extends,delete t.Extends):e.prototype.constructor=e;var a=null;return t.Mixins&&(a=t.Mixins,delete t.Mixins),s(e,a),r(e,t,!0,i),e}n.extend=r,n.mixin=s,n.ignoreFinals=!1,t.exports=n},29747(t){t.exports=function(){}},20242(t){t.exports=function(){return null}},71146(t){t.exports=function(t,e,i,r,s){if(void 0===s&&(s=t),i>0){var n=i-t.length;if(n<=0)return null}if(!Array.isArray(e))return-1===t.indexOf(e)?(t.push(e),r&&r.call(s,e),e):null;for(var a=e.length-1;a>=0;)-1!==t.indexOf(e[a])&&e.splice(a,1),a--;if(0===(a=e.length))return null;i>0&&a>n&&(e.splice(n),a=n);for(var o=0;o<a;o++){var h=e[o];t.push(h),r&&r.call(s,h)}return e}},51067(t){t.exports=function(t,e,i,r,s,n){if(void 0===i&&(i=0),void 0===n&&(n=t),r>0){var a=r-t.length;if(a<=0)return null}if(!Array.isArray(e))return-1===t.indexOf(e)?(t.splice(i,0,e),s&&s.call(n,e),e):null;for(var o=e.length-1;o>=0;)-1!==t.indexOf(e[o])&&e.pop(),o--;if(0===(o=e.length))return null;r>0&&o>a&&(e.splice(a),o=a);for(var h=o-1;h>=0;h--){var l=e[h];t.splice(i,0,l),s&&s.call(n,l)}return e}},66905(t){t.exports=function(t,e){var i=t.indexOf(e);return-1!==i&&i<t.length&&(t.splice(i,1),t.push(e)),e}},21612(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){void 0===s&&(s=0),void 0===n&&(n=t.length);var a=0;if(r(t,s,n))for(var o=s;o<n;o++){t[o][e]===i&&a++}return a}},95428(t){t.exports=function(t,e,i){var r,s=[null];for(r=3;r<arguments.length;r++)s.push(arguments[r]);for(r=0;r<t.length;r++)s[0]=t[r],e.apply(i,s);return t}},36914(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){if(void 0===s&&(s=0),void 0===n&&(n=t.length),r(t,s,n)){var a,o=[null];for(a=5;a<arguments.length;a++)o.push(arguments[a]);for(a=s;a<n;a++)o[0]=t[a],e.apply(i,o)}return t}},81957(t){t.exports=function(t,e,i){if(!e.length)return NaN;if(1===e.length)return e[0];var r,s,n=1;if(i){if(t<e[0][i])return e[0];for(;e[n][i]<t;)n++}else for(;e[n]<t;)n++;return n>e.length&&(n=e.length),i?(r=e[n-1][i],(s=e[n][i])-t<=t-r?e[n]:e[n-1]):(r=e[n-1],(s=e[n])-t<=t-r?s:r)}},43491(t){var e=function(t,i){void 0===i&&(i=[]);for(var r=0;r<t.length;r++)Array.isArray(t[r])?e(t[r],i):i.push(t[r]);return i};t.exports=e},46710(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){void 0===s&&(s=0),void 0===n&&(n=t.length);var a=[];if(r(t,s,n))for(var o=s;o<n;o++){var h=t[o];(!e||e&&void 0===i&&h.hasOwnProperty(e)||e&&void 0!==i&&h[e]===i)&&a.push(h)}return a}},58731(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){var a,o;if(void 0===s&&(s=0),void 0===n&&(n=t.length),-1!==s){if(r(t,s,n))for(a=s;a<n;a++)if(o=t[a],!e||e&&void 0===i&&o.hasOwnProperty(e)||e&&void 0!==i&&o[e]===i)return o}else if(r(t,0,n))for(a=n;a>=0;a--)if(o=t[a],!e||e&&void 0===i&&o.hasOwnProperty(e)||e&&void 0!==i&&o[e]===i)return o;return null}},26546(t){t.exports=function(t,e,i){void 0===e&&(e=0),void 0===i&&(i=t.length);var r=e+Math.floor(Math.random()*(i-e));return void 0===t[r]?null:t[r]}},85835(t){t.exports=function(t,e,i){if(e===i)return t;var r=t.indexOf(e),s=t.indexOf(i);if(r<0||s<0)throw new Error("Supplied items must be elements of the same array");return r>s||(t.splice(r,1),s=t.indexOf(i),t.splice(s+1,0,e)),t}},83371(t){t.exports=function(t,e,i){if(e===i)return t;var r=t.indexOf(e),s=t.indexOf(i);if(r<0||s<0)throw new Error("Supplied items must be elements of the same array");return r<s||(t.splice(r,1),0===s?t.unshift(e):t.splice(s,0,e)),t}},70864(t){t.exports=function(t,e){var i=t.indexOf(e);if(i>0){var r=t[i-1],s=t.indexOf(r);t[i]=r,t[s]=e}return t}},69693(t){t.exports=function(t,e,i){var r=t.indexOf(e);if(-1===r||i<0||i>=t.length)throw new Error("Supplied index out of bounds");return r!==i&&(t.splice(r,1),t.splice(i,0,e)),e}},40853(t){t.exports=function(t,e){var i=t.indexOf(e);if(-1!==i&&i<t.length-1){var r=t[i+1],s=t.indexOf(r);t[i]=r,t[s]=e}return t}},20283(t){t.exports=function(t,e,i,r){var s,n=[],a=!1;if((i||r)&&(a=!0,i||(i=""),r||(r="")),e<t)for(s=t;s>=e;s--)a?n.push(i+s.toString()+r):n.push(s);else for(s=t;s<=e;s++)a?n.push(i+s.toString()+r):n.push(s);return n}},593(t,e,i){var r=i(2284);t.exports=function(t,e,i){void 0===t&&(t=0),void 0===e&&(e=null),void 0===i&&(i=1),null===e&&(e=t,t=0);for(var s=[],n=Math.max(r((e-t)/(i||1)),0),a=0;a<n;a++)s.push(t),t+=i;return s}},43886(t){function e(t,e,i){var r=t[e];t[e]=t[i],t[i]=r}function i(t,e){return t<e?-1:t>e?1:0}var r=function(t,s,n,a,o){for(void 0===n&&(n=0),void 0===a&&(a=t.length-1),void 0===o&&(o=i);a>n;){if(a-n>600){var h=a-n+1,l=s-n+1,u=Math.log(h),d=.5*Math.exp(2*u/3),c=.5*Math.sqrt(u*d*(h-d)/h)*(l-h/2<0?-1:1),f=Math.max(n,Math.floor(s-l*d/h+c)),p=Math.min(a,Math.floor(s+(h-l)*d/h+c));r(t,s,f,p,o)}var g=t[s],m=n,v=a;for(e(t,n,s),o(t[a],g)>0&&e(t,n,a);m<v;){for(e(t,m,v),m++,v--;o(t[m],g)<0;)m++;for(;o(t[v],g)>0;)v--}0===o(t[n],g)?e(t,n,v):e(t,++v,a),v<=s&&(n=v+1),s<=v&&(a=v-1)}};t.exports=r},88492(t,e,i){var r=i(35154),s=i(33680),n=function(t,e,i){for(var r=[],s=0;s<t.length;s++)for(var n=0;n<e.length;n++)for(var a=0;a<i;a++)r.push({a:t[s],b:e[n]});return r};t.exports=function(t,e,i){var a=r(i,"max",0),o=r(i,"qty",1),h=r(i,"random",!1),l=r(i,"randomB",!1),u=r(i,"repeat",0),d=r(i,"yoyo",!1),c=[];if(l&&s(e),-1===u)if(0===a)u=0;else{var f=t.length*e.length*o;d&&(f*=2),u=Math.ceil(a/f)}for(var p=0;p<=u;p++){var g=n(t,e,o);h&&s(g),c=c.concat(g),d&&(g.reverse(),c=c.concat(g))}return a&&c.splice(a),c}},72905(t,e,i){var r=i(19133);t.exports=function(t,e,i,s){var n;if(void 0===s&&(s=t),!Array.isArray(e))return-1!==(n=t.indexOf(e))?(r(t,n),i&&i.call(s,e),e):null;for(var a=e.length-1,o=[];a>=0;){var h=e[a];-1!==(n=t.indexOf(h))&&(r(t,n),o.push(h),i&&i.call(s,h)),a--}return o}},60248(t,e,i){var r=i(19133);t.exports=function(t,e,i,s){if(void 0===s&&(s=t),e<0||e>t.length-1)throw new Error("Index out of bounds");var n=r(t,e);return i&&i.call(s,n),n}},81409(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){if(void 0===e&&(e=0),void 0===i&&(i=t.length),void 0===n&&(n=t),r(t,e,i)){var a=i-e,o=t.splice(e,a);if(s)for(var h=0;h<o.length;h++){var l=o[h];s.call(n,l)}return o}return[]}},31856(t,e,i){var r=i(19133);t.exports=function(t,e,i){void 0===e&&(e=0),void 0===i&&(i=t.length);var s=e+Math.floor(Math.random()*i);return r(t,s)}},42169(t){t.exports=function(t,e,i){var r=t.indexOf(e),s=t.indexOf(i);return-1!==r&&-1===s&&(t[r]=i,!0)}},86003(t){t.exports=function(t,e){void 0===e&&(e=1);for(var i=null,r=0;r<e;r++)i=t.shift(),t.push(i);return i}},49498(t){t.exports=function(t,e){void 0===e&&(e=1);for(var i=null,r=0;r<e;r++)i=t.pop(),t.unshift(i);return i}},82011(t){t.exports=function(t,e,i,r){var s=t.length;if(e<0||e>=s||e>=i||i>s){if(r)throw new Error("Range Error: Values outside acceptable range");return!1}return!0}},89545(t){t.exports=function(t,e){var i=t.indexOf(e);return-1!==i&&i>0&&(t.splice(i,1),t.unshift(e)),e}},17810(t,e,i){var r=i(82011);t.exports=function(t,e,i,s,n){if(void 0===s&&(s=0),void 0===n&&(n=t.length),r(t,s,n))for(var a=s;a<n;a++){var o=t[a];o.hasOwnProperty(e)&&(o[e]=i)}return t}},33680(t){t.exports=function(t){for(var e=t.length-1;e>0;e--){var i=Math.floor(Math.random()*(e+1)),r=t[e];t[e]=t[i],t[i]=r}return t}},90126(t){t.exports=function(t){var e=/\D/g;return t.sort(function(t,i){return parseInt(t.replace(e,""),10)-parseInt(i.replace(e,""),10)}),t}},19133(t){t.exports=function(t,e){if(!(e>=t.length)){for(var i=t.length-1,r=t[e],s=e;s<i;s++)t[s]=t[s+1];return t.length=i,r}}},19186(t,e,i){var r=i(82264);function s(t,e){return String(t).localeCompare(e)}function n(t,e,i,r){var s,n,a,o,h,l=t.length,u=0,d=2*i;for(s=0;s<l;s+=d)for(a=(n=s+i)+i,n>l&&(n=l),a>l&&(a=l),o=s,h=n;;)if(o<n&&h<a)e(t[o],t[h])<=0?r[u++]=t[o++]:r[u++]=t[h++];else if(o<n)r[u++]=t[o++];else{if(!(h<a))break;r[u++]=t[h++]}}t.exports=function(t,e){if(void 0===e&&(e=s),!t||t.length<2)return t;if(r.features.stableSort)return t.sort(e);var i=function(t,e){var i=t.length;if(i<=1)return t;for(var r=new Array(i),s=1;s<i;s*=2){n(t,e,s,r);var a=t;t=r,r=a}return t}(t,e);return i!==t&&n(i,null,t.length,t),t}},25630(t){t.exports=function(t,e,i){if(e===i)return t;var r=t.indexOf(e),s=t.indexOf(i);if(r<0||s<0)throw new Error("Supplied items must be elements of the same array");return t[r]=i,t[s]=e,t}},37105(t,e,i){t.exports={Matrix:i(54915),Add:i(71146),AddAt:i(51067),BringToTop:i(66905),CountAllMatching:i(21612),Each:i(95428),EachInRange:i(36914),FindClosestInSorted:i(81957),Flatten:i(43491),GetAll:i(46710),GetFirst:i(58731),GetRandom:i(26546),MoveDown:i(70864),MoveTo:i(69693),MoveUp:i(40853),MoveAbove:i(85835),MoveBelow:i(83371),NumberArray:i(20283),NumberArrayStep:i(593),QuickSelect:i(43886),Range:i(88492),Remove:i(72905),RemoveAt:i(60248),RemoveBetween:i(81409),RemoveRandomElement:i(31856),Replace:i(42169),RotateLeft:i(86003),RotateRight:i(49498),SafeRange:i(82011),SendToBack:i(89545),SetAll:i(17810),Shuffle:i(33680),SortByDigits:i(90126),SpliceOne:i(19133),StableSort:i(19186),Swap:i(25630)}},86922(t){t.exports=function(t){if(!Array.isArray(t)||!Array.isArray(t[0]))return!1;for(var e=t[0].length,i=1;i<t.length;i++)if(t[i].length!==e)return!1;return!0}},63362(t,e,i){var r=i(41836),s=i(86922);t.exports=function(t){var e="";if(!s(t))return e;for(var i=0;i<t.length;i++){for(var n=0;n<t[i].length;n++){var a=t[i][n].toString();e+="undefined"!==a?r(a,2):"?",n<t[i].length-1&&(e+=" |")}if(i<t.length-1){e+="\n";for(var o=0;o<t[i].length;o++)e+="---",o<t[i].length-1&&(e+="+");e+="\n"}}return e}},92598(t){t.exports=function(t){return t.reverse()}},21224(t){t.exports=function(t){for(var e=0;e<t.length;e++)t[e].reverse();return t}},98717(t,e,i){var r=i(37829);t.exports=function(t){return r(t,180)}},44657(t,e,i){var r=i(37829);t.exports=function(t,e){void 0===e&&(e=1);for(var i=0;i<e;i++)t=r(t,90);return t}},37829(t,e,i){var r=i(86922),s=i(2429);t.exports=function(t,e){if(void 0===e&&(e=90),!r(t))return null;if("string"!=typeof e&&(e=(e%360+360)%360),90===e||-270===e||"rotateLeft"===e)(t=s(t)).reverse();else if(-90===e||270===e||"rotateRight"===e)t.reverse(),t=s(t);else if(180===Math.abs(e)||"rotate180"===e){for(var i=0;i<t.length;i++)t[i].reverse();t.reverse()}return t}},92632(t,e,i){var r=i(37829);t.exports=function(t,e){void 0===e&&(e=1);for(var i=0;i<e;i++)t=r(t,-90);return t}},69512(t,e,i){var r=i(86003),s=i(49498);t.exports=function(t,e,i){if(void 0===e&&(e=0),void 0===i&&(i=0),0!==i&&(i<0?r(t,Math.abs(i)):s(t,i)),0!==e)for(var n=0;n<t.length;n++){var a=t[n];e<0?r(a,Math.abs(e)):s(a,e)}return t}},2429(t){t.exports=function(t){for(var e=t.length,i=t[0].length,r=new Array(i),s=0;s<i;s++){r[s]=new Array(e);for(var n=e-1;n>-1;n--)r[s][n]=t[n][s]}return r}},54915(t,e,i){t.exports={CheckMatrix:i(86922),MatrixToString:i(63362),ReverseColumns:i(92598),ReverseRows:i(21224),Rotate180:i(98717),RotateLeft:i(44657),RotateMatrix:i(37829),RotateRight:i(92632),Translate:i(69512),TransposeMatrix:i(2429)}},71334(t){var e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";t.exports=function(t,i){for(var r=new Uint8Array(t),s=r.length,n=i?"data:"+i+";base64,":"",a=0;a<s;a+=3)n+=e[r[a]>>2],n+=e[(3&r[a])<<4|r[a+1]>>4],n+=e[(15&r[a+1])<<2|r[a+2]>>6],n+=e[63&r[a+2]];return s%3==2?n=n.substring(0,n.length-1)+"=":s%3==1&&(n=n.substring(0,n.length-2)+"=="),n}},53134(t){for(var e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",i=new Uint8Array(256),r=0;r<64;r++)i[e.charCodeAt(r)]=r;t.exports=function(t){var e,r,s,n,a=(t=t.substr(t.indexOf(",")+1)).length,o=.75*a,h=0;"="===t[a-1]&&(o--,"="===t[a-2]&&o--);for(var l=new ArrayBuffer(o),u=new Uint8Array(l),d=0;d<a;d+=4)e=i[t.charCodeAt(d)],r=i[t.charCodeAt(d+1)],s=i[t.charCodeAt(d+2)],n=i[t.charCodeAt(d+3)],u[h++]=e<<2|r>>4,u[h++]=(15&r)<<4|s>>2,u[h++]=(3&s)<<6|63&n;return l}},65839(t,e,i){t.exports={ArrayBufferToBase64:i(71334),Base64ToArrayBuffer:i(53134)}},91799(t,e,i){t.exports={Array:i(37105),Base64:i(65839),Objects:i(1183),String:i(31749),NOOP:i(29747),NULL:i(20242)}},41786(t){t.exports=function(t){var e={};for(var i in t)Array.isArray(t[i])?e[i]=t[i].slice(0):e[i]=t[i];return e}},62644(t){var e=function(t){var i,r,s;if("object"!=typeof t||null===t)return t;for(s in i=Array.isArray(t)?[]:{},t)r=t[s],i[s]=e(r);return i};t.exports=e},79291(t,e,i){var r=i(41212),s=function(){var t,e,i,n,a,o,h=arguments[0]||{},l=1,u=arguments.length,d=!1;for("boolean"==typeof h&&(d=h,h=arguments[1]||{},l=2),u===l&&(h=this,--l);l<u;l++)if(null!=(t=arguments[l]))for(e in t)i=h[e],h!==(n=t[e])&&(d&&n&&(r(n)||(a=Array.isArray(n)))?(a?(a=!1,o=i&&Array.isArray(i)?i:[]):o=i&&r(i)?i:{},h[e]=s(d,o,n)):void 0!==n&&(h[e]=n));return h};t.exports=s},23568(t,e,i){var r=i(75508),s=i(35154);t.exports=function(t,e,i){var n=s(t,e,null);if(null===n)return i;if(Array.isArray(n))return r.RND.pick(n);if("object"==typeof n){if(n.hasOwnProperty("randInt"))return r.RND.integerInRange(n.randInt[0],n.randInt[1]);if(n.hasOwnProperty("randFloat"))return r.RND.realInRange(n.randFloat[0],n.randFloat[1])}else if("function"==typeof n)return n(e);return n}},95540(t){t.exports=function(t,e,i){var r=typeof t;return t&&"number"!==r&&"string"!==r&&t.hasOwnProperty(e)&&void 0!==t[e]?t[e]:i}},82840(t,e,i){var r=i(35154),s=i(45319);t.exports=function(t,e,i,n,a){void 0===a&&(a=i);var o=r(t,e,a);return s(o,i,n)}},35154(t){t.exports=function(t,e,i,r){if(!t&&!r||"number"==typeof t)return i;if(t&&t.hasOwnProperty(e))return t[e];if(r&&r.hasOwnProperty(e))return r[e];if(-1!==e.indexOf(".")){for(var s=e.split("."),n=t,a=r,o=i,h=i,l=!0,u=!0,d=0;d<s.length;d++)n&&n.hasOwnProperty(s[d])?(o=n[s[d]],n=n[s[d]]):l=!1,a&&a.hasOwnProperty(s[d])?(h=a[s[d]],a=a[s[d]]):u=!1;return l?o:u?h:i}return i}},69036(t){t.exports=function(t,e){for(var i=0;i<e.length;i++)if(!t.hasOwnProperty(e[i]))return!1;return!0}},1985(t){t.exports=function(t,e){for(var i=0;i<e.length;i++)if(t.hasOwnProperty(e[i]))return!0;return!1}},97022(t){t.exports=function(t,e){return t.hasOwnProperty(e)}},41212(t){t.exports=function(t){if(!t||"object"!=typeof t||t.nodeType||t===t.window)return!1;try{if(t.constructor&&!{}.hasOwnProperty.call(t.constructor.prototype,"isPrototypeOf"))return!1}catch(t){return!1}return!0}},46975(t,e,i){var r=i(41786);t.exports=function(t,e){var i=r(t);for(var s in e)i.hasOwnProperty(s)||(i[s]=e[s]);return i}},269(t,e,i){var r=i(41786);t.exports=function(t,e){var i=r(t);for(var s in e)i.hasOwnProperty(s)&&(i[s]=e[s]);return i}},18254(t,e,i){var r=i(97022);t.exports=function(t,e){for(var i={},s=0;s<e.length;s++){var n=e[s];r(t,n)&&(i[n]=t[n])}return i}},61622(t){t.exports=function(t,e,i){if(!t||"number"==typeof t)return!1;if(t.hasOwnProperty(e))return t[e]=i,!0;if(-1!==e.indexOf(".")){for(var r=e.split("."),s=t,n=t,a=0;a<r.length;a++){if(!s.hasOwnProperty(r[a]))return!1;n=s,s=s[r[a]]}return n[r[r.length-1]]=i,!0}return!1}},1183(t,e,i){t.exports={Clone:i(41786),DeepCopy:i(62644),Extend:i(79291),GetAdvancedValue:i(23568),GetFastValue:i(95540),GetMinMaxValue:i(82840),GetValue:i(35154),HasAll:i(69036),HasAny:i(1985),HasValue:i(97022),IsPlainObject:i(41212),Merge:i(46975),MergeRight:i(269),Pick:i(18254),SetValue:i(61622)}},27902(t){t.exports=function(t,e){return t.replace(/%([0-9]+)/g,function(t,i){return e[Number(i)-1]})}},41836(t){t.exports=function(t,e,i,r){void 0===e&&(e=0),void 0===i&&(i=" "),void 0===r&&(r=3);var s=0;if(e+1>=(t=t.toString()).length)switch(r){case 1:t=new Array(e+1-t.length).join(i)+t;break;case 3:var n=Math.ceil((s=e-t.length)/2);t=new Array(s-n+1).join(i)+t+new Array(n+1).join(i);break;default:t+=new Array(e+1-t.length).join(i)}return t}},33628(t){t.exports=function(t,e){return 0===e?t.slice(1):t.slice(0,e)+t.slice(e+1)}},27671(t){t.exports=function(t){return t.split("").reverse().join("")}},45650(t){t.exports=function(){return"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(t){var e=16*Math.random()|0;return("x"===t?e:3&e|8).toString(16)})}},35355(t){t.exports=function(t){return t&&t[0].toUpperCase()+t.slice(1)}},31749(t,e,i){t.exports={Format:i(27902),Pad:i(41836),RemoveAt:i(33628),Reverse:i(27671),UppercaseFirst:i(35355),UUID:i(45650)}}},e={};function i(r){var s=e[r];if(void 0!==s)return s.exports;var n=e[r]={exports:{}};return t[r](n,n.exports,i),n.exports}return i.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(t){if("object"==typeof window)return window}}(),i(85454)})());
+</script>
+<!-- V60 adds one compiled runtime module without replacing legacy story logic. -->
+<script type="text/plain" id="lq-game-src">
+      try {
+        const cfg = JSON.parse(localStorage.getItem('english-town-ai') || '{}');
+        if (false) {
+          cfg.geminiModel = 'gemini-2.5-flash';
+          localStorage.setItem('english-town-ai', JSON.stringify(cfg));
+        }
+      } catch (_) {}
+      // Shared Gemini helpers (NewGoal #4, #5).
+      // proxyAvailable(): the static builds (GitHub Pages, LIFEQUEST_deploy) ship no /api/gemini server, so
+      //   every keyless call used to end in a confusing 404. Probe the proxy once (GET must answer {ok:true})
+      //   and cache the answer; callers without a key go offline when it is false.
+      // genConfig(): gemini-2.5 flash models "think" by default and the hidden thinking tokens count against
+      //   maxOutputTokens, which can leave the visible answer empty. Turn thinking off for them.
+      window.LQGemini = (() => {
+        let probe = null;
+        function proxyAvailable() {
+          if (location.protocol === 'file:') return Promise.resolve(false);
+          if (!probe)
+            probe = fetch(window.LIFEQUEST_AI_CONFIG?.PROXY_URL || '/api/gemini', {
+              signal: AbortSignal.timeout(2500),
+            })
+              .then(async (r) => r.ok && (await r.json()).ok === true)
+              .catch(() => false);
+          return probe;
+        }
+        function thinkingConfig(model) {
+          const m = String(model || '');
+          if (/gemini-2\.5-(flash|flash-lite)/i.test(m)) return { thinkingBudget: 0 };
+          if (/gemini-3/i.test(m)) return { thinkingLevel: 'low' };
+          return null;
+        }
+        function genConfig(model, cfg = {}) {
+          const t = thinkingConfig(model);
+          return t ? { ...cfg, thinkingConfig: t } : { ...cfg };
+        }
+        return { proxyAvailable, thinkingConfig, genConfig };
+      })();
+      // The original town's scenes, procedural sprite generators, graphics and maps
+      // are reused without changing their visual drawing instructions.
+      const { cefrService, CEFR_LEVELS } = (() => {
+        /**
+         * CEFR English Proficiency Service
+         * Customizes NPC dialogue complexity, vocabulary, and grammar coaching for learners.
+         */
+        const CEFR_LEVELS = {
+          A1: {
+            code: 'A1',
+            name: 'Beginner',
+            vietnameseTitle: 'Beginner (A1)',
+            description: 'Very simple sentences, slow clear speech, common everyday words.',
+            promptInstruction:
+              'The player is a beginner English learner (CEFR A1). Speak in short, simple sentences (5-10 words). Use elementary vocabulary. Be patient and friendly. Avoid slang, idioms, or complex compound tenses.',
+          },
+          A2: {
+            code: 'A2',
+            name: 'Elementary',
+            vietnameseTitle: 'Elementary (A2)',
+            description: 'Simple everyday dialogues, basic past/present/future tenses.',
+            promptInstruction:
+              'The player is an elementary English learner (CEFR A2). Use straightforward conversational sentences. Introduce basic descriptive words. Keep questions direct and easy to answer.',
+          },
+          B1: {
+            code: 'B1',
+            name: 'Intermediate',
+            vietnameseTitle: 'Intermediate (B1)',
+            description: 'Natural conversations, common idioms, expressing opinions and plans.',
+            promptInstruction:
+              'The player is an intermediate English learner (CEFR B1). Converse naturally like a typical town resident. Use common idioms, phrasal verbs, and ask follow-up questions to encourage conversational depth.',
+          },
+          B2: {
+            code: 'B2',
+            name: 'Upper-Intermediate',
+            vietnameseTitle: 'Upper-Intermediate (B2)',
+            description: 'Rich vocabulary, nuanced discussions, natural native expressions.',
+            promptInstruction:
+              'The player is an upper-intermediate English learner (CEFR B2). Use varied vocabulary, nuanced expressions, and natural colloquial phrases. Challenge the player with detailed responses.',
+          },
+          C1: {
+            code: 'C1',
+            name: 'Advanced',
+            vietnameseTitle: 'Advanced (C1)',
+            description: 'Fluent, idiomatic native-level discussions, humor and subtlety.',
+            promptInstruction:
+              'The player is an advanced English speaker (CEFR C1). Speak completely naturally at full native fluency, with humor, cultural references, figurative language, and sophisticated vocabulary.',
+          },
+        };
+        const STORAGE_KEY = 'lifequest_cefr_level_v2';
+        class CEFRService {
+          currentLevel = 'B1';
+          listeners = [];
+          constructor() {
+            if (typeof window !== 'undefined') {
+              try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && CEFR_LEVELS[saved]) {
+                  this.currentLevel = saved;
+                }
+              } catch (e) {}
+            }
+          }
+          getLevel() {
+            return this.currentLevel;
+          }
+          getLevelInfo() {
+            return CEFR_LEVELS[this.currentLevel];
+          }
+          setLevel(level) {
+            if (CEFR_LEVELS[level]) {
+              this.currentLevel = level;
+              try {
+                localStorage.setItem(STORAGE_KEY, level);
+              } catch (e) {}
+              this.listeners.forEach((l) => l());
+            }
+          }
+          subscribe(listener) {
+            this.listeners.push(listener);
+            return () => {
+              this.listeners = this.listeners.filter((l) => l !== listener);
+            };
+          }
+        }
+        const cefrService = new CEFRService();
+
+        return { cefrService, CEFR_LEVELS };
+      })();
+
+      const { speechService } = (() => {
+        /**
+         * Speech Service: Bidirectional Speech (Speech-to-Text & Text-to-Speech)
+         * Designed for English Language Learners in LifeQuest AI: English Town.
+         */
+        const STORAGE_KEY = 'lifequest_speech_settings_v2';
+        class SpeechService {
+          synth = null;
+          voices = [];
+          selectedVoice = null;
+          currentUtterance = null;
+          isSpeakingState = false;
+          settings = {
+            voiceEnabled: true,
+            rate: 0.9,
+            pitch: 1.0,
+            preferredVoice: null,
+            autoSpeak: true,
+          };
+          listeners = [];
+          constructor() {
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+              this.synth = window.speechSynthesis;
+              this.loadSettings();
+              this.initVoices();
+            }
+          }
+          loadSettings() {
+            try {
+              const raw = localStorage.getItem(STORAGE_KEY);
+              if (raw) {
+                this.settings = { ...this.settings, ...JSON.parse(raw) };
+              }
+            } catch (e) {
+              console.warn('Failed to load speech settings from storage', e);
+            }
+          }
+          saveSettings() {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
+              this.notify();
+            } catch (e) {
+              console.warn('Failed to save speech settings', e);
+            }
+          }
+          initVoices() {
+            if (!this.synth) return;
+            const populate = () => {
+              this.voices = this.synth.getVoices();
+              this.pickBestVoice();
+              this.notify();
+            };
+            populate();
+            if (this.synth.onvoiceschanged !== undefined) {
+              this.synth.onvoiceschanged = populate;
+            }
+          }
+          pickBestVoice() {
+            if (!this.voices.length) return;
+            if (this.settings.preferredVoice) {
+              const found = this.voices.find((v) => v.name === this.settings.preferredVoice);
+              if (found) {
+                this.selectedVoice = found;
+                return;
+              }
+            }
+            // Prioritize natural English voices (Google US English, Samantha, Daniel, Karen, etc.)
+            const englishVoices = this.voices.filter((v) => v.lang.startsWith('en'));
+            const preferred =
+              englishVoices.find((v) =>
+                /Google|Natural|Samantha|Daniel|Victoria|Arthur|Moira/i.test(v.name),
+              ) ||
+              englishVoices.find((v) => v.lang === 'en-US') ||
+              englishVoices[0] ||
+              this.voices[0];
+            this.selectedVoice = preferred || null;
+          }
+          getVoices() {
+            return this.voices.filter((v) => v.lang.startsWith('en'));
+          }
+          setPreferredVoice(voiceName) {
+            this.settings.preferredVoice = voiceName;
+            this.pickBestVoice();
+            this.saveSettings();
+          }
+          setVoiceEnabled(enabled) {
+            this.settings.voiceEnabled = enabled;
+            if (!enabled) {
+              this.stop();
+            }
+            this.saveSettings();
+          }
+          setAutoSpeak(auto) {
+            this.settings.autoSpeak = auto;
+            this.saveSettings();
+          }
+          setRate(rate) {
+            this.settings.rate = Math.max(0.6, Math.min(1.4, rate));
+            this.saveSettings();
+          }
+          isAvailable() {
+            return typeof window !== 'undefined' && 'speechSynthesis' in window;
+          }
+          isSpeaking() {
+            return this.isSpeakingState;
+          }
+          /**
+           * Speak an English sentence.
+           * Strips out markdown, emoji, and formatting so the speech output sounds completely natural.
+           */
+          speak(text, callbacks) {
+            if (!this.synth || !this.settings.voiceEnabled) return;
+            // Stop current speech
+            this.stop();
+            // Clean text for speech synthesis
+            const cleanText = text
+              .replace(/https?:\/\/\S+/g, '') // remove URLs
+              .replace(/[*_#`~[\]]/g, '') // remove markdown
+              .replace(
+                /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}]/gu,
+                '',
+              ) // remove emojis
+              .trim();
+            if (!cleanText) return;
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = this.selectedVoice?.lang || 'en-US';
+            if (this.selectedVoice) {
+              utterance.voice = this.selectedVoice;
+            }
+            utterance.rate = this.settings.rate;
+            utterance.pitch = this.settings.pitch;
+            utterance.onstart = () => {
+              this.isSpeakingState = true;
+              callbacks?.onStart?.();
+              this.notify();
+            };
+            utterance.onend = () => {
+              this.isSpeakingState = false;
+              this.currentUtterance = null;
+              callbacks?.onEnd?.();
+              this.notify();
+            };
+            utterance.onerror = (e) => {
+              this.isSpeakingState = false;
+              this.currentUtterance = null;
+              if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                console.warn('Speech synthesis error:', e);
+                callbacks?.onError?.(e);
+              }
+              this.notify();
+            };
+            this.currentUtterance = utterance;
+            try {
+              this.synth.speak(utterance);
+            } catch (err) {
+              console.warn('Failed to speak utterance:', err);
+            }
+          }
+          stop() {
+            if (this.synth) {
+              try {
+                this.synth.cancel();
+              } catch (e) {}
+              this.isSpeakingState = false;
+              this.currentUtterance = null;
+              this.notify();
+            }
+          }
+          subscribe(listener) {
+            this.listeners.push(listener);
+            return () => {
+              this.listeners = this.listeners.filter((l) => l !== listener);
+            };
+          }
+          notify() {
+            this.listeners.forEach((l) => l());
+          }
+        }
+        const speechService = new SpeechService();
+
+        return { speechService };
+      })();
+
+      const {
+        attachTownScene,
+        detachTownScene,
+        updateTownAutopilot,
+        cancelTownAutopilot,
+        executeTownCommand,
+        getTownContext,
+      } = (() => {
+        /**
+         * Non-visual bridge between LIFEQUEST AI and the existing Phaser scene.
+         * Do not change any terrain, sprites, drawings, or world-generation rules here.
+         */
+        let scene = null;
+        let route = null;
+
+        function notify(text) {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('lifequest:status', { detail: { text } }));
+          }
+        }
+
+        function attachTownScene(current) {
+          scene = current;
+          window.__lifequestGetScene = () => scene;
+          window.__lifequestServices = { speech: speechService, cefr: cefrService };
+          route = null;
+        }
+
+        function detachTownScene(current) {
+          if (scene !== current) return;
+          scene = null;
+          route = null;
+        }
+
+        function getTownContext() {
+          if (!scene || !scene.player || !scene.area) return null;
+          const { area, player, npcs, inside, store } = scene;
+          return {
+            area: area.name,
+            areaId: area.id,
+            inside: inside?.b?.name || null,
+            day: store.game.day,
+            time:
+              Math.floor(store.game.minutes / 60)
+                .toString()
+                .padStart(2, '0') +
+              ':' +
+              (store.game.minutes % 60).toString().padStart(2, '0'),
+            position: { x: Math.floor(player.x / 32), y: Math.floor(player.y / 32) },
+            nearby: npcs
+              .filter((n) => n.sprite.visible && !!n.inside === !!inside)
+              .filter(
+                (n) =>
+                  Math.hypot(n.sprite.x - player.x, n.sprite.y - player.y) < (inside ? 95 : 80),
+              )
+              .map((n) => ({ id: n.def.id, name: n.def.name })),
+            npcs: npcs.map((n) => ({
+              id: n.def.id,
+              name: n.def.name,
+              available: !!n.sprite.visible && !!n.inside === !!inside,
+              indoors: !!n.inside,
+              activity: n.slot.label,
+              tile: { x: Math.floor(n.sprite.x / 32), y: Math.floor(n.sprite.y / 32) },
+            })),
+            places: [
+              ...area.buildings.map((b) => ({
+                id: b.name,
+                name: b.name,
+                type: 'building',
+                tile: { x: b.door, y: b.y + b.h },
+              })),
+              ...Object.keys(area.places)
+                .filter((k) => !k.startsWith('home_'))
+                .map((k) => ({
+                  id: k,
+                  name: k,
+                  type: 'landmark',
+                  tile: { x: area.places[k].x, y: area.places[k].y },
+                })),
+            ],
+            isMoving: !!route,
+          };
+        }
+
+        function cancelTownAutopilot(reason = '', announce = false) {
+          if (!route) return;
+          route = null;
+          if (reason && announce) notify(reason);
+        }
+
+        const tile = (x, y) => ({ x: Math.floor(x / 32), y: Math.floor(y / 32) });
+        const center = (x, y) => ({ x: x * 32 + 16, y: y * 32 + 16 });
+
+        function routeToPoint(targetX, targetY, maxDistanceTiles = 0, preferExact = false) {
+          const { player, area } = scene;
+          const target = tile(targetX, targetY);
+          const candidates = [];
+          for (let rad = 0; rad <= maxDistanceTiles; rad++) {
+            for (let dy = -rad; dy <= rad; dy++) {
+              for (let dx = -rad; dx <= rad; dx++) {
+                if (Math.max(Math.abs(dx), Math.abs(dy)) !== rad) continue;
+                const x = target.x + dx,
+                  y = target.y + dy;
+                if (area.isTileBlocked(x, y)) continue;
+                const point = center(x, y);
+                if (scene.blocked(point.x, point.y)) continue;
+                // The original findPath returns a one-node fallback for an unreachable goal;
+                // validate every step before using the route.
+                const steps = area.findPath({ x: player.x, y: player.y }, { x, y });
+                if (!Array.isArray(steps) || !steps.length || steps.length > 1600) continue;
+                const end = steps[steps.length - 1];
+                if (Math.hypot(end.x - point.x, end.y - point.y) > 2) continue;
+                let last = center(Math.floor(player.x / 32), Math.floor(player.y / 32));
+                if (
+                  !steps.every((p) => {
+                    const valid =
+                      !area.isTileBlocked(Math.floor(p.x / 32), Math.floor(p.y / 32)) &&
+                      !scene.blocked(p.x, p.y) &&
+                      Math.hypot(p.x - last.x, p.y - last.y) <= 46;
+                    last = p;
+                    return valid;
+                  })
+                )
+                  continue;
+                const proximity = Math.hypot(point.x - targetX, point.y - targetY);
+                if (preferExact && proximity > 23) continue;
+                candidates.push({ steps, cost: steps.length + proximity / 72 });
+              }
+            }
+          }
+          candidates.sort((a, b) => a.cost - b.cost);
+          return candidates[0]?.steps || null;
+        }
+
+        function beginRoute(points, label, npcId = null, autoTalk = false) {
+          if (!points)
+            return `Couldn't find a valid path to ${label}. Try getting closer with WASD.`;
+          route = { kind: 'path', points: [...points], label, npcId, autoTalk, retries: 0 };
+          return `🚶 Your character is finding a path to ${label}. Press WASD/arrow keys to take back control, or say “stop”.`;
+        }
+
+        function canAct() {
+          return (
+            !!scene &&
+            !scene.switching &&
+            !scene.sleeping &&
+            !scene.chat.isOpen &&
+            !scene.briefing.isOpen &&
+            !scene.settings.isOpen &&
+            !scene.helper.isOpen &&
+            !scene.journal.isOpen &&
+            !scene.quests.isOpen
+          );
+        }
+
+        function executeTownCommand(command) {
+          if (!scene || !scene.player) return 'The game hasn\'t finished loading. Please try again.';
+          const action = command?.kind;
+          if (action === 'stop') {
+            cancelTownAutopilot();
+            return '🛑 Autopilot stopped. You can use WASD or the arrow keys.';
+          }
+          if (action === 'status') {
+            const data = getTownContext();
+            return `📍 You are at ${data.inside || data.area}, position (${data.position.x}, ${data.position.y}), ${data.time}.`;
+          }
+          if (action === 'help') {
+            return 'You can say: “go to the library”, “find Lily and talk to her”, “walk right for 2 seconds”, “talk to the nearest person”, “stop”, or ask how to learn English. Manual controls: WASD/arrow keys, E to chat.';
+          }
+          if (!canAct())
+            return 'Close the NPC window, journal or in-game menu before controlling your character.';
+          if (action === 'talk') {
+            const npc = scene.nearestNpc(scene.inside ? 56 * scene.inside.k : 48);
+            if (!npc) return 'No NPC is close enough. Walk up to an NPC and try again.';
+            cancelTownAutopilot();
+            scene.tryTalk();
+            return `💬 Opened a conversation with ${npc.def.name}. You can type or use the microphone to speak English.`;
+          }
+          if (action === 'move') {
+            const dirs = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+            if (!Object.hasOwn(dirs, command.direction)) return 'Invalid direction.';
+            const seconds = Math.min(3, Math.max(0.25, Number(command.seconds) || 1));
+            cancelTownAutopilot();
+            route = {
+              kind: 'direction',
+              vector: dirs[command.direction],
+              remaining: seconds * 1000,
+            };
+            return `🎮 Moving ${command.direction} for ${seconds} second(s).`;
+          }
+          if (scene.inside)
+            return 'You are indoors. Go outside before using auto-navigation.';
+          if (action === 'navigate_npc') {
+            const npc = scene.npcs.find((n) => n.def.id === command.target);
+            if (!npc) return 'This character wasn\'t found in the current area.';
+            if (npc.inside)
+              return `${npc.def.name} is inside a building. Enter that building first and talk in person.`;
+            if (!npc.sprite.visible)
+              return `${npc.def.name} is resting or not around right now. Try again at another time.`;
+            const near = Math.hypot(scene.player.x - npc.sprite.x, scene.player.y - npc.sprite.y);
+            if (near <= 45) {
+              if (command.autoTalk) {
+                scene.chat.open(npc.def);
+                return `💬 Started chatting with ${npc.def.name}.`;
+              }
+              return `You are already next to ${npc.def.name}. Press E to chat.`;
+            }
+            const points = routeToPoint(npc.sprite.x, npc.sprite.y, 2);
+            return beginRoute(points, npc.def.name, npc.def.id, !!command.autoTalk);
+          }
+          if (action === 'navigate_place') {
+            const building = scene.area.buildings.find((b) => b.name === command.target);
+            let x, y;
+            if (building) {
+              x = building.door * 32 + 16;
+              y = (building.y + building.h) * 32 + 16;
+            } else {
+              const p = scene.area.places[command.target];
+              if (!p) return 'This place wasn\'t found in the current town.';
+              x = p.x * 32 + 16;
+              y = p.y * 32 + 16;
+            }
+            if (Math.hypot(scene.player.x - x, scene.player.y - y) < 20)
+              return `You are right at ${command.target}.`;
+            const points = routeToPoint(x, y, building ? 1 : 2, !!building);
+            return beginRoute(points, command.target);
+          }
+          return 'I didn\'t understand that command. Try “go to the library”, “go to Lily”, “stop”, or “help”.';
+        }
+
+        /** Called once per game update; returns movement vector, or null for manual input. */
+        function updateTownAutopilot(current, delta) {
+          if (!route || current !== scene) return null;
+          if (!canAct()) return null;
+          if (route.kind === 'direction') {
+            route.remaining -= delta;
+            if (route.remaining <= 0) {
+              route = null;
+              notify('✅ Movement command completed.');
+              return null;
+            }
+            return { x: route.vector[0], y: route.vector[1] };
+          }
+          // Check destination NPC's *current* position (NPCs may wander over time).
+          const npc = route.npcId && scene.npcs.find((n) => n.def.id === route.npcId);
+          if (
+            npc &&
+            Math.hypot(scene.player.x - npc.sprite.x, scene.player.y - npc.sprite.y) <= 44
+          ) {
+            const label = route.label;
+            const autoTalk = route.autoTalk;
+            route = null;
+            if (autoTalk && !scene.chat.isOpen) {
+              scene.chat.open(npc.def);
+              notify(`💬 Reached ${label} and opened a conversation.`);
+            } else notify(`✅ Reached ${label}. Press E to chat.`);
+            return null;
+          }
+          while (route?.points.length) {
+            const waypoint = route.points[0];
+            const gap = Math.hypot(waypoint.x - scene.player.x, waypoint.y - scene.player.y);
+            if (gap > 5)
+              return {
+                x: (waypoint.x - scene.player.x) / gap,
+                y: (waypoint.y - scene.player.y) / gap,
+              };
+            route.points.shift();
+          }
+          if (route) {
+            const label = route.label;
+            const autoTalk = route.autoTalk;
+            const npcId = route.npcId;
+            if (npc && route.retries < 2) {
+              const points = routeToPoint(npc.sprite.x, npc.sprite.y, 2);
+              if (points) {
+                route = {
+                  kind: 'path',
+                  points,
+                  label,
+                  npcId,
+                  autoTalk,
+                  retries: route.retries + 1,
+                };
+                return null;
+              }
+            }
+            route = null;
+            notify(
+              npc
+                ? `📍 Got close to ${label}; the NPC has moved, look around.`
+                : `✅ Reached ${label}.`,
+            );
+          }
+          return null;
+        }
+
+        return {
+          attachTownScene,
+          detachTownScene,
+          updateTownAutopilot,
+          cancelTownAutopilot,
+          executeTownCommand,
+          getTownContext,
+        };
+      })();
+
+      const { getNpcSuggestions } = (() => {
+        /** Optional, context-aware English conversation starters. World graphics are untouched. */
+        const fallback = {
+          barista: [
+            'Could I have a cup of tea, please?',
+            'How much is a coffee?',
+            'What do you recommend today?',
+          ],
+          librarian: [
+            'Could you recommend a good book?',
+            'Do you have any stories for beginners?',
+            'Where can I find English books?',
+          ],
+          doctor: [
+            'I have a headache.',
+            'What should I do to feel better?',
+            'Thank you for your advice.',
+          ],
+          mayor: [
+            'I have an idea for the town.',
+            'We could build a new park.',
+            'How can I help our town?',
+          ],
+          teacher: [
+            'How can I improve my English?',
+            'Could you explain this word?',
+            'Can we practice speaking together?',
+          ],
+          shopkeeper: [
+            'How much does this cost?',
+            'Can I buy some bread, please?',
+            'Do you have a cheaper option?',
+          ],
+          kid: ['Hi! My name is Alex.', 'What do you like doing?', 'Would you like to be friends?'],
+          police: [
+            'Excuse me, where is the library?',
+            'How do I get to the hospital?',
+            'Thank you for helping me.',
+          ],
+        };
+        const defaultLines = [
+          'Hello! How is your day going?',
+          'Could you tell me more, please?',
+          'Thank you! That is very helpful.',
+        ];
+
+        async function getNpcSuggestions(npc, lastReply, level = 'A2') {
+          const local = fallback[npc.id] || defaultLines;
+          let saved = {};
+          try {
+            saved = JSON.parse(localStorage.getItem('english-town-ai') || '{}');
+          } catch {}
+          const model =
+            saved.geminiModel?.trim() || window.LIFEQUEST_AI_CONFIG?.MODEL || 'gemini-2.5-flash';
+          const prompt = `You are an English tutor. An English learner at CEFR ${level} is speaking to ${npc.name}, whose role is ${npc.persona}. Their conversation task is: ${npc.goal.text}. The NPC most recently said: ${lastReply.slice(0, 300)}. Give exactly THREE short, distinct, natural English sentences the learner could say next. Keep vocabulary level appropriate. Respond ONLY as a JSON array of three strings. No markdown.`;
+          try {
+            const body = {
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              generationConfig: window.LQGemini.genConfig(model, {
+                temperature: 0.5,
+                responseMimeType: 'application/json',
+                maxOutputTokens: 180,
+              }),
+            };
+            const key = String(
+              saved.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || '',
+            ).trim();
+            if (!key && !(await window.LQGemini.proxyAvailable())) return local;
+            const resp = key
+              ? await fetch(
+                  `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+                    body: JSON.stringify(body),
+                    signal: AbortSignal.timeout(9000),
+                  },
+                )
+              : await fetch(window.LIFEQUEST_AI_CONFIG?.PROXY_URL || '/api/gemini', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ model, body }),
+                  signal: AbortSignal.timeout(9000),
+                });
+            if (!resp.ok) return local;
+            const data = await resp.json();
+            const text = (data.candidates?.[0]?.content?.parts || [])
+              .map((p) => p.text || '')
+              .join('')
+              .trim()
+              .replace(/^```json\s*/i, '')
+              .replace(/```$/, '');
+            const candidates = JSON.parse(text);
+            if (
+              !Array.isArray(candidates) ||
+              candidates.length !== 3 ||
+              !candidates.every((v) => typeof v === 'string' && v.length > 3 && v.length < 145)
+            )
+              return local;
+            return candidates;
+          } catch {
+            return local;
+          }
+        }
+
+        return { getNpcSuggestions };
+      })();
+
+      const { startGame, stopGame } = (() => {
+        const Y = Phaser;
+        var re = [
+            {
+              id: `barista`,
+              name: `Lily (Barista)`,
+              x: 8,
+              y: 7,
+              color: 14715482,
+              persona: `Lily is a cheerful barista at Sunny Cafe. She sells coffee, tea and cake.`,
+              goal: {
+                id: `order`,
+                deed: `ordered a drink at Sunny Cafe`,
+                text: `Order a drink at the cafe (say what you would like).`,
+                keywords: [`coffee`, `tea`, `latte`, `cake`, `juice`],
+                reward: 20,
+                rep: 2,
+              },
+              greeting: `Welcome to Sunny Cafe! What can I get for you?`,
+            },
+            {
+              id: `mayor`,
+              name: `Mr. Brown (Mayor)`,
+              x: 30,
+              y: 7,
+              color: 6978264,
+              persona: `Mr. Brown is the serious but kind mayor. He wants to improve the town and listens to citizens' ideas.`,
+              goal: {
+                id: `idea`,
+                deed: `suggested an idea to improve the town to the mayor`,
+                text: `Suggest an idea to improve the town (a park, a school, a road...).`,
+                keywords: [
+                  `park`,
+                  `school`,
+                  `road`,
+                  `bus`,
+                  `library`,
+                  `garden`,
+                  `hospital`,
+                  `bridge`,
+                ],
+                reward: 50,
+                rep: 5,
+              },
+              greeting: `Good day, citizen. How do you think we can make our town better?`,
+            },
+            {
+              id: `librarian`,
+              name: `Ms. Green (Librarian)`,
+              x: 8,
+              y: 22,
+              color: 5223290,
+              persona: `Ms. Green is a quiet, patient librarian who loves books and helps people learn English.`,
+              goal: {
+                id: `book`,
+                deed: `asked the librarian for a book recommendation`,
+                text: `Ask Ms. Green to recommend a book.`,
+                keywords: [`book`, `recommend`, `story`, `read`],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Shh... welcome to the library. Looking for something to read?`,
+            },
+            {
+              id: `shopkeeper`,
+              name: `Tom (Shopkeeper)`,
+              x: 30,
+              y: 22,
+              color: 14205258,
+              persona: `Tom runs the corner shop. He is talkative, likes to bargain, and sells food, clothes and tools.`,
+              goal: {
+                id: `buy`,
+                deed: `bought something at the Corner Shop`,
+                text: `Ask for the price of something and buy it.`,
+                keywords: [`how much`, `price`, `buy`, `cost`, `apple`, `bread`, `shirt`],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! Best prices in town. Need anything?`,
+            },
+            {
+              id: `kid`,
+              name: `Mia (Student)`,
+              x: 19,
+              y: 14,
+              color: 14183080,
+              persona: `Mia is a friendly 10-year-old student who is curious and asks lots of simple questions.`,
+              goal: {
+                id: `chat`,
+                deed: `became friends with Mia the student`,
+                text: `Introduce yourself to Mia (say your name and something about you).`,
+                keywords: [`my name`, `i am`, `i'm`, `i like`, `i live`],
+                reward: 15,
+                rep: 1,
+              },
+              greeting: `Hi! I'm Mia. Who are you?`,
+            },
+            {
+              id: `doctor`,
+              name: `Dr. Chen (Doctor)`,
+              x: 52,
+              y: 8,
+              color: 8050904,
+              persona: `Dr. Chen is the calm, caring town doctor who works at the Hospital and gives practical health advice.`,
+              goal: {
+                id: `health`,
+                deed: `told the doctor about a health problem`,
+                text: `Tell the doctor about a health problem (a headache, a cold, a stomach ache...).`,
+                keywords: [
+                  `headache`,
+                  `cold`,
+                  `fever`,
+                  `cough`,
+                  `sick`,
+                  `hurt`,
+                  `pain`,
+                  `stomach`,
+                  `tired`,
+                  `sore`,
+                ],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Hello. Please, come in. How are you feeling today?`,
+            },
+            {
+              id: `police`,
+              name: `Officer Davis (Police)`,
+              x: 24,
+              y: 41,
+              color: 2767498,
+              persona: `Officer Davis is a firm but friendly police officer who knows every street and landmark and keeps the town safe.`,
+              goal: {
+                id: `directions`,
+                deed: `asked the police officer for directions`,
+                text: `Ask the police officer how to get to a place in town (the hospital, the library...).`,
+                keywords: [
+                  `where`,
+                  `way to`,
+                  `how do i get`,
+                  `how can i get`,
+                  `direction`,
+                  `lost`,
+                  `find the`,
+                  `how to get`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Good day. Officer Davis here. Can I help you with anything?`,
+            },
+            {
+              id: `teacher`,
+              name: `Ms. Taylor (Teacher)`,
+              x: 55,
+              y: 22,
+              color: 10509e3,
+              persona: `Ms. Taylor is an enthusiastic English teacher at the school who loves languages and encourages every student.`,
+              goal: {
+                id: `study`,
+                deed: `asked the teacher for advice on learning English`,
+                text: `Ask the teacher how to learn or practice English.`,
+                keywords: [
+                  `learn`,
+                  `english`,
+                  `lesson`,
+                  `study`,
+                  `practice`,
+                  `grammar`,
+                  `class`,
+                  `teach`,
+                  `vocabulary`,
+                  `homework`,
+                ],
+                reward: 30,
+                rep: 3,
+              },
+              greeting: `Hello! I am Ms. Taylor, the English teacher. Ready to practice a little?`,
+            },
+            {
+              id: `firefighter`,
+              name: `Carlos (Firefighter)`,
+              x: 60,
+              y: 7,
+              color: 14694954,
+              persona: `Carlos is a brave, cheerful firefighter who is proud of his station and loves talking about safety.`,
+              goal: {
+                id: `safety`,
+                deed: `asked the firefighter about fire safety`,
+                text: `Ask the firefighter about fire safety or his job.`,
+                keywords: [
+                  `fire`,
+                  `safety`,
+                  `safe`,
+                  `rescue`,
+                  `truck`,
+                  `emergency`,
+                  `smoke`,
+                  `alarm`,
+                  `firefighter`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there, my friend! Welcome to the fire station!`,
+            },
+            {
+              id: `chef`,
+              name: `Marco (Chef)`,
+              x: 38,
+              y: 22,
+              color: 16052448,
+              persona: `Marco is a passionate, dramatic chef who runs the restaurant and is proud of his family recipes.`,
+              goal: {
+                id: `meal`,
+                deed: `ordered a meal at the restaurant`,
+                text: `Order a meal at the restaurant (pizza, pasta, soup...).`,
+                keywords: [
+                  `pizza`,
+                  `pasta`,
+                  `soup`,
+                  `salad`,
+                  `steak`,
+                  `rice`,
+                  `burger`,
+                  `dinner`,
+                  `lunch`,
+                  `meal`,
+                  `menu`,
+                  `order`,
+                  `hungry`,
+                  `sandwich`,
+                  `chicken`,
+                  `fish`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Ciao! Welcome to my restaurant! Are you hungry?`,
+            },
+            {
+              id: `banker`,
+              name: `Ms. Park (Banker)`,
+              x: 38,
+              y: 7,
+              color: 9082544,
+              persona: `Ms. Park is the precise, polite manager of the Bank. She explains money in simple words and loves tidy numbers.`,
+              goal: {
+                id: `save`,
+                deed: `asked the banker about saving money`,
+                text: `Ask Ms. Park about saving money or opening a bank account.`,
+                keywords: [
+                  `account`,
+                  `save`,
+                  `saving`,
+                  `deposit`,
+                  `bank`,
+                  `loan`,
+                  `money`,
+                  `savings`,
+                ],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Good day. Welcome to the bank. How may I help you?`,
+            },
+            {
+              id: `postman`,
+              name: `Sam (Postman)`,
+              x: 23,
+              y: 7,
+              color: 14178906,
+              persona: `Sam is the quick, friendly postman who knows every street in town and walks everywhere.`,
+              goal: {
+                id: `send`,
+                deed: `sent a letter at the Post Office`,
+                text: `Send a letter or a parcel (ask Sam for a stamp).`,
+                keywords: [
+                  `letter`,
+                  `stamp`,
+                  `send`,
+                  `parcel`,
+                  `package`,
+                  `mail`,
+                  `post`,
+                  `envelope`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! Sam from the post office. Need to send something?`,
+            },
+            {
+              id: `hotelclerk`,
+              name: `Sofia (Hotel Clerk)`,
+              x: 12,
+              y: 41,
+              color: 13146840,
+              persona: `Sofia is the elegant, welcoming front-desk clerk at the Hotel. She speaks three languages and loves helping travelers.`,
+              goal: {
+                id: `room`,
+                deed: `booked a room at the Hotel`,
+                text: `Book a room at the Hotel (say how many nights).`,
+                keywords: [
+                  `room`,
+                  `book`,
+                  `reserve`,
+                  `reservation`,
+                  `night`,
+                  `nights`,
+                  `stay`,
+                  `suite`,
+                ],
+                reward: 30,
+                rep: 2,
+              },
+              greeting: `Welcome to the Hotel! How may I help you today?`,
+            },
+            {
+              id: `priest`,
+              name: `Father Joe (Priest)`,
+              x: 41,
+              y: 41,
+              color: 8022618,
+              persona: `Father Joe is the gentle, wise priest who looks after the old church and loves telling stories about the town.`,
+              goal: {
+                id: `history`,
+                deed: `asked Father Joe about the history of the church`,
+                text: `Ask Father Joe about the church or the history of the town.`,
+                keywords: [
+                  `church`,
+                  `history`,
+                  `old`,
+                  `bell`,
+                  `built`,
+                  `story`,
+                  `music`,
+                  `organ`,
+                  `wedding`,
+                ],
+                reward: 25,
+                rep: 3,
+              },
+              greeting: `Peace be with you, my friend. Welcome to our church.`,
+            },
+            {
+              id: `cinema`,
+              name: `Zoe (Cinema)`,
+              x: 32,
+              y: 41,
+              color: 15231664,
+              persona: `Zoe sells tickets at the Cinema. She is playful, movie-crazy and gives honest movie reviews.`,
+              goal: {
+                id: `ticket`,
+                deed: `bought a movie ticket at the Cinema`,
+                text: `Buy a movie ticket (say which movie or seat you want).`,
+                keywords: [
+                  `ticket`,
+                  `tickets`,
+                  `movie`,
+                  `film`,
+                  `popcorn`,
+                  `seat`,
+                  `show`,
+                  `watch`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey! Welcome to the Cinema! Here for a movie?`,
+            },
+            {
+              id: `foreman`,
+              name: `Jack (Foreman)`,
+              x: 11,
+              y: 26,
+              color: 15261904,
+              persona: `Jack is the gruff, fair foreman of the Great Mine in Minerals Town (MT). He is honest, says little, never flatters, cares about safety, and is deeply proud of the town and its miners.`,
+              goal: {
+                id: `job`,
+                deed: `asked the foreman for a job in the mine`,
+                text: `Ask Jack for a job in the mine.`,
+                keywords: [
+                  `a job`,
+                  `hire me`,
+                  `hiring`,
+                  `employ`,
+                  `work for you`,
+                  `work in the mine`,
+                  `work at the mine`,
+                  `need work`,
+                  `want work`,
+                  `looking for work`,
+                ],
+                reward: 30,
+                rep: 3,
+              },
+              greeting: `Hm. New face. I am Jack, the foreman. What do you want here?`,
+              plain: !0,
+            },
+            {
+              id: `miner`,
+              name: `Ben (Digger)`,
+              x: 30,
+              y: 18,
+              color: 14715434,
+              persona: `Big Ben is a huge, strong, simple miner of Minerals Town (MT). He is the digger: he swings a pickaxe at the rock face of the Great Mine and digs copper. He is honest and shy with words, speaks in very short plain sentences, and is proud of MT.`,
+              goal: {
+                id: `dig`,
+                deed: `asked Big Ben what he digs in the mine`,
+                text: `Ask Ben what he digs in the mine.`,
+                keywords: [
+                  `dig`,
+                  `digs`,
+                  `digging`,
+                  `copper`,
+                  `iron`,
+                  `coal`,
+                  `gold`,
+                  `ore`,
+                  `pickaxe`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey. I am Ben. I dig. This is MT. Best town in the world.`,
+              plain: !0,
+            },
+            {
+              id: `blaster`,
+              name: `Tomas (Blaster)`,
+              x: 22,
+              y: 18,
+              color: 13646378,
+              persona: `Tomas is the blaster of Minerals Town (MT). He breaks the hard rock with dynamite so the diggers can work. He is strong, honest and plain-spoken, a little deaf from thirty years of blasts, careful about safety, and proud that every tunnel of MT started with his charges.`,
+              goal: {
+                id: `blast`,
+                deed: `asked the blaster how he breaks the rock`,
+                text: `Ask Tomas how he breaks the hard rock (dynamite).`,
+                keywords: [
+                  `dynamite`,
+                  `blast`,
+                  `blasting`,
+                  `explosive`,
+                  `explosion`,
+                  `boom`,
+                  `powder`,
+                  `break the rock`,
+                  `break rock`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `What? Oh! Hello. I am Tomas. I make the big boom. Speak up, my ears are old.`,
+              plain: !0,
+            },
+            {
+              id: `carter`,
+              name: `Pete (Rail Driver)`,
+              x: 35,
+              y: 19,
+              color: 4876938,
+              persona: `Pete is the wagon driver of Minerals Town (MT). He hauls the ore on the rails from the Great Mine to the Rail Station. He is steady, quietly cheerful, never late, loves the rails, and is proud that everything MT digs leaves on his wagons.`,
+              goal: {
+                id: `haul`,
+                deed: `asked the rail driver where the ore goes`,
+                text: `Ask Pete where the ore goes after the mine (the wagons, the rails, the station).`,
+                keywords: [
+                  `wagon`,
+                  `wagons`,
+                  `cart`,
+                  `carts`,
+                  `train`,
+                  `rail`,
+                  `rails`,
+                  `haul`,
+                  `carry`,
+                  `load`,
+                  `station`,
+                  `ore go`,
+                  `ore goes`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello. I am Pete. I drive the ore wagons. Click-clack, always on time.`,
+              plain: !0,
+            },
+            {
+              id: `sorter`,
+              name: `Lena (Ore Sorter)`,
+              x: 41,
+              y: 19,
+              color: 6982234,
+              persona: `Lena is the ore sorter of Minerals Town (MT). She sorts the raw ore by hand: copper here, iron there, plain rock in the bin. She is small, quick and sharp-eyed, a little dry, and proud that no bad ore ever leaves MT.`,
+              goal: {
+                id: `sort`,
+                deed: `asked the ore sorter how to tell copper from plain rock`,
+                text: `Ask Lena how she tells copper from plain rock.`,
+                keywords: [
+                  `sort`,
+                  `sorting`,
+                  `tell`,
+                  `difference`,
+                  `different`,
+                  `color`,
+                  `colour`,
+                  `heavy`,
+                  `copper`,
+                  `iron`,
+                  `plain rock`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Do not touch the piles. I am Lena. I sort the ore.`,
+              plain: !0,
+            },
+            {
+              id: `timberman`,
+              name: `Gus (Tunnel Builder)`,
+              x: 38,
+              y: 18,
+              color: 9071162,
+              persona: `Gus builds the supports of the Great Mine: wood and steel beams that hold up the roof of every tunnel. He is quiet, patient and careful, slow to speak and never in a hurry, and proud that nobody has ever been hurt in one of his tunnels and of Minerals Town (MT).`,
+              goal: {
+                id: `support`,
+                deed: `asked the tunnel builder why tunnels need supports`,
+                text: `Ask Gus why a tunnel needs wood and steel supports.`,
+                keywords: [
+                  `support`,
+                  `supports`,
+                  `beam`,
+                  `beams`,
+                  `wood`,
+                  `timber`,
+                  `steel`,
+                  `roof`,
+                  `collapse`,
+                  `fall`,
+                  `hold`,
+                  `tunnel`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello. I am Gus. I hold up the roof. Slow is safe.`,
+              plain: !0,
+            },
+            {
+              id: `smith`,
+              name: `Olga (Blacksmith)`,
+              x: 21,
+              y: 26,
+              color: 4868690,
+              persona: `Olga is the broad-shouldered, practical blacksmith of Minerals Town (MT). She forges every tool the miners use, speaks plainly, gives fair prices, and is proud of her steel.`,
+              goal: {
+                id: `tool`,
+                deed: `asked the blacksmith for a tool`,
+                text: `Ask Olga for a tool (a pickaxe, a hammer, a shovel...).`,
+                keywords: [
+                  `pickaxe`,
+                  `hammer`,
+                  `tool`,
+                  `tools`,
+                  `shovel`,
+                  `axe`,
+                  `buy`,
+                  `make`,
+                  `steel`,
+                  `iron`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Mind the sparks. I am Olga. Need a tool?`,
+              plain: !0,
+            },
+            {
+              id: `gemdealer`,
+              name: `Mr. Vance (Gem Dealer)`,
+              x: 48,
+              y: 26,
+              color: 2764618,
+              persona: `Mr. Vance is the smooth, elegant gem dealer of Minerals Town. He buys rough stones from the miners and sells them polished. He flatters customers, loves beautiful things and good business, and speaks far more fancily than the plain miners.`,
+              goal: {
+                id: `gem`,
+                deed: `asked Mr. Vance for the price of a gem`,
+                text: `Ask Mr. Vance the price of a gem (a diamond, a ruby...).`,
+                keywords: [
+                  `gem`,
+                  `gems`,
+                  `diamond`,
+                  `ruby`,
+                  `emerald`,
+                  `sapphire`,
+                  `crystal`,
+                  `jewel`,
+                  `ring`,
+                  `price`,
+                  `how much`,
+                  `cost`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Welcome, welcome, my friend! Mr. Vance, at your service. Looking for something... special?`,
+            },
+            {
+              id: `medic`,
+              name: `Rita (Mine Medic)`,
+              x: 21,
+              y: 37,
+              color: 15789280,
+              persona: `Rita is the blunt, practical medic of Minerals Town (MT). She treats the miners, teaches mine safety, is patient with the hurt and impatient with the careless, and never panics.`,
+              goal: {
+                id: `safety`,
+                deed: `asked the mine medic about safety rules`,
+                text: `Ask Rita about safety in the mine (helmet, lamp, exit...).`,
+                keywords: [
+                  `safe`,
+                  `safety`,
+                  `helmet`,
+                  `danger`,
+                  `dangerous`,
+                  `light`,
+                  `lamp`,
+                  `rule`,
+                  `rules`,
+                  `careful`,
+                  `accident`,
+                  `hurt`,
+                ],
+                reward: 30,
+                rep: 3,
+              },
+              greeting: `Sit down. I am Rita. Are you hurt?`,
+              plain: !0,
+            },
+            {
+              id: `innkeeper`,
+              name: `Dora (Innkeeper)`,
+              x: 11,
+              y: 37,
+              color: 12083258,
+              persona: `Dora runs the Mining Inn in Minerals Town (MT). She is warm in a plain, motherly way, loud and practical, feeds everyone, hates waste, and is proud that nobody in MT goes hungry.`,
+              goal: {
+                id: `inn`,
+                deed: `ordered a meal or asked for a bed at the Mining Inn`,
+                text: `Order a meal or ask for a bed at the Inn.`,
+                keywords: [
+                  `room`,
+                  `bed`,
+                  `night`,
+                  `stay`,
+                  `meal`,
+                  `soup`,
+                  `stew`,
+                  `bread`,
+                  `pie`,
+                  `dinner`,
+                  `supper`,
+                  `breakfast`,
+                  `hungry`,
+                  `eat`,
+                  `food`,
+                  `order`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Come in, come in. I am Dora. You look hungry. Sit.`,
+              plain: !0,
+            },
+            {
+              id: `stationmaster`,
+              name: `Mr. Hale (Station Master)`,
+              x: 36,
+              y: 64,
+              color: 2046559,
+              persona: `Mr. Hale is the station master of Minerals Central Station in Minerals Town (MT). He is tall, calm and formal, checks his pocket watch often, loves punctuality, and is proud that every train leaves on time and that MT has the biggest station in the region.`,
+              goal: {
+                id: `platform`,
+                deed: `asked the station master about the next train`,
+                text: `Ask Mr. Hale which platform the next train leaves from.`,
+                keywords: [
+                  `platform`,
+                  `train`,
+                  `trains`,
+                  `departure`,
+                  `depart`,
+                  `leave`,
+                  `leaves`,
+                  `next train`,
+                  `schedule`,
+                  `timetable`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Good day. I am Mr. Hale, the station master. Mind the yellow line, please.`,
+              plain: !0,
+            },
+            {
+              id: `ticketclerk`,
+              name: `Nina (Ticket Clerk)`,
+              x: 17,
+              y: 58,
+              color: 2068362,
+              persona: `Nina is the ticket clerk at window one of Minerals Central Station. She is friendly, quick and polite, loves timetables and numbers, smiles at every passenger and asks "Single or return?".`,
+              goal: {
+                id: `ticket`,
+                deed: `asked the ticket clerk for a ticket`,
+                text: `Ask Nina for a ticket (say where you want to go).`,
+                keywords: [
+                  `ticket`,
+                  `tickets`,
+                  `single`,
+                  `return`,
+                  `fare`,
+                  `price`,
+                  `how much`,
+                  `travel`,
+                  `go to`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello! Welcome to Minerals Central. Where would you like to go today?`,
+            },
+            {
+              id: `porter`,
+              name: `Ollie (Porter)`,
+              x: 44,
+              y: 58,
+              color: 14254635,
+              persona: `Ollie is the porter of Minerals Central Station. He is strong and cheerful, jokes a lot, carries bags and loads parcels onto the trains, and is proud that he has never dropped a bag.`,
+              goal: {
+                id: `bag`,
+                deed: `asked the porter to carry a bag`,
+                text: `Ask Ollie to help you with your bag or parcel.`,
+                keywords: [
+                  `bag`,
+                  `bags`,
+                  `luggage`,
+                  `suitcase`,
+                  `parcel`,
+                  `parcels`,
+                  `carry`,
+                  `heavy`,
+                  `help`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! I am Ollie. Heavy bag? Give it here!`,
+            },
+            {
+              id: `etmaster`,
+              name: `Mr. Reed (Station Master)`,
+              x: 36,
+              y: 64,
+              color: 3099247,
+              persona: `Mr. Reed is the station master of English Town Central Station in English Town (ET). He is tall, calm and formal, checks his pocket watch often, loves punctuality, and is proud that every train leaves on time and that ET has the biggest station in the region.`,
+              goal: {
+                id: `et_platform`,
+                deed: `asked the station master about the next train`,
+                text: `Ask Mr. Reed which platform the next train leaves from.`,
+                keywords: [
+                  `platform`,
+                  `train`,
+                  `trains`,
+                  `departure`,
+                  `depart`,
+                  `leave`,
+                  `leaves`,
+                  `next train`,
+                  `schedule`,
+                  `timetable`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Good day. I am Mr. Reed, the station master. Mind the yellow line, please.`,
+              plain: !0,
+            },
+            {
+              id: `etclerk`,
+              name: `Emma (Ticket Clerk)`,
+              x: 17,
+              y: 58,
+              color: 3121050,
+              persona: `Emma is the ticket clerk at window one of English Town Central Station. She is friendly, quick and polite, loves timetables and numbers, smiles at every passenger and asks "Single or return?".`,
+              goal: {
+                id: `et_ticket`,
+                deed: `asked the ticket clerk for a ticket`,
+                text: `Ask Emma for a ticket (say where you want to go).`,
+                keywords: [
+                  `ticket`,
+                  `tickets`,
+                  `single`,
+                  `return`,
+                  `fare`,
+                  `price`,
+                  `how much`,
+                  `travel`,
+                  `go to`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hello! Welcome to English Town Central. Where would you like to go today?`,
+            },
+            {
+              id: `etporter`,
+              name: `Leo (Porter)`,
+              x: 44,
+              y: 58,
+              color: 15307323,
+              persona: `Leo is the porter of English Town Central Station. He is strong and cheerful, jokes a lot, carries bags and loads parcels onto the trains, and is proud that he has never dropped a bag.`,
+              goal: {
+                id: `et_bag`,
+                deed: `asked the porter to carry a bag`,
+                text: `Ask Leo to help you with your bag or parcel.`,
+                keywords: [
+                  `bag`,
+                  `bags`,
+                  `luggage`,
+                  `suitcase`,
+                  `parcel`,
+                  `parcels`,
+                  `carry`,
+                  `heavy`,
+                  `help`,
+                ],
+                reward: 25,
+                rep: 2,
+              },
+              greeting: `Hey there! I am Leo. Heavy bag? Give it here!`,
+            },
+            {
+              id: `rook`, name: `Rook (Wandering Sketcher)`, x: 25, y: 15, color: 16741717,
+              uiTheme: `rook`,
+              persona: `Rook is a quiet wandering sketch artist who visits English Town to draw forgotten corners. He carries a battered sketchbook and knows a symbol painted near an abandoned freight route. He is thoughtful, observant and speaks in short, intriguing clues. He is not part of the Art District's seven main residents; he is a guide to its hidden entrance.`,
+              goal: { id: `art_mark_rook`, deed: `asked Rook about the hidden street-art marks`, text: `Ask Rook about the strange star mark and tell him what kind of mural you would like to see.`, keywords: [`star`, `mark`, `mural`, `graffiti`, `sketch`, `wall`, `paint`], reward: 10, rep: 1 },
+              greeting: `You notice the little star in my sketchbook? It is not just decoration. Have you ever seen it painted on a wall?`,
+            },
+            {
+              id: `vex`, name: `Vex (Color Keeper)`, x: 53, y: 39, color: 3528911,
+              uiTheme: `vex`,
+              persona: `Vex is a travelling colorist who tests pigments beside the old railway embankment in Minerals Town. She is confident, quick-witted and practical. She knows an abandoned service entrance marked with an eye symbol and has heard stories about a freight tunnel leading to a hidden art neighborhood.`,
+              goal: { id: `art_mark_vex`, deed: `asked Vex about the abandoned freight tunnel`, text: `Ask Vex where the old underground freight route begins and mention the eye mark.`, keywords: [`tunnel`, `underground`, `freight`, `railway`, `hidden`, `eye`, `entrance`], reward: 10, rep: 1 },
+              greeting: `Careful with that paint tin! See the eye mark on the old concrete? It points to a place most people have forgotten.`,
+            },
+            {
+              id: `morrow`, name: `Morrow (Old Sign Painter)`, x: 24, y: 61, color: 12106410,
+              uiTheme: `morrow`,
+              persona: `Morrow is an elderly sign painter who once decorated freight crates and station walls. He is warm, patient and a little mysterious. He remembers the old freight tunnel and knows that three marks — a star, an eye and a wave — reveal its hidden door. He invites curious learners to discover the place where artists work together.`,
+              goal: { id: `art_mark_morrow`, deed: `learned the three signs from Morrow`, text: `Ask Morrow what the three marks mean and name the star, eye and wave.`, keywords: [`star`, `eye`, `wave`, `three marks`, `three signs`, `freight tunnel`, `hidden door`], reward: 10, rep: 1 },
+              greeting: `Ah, the old signs. A star, an eye and a wave. Put them together and the forgotten road will open.`,
+            },
+            {
+              id: `noor`, name: `Noor (Color Curator)`, x: 9, y: 12, color: 16732234, uiTheme: `noor`,
+              persona: `Noor is the Color Curator of Art District. She is expressive, thoughtful and notices tiny differences in hue, light and mood. She helps visitors describe artworks with precise adjectives and linking verbs.`,
+              goal: { id: `art_color_review`, deed: `described an artwork to Noor`, text: `Describe the artwork in 2–3 sentences. Use a linking verb (looks, feels or seems), at least two precise adjectives, one intensifier (very, quite or extremely), and explain your reaction with because.`, keywords: [`looks`, `feels`, `seems`, `bright`, `color`, `colour`, `beautiful`, `calm`, `because`, `vibrant`], reward: 45, rep: 4 },
+              greeting: `Welcome to the Color Wall! Look closely. What do these colors make you feel?`,
+            },
+            {
+              id: `ivo`, name: `Ivo (Street Musician)`, x: 35, y: 12, color: 3528911, uiTheme: `ivo`,
+              persona: `Ivo is an energetic street musician who performs beside a converted warehouse stage. He loves comparing instruments, rhythms and performances. He is playful, enthusiastic and encourages visitors to explain which sound is better and why.`,
+              goal: { id: `art_music_battle`, deed: `compared music performances for Ivo`, text: `Compare two performances in 2–3 sentences. Use at least one comparative (louder than / softer than / better than), one as...as structure, and a superlative to choose the winner. Add a reason with because.`, keywords: [`louder than`, `softer than`, `faster than`, `slower than`, `as loud as`, `as`, `the best`, `the most`, `better than`, `because`], reward: 45, rep: 4 },
+              greeting: `Hey! The street is our stage. Which sound wins today — the bold drums or the smooth strings?`,
+            },
+            {
+              id: `ada`, name: `Ada (Exhibition Director)`, x: 62, y: 13, color: 16753920, uiTheme: `ada`,
+              persona: `Ada directs the Open Canvas Exhibition. She is organized, decisive and fair-minded. She asks visitors to choose one artwork for the main wall and defend their decision politely.`,
+              goal: { id: `art_exhibition_choice`, deed: `defended an exhibition choice for Ada`, text: `Choose one artwork in 2–3 sentences. Use prefer or would rather, support your choice with because, make one recommendation with should, and respond to another opinion using I agree or I agree, but.`, keywords: [`prefer`, `would rather`, `because`, `i agree`, `agree but`, `should`, `best`, `choose`], reward: 50, rep: 5 },
+              greeting: `The main wall has room for only one masterpiece. Which work deserves the spotlight?`,
+            },
+            {
+              id: `kai`, name: `Kai (Mural Painter)`, x: 9, y: 34, color: 16744272, uiTheme: `kai`,
+              persona: `Kai is a bold mural painter who works in a narrow alley full of layered graffiti. He is friendly, inventive and always carries spray cans. He teaches people to explain limits and possibilities when planning a mural.`,
+              goal: { id: `art_mural_rescue`, deed: `planned a mural with Kai`, text: `Plan the mural in 2–3 sentences. Use at least two different structures from too...to, adjective + enough + to, and so...that to explain limits, possibilities and effects.`, keywords: [`too`, `enough`, `so`, `that`, `too dark`, `bright enough`, `so colorful`, `wall`, `mural`], reward: 45, rep: 4 },
+              greeting: `This wall is begging for a new story. What can we paint here — something bold, something bright?`,
+            },
+            {
+              id: `mira`, name: `Mira (Sculpture Maker)`, x: 27, y: 44, color: 8564863, uiTheme: `mira`,
+              persona: `Mira is a resourceful sculpture maker who turns discarded metal, wood and stone into public art. She is patient, inventive and believes making things by hand can change a neighborhood.`,
+              goal: { id: `art_public_sculpture`, deed: `designed a public sculpture with Mira`, text: `Describe your sculpture plan in 2–3 sentences. Use a gerund after enjoy or avoid and an infinitive after decide, want or plan. Explain which recycled materials you will use.`, keywords: [`enjoy creating`, `enjoy making`, `decide to`, `decided to`, `want to`, `plan to`, `avoid wasting`, `creating`, `building`, `sculpture`], reward: 45, rep: 4 },
+              greeting: `I make art from things other people throw away. What would you enjoy creating for this city?`,
+            },
+            {
+              id: `ren`, name: `Ren (City Photographer)`, x: 62, y: 34, color: 4306175, uiTheme: `ren`,
+              persona: `Ren is a curious street photographer who documents artists and the stories behind their work. He is observant, calm and asks visitors to connect photographs with people and objects using relative clauses.`,
+              goal: { id: `art_photo_story`, deed: `told a photo story for Ren`, text: `Tell the story behind two photographs in 2–3 sentences. Use a relative clause with who for a person and which or that for an artwork or object.`, keywords: [`who`, `which`, `that`, `artist who`, `painting which`, `camera that`, `photograph`, `photo`], reward: 45, rep: 4 },
+              greeting: `Every wall has a story. Look at these photographs — can you tell me who made the art?`,
+            },
+            {
+              id: `sol`, name: `Sol (Art Critic)`, x: 58, y: 46, color: 12482290, uiTheme: `sol`,
+              persona: `Sol writes for an independent underground art magazine. She is sharp, articulate and fair. She welcomes different opinions but expects clear reasons, contrast and logical results in a review.`,
+              goal: { id: `art_grand_review`, deed: `wrote an art review with Sol`, text: `Write a short 3-sentence art review. Include one contrast connector (although or however), one reason connector (because), and one result connector (so or therefore). Give a balanced opinion, not only a score.`, keywords: [`although`, `however`, `therefore`, `because`, `so`, `although it`, `however i`, `artwork`, `painting`, `review`], reward: 50, rep: 5 },
+              greeting: `I do not need you to call it beautiful. I need you to tell me why it matters.`,
+            },
+          ];
+var X = (e, t, n, r, i) => ({ from: e, to: t, place: n, label: r, kind: i });
+var ie = {
+            barista: [
+              X(22, 6, `home_barista`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_barista`, `having breakfast at home`, `home`),
+              X(7.5, 12.5, `cafe`, `working at Sunny Cafe`, `work`),
+              X(12.5, 13.5, `park`, `eating lunch in the park`, `lunch`),
+              X(13.5, 16.5, `cafe`, `working at Sunny Cafe`, `work`),
+              X(16.5, 17.5, `market`, `buying fresh milk and fruit at the Market`, `leisure`),
+              X(17.5, 18.5, `park`, `relaxing in the park`, `leisure`),
+              X(18.5, 22, `home_barista`, `relaxing at home`, `home`),
+            ],
+            mayor: [
+              X(22, 6, `home_mayor`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_mayor`, `reading the newspaper at home`, `home`),
+              X(7.5, 12, `hall`, `working at Town Hall`, `work`),
+              X(12, 13, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13, 16.5, `hall`, `working at Town Hall`, `work`),
+              X(16.5, 17.5, `plaza`, `talking with citizens at the plaza`, `leisure`),
+              X(17.5, 18.5, `park`, `taking a walk in the park`, `leisure`),
+              X(18.5, 22, `home_mayor`, `having dinner at home`, `home`),
+            ],
+            librarian: [
+              X(21, 6, `home_librarian`, `sleeping`, `sleep`),
+              X(6, 8.5, `home_librarian`, `drinking tea at home`, `home`),
+              X(8.5, 12.5, `library`, `working at the Library`, `work`),
+              X(12.5, 13.5, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13.5, 17.5, `library`, `working at the Library`, `work`),
+              X(17.5, 18.5, `cafe`, `drinking tea at Sunny Cafe`, `leisure`),
+              X(18.5, 21, `home_librarian`, `reading at home`, `home`),
+            ],
+            shopkeeper: [
+              X(22, 6, `home_shopkeeper`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_shopkeeper`, `having breakfast at home`, `home`),
+              X(7.5, 12.5, `shop`, `running the Corner Shop`, `work`),
+              X(12.5, 13.5, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13.5, 17.5, `shop`, `running the Corner Shop`, `work`),
+              X(17.5, 18.5, `plaza`, `chatting with neighbors at the plaza`, `leisure`),
+              X(18.5, 21, `home_shopkeeper`, `counting the day's money at home`, `home`),
+              X(21, 22, `home_shopkeeper`, `getting ready for bed`, `home`),
+            ],
+            kid: [
+              X(21, 6, `home_kid`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_kid`, `getting ready for school`, `home`),
+              X(7.5, 15, `school`, `studying at school`, `school`),
+              X(15, 17.5, `park`, `playing in the park`, `leisure`),
+              X(17.5, 18.5, `plaza`, `riding her bike at the plaza`, `leisure`),
+              X(18.5, 21, `home_kid`, `doing homework at home`, `home`),
+            ],
+            doctor: [
+              X(22, 6, `home_doctor`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_doctor`, `having breakfast at home`, `home`),
+              X(7.5, 12, `hospital`, `seeing patients at the Hospital`, `work`),
+              X(12, 13, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13, 17.5, `hospital`, `seeing patients at the Hospital`, `work`),
+              X(17.5, 18.5, `park`, `jogging in the park`, `leisure`),
+              X(18.5, 22, `home_doctor`, `relaxing at home`, `home`),
+            ],
+            police: [
+              X(22, 6, `home_police`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_police`, `having breakfast at home`, `home`),
+              X(7.5, 11.5, `police`, `doing paperwork at the Police Station`, `work`),
+              X(11.5, 12.5, `plaza`, `patrolling the plaza`, `work`),
+              X(12.5, 13.5, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13.5, 17.5, `police`, `working at the Police Station`, `work`),
+              X(17.5, 18.5, `park`, `patrolling the park`, `work`),
+              X(18.5, 22, `home_police`, `reading a detective novel at home`, `home`),
+            ],
+            teacher: [
+              X(22, 6, `home_teacher`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_teacher`, `preparing lessons at home`, `home`),
+              X(7.5, 15, `school`, `teaching at the school`, `school`),
+              X(15, 16.5, `library`, `reading at the Library`, `leisure`),
+              X(16.5, 18.5, `cafe`, `having coffee at Sunny Cafe`, `leisure`),
+              X(18.5, 22, `home_teacher`, `grading homework at home`, `home`),
+            ],
+            firefighter: [
+              X(22, 6, `home_firefighter`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_firefighter`, `having breakfast at home`, `home`),
+              X(7.5, 12, `fire`, `on duty at the Fire Station`, `work`),
+              X(12, 13, `fire`, `having lunch with the crew at the Fire Station`, `lunch`),
+              X(13, 17, `fire`, `on duty at the Fire Station`, `work`),
+              X(17, 18.5, `gym`, `working out at the Gym`, `leisure`),
+              X(18.5, 22, `home_firefighter`, `relaxing at home`, `home`),
+            ],
+            chef: [
+              X(22, 5.5, `home_chef`, `sleeping`, `sleep`),
+              X(5.5, 7.5, `market`, `buying fresh ingredients at the Market`, `leisure`),
+              X(7.5, 14.5, `restaurant`, `cooking at the restaurant`, `work`),
+              X(14.5, 15.5, `park`, `taking a break in the park`, `lunch`),
+              X(15.5, 20, `restaurant`, `cooking dinner at the restaurant`, `work`),
+              X(20, 22, `home_chef`, `relaxing at home`, `home`),
+            ],
+            banker: [
+              X(22, 6, `home_banker`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_banker`, `having breakfast at home`, `home`),
+              X(7.5, 12, `bank`, `managing the Bank`, `work`),
+              X(12, 13, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13, 17, `bank`, `helping customers at the Bank`, `work`),
+              X(17, 18.5, `park`, `walking in the park`, `leisure`),
+              X(18.5, 22, `home_banker`, `counting her coin collection at home`, `home`),
+            ],
+            postman: [
+              X(22, 6, `home_postman`, `sleeping`, `sleep`),
+              X(6, 7.5, `home_postman`, `having breakfast at home`, `home`),
+              X(7.5, 10.5, `post`, `sorting letters at the Post Office`, `work`),
+              X(10.5, 12.5, `plaza`, `delivering letters around town`, `work`),
+              X(12.5, 13.5, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(13.5, 16.5, `post`, `working at the Post Office`, `work`),
+              X(16.5, 18.5, `lake`, `fishing at the lake`, `leisure`),
+              X(18.5, 22, `home_postman`, `relaxing at home`, `home`),
+            ],
+            hotelclerk: [
+              X(23, 7, `home_clerk`, `sleeping`, `sleep`),
+              X(7, 8.5, `home_clerk`, `having breakfast at home`, `home`),
+              X(8.5, 14, `hotel`, `welcoming guests at the Hotel`, `work`),
+              X(14, 15, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(15, 18.5, `hotel`, `working at the Hotel front desk`, `work`),
+              X(18.5, 22, `cinema`, `watching a movie at the Cinema`, `leisure`),
+              X(22, 23, `home_clerk`, `getting ready for bed`, `home`),
+            ],
+            priest: [
+              X(22, 5.5, `home_priest`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `home_priest`, `baking bread at home`, `home`),
+              X(6.5, 12, `church`, `looking after the Church`, `work`),
+              X(12, 13, `restaurant`, `having lunch at the restaurant`, `lunch`),
+              X(13, 15.5, `church`, `playing the organ at the Church`, `work`),
+              X(15.5, 16.5, `library`, `borrowing books at the Library`, `leisure`),
+              X(16.5, 18.5, `park`, `feeding the pigeons in the park`, `leisure`),
+              X(18.5, 22, `home_priest`, `drinking tea at home`, `home`),
+            ],
+            cinema: [
+              X(0, 8, `home_cinema`, `sleeping`, `sleep`),
+              X(8, 11, `home_cinema`, `having breakfast at home`, `home`),
+              X(11, 12, `cafe`, `having lunch at Sunny Cafe`, `lunch`),
+              X(12, 23, `cinema`, `selling tickets at the Cinema`, `work`),
+              X(23, 24, `home_cinema`, `getting ready for bed`, `home`),
+            ],
+            foreman: [
+              X(21, 5.5, `home_foreman`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `square`, `checking the morning shift in the square`, `work`),
+              X(6.5, 12, `office`, `working at the Mine Office`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 15, `office`, `doing paperwork at the Mine Office`, `work`),
+              X(15, 16.5, `mine`, `inspecting the Great Mine`, `work`),
+              X(16.5, 18.5, `square`, `talking with the miners in the square`, `leisure`),
+              X(18.5, 21, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            miner: [
+              X(20, 5, `home_miner`, `sleeping`, `sleep`),
+              X(5, 6, `inn`, `eating a big breakfast at the Mining Inn`, `home`),
+              X(6, 12, `mine`, `digging in the Great Mine`, `work`),
+              X(12, 13, `station`, `having lunch by the Rail Station`, `lunch`),
+              X(13, 17.5, `mine`, `digging in the Great Mine`, `work`),
+              X(17.5, 18.5, `smithy`, `sharpening his pickaxe at the Smithy`, `leisure`),
+              X(18.5, 20, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            blaster: [
+              X(20.5, 5, `home_blaster`, `sleeping`, `sleep`),
+              X(5, 6, `inn`, `eating breakfast at the Mining Inn`, `home`),
+              X(6, 12, `mine_west`, `setting charges at the west gate of the Great Mine`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `mine_west`, `blasting rock at the west gate of the Great Mine`, `work`),
+              X(17, 18.5, `smithy`, `talking about drill bits with Olga at the Smithy`, `leisure`),
+              X(18.5, 20.5, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            carter: [
+              X(20, 5.5, `home_cart`, `sleeping`, `sleep`),
+              X(5.5, 7, `station`, `getting the wagons ready at the Rail Station`, `work`),
+              X(7, 9, `loading`, `loading ore wagons below the Great Mine`, `work`),
+              X(9, 10, `station`, `unloading ore at the Rail Station`, `work`),
+              X(10, 12, `loading`, `loading ore wagons below the Great Mine`, `work`),
+              X(12, 13, `square`, `having lunch in the square`, `lunch`),
+              X(13, 15, `station`, `hauling ore to the Rail Station`, `work`),
+              X(15, 17.5, `loading`, `loading ore wagons below the Great Mine`, `work`),
+              X(17.5, 18.5, `station`, `cleaning the wagons at the Rail Station`, `work`),
+              X(18.5, 20, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            sorter: [
+              X(20, 5.5, `home_sorter`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `eating breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `ore_yard`, `sorting ore by the ore heap`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `ore_yard`, `sorting ore by the ore heap`, `work`),
+              X(17, 18, `gems`, `showing the best stones to Mr. Vance at the Gem Shop`, `leisure`),
+              X(18, 20, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            timberman: [
+              X(20.5, 5.5, `home_timber`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `eating breakfast at the Mining Inn`, `home`),
+              X(
+                6.5,
+                12,
+                `mine_east`,
+                `building supports at the east gate of the Great Mine`,
+                `work`,
+              ),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(
+                13,
+                16,
+                `mine_east`,
+                `checking the beams at the east gate of the Great Mine`,
+                `work`,
+              ),
+              X(16, 17.5, `office`, `drawing tunnel plans with Jack at the Mine Office`, `work`),
+              X(17.5, 18.5, `square`, `resting in the square`, `leisure`),
+              X(18.5, 20.5, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            smith: [
+              X(21, 5.5, `home_smith`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `smithy`, `forging tools at the Smithy`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `tools`, `selling tools at the Tool Shop`, `work`),
+              X(17, 18.5, `square`, `resting in the square`, `leisure`),
+              X(18.5, 21, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            gemdealer: [
+              X(22, 7, `home_gem`, `sleeping`, `sleep`),
+              X(7, 8.5, `inn`, `having a late breakfast at the Mining Inn`, `home`),
+              X(8.5, 12.5, `gems`, `selling gems at the Gem Shop`, `work`),
+              X(12.5, 13.5, `inn`, `having a long lunch at the Mining Inn`, `lunch`),
+              X(13.5, 17.5, `gems`, `polishing stones at the Gem Shop`, `work`),
+              X(17.5, 18.5, `square`, `strolling in the square`, `leisure`),
+              X(18.5, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            medic: [
+              X(21, 5.5, `home_medic`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `aid`, `working at the First-Aid Post`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 17, `aid`, `treating miners at the First-Aid Post`, `work`),
+              X(17, 18.5, `mine`, `checking the miners at the Great Mine gate`, `work`),
+              X(18.5, 21, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            innkeeper: [
+              X(22, 5, `home_innkeeper`, `sleeping`, `sleep`),
+              X(5, 10, `inn`, `cooking and cleaning at the Mining Inn`, `work`),
+              X(10, 11, `tools`, `buying a new pot at the Tool Shop`, `leisure`),
+              X(11, 15, `inn`, `cooking lunch at the Mining Inn`, `work`),
+              X(15, 16, `square`, `taking a short walk in the square`, `leisure`),
+              X(16, 22, `inn`, `cooking supper for the miners`, `work`),
+            ],
+            stationmaster: [
+              X(22, 5.5, `home_stmaster`, `sleeping`, `sleep`),
+              X(5.5, 6, `stn_hall`, `opening the station gates`, `work`),
+              X(6, 12, `stn_platform`, `checking the trains on Platform 1`, `work`),
+              X(12, 13, `inn`, `having lunch at the Mining Inn`, `lunch`),
+              X(13, 19, `stn_platform`, `watching the trains from Platform 1`, `work`),
+              X(19, 20, `stn_hall`, `closing the station gates`, `work`),
+              X(20, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            ticketclerk: [
+              X(22, 5.5, `home_tclerk`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6.5, 12, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 19, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(19, 20.5, `square`, `taking a walk in the square`, `leisure`),
+              X(20.5, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            porter: [
+              X(22, 5.5, `home_porter`, `sleeping`, `sleep`),
+              X(5.5, 6, `inn`, `having breakfast at the Mining Inn`, `home`),
+              X(6, 12, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 18, `stn_forecourt`, `helping travellers with their bags`, `work`),
+              X(18, 20, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(20, 22, `inn`, `having supper at the Mining Inn`, `home`),
+            ],
+            etmaster: [
+              X(22, 5.5, `home_etmaster`, `sleeping`, `sleep`),
+              X(5.5, 6, `stn_hall`, `opening the station gates`, `work`),
+              X(6, 12, `stn_platform`, `checking the trains on Platform 1`, `work`),
+              X(12, 13, `hotel`, `having lunch at the Hotel`, `lunch`),
+              X(13, 19, `stn_platform`, `watching the trains from Platform 1`, `work`),
+              X(19, 20, `stn_hall`, `closing the station gates`, `work`),
+              X(20, 22, `home_etmaster`, `having supper at home`, `home`),
+            ],
+            etclerk: [
+              X(22, 5.5, `home_etclerk`, `sleeping`, `sleep`),
+              X(5.5, 6.5, `home_etclerk`, `having breakfast at home`, `home`),
+              X(6.5, 12, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 19, `stn_ticket`, `selling tickets at window one`, `work`),
+              X(19, 20.5, `lake`, `taking a walk by the lake`, `leisure`),
+              X(20.5, 22, `home_etclerk`, `having supper at home`, `home`),
+            ],
+            etporter: [
+              X(22, 5.5, `home_etporter`, `sleeping`, `sleep`),
+              X(5.5, 6, `home_etporter`, `having breakfast at home`, `home`),
+              X(6, 12, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(12, 13, `stn_bench`, `eating lunch on a bench in the station`, `lunch`),
+              X(13, 18, `stn_forecourt`, `helping travellers with their bags`, `work`),
+              X(18, 20, `stn_cargo`, `loading parcels at the cargo window`, `work`),
+              X(20, 22, `home_etporter`, `having supper at home`, `home`),
+            ],
+          };
+
+
+// ART DISTRICT: static daytime schedules for the three guide artists and seven residents.
+ie.rook = [X(6, 22, `plaza`, `sketching forgotten corners of English Town`, `leisure`)];
+ie.vex = [X(6, 22, `art_lane`, `testing bright pigments by the old freight shed`, `work`)];
+ie.morrow = [X(6, 22, `stn_bench`, `remembering the old freight route`, `leisure`)];
+ie.noor = [X(6, 22, `noor_front`, `curating colors at the Color Wall`, `work`)];
+ie.ivo = [X(6, 22, `ivo_front`, `performing on the warehouse stage`, `work`)];
+ie.ada = [X(6, 22, `ada_front`, `preparing the open-air exhibition`, `work`)];
+ie.kai = [X(6, 22, `kai_front`, `painting a new mural in Graffiti Alley`, `work`)];
+ie.mira = [X(6, 22, `mira_yard`, `building a sculpture from reclaimed materials`, `work`)];
+ie.ren = [X(6, 22, `ren_front`, `photographing artists along Lens Boulevard`, `work`)];
+ie.sol = [X(6, 22, `sol_front`, `editing the underground art magazine`, `work`)];
+
+
+// CHAPTER 2 (ET70, 70 years ago): the two people the player can really talk to in the past.
+// Lord Gusest stands in front of Oriaris Hall (js/past.js), Tom Brown keeps watch at the North Camp (js/front.js).
+// Both speak about events in the PAST TENSE (the topic of the chapter) and know nothing about modern times.
+re.push(
+  {
+    id: `gusest`, name: `Lord Gusest (Lord of Oriaris)`, x: 32, y: 8, color: 8203822,
+    persona: `Lord Gusest of the Oriaris family, 70 years ago, during the war with the warriors of North Ire. He is only 20 years old, but he is lord of the village of Oriaris and commander of its knights because of his great talent. He is kind, brave, calm and a little tired; he speaks with dignity but warmly, like a young leader who cares about every family. He welcomes the traveler to Oriaris and encourages them to explore the new path leading to Tech-Co, where workplace English lessons await. He loves to hear what the messenger did and saw, and he talks about recent events in the past tense (yesterday the soldiers built a fence, last week the bakers sent bread). He knows nothing about modern things (no phones, cars, computers). The listeners are students aged 11-15: never describe fighting, wounds or killing; talk about walls, night watches, bread, letters, courage and hope.`,
+    goal: { id: `gusest_report`, deed: `reported the day to Lord Gusest`, text: `Tell Lord Gusest about your day in the past tense: where you went and whom you met.`, keywords: [`delivered`, `gave`, `brought`, `took`, `met`, `visited`, `walked`, `went`, `talked`, `read`], reward: 20, rep: 2 },
+    greeting: `Ah, my messenger! Come, tell me: what did you see on the road today?`,
+  },
+  {
+    id: `tombrown`, name: `Tom Brown (Young Soldier)`, x: 35, y: 17, color: 6052422,
+    persona: `Tom Brown, a 17-year-old soldier of Oriaris at the North Camp, 70 years ago, during the war with North Ire. His mother Mary waits for him at the door of the Brown Family Home every evening. He is brave, honest and friendly, but very homesick; he keeps the night watch on the North Road. Many years later he will be the father of Mayor Brown, but he does not know that. He asks the messenger for news from home and talks about life at the camp in the past tense (last night I watched the road, yesterday we fixed the tents). He knows nothing about modern things. The listeners are students aged 11-15: never describe fighting, wounds or killing; talk about the campfire, the stars, the cold nights, letters, his mother and the promise to come home.`,
+    goal: { id: `tom_home_news`, deed: `told Tom Brown news from home`, text: `Tell Tom what his mother and the village did, in the past tense (for example: Your mother waited at the door. She sewed socks for you.)`, keywords: [`waited`, `sewed`, `cooked`, `made`, `missed`, `said`, `sent`, `wrote`, `planted`, `was`], reward: 20, rep: 2 },
+    greeting: `Hello, messenger! Did you come from Oriaris? How was my mother yesterday?`,
+  },
+);
+ie.gusest = [X(0, 24, `gusest_post`, `standing in front of Oriaris Hall`, `work`)];
+ie.tombrown = [X(0, 24, `tom_post`, `keeping watch where the North Road leaves the camp`, `work`)];
+
+        function ae(e, t) {
+          let n = t / 60,
+            r = ie[e];
+          return (
+            r.find((e) => (e.from <= e.to ? n >= e.from && n < e.to : n >= e.from || n < e.to)) ??
+            r[0]
+          );
+        }
+        function oe(e) {
+          let t = e / 60;
+          return t < 5
+            ? `night`
+            : t < 12
+              ? `morning`
+              : t < 18
+                ? `afternoon`
+                : t < 22
+                  ? `evening`
+                  : `night`;
+        }
+        function se(e) {
+          return `${Math.floor(e / 60)
+            .toString()
+            .padStart(2, `0`)}:${(e % 60).toString().padStart(2, `0`)}`;
+        }
+        function ce(e, t) {
+          return { x: e * 32 + 16, y: t * 32 + 16 };
+        }
+        function le(e) {
+          let t = e.points,
+            n = [{ x: t[0].x * 32, y: t[0].y * 32 }];
+          for (let r = 1; r < t.length - 1; r++) {
+            let i = t[r - 1],
+              a = t[r],
+              o = t[r + 1],
+              s = Math.hypot(a.x - i.x, a.y - i.y),
+              c = Math.hypot(o.x - a.x, o.y - a.y),
+              l = { x: (a.x - i.x) / s, y: (a.y - i.y) / s },
+              u = { x: (o.x - a.x) / c, y: (o.y - a.y) / c },
+              d = Math.max(-1, Math.min(1, l.x * u.x + l.y * u.y));
+            if (d > 0.99995) {
+              n.push({ x: a.x * 32, y: a.y * 32 });
+              continue;
+            }
+            let f = Math.acos(d),
+              p = Math.min(e.bend, s / 2, c / 2),
+              m = p / Math.tan(f / 2),
+              h = { x: a.x - l.x * p, y: a.y - l.y * p },
+              g = { x: a.x + u.x * p, y: a.y + u.y * p },
+              _ = u.x - l.x * d,
+              v = u.y - l.y * d,
+              y = Math.hypot(_, v),
+              b = { x: h.x + (_ / y) * m, y: h.y + (v / y) * m },
+              x = Math.atan2(h.y - b.y, h.x - b.x),
+              S = Math.atan2(g.y - b.y, g.x - b.x) - x;
+            for (; S > Math.PI;) S -= 2 * Math.PI;
+            for (; S < -Math.PI;) S += 2 * Math.PI;
+            let C = Math.max(6, Math.ceil((Math.abs(S) * m * 32) / 10));
+            for (let e = 0; e <= C; e++) {
+              let t = x + (S * e) / C;
+              n.push({ x: (b.x + Math.cos(t) * m) * 32, y: (b.y + Math.sin(t) * m) * 32 });
+            }
+          }
+          let r = t[t.length - 1];
+          return (n.push({ x: r.x * 32, y: r.y * 32 }), n);
+        }
+        /* LifeQuest AI V52.2 — precise contact collision.
+   Movement is resolved at the character's FEET, using painted silhouettes.
+   Objects above the player's head are visuals, not invisible rectangular walls. */
+var LQPrecisePhysics = (() => {
+  'use strict';
+  const T = 32, R = 4.5;
+  const polygon = (...points) => points.map(p => ({ x:p[0], y:p[1] }));
+  const rect = (x,y,w,h) => polygon([x,y],[x+w,y],[x+w,y+h],[x,y+h]);
+  const roof = (cx,top,w,h) => {
+    const sh=top+h*.74;
+    // Same top ridge, two shoulders and lower scalloped edge as wvLeafRoof().
+    return polygon([cx-w*.54,sh+9],[cx-w*.45,top+h*.37],
+      [cx-w*.20,top+h*.13],[cx,top-18],[cx+w*.27,top+h*.23],
+      [cx+w*.51,sh+7],[cx+w*.38,sh+25],[cx-w*.41,sh+25]);
+  };
+  const triangle = (cx,top,w,height) => polygon([cx,top],[cx+w/2,top+height],[cx-w/2,top+height]);
+  const wing = (x,y,w,h,off=10) => polygon([x+off,y],[x+w-off,y],[x+w,y+26],[x+w,y+h],[x,y+h],[x,y+26]);
+  function shapesForBuilding(id,b) {
+    const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,cx=x+w*.5;
+    if(id === 'wish-valley') {
+      switch(b.name) {
+        case 'ROOT HOME · VAELA': {
+          const rc=x+w*.48;
+          return [roof(rc,y+30,w*.94,118),
+            polygon([rc-w*.39,y+113],[rc+w*.35,y+113],
+              [rc+w*.42,y+153],[rc+w*.40,y+210],
+              [rc+w*.30,y+h-22],[rc-w*.33,y+h-22],
+              [rc-w*.43,y+210],[rc-w*.42,y+151])];
+        }
+        case 'THE ELDER’S CANOPY':
+          return [roof((b.door+.5)*T,y-6,w*.86,103),
+             polygon([x+46,y+102],[x+w-45,y+101],[x+w-33,y+167],
+               [x+w-39,y+h-39],[x+39,y+h-39],[x+33,y+164])];
+        case 'COUNCIL ROOT HALL':
+          return [roof(cx,y+10,w*.71,125),roof(cx-w*.305,y+70,w*.44,94),
+             roof(cx+w*.305,y+70,w*.44,94),
+             polygon([x+34,y+132],[x+w-33,y+132],[x+w-27,y+h-35],
+               [x+27,y+h-35])];
+        case 'WILDFRUIT MARKET': {
+          const all=[];
+          for(let i=0;i<3;i++){
+            const sx=x+31+i*(w-62)/3, sw=(w-76)/3;
+            all.push(roof(sx+sw/2,y+67,sw+39,82));
+            all.push(rect(sx+3,y+h-100,sw-6,61));
+          }
+          return all;
+        }
+        case 'EXPLORER OUTPOST':
+          return [roof(x+74,y+12,145,89),roof(cx+61,y+65,w*.72,108),
+            polygon([x+49,y+119],[x+w-34,y+117],[x+w-23,y+h-48],
+              [x+w-40,y+h-26],[x+29,y+h-28])];
+        case 'ROOT HOME · TALORI': {
+          const result=[];
+          for(const [dx,dy,fw] of [[-.22,48,.46],[.23,70,.47]]){
+            const cc=cx+w*dx, ww=w*fw;
+            result.push(roof(cc,y+dy-38,ww*1.13,88));
+            result.push(rect(cc-ww*.42,y+133+dy*.33,ww*.84,82));
+          }
+          result.push(rect(x+w*.27,y+180,w*.46,28));
+          return result;
+        }
+      }
+    }
+    if(id === 'old-oriaris') {
+      if(b.name==='CROWN PALACE')return [
+        rect(x+11,y+40,w-22,h-55),rect(cx-228,y+33,456,94),
+        // The cupola is narrower than the massive palace footprint.
+        polygon([cx-81,y+11],[cx-58,y-32],[cx-12,y-80],
+          [cx+13,y-80],[cx+58,y-32],[cx+82,y+12])];
+      if(b.name==='HOUSE OF SERAPHINE') {
+        const mainW=Math.floor(w*.64),gx=x+mainW-7;
+        return [rect(x+8,y+37,mainW+9,h-48),
+          rect(gx-3,y+137,x+w-10-gx+6,h-142),
+          triangle((gx+x+w-10)/2,y+81,x+w-gx+7,61)];
+      }
+      if(b.name==='HOUSE OF CORVEN')return [
+        rect(x+9,y+89,w-25,h-102),rect(x+15,y+66,w-30,44),
+        triangle(x+w*.43,y+2,202,91),
+        triangle(x+w-54,y+1,105,38)];
+      const top=b.name==='HOUSE OF AURELIA'?y+26:b.name==='HOUSE OF VALMONT'?y+12:y+30;
+      return [wing(x+12,top,w-24,h-(top-y)-12,14)];
+    }
+    if(id==='vocalt-greedy-land'){
+      if(b.kind==='townhome')return [
+        polygon([x-3,y+50],[x+15,y+19],[x+w*.47,y+5],
+          [x+w-13,y+24],[x+w+3,y+50]),rect(x+5,y+47,w-10,h-53)];
+      if(b.kind==='spire')return [rect(x+12,y+35,w-24,h-42)];
+      if(b.kind==='exchange')return [rect(x+8,y+18,w-16,h-24)];
+      return [polygon([x-5,y+45],[x+20,y+10],[x+w-20,y+10],
+        [x+w+5,y+45]),rect(x+6,y+42,w-12,h-48)];
+    }
+    if(id==='tech-co')return [rect(x+6,y+10,w-12,h-16)];
+    // English Town, Minerals Town, Art District, Oriaris's old village.
+    // Preserve the authored facade footprint, with no full-tile padding.
+    return [rect(x+3,y+4,w-6,h-8)];
+  }
+  function bounds(poly){let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;
+    for(const p of poly){a=Math.min(a,p.x);b=Math.min(b,p.y);c=Math.max(c,p.x);d=Math.max(d,p.y)}
+    return {x:a,y:b,right:c,bottom:d};
+  }
+  function inside(poly,x,y){
+    let c=false;
+    for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+      const a=poly[i],b=poly[j];
+      if(((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x))c=!c;
+    }
+    return c;
+  }
+  function segmentDistSq(px,py,a,b){
+    const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((px-a.x)*dx+(py-a.y)*dy)/(dx*dx+dy*dy||1)));
+    const ux=px-(a.x+t*dx),uy=py-(a.y+t*dy);return ux*ux+uy*uy;
+  }
+  function hitShape(shape,x,y,r=R){
+    if(x<shape.box.x-r||x>shape.box.right+r||y<shape.box.y-r||y>shape.box.bottom+r)return false;
+    if(inside(shape.poly,x,y))return true;
+    const rr=r*r;
+    for(let i=0;i<shape.poly.length;i++){
+      if(segmentDistSq(x,y,shape.poly[i],shape.poly[(i+1)%shape.poly.length])<=rr)return true;
+    }
+    return false;
+  }
+  const wrap=poly=>({poly,box:bounds(poly)});
+  const CELL=96;let indexMetrics={buckets:0,shapes:0,lastMap:''};
+  function buildIndex(q,mapId){
+    const index=new Map();
+    const groups=[q.terrain,q.buildings,q.stalls];
+    for(const group of groups)for(const shape of group){
+      const {box}=shape;
+      const x0=Math.floor(box.x/CELL),x1=Math.floor(box.right/CELL);
+      const y0=Math.floor(box.y/CELL),y1=Math.floor(box.bottom/CELL);
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+        const k=x+','+y;let a=index.get(k);if(!a){a=[];index.set(k,a)}a.push(shape);
+      }
+    }
+    q.index=index;indexMetrics={buckets:index.size,shapes:groups.reduce((a,g)=>a+g.length,0),lastMap:mapId||indexMetrics.lastMap};
+  }
+  function candidates(q,x,y,r){
+    if(!q.index)return [...q.terrain,...q.buildings,...q.stalls];
+    const selected=new Set();
+    const x0=Math.floor((x-r)/CELL),x1=Math.floor((x+r)/CELL);
+    const y0=Math.floor((y-r)/CELL),y1=Math.floor((y+r)/CELL);
+    for(let yi=y0;yi<=y1;yi++)for(let xi=x0;xi<=x1;xi++)for(const s of q.index.get(xi+','+yi)||[])selected.add(s);
+    return selected;
+  }
+  function attachArea(area){
+    if(!area?.buildings||!area?.obstacles)return;
+    const buildings=area.buildings.flatMap(b=>shapesForBuilding(area.id,b).map(p=>Object.assign(wrap(p),{name:b.name,category:'building'})));
+    const world=area.obstacles.map(o=>Object.assign(wrap(rect(o.x*T,o.y*T,o.w*T,o.h*T)),{category:'terrain'}));
+    area.__lqPrecise={buildings,terrain:world,stalls:[]};
+    buildIndex(area.__lqPrecise,area.id);
+    // Tile navigation is rebuilt from the contact geometry. This grid is for
+    // NPC route planning only; player movement below tests polygons precisely.
+    for(let iy=0;iy<area.h;iy++)for(let ix=0;ix<area.w;ix++){
+      const px=(ix+.5)*T,py=(iy+.5)*T;
+      area.blocked[iy][ix]=world.some(s=>hitShape(s,px,py,1)) ||
+        buildings.some(s=>hitShape(s,px,py,4));
+    }
+  }
+  function installStalls(area,stalls){
+    if(!area?.__lqPrecise)return;
+    area.__lqPrecise.stalls=stalls.map(s=>{
+      const x=(s.x+.5)*T,y=(s.y+.5)*T+(s.row==='north'?11:0);
+      return Object.assign(wrap(rect(x-57,y-59,116,93)),{category:'stall',name:s.name});
+    });
+    buildIndex(area.__lqPrecise,area.id);
+    for(const s of area.__lqPrecise.stalls){
+      const x0=Math.max(0,Math.floor(s.box.x/T)),x1=Math.min(area.w-1,Math.floor(s.box.right/T));
+      const y0=Math.max(0,Math.floor(s.box.y/T)),y1=Math.min(area.h-1,Math.floor(s.box.bottom/T));
+      for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)
+        if(hitShape(s,(x+.5)*T,(y+.5)*T,3))

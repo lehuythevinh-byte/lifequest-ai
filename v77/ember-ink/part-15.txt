@@ -1,0 +1,3382 @@
+area.blocked[y][x]=true;
+    }
+  }
+  function contact(area,x,y,r=R){
+    const q=area?.__lqPrecise;
+    if(!q)return null;
+    let category=null;
+    for(const s of candidates(q,x,y,r)){
+      if(!hitShape(s,x,y,r))continue;
+      if(s.category==='terrain')return 'terrain';
+      if(s.category==='building')category='building';
+      else if(s.category==='stall'&&category!=='building')category='stall';
+    }
+    return category||false;
+  }
+  function playerBlocked(area,x,y){
+    if(!area||!Number.isFinite(x)||!Number.isFinite(y)||
+      x<R||y<R||x>area.w*T-R||y>area.h*T-R)return true;
+    return !!contact(area,x,y,R);
+  }
+  function debug(area,x,y){
+    const q=area?.__lqPrecise;
+    if(!q)return null;
+    return {map:area.id,worldX:x,worldY:y,category:contact(area,x,y,R)||'walkable',
+      footRadius:R,shapes:q.buildings.length,terrain:q.terrain.length,stalls:q.stalls.length};
+  }
+  return Object.freeze({version:'52.2',radius:R,shapesForBuilding,attachArea,installStalls,
+    contact,playerBlocked,debug,hitShape,rect,roof,wrap,indexStats:()=>({...indexMetrics})});
+})();
+window.LQPrecisePhysics=LQPrecisePhysics;
+
+
+/* --------------- V67 Art District addon: graphics and quest --------------- */
+/* LIFEQUEST AI V67 — ART DISTRICT: LIVING CANVAS
+   Self-contained visual and quest expansion for the V66 single-file game.
+   All new content is gated to art-district. No external assets or API keys.
+   Original playable sprites, game movement, dialogues, interiors and other worlds stay intact.
+ */
+(function(){
+'use strict';
+if(window.LQArtV67) return;
+const T=32,ID='art-district',SAVE='v67Art',PALETTE=[0xf0b8cf,0x80cccb,0xefcd87,0xa995d6,0xe89e79,0xa6b98f];
+const C={ink:0x1b2430,metal:0x455363,dark:0x343345,stone:0xb4a6a0,cream:0xeadac3,rose:0xe79cb3,teal:0x79c7c7,gold:0xe9c77c,lilac:0x9685bf,glass:0x71b5ba,brick:0x855f62};
+const $=id=>document.getElementById(id), scene=()=>window.__lifequestGetScene?.();
+const rect=(g,x,y,w,h,c,a=1)=>g.fillStyle(c,a).fillRect(x,y,Math.max(0,w),Math.max(0,h));
+const line=(g,x1,y1,x2,y2,c,a=1,w=1)=>g.lineStyle(w,c,a).lineBetween(x1,y1,x2,y2);
+const circ=(g,x,y,r,c,a=1)=>g.fillStyle(c,a).fillCircle(x,y,r);
+const tri=(g,x1,y1,x2,y2,x3,y3,c,a=1)=>g.fillStyle(c,a).fillTriangle(x1,y1,x2,y2,x3,y3);
+const safeStr=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const doors=(g,b,roof)=>{const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,d=b.door*T+16;
+ rect(g,d-17,y+h-42,34,42,0x1d2732); rect(g,d-12,y+h-37,24,37,0x4d5667);
+ rect(g,d-9,y+h-34,18,28,0x202d36);rect(g,d-7,y+h-31,14,13,0x7ea8a5,.76);
+ rect(g,d+8,y+h-22,2,2,C.gold);rect(g,d-19,y+h-4,38,4,C.cream,.7);
+ rect(g,d-22,y+h-44,44,4,C.ink);rect(g,d-21,y+h-48,42,3,C.gold,.8);
+};
+function glass(g,x,y,w,h,c){rect(g,x-3,y-3,w+6,h+6,C.ink);rect(g,x,y,w,h,c,.95);rect(g,x+3,y+3,w*.23,h*.64,0xd7faf0,.46);line(g,x+w*.5,y,x+w*.5,y+h,C.cream,.5,2);line(g,x,y+h*.55,x+w,y+h*.55,C.cream,.35,1);}
+function ornate(g,x,y,c){circ(g,x,y,10,C.ink,.9);circ(g,x,y,7,c);circ(g,x-2,y-2,2,0xfff5d9,.7);}
+function facade(g,b){if(!b||!b.name)return; const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,r=Math.round(h*.48),fy=y+r,n=b.name;
+ // Six independent silhouettes, structural and material profiles. Existing collision footprints unchanged.
+ const mats={
+  'Color Gallery':[0xd0bdaf,0x755b70,0xaec7bf],
+  'Backbeat Warehouse':[0x835a51,0x383e48,0xc38e6f],
+  'Open Canvas Gallery':[0xd3c8bd,0x5d6575,0x8ec2c5],
+  'Mural Workshop':[0xb39c91,0x555260,0xb7a5c2],
+  'Photo Lab':[0x9cacae,0x425567,0xbad7cd],
+  'Independent Studio':[0xb79a81,0x655260,0xe1c394]};
+ if(!mats[n])return;const [wall,edge,shine]=mats[n];
+ rect(g,x+5,y+8,w,h,C.ink,.22);rect(g,x,fy,w,h-r,wall);rect(g,x,fy,w,6,edge);
+ // Material-specific masonry, gently varied but not noisy.
+ for(let yy=fy+14,row=0;yy<y+h-8;yy+=17,row++){
+  for(let xx=x+9+(row%2)*13;xx<x+w-12;xx+=29)rect(g,xx,yy,22,2,edge,.17);
+ }
+ if(n==='Color Gallery'){
+  // Fan-shaped roof, staggered stained-glass atrium and small bronze pilasters.
+  rect(g,x+8,y+25,w-16,r-30,0x5a536c);rect(g,x+14,y+32,w-28,r-43,0x789f9d);
+  for(let i=0;i<11;i++){const xx=x+16+i*(w-32)/11;line(g,xx,y+32,xx+17,fy-13,0xe9dfc8,.32,2)}
+  tri(g,x+8,y+26,x+w-8,y+26,x+w*.50,y+1,0x423d53);
+  tri(g,x+31,y+25,x+w-32,y+25,x+w*.50,y+7,0xe1b8c1);
+  for(let k=0;k<4;k++){glass(g,x+22+k*73,fy+23,42,42,[0xe8b4c1,0x91c7c0,0xecc785,0xb4a4d2][k]);}
+  for(let k=0;k<5;k++){let px=x+13+k*65;rect(g,px,fy+77,5,h-r-83,edge,.7);rect(g,px-3,fy+75,11,4,C.cream,.5)}
+  ornate(g,x+w/2,y+25,C.gold);
+ }else if(n==='Backbeat Warehouse'){
+  // Brick industrial halls with sawtooth profile, strong stage doors and tube signs.
+  rect(g,x+3,y+24,w-6,r-27,0x3b404b);
+  for(let i=0;i<5;i++){let xx=x+4+i*(w-8)/5,ww=(w-8)/5;
+   tri(g,xx,y+23,xx+ww,y+23,xx+ww*.60,y+2,i%2?0x76666a:0x60646b);
+   tri(g,xx+ww*.38,y+13,xx+ww*.80,y+17,xx+ww*.60,y+4,0xc3b4a1,.4)}
+  for(let yy=fy+10;yy<y+h-8;yy+=19){line(g,x+12,yy,x+w-12,yy,0x63413d,.57);for(let xx=x+11+(Math.round(yy)%2)*12;xx<x+w-15;xx+=31)line(g,xx,yy,xx,yy+9,0xefc0a3,.25)}
+  rect(g,x+22,fy+16,w-44,12,C.ink);for(let i=0;i<6;i++)rect(g,x+29+i*(w-58)/6,fy+19,11,5,i%2?C.rose:C.teal,.82);
+  for(let i=0;i<3;i++){glass(g,x+22+i*102,fy+40,43,30,0x7e8c93);}
+  for(let i=0;i<8;i++)circ(g,x+25+i*40,fy+4,2,C.gold,.83);
+ }else if(n==='Open Canvas Gallery'){
+  // Modern gallery, differentiated layered glass ribbon and butterfly roof.
+  rect(g,x+5,y+28,w-10,r-33,0x636c79);tri(g,x+9,y+35,x+w*.52,y+9,x+w*.52,y+35,0xa9b7bd);
+  tri(g,x+w*.49,y+35,x+w-9,y+35,x+w*.51,y+5,0xdac8bd);
+  rect(g,x+12,fy+10,w-24,h-r-29,0x43576a);rect(g,x+18,fy+15,w-36,h-r-40,0x90b4b8);
+  for(let i=1;i<5;i++)rect(g,x+18+i*(w-36)/5,fy+16,3,h-r-42,0x354d62,.95);
+  for(let i=0;i<5;i++)rect(g,x+23+i*(w-46)/5,fy+21,8,20,0xe3f4df,.26);
+  rect(g,x+8,fy+68,w-16,11,0x766777);rect(g,x+10,fy+81,w-20,4,C.cream,.7);
+ }else if(n==='Mural Workshop'){
+  // An irregular studio roof with skylight, scaffolding and preserved real mural work.
+  rect(g,x+5,y+20,w-10,r-26,0x555364);
+  tri(g,x+5,y+24,x+w-6,y+24,x+w*.31,y+4,0x8b7175);
+  rect(g,x+30,y+19,w*.34,29,0x9d8ba8);for(let k=0;k<5;k++)rect(g,x+37+k*18,y+22,4,20,0xcde5d9,.7);
+  rect(g,x+18,fy+20,w*.56,h-r-37,0x3c4456);
+  tri(g,x+26,fy+37,x+w*.37,fy+30,x+38,fy+78,C.teal);
+  tri(g,x+80,fy+45,x+w*.5,fy+75,x+w*.62,fy+24,C.rose);
+  for(let i=0;i<3;i++){let sx=x+w*.70+i*20;rect(g,sx,fy+12,4,h-r-14,0x846e66);rect(g,sx-5,fy+38,60,4,0xcfb491,.7)}
+  for(let k=0;k<8;k++)rect(g,x+19+k*11,fy+9,5,3,k%3===0?C.gold:k%3===1?C.rose:C.teal);
+ }else if(n==='Photo Lab'){
+  // Four industrial north-light sawtooth skylights with darkroom/reception wings.
+  rect(g,x+4,y+21,w-8,r-24,0x49616b);
+  for(let i=0;i<4;i++){const sx=x+8+i*(w-16)/4,sw=(w-16)/4;
+   tri(g,sx,y+23,sx+sw,y+23,sx+sw*.65,y+5,0x849a9e);
+   tri(g,sx+sw*.42,y+16,sx+sw*.78,y+9,sx+sw*.68,y+20,0xc3f1e2,.75)}
+  rect(g,x+19,fy+20,w*.42,h-r-35,0x2d3b4a);glass(g,x+30,fy+32,w*.33,42,0x547b85);
+  rect(g,x+w*.56,fy+24,w*.35,53,0x42424b);for(let i=0;i<3;i++)rect(g,x+w*.59+i*25,fy+30,16,34,[0xbd8f96,0x95b7b4,0xbdb091][i]);
+  rect(g,x+22,fy+83,w-44,4,0x273444);
+ }else if(n==='Independent Studio'){
+  // Three small offset workshops, timber canopies and walled garden windows.
+  rect(g,x+4,y+30,w-8,r-34,0x866c66);
+  for(let k=0;k<3;k++){const bx=x+7+k*(w-14)/3,bw=(w-14)/3;
+   tri(g,bx,y+28,bx+bw,y+28,bx+bw*.5,y+8+k*5,k%2?0xc7a58c:0x756b6a);
+   rect(g,bx+7,fy+13,bw-14,48,k===0?0xa98787:k===1?0x96a69a:0xd0b999);
+   glass(g,bx+18,fy+23,bw-36,27,k%2?0x779e98:0xb3b29e);
+  }
+  for(let k=0;k<7;k++)line(g,x+15+k*48,fy+68,x+15+k*48,fy+81,0x536456,.84,3);
+  for(let k=0;k<8;k++)circ(g,x+19+k*39,fy+65+(k%2)*3,5,k%2?0x92ab7b:0x7fa99d,.8);
+  rect(g,x+10,y+h-9,w-20,4,0xe3c09b,.6);
+ }
+ // Architectural identity and entrance contrast (last pass keeps each door usable/visible).
+ line(g,x+2,fy+3,x+w-2,fy+3,shine,.5,3);
+ for(let px=x+10;px<x+w-9;px+=33)rect(g,px,y+h-6,19,2,C.ink,.18);
+ doors(g,b,r);
+}
+function mosaic(g,cx,cy,r,seed){
+ circ(g,cx,cy,r+13,0x343444);circ(g,cx,cy,r+8,0x99877e);circ(g,cx,cy,r+2,0x44404c);
+ for(let i=0;i<56;i++){let an=Math.PI*2*i/56,rr=r-8+(i%4)*2;
+  circ(g,cx+Math.cos(an)*rr,cy+Math.sin(an)*rr,3,PALETTE[i%6],.93);}
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;tri(g,cx+Math.cos(a)*11,cy+Math.sin(a)*11,cx+Math.cos(a+.27)*(r-15),cy+Math.sin(a+.27)*(r-15),cx+Math.cos(a-.27)*(r-15),cy+Math.sin(a-.27)*(r-15),i%2?C.gold:C.rose,.75);}
+ circ(g,cx,cy,19,0xe6d9ba);circ(g,cx,cy,11,C.teal);circ(g,cx-3,cy-3,3,0xfaf5e0);
+}
+function planter(g,x,y,s=1){
+ rect(g,x-13*s,y+3*s,26*s,11*s,0x484657);rect(g,x-11*s,y+3*s,22*s,7*s,0xb68d82);
+ for(let k=0;k<6;k++){let a=k*2.4,dx=Math.cos(a)*10*s;
+  line(g,x,y+5*s,x+dx,y-(11+k%3*4)*s,0x3c765a,.8,2*s);
+  circ(g,x+dx,y-(11+k%3*4)*s,5*s,k%3?0x8dbb8c:0xbed4a2,.8);}
+}
+function gate(g){ // Dream Gate V70: richer landmark silhouette with layered towers, stained glass and stage-like entry.
+ const x=36*T,y=14*T;
+ const shadow=(cx,cy,rx,ry,a=.2)=>circ(g,cx,cy,rx,0x242234,a),shadow2=(cx,cy,rx,ry,a=.2)=>g.fillStyle(0x242234,a).fillEllipse(cx,cy,rx*2,ry*2);
+ shadow2(x,y+52,240,30,.26); shadow2(x,y+16,196,24,.12);
+ // Grand forecourt stairs and brass inlays beneath the gate.
+ rect(g,x-184,y+24,368,10,0x4a4e59,.9); rect(g,x-171,y+35,342,7,0x6c7280,.82); rect(g,x-156,y+43,312,5,0xc8a881,.68);
+ for(let i=0;i<9;i++){ const sx=x-162+i*40; rect(g,sx,y+27,24,2,i%2?C.gold:C.teal,.4); }
+ const tower=(sx,side)=>{
+  const dir=side<0?-1:1;
+  // Base terrace and buttresses
+  rect(g,sx-62,y+10,124,34,0x232839,.92); rect(g,sx-58,y+14,116,28,0x5f6174,.96); rect(g,sx-51,y+18,102,23,0xa59ea8,.94);
+  rect(g,sx-70,y+18,14,28,0x374050,.92); rect(g,sx+56,y+18,14,28,0x374050,.92);
+  tri(g,sx-72,y+46,sx-47,y+5,sx-38,y+46,0x46485a,.86); tri(g,sx+72,y+46,sx+47,y+5,sx+38,y+46,0x46485a,.86);
+  // Main shaft with inset facade and side fins
+  rect(g,sx-52,y-142,104,154,0x212738,.97); rect(g,sx-46,y-136,92,147,0x6e677d,.98); rect(g,sx-39,y-129,78,136,0xb4adb3,.97);
+  rect(g,sx-59,y-118,10,110,0x334458,.88); rect(g,sx+49,y-118,10,110,0x334458,.88);
+  // layered stained-glass gallery
+  for(let row=0;row<5;row++){
+   const yy=y-118+row*25;
+   glass(g,sx-24,yy,48,18,row%2?0x8fd2ca:0xcdb0c7);
+   rect(g,sx-29,yy-3,58,2,row%2?0xe8c97f:0xf0e6d2,.45);
+  }
+  // Mid cornice and balcony band
+  rect(g,sx-54,y-1,108,8,0x3e4054,.95); rect(g,sx-46,y+2,92,3,C.gold,.8);
+  for(let i=0;i<4;i++){ const bx=sx-36+i*24; rect(g,bx,y+9,14,3,0xcfc2ae,.55); }
+  // Roof stack
+  tri(g,sx-56,y-142,sx+56,y-142,sx,y-203,0x34384d); tri(g,sx-42,y-145,sx+42,y-145,sx,y-186,0xc9a7b4,.9);
+  rect(g,sx-15,y-182,30,18,0x61657c,.92); rect(g,sx-11,y-178,22,14,0xd7c4b0,.85);
+  tri(g,sx-23,y-182,sx+23,y-182,sx,y-212,0x474d63); tri(g,sx-15,y-183,sx+15,y-183,sx,y-205,0xebc884,.78);
+  // Crest lantern and side pennants
+  circ(g,sx,y-212,7,0xf8e5b1,.9); circ(g,sx,y-212,3,0xffffff,.85);
+  rect(g,sx+dir*40,y-125,4,60,0x48556a,.8); tri(g,sx+dir*44,y-122,sx+dir*44,y-85,sx+dir*82,y-102,side<0?0x73d3c8:0xf3a0c8,.78);
+  tri(g,sx+dir*44,y-78,sx+dir*44,y-52,sx+dir*71,y-65,side<0?0xf4cf82:0x9c97ff,.72);
+  // Corner lamps
+  for(const lx of [sx-47,sx+47]){ circ(g,lx,y-9,4,C.gold,.72); circ(g,lx,y-9,8,C.gold,.18); }
+ };
+ for(const side of [-1,1]) tower(x+side*154,side);
+ // Lower bridge / entrance beam
+ rect(g,x-132,y-126,264,16,0x2d3144,.97); rect(g,x-126,y-122,252,8,0x9a8ca2,.88);
+ // Prism fan canopy
+ for(let i=0;i<11;i++){
+  const xx=x-126+i*23;
+  tri(g,xx,y-111,xx+22,y-111,xx+11,y-88-(i%3)*7,[0xffd16f,0x79e6d2,0xf5a0cb,0xaea3ff][i%4],.95);
+  rect(g,xx+5,y-114,12,3,0xf7f1df,.34);
+ }
+ // Main double arch frame with inner rib
+ const archCol1=0x76ddd3, archCol2=0xf0a5ca, archCol3=0xffd06e, archCol4=0xa796ff;
+ for(let k=0;k<2;k++){
+  const ay=y-(k?62:74), spread=k?125:138, top=k?110:124, w=k?5:7;
+  stroke(g,k?0xf4d8a1:archCol1,x-spread,y+18,x-spread+16,ay,w,.92);
+  stroke(g,k?archCol2:archCol3,x-spread+16,ay,x,top,w,.92);
+  stroke(g,k?archCol4:archCol2,x,top,x+spread-16,ay,w,.92);
+  stroke(g,k?archCol1:archCol4,x+spread-16,ay,x+spread,y+18,w,.92);
+ }
+ // Hanging stained-glass shards
+ for(let i=-4;i<=4;i++){
+  const xx=x+i*22, yy=y-102+Math.abs(i%2)*6;
+  rect(g,xx-6,yy,12,22,[0xe8c774,0x7cded5,0xf09bbe,0xa89eff][(i+8)%4],.88);
+  tri(g,xx-6,yy+21,xx+6,yy+21,xx,yy+34,[0xe8c774,0x7cded5,0xf09bbe,0xa89eff][(i+8)%4],.7);
+  circ(g,xx,yy-3,2,0xffffff,.7);
+ }
+ // Central marquee / symbol altar
+ rect(g,x-56,y-151,112,26,0x20273a,.95); rect(g,x-51,y-147,102,18,0x6c6177,.95); rect(g,x-47,y-143,94,10,0xdac6ad,.88);
+ // star - eye - wave icons
+ ornate(g,x-28,y-138,C.gold); line(g,x-14,y-138,x+1,y-138,C.cream,.7,3); circ(g,x+20,y-138,8,C.teal); circ(g,x+20,y-138,4,0xeef6e7); line(g,x+34,y-136,x+49,y-140,0xae9bff,.78,3); line(g,x+34,y-132,x+49,y-136,0xae9bff,.78,3);
+ // side light wings near entry opening
+ for(const side of [-1,1]){
+  const sx=x+side*88;
+  rect(g,sx-9,y-28,18,52,0x3e455a,.78); glass(g,sx-6,y-21,12,29,side<0?0x88cfc9:0xe2adc1);
+  for(let j=0;j<3;j++)circ(g,sx,y-32+j*7,2.4,[0xffcf75,0x79e0d4,0xf49ec8][j],.82);
+ }
+}
+function paintPlaza(g,site){
+ // Dream Gate V70 plaza: more ceremonial, festive and detailed while keeping a readable walk axis.
+ const x=site.x0*T,y=site.y0*T,w=(site.x1-site.x0+1)*T,h=(site.y1-site.y0+1)*T;
+ rect(g,x,y,w,h,0x77707a); rect(g,x+7,y+7,w-14,h-14,0x978d90);
+ // outer decorative frame and soft inner apron
+ rect(g,x+12,y+12,w-24,4,0xcfb8aa,.72); rect(g,x+12,y+h-16,w-24,4,0xcfb8aa,.72);
+ rect(g,x+12,y+16,4,h-32,0xcfb8aa,.54); rect(g,x+w-16,y+16,4,h-32,0xcfb8aa,.54);
+ // stone-tile field with subtle variation
+ for(let ty=site.y0+1;ty<=site.y1-1;ty++)for(let tx=site.x0+1;tx<=site.x1-1;tx++){
+  const n=(tx*17+ty*41+tx*ty*7)%13;
+  rect(g,tx*T+1,ty*T+1,30,30,n<3?0xa19592:n<6?0xb3a39a:n<9?0x93878a:0xa99e9b,.9);
+  if(n===5||n===9)rect(g,tx*T+5,ty*T+8,10,1,0xe2d7c5,.35);
+  if(n===7)rect(g,tx*T+17,ty*T+17,5,5,0x8ec8c0,.20);
+ }
+ // ceremonial north apron under the gate
+ rect(g,28*T,y+18,16*T,44,0x5f5d67,.50); rect(g,29*T,y+24,14*T,30,0xcbbaa8,.30);
+ for(let i=0;i<10;i++) rect(g,(28.6+i*1.45)*T,y+27,18,3,i%2?C.gold:C.teal,.4);
+ // Center navigation boulevard kept clear and bright.
+ rect(g,34*T,y+1,4*T,h-6,0xc9b6a8,.52); rect(g,34*T+8,y+9,4*T-16,h-22,0xe0d5c1,.20);
+ for(let yy=y+22;yy<y+h-18;yy+=54){ rect(g,34*T+11,yy,4*T-22,3,0xf3ece0,.38); }
+ // Side mosaic courts with ring patterns.
+ for(const sx of [26.5,45.5]){
+  const xx=sx*T;
+  rect(g,xx-74,20*T-63,148,118,0x63636f,.58);
+  rect(g,xx-66,20*T-55,132,102,0xb8a49f,.26);
+  for(let i=0;i<6;i++) rect(g,xx-60+i*20,20*T-47,15,86,i%2?0xcaafb2:0x97bebc,.55);
+  circ(g,xx,20*T-6,31,0x4b4a58,.88); circ(g,xx,20*T-6,25,0xb59b91,.85);
+  for(let i=0;i<18;i++){ const a=i*Math.PI/9, rr=23; circ(g,xx+Math.cos(a)*rr,20*T-6+Math.sin(a)*rr,2.8,PALETTE[i%6],.82); }
+  planter(g,xx-50,21*T+2,1); planter(g,xx+49,21*T+2,1);
+  rect(g,xx-30,20*T+33,60,5,0x51596a,.82); rect(g,xx-26,20*T+36,52,2,0xd9c7aa,.55);
+ }
+ // Main Living Canvas mosaic and decorative rings.
+ mosaic(g,36*T,24.5*T,98,12); circ(g,36*T,24.5*T,118,0x756e76,.18); circ(g,36*T,24.5*T,135,0x3d3c49,.12);
+ for(const p of [[26.5,8],[45.5,8],[26.5,27],[45.5,27]]) planter(g,p[0]*T,p[1]*T,.92);
+ // Beacon lights framing the central plaza and the gate approach.
+ for(const [bx,by,col] of [[30*T,11.2*T,C.gold],[42*T,11.2*T,C.teal],[29*T,26*T,C.rose],[43*T,26*T,C.lilac],[31*T,30*T,C.gold],[41*T,30*T,C.teal]]){
+  rect(g,bx-6,by-18,12,20,0x465062,.88); rect(g,bx-4,by-16,8,14,0x8aa3aa,.68); circ(g,bx,by-21,4,col,.85); circ(g,bx,by-21,9,col,.16);
+ }
+ // low festival ribbons and floor medallions along edges
+ for(let i=0;i<16;i++){
+  const xx=x+26+i*45, col=PALETTE[i%6];
+  rect(g,xx,y+h-42,23,3,col,.48); rect(g,xx,y+40,18,2,col,.34);
+ }
+ for(let i=0;i<20;i++){
+  const a=i*Math.PI/10,rad=150; let xx=36*T+Math.cos(a)*rad,yy=24.5*T+Math.sin(a)*rad;
+  if(xx>34*T-16&&xx<38*T+16)continue;
+  circ(g,xx,yy,4,PALETTE[i%6],.84); circ(g,xx,yy,8,PALETTE[i%6],.16);
+ }
+ // Creative garden exhibits at the four corners.
+ for(let i=0;i<4;i++){
+  const px=(i%2?45:27)*T,py=(i<2?28:9)*T;
+  rect(g,px-22,py+12,44,8,0x495365,.84); rect(g,px-13,py-10,26,24,0xdcb7aa,.66);
+  tri(g,px-10,py+8,px+10,py+8,px,py-8,i%2?C.teal:C.rose); circ(g,px,py-12,3.5,i%2?C.gold:C.teal,.74);
+ }
+ // Ground level becomes a coherent perspective drawing; the landmark stands above it.
+ gate(g);
+}
+function paintStreetDetails(g,a){
+ const R=(v)=>((Math.sin(v*13.51+3.92)*43758.3)%1+1)%1;
+ for(let k=0;k<122;k++){
+  const tx=3+R(k+4)*(a.w-6),ty=3+R(k+131)*(a.h-6);
+  if(tx>=23&&tx<=49&&ty<=32)continue;
+  if(a.buildings.some(b=>tx>=b.x-1&&tx<=b.x+b.w+1&&ty>=b.y-1&&ty<=b.y+b.h+1))continue;
+  let x=tx*T,y=ty*T;
+  rect(g,x,y,2+(k%3),1+(k%2),k%4?0xc0b6a7:PALETTE[k%6],k%4?.22:.38);
+ }
+ // Distinct sidewalk tiles, modest insets instead of overpainted wall art.
+ for(const b of a.buildings){const x=b.x*T,y=(b.y+b.h)*T;
+  rect(g,x-5,y+5,b.w*T+10,8,0xa49c92,.56);
+  for(let xx=x;xx<x+b.w*T;xx+=23)line(g,xx,y+8,xx+13,y+8,0xf3e5d8,.3,1);
+  for(const p of [x+27,x+b.w*T-22]){if(Math.abs(p-(b.door*T+16))<36)continue;planter(g,p,y+20,.62);}
+ }
+}
+const ROOMS={
+ 'COLOR STUDIES':'gallery','BACKBEAT · LIVE ROOM':'backbeat','OPEN EXHIBITION':'exhibition',
+ 'SPRAY · SKETCH · CREATE':'mural','FRAME THE STORY':'photo','INDEPENDENT ART REVIEW':'independent'
+};
+function paintInterior(g,s){
+ const id=(s?.labels||[]).map(l=>ROOMS[l.text]).find(Boolean);if(!id)return;
+ const W=s.w*T,H=s.h*T;
+ const cols={gallery:[0xdbcac3,0x865d77,0xe2b978],backbeat:[0x575a65,0x323a46,0xe6a67b],exhibition:[0xb0bcb6,0x596d78,0xc6b4c9],mural:[0x8a7c89,0x64576c,0x8ec7bf],photo:[0x87999c,0x354753,0xc1dccf],independent:[0xab8d7b,0x665767,0xe6c79c]}[id];
+ const [wall,deep,accent]=cols;
+ // Paint only upper-wall band (existing furniture is kept and remains interactive).
+ rect(g,8,5,W-16,59,deep,.38);rect(g,9,62,W-18,3,accent,.76);
+ for(let k=0;k<6;k++){let xx=36+k*(W-72)/5;
+  if(k%2===0){rect(g,xx-17,11,34,43,0x322e3e,.83);rect(g,xx-13,15,26,35,wall,.93);
+   tri(g,xx-9,44,xx+9,44,xx+(k%3-1)*6,23,[C.gold,C.teal,C.rose][k%3]);
+  } else {rect(g,xx-14,14,28,37,accent,.45);rect(g,xx-11,17,22,31,deep,.73);
+   circ(g,xx,28,7,k%3?C.teal:C.gold,.8);}
+ }
+ if(id==='backbeat'){
+  rect(g,34,68,W-68,8,0x3c3b45,.65);
+  for(let i=0;i<8;i++)circ(g,34+i*(W-68)/7,75,3,i%2?C.rose:C.gold,.8);
+ }else if(id==='photo'){
+  for(let k=0;k<3;k++){let xx=W*.31+k*W*.19;rect(g,xx,12,18,38,0xe4d4bd,.38);rect(g,xx+3,15,12,24,0x668a8c,.7)}
+ }else if(id==='mural'){
+  for(let k=0;k<16;k++)rect(g,16+k*(W-32)/16,69,8,3,PALETTE[k%6],.52);
+ }else if(id==='independent'){
+  for(let i=0;i<6;i++)rect(g,18+i*26,54,17,4,i%2?C.cream:C.gold,.55);
+ }
+ // Small soft shadow around existing furniture rather than extra blocking furniture.
+ for(const it of s.items||[]){if(!['table','desk','counter','shelf','rack','glasscase'].includes(it.k))continue;
+  let x=it.x*T,y=it.y*T,w=it.w*T;
+  rect(g,x+5,y+2,Math.max(2,w-10),2,accent,.26);
+ }
+}
+const QUESTS=[
+ {name:'01 · Một thành phố chưa hoàn thiện',where:'Đường hầm cũ',at:[35,50],actor:'Mira',why:'Cộng đồng đang tìm hướng đi mới cho quảng trường.',task:'Hãy giải thích vì sao nghệ thuật có thể thay đổi một thành phố.',example:'I think art can change our city because it brings people together.',match:/\b(think|believe|feel)\b[\s\S]*\b(because|since)\b/i,changes:'Cánh cổng Dream Gate được giới thiệu.'},
+ {name:'02 · Bảy góc nhìn',where:'Color Gallery',at:[9,12],actor:'Noor, Ada và Ivo',why:'Các nghệ sĩ có những ý tưởng khác biệt.',task:'Nói bạn thích một phương án nào và nêu lý do.',example:'I prefer the blue design because it feels peaceful.',match:/\b(prefer|like|choose|agree)\b[\s\S]*\b(because|since)\b/i,changes:'Các bức phác thảo xuất hiện ở quảng trường.'},
+ {name:'03 · Ba biểu tượng',where:'Mural Workshop',at:[9,34],actor:'Kai và Ren',why:'Ngôi sao, con mắt và làn sóng kể lại câu chuyện khu phố.',task:'Hãy mô tả một biểu tượng bằng tiếng Anh.',example:'The blue wave represents the connection between the artists.',match:/\b(star|eye|wave)\b[\s\S]*\b(means|represents|shows|symbolizes|is)\b/i,changes:'Bức tranh mosaic bắt đầu được hoàn thiện.'},
+ {name:'04 · Thành phố là bức tranh',where:'Living Canvas',at:[36,24],actor:'Sol và các nghệ sĩ',why:'Mọi người cần chọn cách trưng bày không gian công cộng.',task:'Đưa ra lời khuyên lịch sự để cân bằng tác phẩm và lối đi.',example:'We should leave more space because visitors need a clear path.',match:/\b(should|could|would|recommend)\b[\s\S]*\b(because|so|to)\b/i,changes:'Quảng trường được trang trí bằng tác phẩm của cộng đồng.'},
+ {name:'05 · Đêm hội Concrete Dreams',where:'Quảng trường nghệ thuật',at:[36,40],actor:'Bảy nghệ sĩ',why:'Lễ hội cần một lời giới thiệu ý nghĩa.',task:'Mời mọi người tới triển lãm với một câu tiếng Anh.',example:'Welcome to our art festival! Let us celebrate creativity together.',match:/\b(welcome|join|invite|come|celebrate)\b/i,changes:'Đèn sân khấu sáng lên và đêm hội trở thành một ký ức.'}
+];
+function state(sc){const g=sc?.store?.game;if(!g)return null;
+ if(!g[SAVE]||g[SAVE].schema!==1)g[SAVE]={schema:1,step:0,choices:[],completed:false};
+ return g[SAVE];
+}
+function store(sc){try{sc?.store?.save?.()}catch(e){console.warn('[Art V67] Save error',e)}}
+function isArt(sc){return !!sc?.player&&sc?.area?.id===ID&&!sc.switching;}
+function stage(s){return QUESTS[Math.min(QUESTS.length-1,Math.max(0,s?.step||0))];}
+function distance(sc,point){return Math.hypot(sc.player.x-(point[0]+.5)*T,sc.player.y-(point[1]+.5)*T);}
+function reachable(sc,p){const a=sc.area,x=Math.floor(p[0]),y=Math.floor(p[1]);
+ if(!a.isTileBlocked(x,y))return {x,y};
+ for(let r=1;r<6;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+  if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+  if(!a.isTileBlocked(x+dx,y+dy)&&!a.warpAt(x+dx,y+dy))return {x:x+dx,y:y+dy};
+ }
+ return null;
+}
+function progress(sc){const st=state(sc);return st?.completed?5:(st?.step||0);}
+let root=null,shown=false,objects=null,host=null,lastPaint=-1,noticeTimer=0,lastActiveMap='';
+function flash(message){const el=$('lq67-toast');if(!el)return;el.textContent=message;el.hidden=false;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>el.hidden=true,3400);}
+function mount(){if(root)return;
+ const css=document.createElement('style');css.id='lq67-css';css.textContent=`
+ #lq67-root[hidden],#lq67-panel[hidden],#lq67-toast[hidden],#lq67-near[hidden]{display:none!important}
+ #lq67-root{position:fixed;inset:0;z-index:9700;pointer-events:none;font:13px system-ui,sans-serif;color:#f6eff5}
+ #lq67-open{pointer-events:auto;position:absolute;right:12px;top:155px;background:linear-gradient(110deg,#4f3d67,#6a4565);border:1px solid #e2a8be;color:#fff1f4;border-radius:10px;padding:9px 12px;font-weight:800;box-shadow:0 5px 18px #0008;cursor:pointer}
+ #lq67-near{pointer-events:auto;position:absolute;bottom:115px;left:50%;transform:translateX(-50%);background:#3e304de9;border:1px solid #efbd9d;border-radius:9px;color:#fff1da;padding:8px 12px;cursor:pointer}
+ #lq67-toast{position:absolute;top:24%;left:50%;transform:translateX(-50%);padding:10px 16px;border:1px solid #edc7a5;border-radius:9px;background:#3c2f43f2;max-width:440px;text-align:center}
+ #lq67-panel{pointer-events:auto;position:absolute;inset:0;background:#070915c9;display:grid;place-items:center;padding:14px;backdrop-filter:blur(4px)}
+ #lq67-card{box-sizing:border-box;max-height:92vh;overflow:auto;width:min(720px,96vw);background:linear-gradient(145deg,#1a2336,#312b42);border:1px solid #b99ab8;box-shadow:0 22px 65px #000d;border-radius:17px;padding:21px;color:#ecf1fa}
+ #lq67-card header{display:flex;justify-content:space-between;gap:16px;align-items:start;border-bottom:1px solid #ffffff22;padding-bottom:11px;margin-bottom:11px}
+ #lq67-card h2{font-size:20px!important;color:#ffe2b9;margin:0 0 5px}#lq67-card small{color:#d4bfd9}
+ #lq67-card h3{font-size:16px;color:#f4b8d4;margin:10px 0}
+ #lq67-card p{line-height:1.6;font-size:13px;margin:8px 0}
+ #lq67-card button{font:inherit;background:#3a5975;border:1px solid #8fbbc8;border-radius:9px;padding:9px 12px;color:#fff;cursor:pointer}
+ #lq67-card button:hover:not(:disabled){background:#4f789a}#lq67-card button:disabled{opacity:.45;cursor:not-allowed}
+ #lq67-close{font-size:20px!important;background:#4c3b53!important;border-color:#b68aa6!important}
+ #lq67-card textarea{display:block;box-sizing:border-box;margin:9px 0;width:100%;border:1px solid #7e9daf;border-radius:8px;background:#101d2c;color:#fff;resize:vertical;min-height:75px;padding:10px;font:14px system-ui}
+ #lq67-card .lq67-route{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:13px 0}
+ #lq67-card .lq67-route span{display:block;height:8px;border-radius:8px;background:#4a5268}
+ #lq67-card .lq67-route span.done{background:#8bd4be}#lq67-card .lq67-route span.current{background:#f2c17e}
+ #lq67-status{padding:10px 12px;border:1px solid #ffffff25;background:#13233c;border-radius:9px;font-size:12px;line-height:1.5}
+ #lq67-card .lq67-hint{color:#bed2de;font-size:12px}#lq67-card .lq67-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+ @media(max-width:650px){#lq67-open{top:139px;right:6px;font-size:11px}#lq67-card{padding:13px}#lq67-near{bottom:93px}}
+ `;document.head.appendChild(css);
+ root=document.createElement('div');root.id='lq67-root';root.hidden=true;
+ root.innerHTML=`<button id="lq67-open" aria-label="Mở nhiệm vụ Art District" title="F2 · Art District">🎧 Art V68</button><button id="lq67-near" hidden>F2 · Nghệ thuật</button><div id="lq67-toast" role="status" hidden></div><div id="lq67-panel" hidden><section id="lq67-card" role="dialog" aria-modal="true" aria-label="The City Is Our Canvas"><header><div><h2>ART DISTRICT · LIVING CANVAS</h2><small>The City Is Our Canvas · LifeQuest AI V67</small></div><button id="lq67-close" aria-label="Đóng">✕</button></header><div id="lq67-body"></div></section></div>`;
+ document.body.appendChild(root);
+ $('lq67-open').addEventListener('click',open);$('lq67-near').addEventListener('click',open);$('lq67-close').addEventListener('click',close);
+ $('lq67-panel').addEventListener('click',e=>{if(e.target.id==='lq67-panel')close()});
+ $('lq67-body').addEventListener('click',e=>{
+  const b=e.target.closest?.('[data-v67]');if(!b)return;const action=b.dataset.v67,sc=scene();
+  if(action==='submit')submit(sc);else if(action==='example'){$('lq67-answer').value=stage(state(sc)).example;}
+  else if(action==='map'){
+   if(!isArt(sc)){flash('Vào Art District để khám phá.');return;}
+   const st=state(sc),q=stage(st),p=reachable(sc,q.at);
+   if(p){$('lq67-status').textContent=`Đích: (${p.x}, ${p.y}). Hãy sử dụng WASD / phím mũi tên hoặc hệ thống dẫn đường sẵn có.`;}
+  }else if(action==='close'){close();}
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&shown){e.preventDefault();e.stopImmediatePropagation();close();return;}
+  if(e.key!=='F2'||e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.defaultPrevented)return;
+  if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||''))return;
+  if(!isArt(scene()))return;
+  e.preventDefault();e.stopImmediatePropagation();shown?close():open();
+ },true);
+}
+function close(){shown=false;const p=$('lq67-panel');if(p)p.hidden=true;}
+function render(){const sc=scene();if(!isArt(sc))return;const st=state(sc),p=$('lq67-body');if(!p)return;
+ const finished=st.completed;const q=stage(st);const near=distance(sc,q.at)<145;
+ const target=reachable(sc,q.at);
+ p.innerHTML=`<div class="lq67-route">${QUESTS.map((_,i)=>`<span class="${st.step>i||finished?'done':st.step===i?'current':''}" title="Chapter ${i+1}"></span>`).join('')}</div>
+ ${finished?`<h3>✦ CONCRETE DREAMS — TRIỂN LÃM ĐÃ MỞ</h3><p>Bảy nghệ sĩ đã biến khu phố công nghiệp cũ thành một nơi sáng tạo. Những dấu ấn của bạn được lưu trong thế giới game.</p><p>Hãy khám phá quảng trường và xem hiệu ứng lễ hội theo thời gian trong ngày.</p><button data-v67="close">Quay lại khám phá</button>`:
+ `<h3>${safeStr(q.name)}</h3><p><b>Địa điểm:</b> ${safeStr(q.where)} · <b>Nghệ sĩ:</b> ${safeStr(q.actor)}</p><p>${safeStr(q.why)}</p><p><b>Thử thách tiếng Anh:</b> ${safeStr(q.task)}</p>
+ <div id="lq67-status">${near?'✓ Bạn đang ở gần địa điểm nhiệm vụ.':'Đi tới vị trí nhiệm vụ trên bản đồ: '+(target?`(${target.x}, ${target.y})`:'Vị trí đang được xác định')+'.'} Tiến trình ${st.step+1}/${QUESTS.length}.</div>
+ <textarea id="lq67-answer" maxlength="220" placeholder="Viết một câu tiếng Anh có ý nghĩa và phù hợp bài học..."></textarea>
+ <p class="lq67-hint">Câu mẫu để học: “${safeStr(q.example)}”</p>
+ <div class="lq67-actions"><button data-v67="submit">Hoàn thành thử thách</button><button data-v67="example">Điền câu mẫu</button><button data-v67="map">Xem vị trí</button></div>
+ <p class="lq67-hint">Nội dung luyện tập ở mức B1. Bạn có thể tự viết câu khác, miễn đáp ứng cấu trúc ngữ pháp và nội dung cần thiết.</p>`}`;
+}
+function open(){const sc=scene();if(!isArt(sc))return;mount();shown=true;$('lq67-panel').hidden=false;render();}
+function submit(sc){if(!isArt(sc)||!shown)return;
+ const st=state(sc),q=stage(st);if(st.completed)return;
+ if(distance(sc,q.at)>145){const m='Hãy tới gần '+q.where+' trước khi hoàn thành nhiệm vụ.';$('lq67-status').textContent=m;flash(m);return;}
+ const txt=String($('lq67-answer')?.value||'').trim();
+ if(txt.split(/\s+/).length<7||!q.match.test(txt)){
+  $('lq67-status').textContent='Câu chưa đủ ý. Hãy sử dụng cấu trúc trong ví dụ và giải thích rõ ràng bằng tiếng Anh.';return;
+ }
+ st.choices.push({step:st.step,text:txt.slice(0,220)});st.step++;
+ if(st.step>=QUESTS.length)st.completed=true;
+ store(sc);lastPaint=-1;flash(q.changes);render();
+}
+function drawProgress(g,sc){const st=state(sc);if(!st)return;const n=progress(sc);
+ const x=36*T,y=24.5*T;
+ // Each completed stage physically adds a different authored installation.
+ if(n>=1){for(let i=0;i<5;i++){const xx=(27+i*4.5)*T,yy=9*T;
+  line(g,xx,yy,xx+20,yy-11,0xd7b3bf,.4,2);tri(g,xx,yy-9,xx+20,yy-9,xx+10,yy+14,PALETTE[i%6],.85);}}
+ if(n>=2){for(const side of [-1,1])for(let k=0;k<3;k++){
+  const sx=x+side*(120+k*27),sy=y-60+k*20;
+  rect(g,sx-8,sy-36,16,30,0x51485a,.84);rect(g,sx-5,sy-33,10,20,[C.rose,C.teal,C.gold][k],.9);
+ }}
+ if(n>=3){for(let i=0;i<32;i++){
+  const a=i*Math.PI/16,rad=56+(i%3)*12;
+  circ(g,x+Math.cos(a)*rad,y+Math.sin(a)*rad,2.6,PALETTE[i%6],.75);
+ }}
+ if(n>=4){for(let i=0;i<8;i++){
+  const xx=25*T+i*3*T,yy=28*T+(i%2)*5;
+  rect(g,xx,yy,28,22,0x4e475b,.73);rect(g,xx+3,yy+3,22,16,PALETTE[i%6],.6);
+ }}
+ if(st.completed){for(let i=0;i<12;i++){
+  const xx=(24+i*2)*T,yy=31*T+(i%3)*5;
+  rect(g,xx,yy,5,5,C.gold,.61);
+ }}
+}
+function dispose(){if(!objects)return;for(const obj of objects.activity?.values?.()||[])try{obj?.destroy?.()}catch(_){}for(const obj of Object.values(objects))try{obj?.destroy?.()}catch(_){}objects=null;lastPaint=-1;}
+function addGraphics(sc){dispose();objects={progress:sc.add.graphics().setDepth(.66),live:sc.add.graphics().setDepth(13),activity:new Map()};}
+const ARTISTS={
+ noor:['PREP','CURATE','GUIDE','CLOSE'],ivo:['TUNE','REHEARSE','PERFORM','REST'],
+ ada:['PLAN','SELECT','DISPLAY','STUDY'],kai:['SKETCH','MIX','PAINT','CLEAN'],
+ mira:['IDEAS','MEET','OBSERVE','WRITE'],ren:['LIGHT','FRAME','PHOTO','EDIT'],
+ sol:['READ','REVIEW','INTERVIEW','PUBLISH']
+};
+function updateArtists(sc,time){
+ if(!objects?.activity||!Array.isArray(sc.npcs))return;
+ const m=Number(sc.store?.game?.minutes??720)%1440,period=m<420||m>=1260?3:m<720?0:m<1020?1:2;
+ const cam=sc.cameras?.main?.worldView;
+ for(const a of sc.npcs){
+  const id=a.def?.id;if(!ARTISTS[id])continue;
+  const sprite=a.sprite,off=a.inside||!sprite?.visible||!cam||sc.chat?.isOpen;
+  let el=objects.activity.get(id);
+  if(!el){el=sc.add.text(0,0,'',{fontFamily:'monospace',fontStyle:'bold',fontSize:'8px',color:'#ffe2b6',backgroundColor:'#243349d9',padding:{x:3,y:2}}).setOrigin(.5,1).setDepth(19);objects.activity.set(id,el);}
+  if(off||sprite.x<cam.x-20||sprite.x>cam.right+20||sprite.y<cam.y-20||sprite.y>cam.bottom+20){el.setVisible(false);continue;}
+  el.setVisible(true).setPosition(sprite.x+9,sprite.y-29);
+  const label=ARTISTS[id][period];if(el.text!==label)el.setText(label);
+ }
+}
+function tick(sc,time){
+ if(!isArt(sc)||sc.inside){dispose();if(root){root.hidden=true;if(shown)close();}return;}
+ if(!objects)addGraphics(sc);
+ if(root)root.hidden=false;
+ const st=state(sc),p=progress(sc);
+ if(lastPaint!==p){objects.progress.clear();drawProgress(objects.progress,sc);lastPaint=p;}
+ if((Math.floor(time/110)%2)!==0)return;
+ updateArtists(sc,time);const g=objects.live;g.clear();const cam=sc.cameras?.main,v=cam?.worldView;
+ if(!v)return;
+ const minutes=Number(sc.store?.game?.minutes??720)%1440,night=minutes>=1110||minutes<365;
+ const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+ // Subtle light pulses and studio vignettes are culled by camera rectangle.
+ for(let k=0;k<6;k++){
+  const b=sc.area.buildings[k];if(!b)continue;
+  const x=(b.x+b.w*.5)*T,y=(b.y+b.h)*T-62;
+  if(x<v.x-140||x>v.right+140||y<v.y-140||y>v.bottom+140)continue;
+  const pulse=reduce?0.6:.6+.3*Math.sin(time*.0016+k*1.4);
+  if(night){circ(g,x,y,22,PALETTE[k],.06*pulse);circ(g,x,y,5,PALETTE[k],.32*pulse);}
+  const stageShift=reduce?0:Math.sin(time*.001+k)*2.5;
+  for(let j=0;j<2;j++){rect(g,x-22+j*36,y-40+stageShift,7,3,[C.teal,C.rose,C.gold][(k+j)%3],.30);}
+ }
+ if(st?.completed){const x=36*T,y=24*T;
+  if(x>v.x-200&&x<v.right+200&&y>v.y-200&&y<v.bottom+200){
+   for(let i=0;i<22;i++){const a=i*2.399+time*(reduce?0:.00016),rr=34+(i%5)*16;
+    circ(g,x+Math.cos(a)*rr,y+Math.sin(a)*rr,reduce?2:2+Math.sin(time*.003+i)*.4,PALETTE[i%6],.36);
+   }
+  }
+ }
+ // Time-of-day performance cue; does not fabricate an unrelated NPC sprite.
+ const q=stage(st),point=q.at,px=(point[0]+.5)*T,py=(point[1]+.5)*T;
+ if(!st?.completed&&px>v.x-70&&px<v.right+70&&py>v.y-70&&py<v.bottom+70){
+  const a=reduce?0.56:.48+.2*Math.sin(time*.003);
+  circ(g,px,py-30,11,C.gold,a*.26);circ(g,px,py-30,4,C.gold,a);line(g,px,py-20,px,py-9,C.gold,a,2);
+ }
+ const near=distance(sc,q.at)<145;const prompt=$('lq67-near');if(prompt){prompt.hidden=st.completed||!near||shown;prompt.textContent=`🎨 ${q.where} · F2`;} 
+}
+function connectedRoutes(a){if(!a?.isTileBlocked)return null;
+ const safe=(tx,ty)=>!a.isTileBlocked(tx,ty)&&!a.warpAt?.(tx,ty);
+ const s=[35,51],w=a.w;let seen=new Set([s[1]*w+s[0]]),queue=[s],head=0;
+ while(head<queue.length){const [x,y]=queue[head++];for(const [dx,dy] of [[0,1],[0,-1],[1,0],[-1,0]]){
+  const nx=x+dx,ny=y+dy,id=ny*w+nx;if(!safe(nx,ny)||seen.has(id))continue;
+  seen.add(id);queue.push([nx,ny]);}}
+ return {reachable:queue.length,landmarks:QUESTS.map(q=>({label:q.where,point:q.at,accessible:seen.has(q.at[1]*w+q.at[0])})),buildingDoors:a.buildings.map(b=>({name:b.name,access:seen.has((b.y+b.h)*w+b.door)}))};
+}
+function attach(sc){if(sc.__lq67Listener)return;sc.__lq67Listener=true;
+ sc.events.on('update',(time)=>{try{tick(sc,time)}catch(err){if(!sc.__lq67warn){console.warn('[V67] Scene update',err);sc.__lq67warn=true;}}});
+ sc.events.once('shutdown',()=>{dispose();sc.__lq67Listener=false;});
+}
+function initialize(){mount();setInterval(()=>{
+ const sc=scene();if(!sc?.events||!sc.player)return;
+ if(!sc.__lq67Listener)attach(sc);
+ if(!isArt(sc)&&root){root.hidden=true;if(shown)close();}
+ else if(isArt(sc)){root.hidden=false;if(!objects)addGraphics(sc);}
+},850);}
+window.LQArtV67=Object.freeze({version:'67.0.0',facade,paintPlaza,paintInterior,paintStreetDetails,scene,open,close,state,progress,quests:QUESTS,
+ diagnostics:()=>{const sc=scene();return {map:sc?.area?.id,progress:sc&&state(sc),routes:sc?.area?.id===ID?connectedRoutes(sc.area):null,objects:!!objects};}});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize,{once:true});else initialize();
+})();
+
+/* ---------------- End V67 addon ---------------- */
+/* LIFEQUEST AI V68 — NEON SYMPHONY / ART DISTRICT NIGHTLIFE ARCHITECTURE
+   Six distinct hand-authored pixel architecture compositions, not recolours.
+   Collision, door tile, NPC sprite assets, other maps, and existing quests are preserved.
+   Party = all-ages music, dancing and art performances; no alcohol imagery.
+*/
+(function(){
+'use strict';
+const ID='art-district', T=32;
+if(window.LQArtV68) return;
+const K={ink:0x0e1424,deep:0x192037,purple:0x3b3356,brick:0x745265,steel:0x3f5265,
+ silver:0xb6c4c7,ivory:0xf4e3cd,amber:0xffc66d,pink:0xff77b9,coral:0xff9973,
+ blue:0x5bcdf7,cyan:0x6aeddc,lime:0xc3f99f,lav:0xb2a2ff,rose:0xc17b9f};
+const PAL=[K.pink,K.cyan,K.amber,K.lav,K.coral,K.lime];
+let reduced=false;
+try{reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+const R=(g,x,y,w,h,c,a=1)=>g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.max(0,Math.round(w)),Math.max(0,Math.round(h)));
+const O=(g,x,y,r,c,a=1)=>g.fillStyle(c,a).fillCircle(x,y,Math.max(0,r));
+const L=(g,x1,y1,x2,y2,c,a=1,w=1)=>g.lineStyle(w,c,a).lineBetween(Math.round(x1),Math.round(y1),Math.round(x2),Math.round(y2));
+const Tr=(g,x1,y1,x2,y2,x3,y3,c,a=1)=>g.fillStyle(c,a).fillTriangle(x1,y1,x2,y2,x3,y3);
+const outline=(g,x,y,w,h,c=K.ink,sw=3)=>g.lineStyle(sw,c).strokeRect(x,y,w,h);
+const hash=(a,b)=>{let h=Math.imul((a+777)|0,374761393)^Math.imul((b+211)|0,668265263);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;};
+const font={
+ 'A':['01110','10001','10001','11111','10001','10001','10001'],
+ 'B':['11110','10001','10001','11110','10001','10001','11110'],
+ 'C':['01111','10000','10000','10000','10000','10000','01111'],
+ 'D':['11110','10001','10001','10001','10001','10001','11110'],
+ 'E':['11111','10000','10000','11110','10000','10000','11111'],
+ 'F':['11111','10000','10000','11110','10000','10000','10000'],
+ 'G':['01111','10000','10000','10111','10001','10001','01111'],
+ 'H':['10001','10001','10001','11111','10001','10001','10001'],
+ 'I':['11111','00100','00100','00100','00100','00100','11111'],
+ 'J':['00111','00010','00010','00010','10010','10010','01100'],
+ 'K':['10001','10010','10100','11000','10100','10010','10001'],
+ 'L':['10000','10000','10000','10000','10000','10000','11111'],
+ 'M':['10001','11011','10101','10101','10001','10001','10001'],
+ 'N':['10001','11001','10101','10101','10011','10001','10001'],
+ 'O':['01110','10001','10001','10001','10001','10001','01110'],
+ 'P':['11110','10001','10001','11110','10000','10000','10000'],
+ 'Q':['01110','10001','10001','10001','10101','10010','01101'],
+ 'R':['11110','10001','10001','11110','10100','10010','10001'],
+ 'S':['01111','10000','10000','01110','00001','00001','11110'],
+ 'T':['11111','00100','00100','00100','00100','00100','00100'],
+ 'U':['10001','10001','10001','10001','10001','10001','01110'],
+ 'V':['10001','10001','10001','10001','10001','01010','00100'],
+ 'W':['10001','10001','10001','10101','10101','10101','01010'],
+ 'X':['10001','10001','01010','00100','01010','10001','10001'],
+ 'Y':['10001','10001','01010','00100','00100','00100','00100'],
+ 'Z':['11111','00001','00010','00100','01000','10000','11111'],
+ '0':['01110','10001','10011','10101','11001','10001','01110'],
+ '1':['00100','01100','00100','00100','00100','00100','01110'],
+ '2':['01110','10001','00001','00010','00100','01000','11111'],
+ '3':['11110','00001','00001','01110','00001','00001','11110'],
+ '4':['00010','00110','01010','10010','11111','00010','00010'],
+ '5':['11111','10000','10000','11110','00001','00001','11110'],
+ '6':['01111','10000','10000','11110','10001','10001','01110'],
+ '7':['11111','00001','00010','00100','01000','01000','01000'],
+ '8':['01110','10001','10001','01110','10001','10001','01110'],
+ '9':['01110','10001','10001','01111','00001','00001','11110'],
+ '&':['01000','10100','10100','01000','10101','10010','01101'],
+ '!':['00100','00100','00100','00100','00100','00000','00100'],
+ '-':['00000','00000','00000','11111','00000','00000','00000'],
+ ':':['00000','00100','00100','00000','00100','00100','00000'],
+ ' ':['00000','00000','00000','00000','00000','00000','00000']
+};
+function letters(g,text,cx,cy,scale=2,color=K.ivory,glow=K.pink){
+ const str=String(text).toUpperCase(), spacing=6*scale, x0=Math.round(cx-str.length*spacing/2), y0=Math.round(cy-4*scale);
+ if(glow!=null){for(let i=0;i<str.length;i++){const bits=font[str[i]]||font[' '];
+  for(let yy=0;yy<7;yy++)for(let xx=0;xx<5;xx++)if(bits[yy][xx]==='1')R(g,x0+i*spacing+xx*scale-1,y0+yy*scale-1,scale+2,scale+2,glow,.22);}}
+ for(let i=0;i<str.length;i++){const bits=font[str[i]]||font[' '];
+  for(let yy=0;yy<7;yy++)for(let xx=0;xx<5;xx++)if(bits[yy][xx]==='1')R(g,x0+i*spacing+xx*scale,y0+yy*scale,scale,scale,color);}
+}
+function arch(g,cx,y,w,h,bg,trim,shade=K.deep){
+ R(g,cx-w/2,y+18,w,h-18,bg);O(g,cx,y+20,w/2,bg);R(g,cx-w/2+4,y+22,w-8,h-20,shade);O(g,cx,y+24,w/2-5,shade);
+ for(let i=0;i<4;i++) L(g,cx-w*.4+i*w*.26,y+25,cx-w*.4+i*w*.26,y+h-6,trim,.65,2);
+ L(g,cx-w/2,y+h-4,cx+w/2,y+h-4,trim,.85,3);
+}
+function speaker(g,x,y,w=27,h=64,c=K.cyan){
+ R(g,x+5,y+5,w+2,h+3,K.ink,.30);R(g,x,y,w,h,0x151929);R(g,x+2,y+3,w-4,h-6,0x262c3e);
+ O(g,x+w/2,y+h*.37,w*.27,0x0a1120);O(g,x+w/2,y+h*.37,w*.21,0x4e6172);
+ O(g,x+w/2,y+h*.37,w*.125,0x172031);O(g,x+w/2,y+h*.72,w*.16,0x050c1b);O(g,x+w/2,y+h*.72,w*.08,c,.75);
+ for(let i=0;i<4;i++)R(g,x+4+i*(w-8)/4,y+h-6,3,2,c,i%2?.65:.95);
+ outline(g,x,y,w,h,K.ink,2);
+}
+function festoon(g,x1,x2,y,sag=17){
+ L(g,x1,y,x2,y,K.ink,.78,3);
+ for(let i=0;i<13;i++){
+  let x=x1+(x2-x1)*i/12,yy=y+Math.sin(Math.PI*i/12)*sag;
+  if(i){L(g,x1+(x2-x1)*(i-1)/12,y+Math.sin(Math.PI*(i-1)/12)*sag,x,yy,0x5f667a,.7,1)}
+  R(g,x-3,yy+1,6,3,0x343346);O(g,x,yy+5,4,PAL[i%6],.94);O(g,x-1,yy+3,1,0xffffff,.92);
+ }
+}
+function metal(g,x,y,w,h){
+ R(g,x,y,w,h,0x30394a);R(g,x+5,y+5,w-10,h-10,0x435166);
+ for(let k=0;k<w;k+=24){R(g,x+k,y+7,3,h-14,0x182334,.55);R(g,x+k+4,y+7,1,h-15,0x94a7b8,.42)}
+ for(let k=0;k<h;k+=32)L(g,x+4,y+k,x+w-4,y+k,0xabc0c9,.16,2);
+}
+function brick(g,x,y,w,h,base=0x755368){
+ R(g,x,y,w,h,base);
+ for(let j=0;j<Math.ceil(h/12);j++)for(let i=0;i<Math.ceil(w/26);i++){
+  const px=x+(i*26)+((j%2)*13)-12,py=y+j*12;
+  if(px>x+w-4)continue;
+  R(g,Math.max(x+2,px),py+8,Math.max(0,Math.min(23,x+w-4-px)),1,0x34283a,.31);
+  if(i%4===0)R(g,Math.max(x+2,px)+3,py+2,10,2,0xf2beb2,.07);
+ }
+}
+function windowGlass(g,x,y,w,h,tint=K.cyan){
+ R(g,x-4,y-4,w+8,h+8,K.ink);R(g,x-1,y-1,w+2,h+2,0x526478);
+ R(g,x+3,y+3,w-6,h-6,tint,.64);Tr(g,x+3,y+3,x+w*.56,y+3,x+3,y+h*.7,K.ivory,.22);
+ L(g,x+w*.5,y+4,x+w*.5,y+h-4,0x15243a,.68,3);L(g,x+3,y+h*.54,x+w-3,y+h*.54,0x18283c,.64,2);
+ R(g,x-6,y+h,w+12,5,0x1b2537);R(g,x-4,y+h+1,w+8,1,K.ivory,.52);
+}
+function roofSilhouette(g,x,y,w,accent){
+ R(g,x+10,y+5,w-20,12,0x101829,.28);R(g,x+4,y+14,w-8,14,0x162235);
+ for(let k=0;k<w;k+=38){R(g,x+6+k,y+13,18,2,accent,.28)}
+}
+function signage(g,x,y,w,label,main,accent,scale=2.35){
+ R(g,x-3,y-3,w+6,35,0x09101d,.85);R(g,x,y,w,28,0x22283e);
+ R(g,x+5,y+3,w-10,2,accent,.75);R(g,x+5,y+24,w-10,2,main,.68);
+ letters(g,label,x+w/2,y+14,scale,K.ivory,accent);
+ for(let k=0;k<6;k++){O(g,x+7+k*(w-14)/5,y+29,2,accent,.9)}
+}
+function entry(g,b,options={}){
+ const x=b.door*T+T/2,y=(b.y+b.h)*T;const c=options.color||K.amber;
+ const wide=options.wide||43;
+ R(g,x-wide/2-8,y-70,wide+16,70,K.ink);
+ R(g,x-wide/2-4,y-65,wide+8,63,0x485468);
+ R(g,x-wide/2,y-61,wide,59,0x151f30);
+ R(g,x-wide/2+5,y-57,wide-10,40,0x395169);
+ for(let i=0;i<4;i++){
+  L(g,x-wide/2+4+i*(wide-8)/3,y-57,x-wide/2+4+i*(wide-8)/3,y-17,c,.35,1);
+ }
+ R(g,x-2,y-58,4,56,0x111829);R(g,x-3,y-60,6,50,0x7a8392,.22);
+ O(g,x+wide/2-10,y-22,3,c,.95);
+ R(g,x-wide/2-11,y-73,wide+22,8,0x0b1528);R(g,x-wide/2-9,y-72,wide+18,3,c,.9);
+ R(g,x-wide/2-11,y-3,wide+22,3,0xf1d4ac,.62);
+ // Only pixel art; doors remain physically usable at the original tile.
+ if(options.canopy){Tr(g,x-wide/2-28,y-85,x+wide/2+28,y-85,x,y-70,0x263049);R(g,x-wide/2-28,y-86,wide+56,5,c,.85)}
+}
+function vinyl(g,x,y,r=17,col=K.pink){
+ O(g,x,y,r,K.ink);O(g,x,y,r-3,0x31344c);
+ for(let k=1;k<5;k++){O(g,x,y,r-k*3,col,.18)}
+ O(g,x,y,5,col);O(g,x,y,2,K.ivory);
+ L(g,x+4,y-9,x+11,y-15,K.ivory,.36,1);
+}
+function equalizer(g,x,y,w,h,col=K.cyan,seed=0){
+ const n=Math.max(5,Math.floor(w/10));for(let i=0;i<n;i++){
+  const amp=.2+.75*hash(i+seed,Math.floor(h));const hh=(4+Math.floor(amp*(h-4)));
+  R(g,x+i*w/n,y+h-hh,Math.max(3,w/n-3),hh,PAL[(i+seed)%6],.9);
+  R(g,x+i*w/n,y+h-hh,Math.max(2,w/n-3),2,K.ivory,.45);
+ }
+}
+function stars(g,x,y,w,h,seed){for(let i=0;i<12;i++){
+ const xx=x+hash(seed,i)*w,yy=y+hash(i,seed+6)*h;
+ O(g,xx,yy,1+(i%2),[K.cyan,K.pink,K.amber][i%3],.6);
+}}
+function marquee(g,x,y,w,title,accent){
+ // Bulb-framed, tiered cinema awning with sloped edges.
+ R(g,x+7,y+3,w-14,38,0x0e1629);R(g,x,y+7,w,34,0x293249);
+ Tr(g,x,y+7,x+16,y-5,x+16,y+7,0x4c4667);Tr(g,x+w,y+7,x+w-16,y-5,x+w-16,y+7,0x4c4667);
+ R(g,x+9,y+10,w-18,25,0x251e3b);R(g,x+12,y+12,w-24,2,accent,.85);
+ letters(g,title,x+w/2,y+24,2.25,K.ivory,accent);
+ for(let i=0;i<21;i++){let xx=x+8+i*(w-16)/20;O(g,xx,y+41,2,i%2?accent:K.amber,.96)}
+}
+function venueFinishing(g,b){
+ const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T,fy=y+Math.round(h*.48),cx=b.door*T+16;
+ const signatures={
+  'Color Gallery':{color:K.amber,other:K.pink,model:1},
+  'Backbeat Warehouse':{color:K.cyan,other:K.lav,model:2},
+  'Open Canvas Gallery':{color:K.lav,other:K.cyan,model:3},
+  'Mural Workshop':{color:K.coral,other:K.pink,model:4},
+  'Photo Lab':{color:K.cyan,other:K.amber,model:5},
+  'Independent Studio':{color:K.amber,other:K.lime,model:6},
+ };
+ const cfg=signatures[b.name];if(!cfg)return;
+ // Pixel-shaded edge studs and deliberate trim highlights, with unchanged building bounds.
+ for(let i=0;i<12;i++){
+  const xx=x+9+i*(w-18)/11;
+  O(g,xx,fy-4,1.6,cfg.color,.69);
+  if(i%3===0)R(g,xx,fy+3,7,2,K.ivory,.27);
+ }
+ for(const xx of [x+4,x+w-10]){
+  R(g,xx,fy+10,6,h-Math.round(h*.48)-15,0x14192a,.57);
+  for(let j=0;j<4;j++){
+   O(g,xx+3,fy+21+j*23,1.5,cfg.color,.78);
+  }
+ }
+ // 3D staircase at front door (ground decoration, not obstacle).
+ for(let k=0;k<2;k++){
+  R(g,cx-26-k*5,y+h+k*3,52+k*10,3,0x25283b,.64);
+  R(g,cx-21-k*5,y+h+k*3,42+k*10,1,cfg.color,.42);
+ }
+ // Shaded wall-mounted lights: two small angle brackets, not floating circles.
+ for(const s of [-1,1]){
+  let xx=cx+s*47,yy=y+h-80;
+  if(xx<x+23||xx>x+w-23)continue;
+  R(g,xx-3,yy-4,6,9,0x14182c);R(g,xx-2,yy-3,4,4,cfg.color,.8);
+  Tr(g,xx-8,yy+7,xx+8,yy+7,xx,yy-1,cfg.other,.22);
+ }
+ // Model-specific rooftop detail silhouettes (no physical colliders).
+ if(cfg.model===1){
+  for(let k=0;k<7;k++){
+   const xx=x+14+k*53;
+   O(g,xx,y+34,3,K.amber);R(g,xx-1,y+34,2,6,0xe0c4aa,.7);
+  }
+ }else if(cfg.model===2){
+  for(let k=0;k<3;k++){
+   const xx=x+w-25-k*19;
+   R(g,xx,y+12,8,17,0x253346);R(g,xx+2,y+9,3,7,0x8397ac);
+  }
+ }else if(cfg.model===3){
+  for(let k=0;k<10;k++){
+   const xx=x+22+k*32;
+   Tr(g,xx,y+58,xx+16,y+48,xx+27,y+60,k%2?K.cyan:K.lav,.31);
+  }
+ }else if(cfg.model===4){
+  // Hanging tiny mini flags on the left facade, not in the door mouth.
+  for(let k=0;k<5;k++){
+   let xx=x+17+k*19;
+   Tr(g,xx,y+47,xx+15,y+47,xx+8,y+59,PAL[(k+3)%6]);
+  }
+ }else if(cfg.model===5){
+  // Art-house flashbulb-lit projector camera, roof corner.
+  R(g,x+w-38,y+40,19,12,K.ink);R(g,x+w-35,y+42,11,8,0x718999);
+  O(g,x+w-27,y+45,4,K.cyan);Tr(g,x+w-20,y+43,x+w-10,y+41,x+w-20,y+50,0xd9f6e6,.52);
+ }else{
+  // Lightweight awning ties to three rooflines, and warm perforated lanterns.
+  for(let k=0;k<7;k++){
+   const xx=x+22+k*48;L(g,xx,y+39,xx,y+45,K.ivory,.6,1);
+   O(g,xx,y+48,2,k%2?K.amber:K.pink,.9);
+  }
+ }
+}
+function facade(g,b){if(!b||!b.name)return;const n=b.name;
+ const a={x:b.x*T,y:b.y*T,w:b.w*T,h:b.h*T}, {x,y,w,h}=a;
+ const roof=Math.round(h*.48),fy=y+roof,fh=h-roof;
+ const p=(xx,yy,ww,hh,c,al=1)=>R(g,x+xx,y+yy,ww,hh,c,al),
+       q=(xx,yy,rad,c,al=1)=>O(g,x+xx,y+yy,rad,c,al);
+ // Anchored geometry stays inside building bounds, with only narrow noncolliding roof finials.
+ if(n==='Color Gallery'){
+  // PRISM BALLROOM · symphonic Art Deco. Double-tier radial roof and ceremonial lobby.
+  R(g,x+11,y+17,w-22,h-17,K.ink,.27);
+  brick(g,x+2,fy,w-4,fh,0x6c506d);
+  for(let i=0;i<10;i++){const ax=x+18+i*(w-36)/9;L(g,ax,fy+10,ax,fy+fh-8,0xae83a8,.30,2)}
+  R(g,x+7,fy+4,w-14,9,0xa67a98);R(g,x+7,fy+4,w-14,2,K.ivory,.65);
+  // Deco concentric semicircle crown, inset stained-glass crown segments.
+  Tr(g,x+13,y+39,x+w-13,y+39,x+w*.5,y-3,0x24243c);
+  Tr(g,x+27,y+39,x+w-27,y+39,x+w*.5,y+4,0x674967);
+  Tr(g,x+44,y+36,x+w-44,y+36,x+w*.5,y+13,0xc6949e);
+  for(let i=0;i<13;i++){
+    let xx=x+34+i*(w-68)/12;
+    L(g,x+w/2,y+21,xx,y+40,i%2?K.ivory:K.amber,.64,2);
+  }
+  O(g,x+w/2,y+15,13,K.ink);O(g,x+w/2,y+15,10,K.amber);
+  Tr(g,x+w/2,y+6,x+w/2+6,y+15,x+w/2,y+24,K.ivory,.94);
+  // Raised tier / colonnade on upper front elevation.
+  p(23,47,w-46,33,0x2a2744);p(29,49,w-58,25,0x556184);
+  for(let i=0;i<6;i++){const xx=x+35+i*(w-70)/5;
+   R(g,xx,fy-56,11,30,[0x8abace,0xbd82a9,0xe5b980][i%3]);R(g,xx+2,fy-54,3,18,0xf9e7da,.33);
+   L(g,xx+6,fy-56,xx+6,fy-26,0x243146,.5,2);
+  }
+  // Facade bay windows: repeated arch shape, but individually patterned stained glass.
+  for(let i=0;i<4;i++){const cx=x+48+i*84; arch(g,cx,fy+19,42,63,0x171e33,[K.pink,K.cyan,K.amber,K.lav][i]);
+   O(g,cx,fy+48,10,[K.cyan,K.pink,K.lav,K.amber][i],.8);
+   for(let z=0;z<5;z++)L(g,cx,fy+48,cx+Math.cos(z*1.25)*17,fy+48+Math.sin(z*1.25)*17,K.ivory,.48,2);
+  }
+  // Left/right inlaid columns, brass finials and spotlight boxes.
+  for(let i=0;i<5;i++){const xx=x+8+i*82;R(g,xx,fy+7,7,fh-12,0xc2a6aa);R(g,xx+1,fy+10,2,fh-19,K.ivory,.66);O(g,xx+3,fy+6,6,K.amber)}
+  signage(g,x+88,fy-19,w-176,'PRISM',K.amber,K.pink,3.2);
+  speaker(g,x+23,y+h-63,24,58,K.pink);speaker(g,x+w-47,y+h-63,24,58,K.cyan);
+  entry(g,b,{color:K.amber,wide:53,canopy:true});
+  for(let k=0;k<3;k++){q(27+k*11,h-6,2,K.amber);q(w-27-k*11,h-6,2,K.amber)}
+ }else if(n==='Backbeat Warehouse'){
+  // BASS FOUNDRY · hard industrial nightclub and massive stage entry.
+  R(g,x+6,y+12,w-12,h-12,K.ink,.37);
+  brick(g,x+1,fy,w-2,fh,0x614553);
+  // Five independent saw-tooth industrial gables, different heights.
+  for(let k=0;k<5;k++){
+   let sx=x+4+k*(w-8)/5, ww=(w-8)/5,py=y+30+(k%3)*5;
+   Tr(g,sx,py,sx+ww,py,sx+ww*.47,y+1+(k%2)*7,k%2?0x3c4c5c:0x313247);
+   Tr(g,sx+ww*.35,py-12,sx+ww*.47,y+9+(k%2)*7,sx+ww*.77,py-7,0x9bc0c2,.39);
+   for(let z=0;z<4;z++)L(g,sx+ww*.25+z*5,py-10,sx+ww*.25+z*5,py-3,K.ivory,.20,1);
+  }
+  // Riveted steel frame and dock stairs.
+  for(const xx of [12,120,224,w-18]){p(xx,fy-3,8,fh+2,0x263447);p(xx+2,fy,2,fh-6,0xabb0ba,.48);for(let i=0;i<6;i++)q(xx+4,fy+10+i*17,1.8,K.ivory,.69)}
+  R(g,x+14,fy+15,w-28,47,0x171b2c);R(g,x+18,fy+18,w-36,39,0x343e57);
+  equalizer(g,x+25,fy+25,w-50,26,K.cyan,17);
+  signage(g,x+76,fy-20,w-152,'BASS FOUNDRY',K.cyan,K.pink,1.95);
+  // Two front tower speakers, a perspective sound wave at the bays.
+  for(const [sx,col] of [[x+17,K.cyan],[x+w-56,K.pink]]){
+   speaker(g,sx,y+h-81,34,75,col);O(g,sx+16,y+h-50,26,col,.12);
+  }
+  for(let j=0;j<5;j++){
+   const xx=x+66+j*41;L(g,xx,fy+89,xx+28,fy+93,K.cyan,.45,2);O(g,xx+8,fy+88,2,K.ivory,.68);
+  }
+  // Neon vinyl emblem in upper left, vent stacks and wiring.
+  vinyl(g,x+43,fy-20,17,K.pink);vinyl(g,x+w-46,fy-19,17,K.cyan);
+  R(g,x+w-38,y+1,10,30,0x2b3346);R(g,x+w-35,y-3,5,7,0xb3c6c6);
+  entry(g,b,{color:K.cyan,wide:64,canopy:true});
+ }else if(n==='Open Canvas Gallery'){
+  // AURORA ATRIUM · bright glass wave roof, double-height dance lounge, balcony.
+  R(g,x+3,y+19,w-6,h-19,0x273047);
+  Tr(g,x+2,y+42,x+w/2,y+2,x+w/2,y+44,0x5b6d94);
+  Tr(g,x+w/2,y+44,x+w-2,y+42,x+w/2,y+2,0x849ec0);
+  for(let i=0;i<8;i++){
+   const xx=x+28+i*42;
+   L(g,xx,y+32,xx+22,y+15,i%2?K.cyan:K.ivory,.75,3);
+  }
+  R(g,x+13,y+50,w-26,14,0x1a2136);R(g,x+18,y+53,w-36,3,K.cyan,.7);
+  // Continuous curtain wall with 6 tall bays and prism-shaped reflections.
+  R(g,x+15,fy+4,w-30,fh-11,0x19283e);
+  for(let i=0;i<6;i++){
+   const bw=(w-44)/6,xx=x+23+i*bw;
+   R(g,xx,fy+12,bw-5,fh-24,i%2?0x376e88:0x2e526e);
+   Tr(g,xx+3,fy+15,xx+bw*.72,fy+15,xx+3,fy+fh*.72,0xc7f1ec,.28);
+   R(g,xx+bw*.13,fy+54,bw*.6,8,i%2?K.pink:K.lav,.35);
+   L(g,xx,fy+fh*.55,xx+bw-6,fy+fh*.55,0x9fc7d9,.39,2);
+  }
+  // Stepped terrace and geometric glowing sculpture on right.
+  R(g,x+13,fy+66,w-26,9,0x8994a0);R(g,x+16,fy+69,w-32,3,0xe4d7d0,.7);
+  for(let i=0;i<8;i++)R(g,x+23+i*38,fy+76,3,31,0x4d5d78);
+  for(let i=0;i<6;i++)O(g,x+28+i*53,fy+66,3,i%2?K.lav:K.cyan,.95);
+  signage(g,x+71,fy-18,w-142,'AURORA',K.lav,K.cyan,2.8);
+  // Light prisms like floating flower wings.
+  for(let s of [-1,1]){const cx=x+w/2+s*142,cy=fy+22;
+   Tr(g,cx-14,cy,cx+13,cy-22,cx+12,cy+9,K.cyan,.75);
+   Tr(g,cx-7,cy+4,cx+17,cy-6,cx+12,cy+19,K.pink,.8);
+  }
+  entry(g,b,{color:K.lav,wide:51,canopy:true});
+ }else if(n==='Mural Workshop'){
+  // RHYTHM YARD · street DJ venue, exploded roof heights, live mural façade.
+  brick(g,x+1,fy,w-2,fh,0x625063);
+  Tr(g,x+6,y+38,x+w*.47,y+6,x+w*.47,y+40,0x4a425c);
+  Tr(g,x+w*.36,y+40,x+w-5,y+26,x+w*.67,y+2,0x83647a);
+  R(g,x+18,y+34,w*.58,11,0x252638);
+  // Staggered painter scaffolds and banners, with depth hierarchy.
+  for(let k=0;k<3;k++){
+   const sx=x+15+k*25;R(g,sx,fy+25,4,fh-29,0x252f40);R(g,sx+7,fy+25,3,fh-29,0x9b8b9f);
+   for(let j=0;j<3;j++)L(g,sx,fy+34+j*25,sx+20,fy+34+j*25,K.ivory,.52,2);
+  }
+  // One large deliberate mural of a DJ portrait and undulating music ribbon.
+  R(g,x+100,fy+15,w-121,fh-28,0x2e314b);
+  for(let i=0;i<8;i++){
+   const yy=fy+21+i*10;
+   Tr(g,x+105,yy,x+211,yy+5,x+152,yy+17,PAL[i%6],.73);
+  }
+  O(g,x+220,fy+51,34,0x8f657f);O(g,x+220,fy+48,25,0xffc0b5);
+  R(g,x+204,fy+38,34,9,K.ink);R(g,x+201,fy+42,7,23,K.deep);R(g,x+233,fy+42,7,23,K.deep);
+  O(g,x+201,fy+48,9,K.cyan);O(g,x+239,fy+48,9,K.pink);
+  for(let k=0;k<7;k++){const xx=x+110+k*28;R(g,xx,fy+77,17,4,PAL[k%6]);}
+  // Rooftop outdoor DJ booth + animated looking turntable disks.
+  R(g,x+208,y+34,108,31,K.ink);R(g,x+214,y+39,96,20,0x7a5c86);
+  for(let i=0;i<2;i++){vinyl(g,x+236+i*49,y+48,9,i?K.cyan:K.pink);}
+  R(g,x+260,y+45,7,4,K.ivory);R(g,x+256,y+51,17,2,K.amber);
+  signage(g,x+105,fy-17,w-156,'RHYTHM',K.pink,K.amber,2.45);
+  // Wall-side flight-case speakers.
+  speaker(g,x+17,y+h-59,29,52,K.amber);
+  entry(g,b,{color:K.pink,wide:46});
+ }else if(n==='Photo Lab'){
+  // FLASHFRAME · projection house, cinema marquee, shutter-iris and video walls.
+  R(g,x+5,y+18,w-10,h-18,0x233149);
+  for(let i=0;i<4;i++){
+   const sx=x+9+i*(w-18)/4,ww=(w-18)/4;
+   Tr(g,sx,y+39,sx+ww,y+39,sx+ww*.62,y+3,0x58778b);
+   Tr(g,sx+ww*.48,y+27,sx+ww*.78,y+11,sx+ww*.79,y+29,0xc5eaf0,.61);
+  }
+  // Light walls: clean negative space with poster frames.
+  R(g,x+12,fy+4,w-24,fh-8,0x2d4053);
+  for(let i=0;i<4;i++){
+   const xx=x+17+i*81;
+   R(g,xx,fy+27,65,74,K.ink);
+   R(g,xx+4,fy+31,57,66,0x426782);
+   Tr(g,xx+10,fy+83,xx+54,fy+38,xx+57,fy+83,[K.pink,K.cyan,K.lav,K.amber][i],.74);
+   O(g,xx+26,fy+52,11,K.ivory,.65);O(g,xx+26,fy+52,5,0x324861);
+   for(let j=0;j<3;j++)R(g,xx+12+j*11,fy+91,8,2,K.ivory,.55);
+  }
+  marquee(g,x+46,fy-26,w-92,'FLASHFRAME',K.cyan);
+  // Shutter wheel accent and lit red-carpet runner (pure paint, no collider).
+  O(g,x+36,fy-23,22,K.ink);O(g,x+36,fy-23,18,0x697b96);
+  for(let i=0;i<7;i++){
+   const a=i*Math.PI*2/7;
+   Tr(g,x+36,fy-23,x+36+Math.cos(a)*16,fy-23+Math.sin(a)*16,x+36+Math.cos(a+.67)*16,fy-23+Math.sin(a+.67)*16,K.deep);
+  }
+  O(g,x+36,fy-23,5,K.cyan);
+  entry(g,b,{color:K.cyan,wide:45,canopy:true});
+ }else if(n==='Independent Studio'){
+  // VINYL SOCIAL · rooftop garden, acoustic open-air venue, 3 staggered volumes.
+  brick(g,x+3,fy,w-6,fh,0x776576);
+  const volume=[{a:9,w:110,roof:29,c:0x64536c},{a:117,w:117,roof:13,c:0x5a6079},{a:228,w:115,roof:38,c:0x796275}];
+  for(let i=0;i<volume.length;i++){
+   const v=volume[i];
+   Tr(g,x+v.a-3,y+v.roof+20,x+v.a+v.w+3,y+v.roof+20,x+v.a+v.w*.5,y+v.roof-17,v.c);
+   R(g,x+v.a,y+v.roof+20,v.w,fy-y+12-v.roof,0x3c4459);
+   for(let j=0;j<2;j++)windowGlass(g,x+v.a+17+j*47,fy-38+(i%2)*11,31,43,i%2?0x9fc2b2:0x728bb0);
+  }
+  // Rooftop veranda, suspended musical mobiles and festoon lights.
+  R(g,x+23,fy+9,w-46,10,0x211d31);R(g,x+24,fy+11,w-48,3,K.amber,.8);
+  for(let i=0;i<8;i++){const xx=x+25+i*42;R(g,xx,fy+20,4,fh-28,0x614f69);R(g,xx+1,fy+23,2,fh-35,0xcba9ad,.42)}
+  festoon(g,x+22,x+w-22,fy+20,14);
+  // Row of music-record display windows, varied plants, café-free social area.
+  for(let i=0;i<5;i++){const xx=x+45+i*60;
+   vinyl(g,xx,fy+55,13,i%2?K.amber:K.pink);
+   R(g,xx-20,fy+78,40,4,0x2a3147);R(g,xx-10,fy+83,20,12,0x978478);
+  }
+  signage(g,x+59,fy-17,w-118,'VINYL SOCIAL',K.amber,K.pink,2.15);
+  for(let i=0;i<7;i++){
+   const xx=x+20+i*50;R(g,xx,fy+fh-15,20,9,0x5f7077);O(g,xx+10,fy+fh-21,10,i%2?0x4d977b:0x8aaf76);
+   O(g,xx+6,fy+fh-24,3,i%2?K.pink:K.ivory,.7);
+  }
+  entry(g,b,{color:K.amber,wide:44});
+ }else return;
+ // Tight bottom edge, highlights and careful architectural finishing.
+ venueFinishing(g,b);
+ R(g,x+4,y+h-3,w-8,3,0x152038,.5);
+}
+// Paint genre-specific noncolliding interior decorations on the top wall and selected free floor tiles.
+function roomType(s){
+ const t=(s?.labels||[]).map(z=>String(z.text||'')).join('|').toUpperCase();
+ if(t.includes('COLOR STUDIES'))return 'ballroom';if(t.includes('BACKBEAT'))return 'foundry';
+ if(t.includes('OPEN EXHIBITION'))return 'aurora';if(t.includes('SPRAY · SKETCH'))return 'rhythm';
+ if(t.includes('FRAME THE STORY'))return 'flash';if(t.includes('INDEPENDENT ART REVIEW'))return 'vinyl';
+ return null;
+}
+const CONFIG={
+ ballroom:{label:'PRISM BALLROOM',base:0x533c65,top:K.amber,accent:K.pink},
+ foundry:{label:'BASS FOUNDRY',base:0x2f3449,top:K.cyan,accent:K.pink},
+ aurora:{label:'AURORA',base:0x39556a,top:K.lav,accent:K.cyan},
+ rhythm:{label:'RHYTHM YARD',base:0x56415c,top:K.coral,accent:K.pink},
+ flash:{label:'FLASHFRAME',base:0x2e4e62,top:K.cyan,accent:K.lav},
+ vinyl:{label:'VINYL SOCIAL',base:0x66506a,top:K.amber,accent:K.lime}
+};
+function paintInterior(g,s){
+ const kind=roomType(s);if(!kind)return;
+ const c=CONFIG[kind],W=s.w*T,H=s.h*T;
+ R(g,4,4,W-8,68,0x13182c,.9);R(g,9,8,W-18,54,c.base,.94);
+ R(g,14,9,W-28,3,c.top,.7);R(g,10,63,W-20,7,K.ink,.76);
+ // A decorative back-wall stage is always behind existing furniture and never adds collision.
+ if(kind==='ballroom'){
+  for(let i=0;i<9;i++){
+   const xx=24+i*(W-48)/8;
+   Tr(g,xx-12,49,xx+12,49,xx,14,i%2?0x826da0:0x9f6e8b,.6);
+   O(g,xx,20,2,i%2?c.top:c.accent);
+  }
+  for(let i=0;i<3;i++)vinyl(g,42+i*(W-84)/2,38,13,K.amber);
+ }else if(kind==='foundry'){
+  R(g,28,18,W-56,34,0x151d32,.9);equalizer(g,34,23,W-68,21,K.cyan,34);
+  speaker(g,14,19,23,43,K.cyan);speaker(g,W-37,19,23,43,K.pink);
+ }else if(kind==='aurora'){
+  for(let i=0;i<7;i++){
+   const xx=20+i*(W-40)/6;
+   Tr(g,xx-19,59,xx+18,59,xx,15,i%2?c.top:c.accent,.55);
+   R(g,xx-11,27,22,3,0xe1f3f1,.45);
+  }
+ }else if(kind==='rhythm'){
+  for(let i=0;i<14;i++){
+   const xx=15+i*(W-30)/14;
+   Tr(g,xx,55,xx+21,16+(i%2)*9,xx+35,49,PAL[i%6],.68);
+  }
+  vinyl(g,W/2,36,13,K.pink);
+ }else if(kind==='flash'){
+  for(let i=0;i<6;i++){
+   const xx=21+i*(W-42)/6;
+   R(g,xx,16,35,37,0x151e30);R(g,xx+3,19,29,31,i%2?0x487e95:0x8c718e);
+   Tr(g,xx+7,46,xx+30,24,xx+29,47,K.ivory,.42);
+  }
+ }else if(kind==='vinyl'){
+  festoon(g,20,W-20,15,16);
+  for(let i=0;i<5;i++)vinyl(g,34+i*(W-68)/4,44,12,i%2?K.pink:K.amber);
+ }
+ // Inlaid checker border and a visually distinct but sparse dance zone, on visually free floor tiles.
+ const occ=(s.items||[]).map(i=>({x:i.x*T,y:i.y*T,w:i.w*T,h:i.h*T}));
+ const free=(cx,cy)=>occ.every(o=>cx<o.x-15||cx>o.x+o.w+15||cy<o.y-15||cy>o.y+o.h+15);
+ for(let ty=3;ty<s.h-1;ty++)for(let tx=2;tx<s.w-2;tx++){
+  const px=tx*T+16,py=ty*T+16;
+  if(free(px,py) && (tx+ty)%3===0 && Math.abs(tx-s.w*.5)<s.w*.32){
+   R(g,px-13,py-13,26,26,(tx+ty)%2?c.top:c.accent,.095);
+   R(g,px-11,py-11,4,2,c.accent,.27);
+  }
+ }
+ // Venue signature etched into upper wall.
+ R(g,W/2-102,48,204,15,0x171b32,.85);
+ letters(g,c.label,W/2,56,kind==='foundry'?1.6:kind==='vinyl'?1.5:1.8,K.ivory,c.top);
+}
+// Animated lights: fewer than 200 graphics commands per visible building per update.
+// No audio/flash pulses, no new obstacles; daylight retains legible facades.
+let graphics=null,seenScene=null,elapsed=0,insideMode=false,listener=null;
+function release(){if(graphics){try{graphics.destroy()}catch(e){}graphics=null;}seenScene=null;elapsed=0;}
+function timeOfDay(sc){let m=Number(sc?.store?.game?.minutes??720)%1440;return {minute:m,night:(m>1030||m<350),evening:(m>930||m<350)};}
+function update(sc,time){
+ if(!sc?.player||sc.area?.id!==ID){if(graphics)release();return;}
+ const room=!!sc.inside;
+ if(seenScene!==sc){release();seenScene=sc;}
+ if(room!==insideMode){insideMode=room;if(graphics){graphics.destroy();graphics=null;}}
+ if(!graphics)graphics=sc.add.graphics().setDepth(room?6:2.9);
+ if(time-elapsed<95)return;elapsed=time;graphics.clear();
+ const v=sc.cameras?.main?.worldView;if(!v)return;
+ const night=timeOfDay(sc).evening,alpha=night?1:.45;
+ const q=reduced?0.75:(.78+Math.sin(time*.0018)*.19);
+ if(room){
+  const kind=roomType(sc.inside?.spec);if(!kind)return;
+  const info=CONFIG[kind],roomW=sc.inside.spec.w*T;
+  // Ambient edge only, never an opaque cover over a playable actor.
+  for(let i=0;i<9;i++){
+   let xx=24+i*(roomW-48)/8,yy=68;
+   O(graphics,xx,yy,3,info.top,.12*alpha*q);
+  }
+  return;
+ }
+ const blds=sc.area.buildings||[];
+ for(let j=0;j<blds.length;j++){
+  const b=blds[j];if(!b?.name||!['Color Gallery','Backbeat Warehouse','Open Canvas Gallery','Mural Workshop','Photo Lab','Independent Studio'].includes(b.name))continue;
+  const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T;
+  if(x>v.right+90||x+w<v.x-90||y>v.bottom+90||y+h<v.y-90)continue;
+  const c=PAL[(j+2)%6],cx=x+w/2,cy=y+Math.round(h*.48)+41;
+  // Mounted on facades only, subtle rhythmic illuminations; no strobe or full screen wash.
+  for(let k=0;k<8;k++){
+   const xx=x+26+k*(w-52)/7;
+   O(graphics,xx,y+Math.round(h*.48)+3,3,k%2?c:K.amber,.27*alpha*q);
+  }
+  if(night){
+   const amp=reduced?.57:.5+.27*Math.sin(time*.002+j);
+   O(graphics,cx,cy,14,c,.055*amp);
+   for(let i=0;i<5;i++){
+    const xx=x+94+i*37;
+    R(graphics,xx,y+h-29+(i%2)*2,5,5,PAL[(j+i)%6],.18*amp);
+   }
+  }
+  if(b.name==='Backbeat Warehouse'||b.name==='Mural Workshop'){
+   for(let i=0;i<9;i++){
+    let xx=x+41+i*(w-82)/8,baseline=y+Math.round(h*.48)+29;
+    const bar=reduced?5:4+Math.abs(Math.sin(time*.0013+i*.9+j))*10;
+    R(graphics,xx,baseline-bar,3,bar,c,alpha*.45);
+   }
+  }
+ }
+}
+function begin(sc){if(sc.__lq68Install)return;sc.__lq68Install=true;
+ const fn=(time)=>{try{update(sc,time)}catch(err){if(!sc.__lq68Error){console.warn('[V68 Art]',err);sc.__lq68Error=true;}}};
+ sc.events.on('update',fn);sc.events.once('shutdown',()=>{release();sc.__lq68Install=false;});}
+function boot(){const poll=window.setInterval(()=>{const sc=window.__lifequestGetScene?.();if(sc?.events&&!sc.__lq68Install)begin(sc)},1200);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.LQArtV68=Object.freeze({version:'68.0.0',facade,paintInterior,roomType,drawPreview:(g,bs)=>bs.forEach(b=>facade(g,b)),
+ diagnostics:()=>({map:window.__lifequestGetScene?.()?.area?.id,room:roomType(window.__lifequestGetScene?.()?.inside?.spec),
+ facades:['PRISM BALLROOM','BASS FOUNDRY','AURORA','RHYTHM YARD','FLASHFRAME','VINYL SOCIAL'],collisionChanged:false})});
+})();
+/* END LIFEQUEST AI V68 ART DISTRICT */
+
+
+/* V69 visual and festival module */
+/* LIFEQUEST AI V69 — NEON CARNIVAL CITY
+   Stand-alone enhancement embedded before the main game. No external assets or services.
+   20 new walk-in locations, animated all-ages festival, English B1 quest, collectable creative activities.
+*/
+(function(){
+'use strict';
+const ID='art-district', TILE=32, T=32;
+const VENUES=[
+ {name:'Neon Symphony Hall',title:'NEON SYMPHONY',short:'SYMPHONY',zone:'concert',color:0xffb668,kind:'symphony',x:77,y:55,w:13,h:8,door:83},
+ {name:'Skybridge Gallery',title:'SKYBRIDGE GALLERY',short:'SKYBRIDGE',zone:'gallery',color:0xaab6ff,kind:'skybridge',x:77,y:3,w:13,h:8,door:83},
+ {name:'Aurora Rooftop Club',title:'AURORA ROOFTOP',short:'ROOFTOP',zone:'dance',color:0x89ecf0,kind:'rooftop',x:94,y:55,w:13,h:8,door:100},
+ {name:'Mirror Dance Academy',title:'MIRROR DANCE',short:'DANCE ACADEMY',zone:'dance',color:0xf6b1dc,kind:'academy',x:77,y:72,w:13,h:8,door:83},
+ {name:'Graffiti Tower',title:'GRAFFITI TOWER',short:'GRAFFITI',zone:'creative',color:0xf9b06a,kind:'graffiti',x:77,y:20,w:13,h:9,door:83},
+ {name:'Light Lab Studio',title:'LIGHT LAB',short:'LIGHT LAB',zone:'creative',color:0x85bdff,kind:'lightlab',x:94,y:20,w:13,h:9,door:100},
+ {name:'Hologram Theater',title:'HOLOGRAM THEATER',short:'HOLOGRAM',zone:'concert',color:0xc1a4fc,kind:'hologram',x:94,y:3,w:13,h:8,door:100},
+ {name:'Costume Studio',title:'COSTUME STUDIO',short:'COSTUMES',zone:'creative',color:0xffab9b,kind:'costume',x:77,y:38,w:13,h:8,door:83},
+ {name:'Vinyl Social House',title:'VINYL SOCIAL',short:'VINYL',zone:'social',color:0xf7cd89,kind:'vinyl',x:94,y:72,w:13,h:8,door:100},
+ {name:'Art Hostel',title:'ART HOSTEL',short:'HOSTEL',zone:'social',color:0xb6e6aa,kind:'hostel',x:94,y:38,w:13,h:8,door:100},
+ {name:'Cinema Wall',title:'CINEMA WALL',short:'CINEMA',zone:'gallery',color:0xffa7bf,kind:'cinema',x:77,y:88,w:13,h:8,door:83},
+ {name:'Kite Roof Plaza',title:'KITE ROOF PLAZA',short:'KITE PLAZA',zone:'social',color:0x8dd4ce,kind:'kite',x:94,y:88,w:13,h:8,door:100},
+ {name:'Artist Market Arcade',title:'ARTIST MARKET',short:'ART MARKET',zone:'market',color:0xe9b8f2,kind:'market',x:4,y:61,w:14,h:7,door:11},
+ {name:'Midnight Snack Alley',title:'SNACK ALLEY',short:'SNACK ALLEY',zone:'market',color:0xffbd81,kind:'snack',x:4,y:79,w:14,h:7,door:11},
+ {name:'Rhythm Workshop',title:'RHYTHM WORKSHOP',short:'RHYTHM LAB',zone:'creative',color:0xe7acfa,kind:'rhythm',x:40,y:61,w:14,h:7,door:47},
+ {name:'Sound Garden',title:'SOUND GARDEN',short:'SOUND GARDEN',zone:'social',color:0xa3ecb3,kind:'garden',x:58,y:61,w:14,h:7,door:65},
+ {name:'Sculpture Garden',title:'SCULPTURE GARDEN',short:'SCULPTURES',zone:'gallery',color:0xc0e1ff,kind:'sculpture',x:22,y:61,w:14,h:7,door:29},
+ {name:'Beat Bridge',title:'BEAT BRIDGE',short:'BEAT BRIDGE',zone:'dance',color:0xfea4cd,kind:'bridge',x:22,y:79,w:14,h:7,door:29},
+ {name:'Mini Ferris Neon',title:'NEON WHEEL',short:'NEON WHEEL',zone:'social',color:0xffda89,kind:'wheel',x:40,y:79,w:14,h:7,door:47},
+ {name:'Lantern Courtyard',title:'LANTERN COURT',short:'LANTERNS',zone:'social',color:0xa4e5ce,kind:'lantern',x:58,y:79,w:14,h:7,door:65}
+];
+const BY_NAME=new Map(VENUES.map(v=>[v.name,v]));
+const CL={ink:0x101629,shadow:0x141b2d,brass:0xd1a56c,cream:0xffedc4,mid:0x324258,blue:0x75cfff,pink:0xf285c4,teal:0x8bedd7,purple:0x8176c6,amber:0xffcb78};
+const FONT={A:['01110','10001','11111','10001','10001'],B:['11110','10001','11110','10001','11110'],C:['01111','10000','10000','10000','01111'],D:['11110','10001','10001','10001','11110'],E:['11111','10000','11110','10000','11111'],F:['11111','10000','11110','10000','10000'],G:['01111','10000','10111','10001','01111'],H:['10001','10001','11111','10001','10001'],I:['11111','00100','00100','00100','11111'],J:['00111','00010','00010','10010','01100'],K:['10001','10010','11100','10010','10001'],L:['10000','10000','10000','10000','11111'],M:['10001','11011','10101','10001','10001'],N:['10001','11001','10101','10011','10001'],O:['01110','10001','10001','10001','01110'],P:['11110','10001','11110','10000','10000'],Q:['01110','10001','10101','10011','01111'],R:['11110','10001','11110','10010','10001'],S:['01111','10000','01110','00001','11110'],T:['11111','00100','00100','00100','00100'],U:['10001','10001','10001','10001','01110'],V:['10001','10001','10001','01010','00100'],W:['10001','10001','10101','11011','10001'],X:['10001','01010','00100','01010','10001'],Y:['10001','01010','00100','00100','00100'],Z:['11111','00010','00100','01000','11111'],' ':['00000','00000','00000','00000','00000'],'-':['00000','00000','11111','00000','00000'],'0':['01110','10011','10101','11001','01110'],'1':['00100','01100','00100','00100','01110'],'2':['11110','00001','01110','10000','11111'],'3':['11110','00001','01110','00001','11110'],'4':['10001','10001','11111','00001','00001'],'5':['11111','10000','11110','00001','11110'],'6':['01111','10000','11110','10001','01110'],'7':['11111','00001','00010','00100','00100'],'8':['01110','10001','01110','10001','01110'],'9':['01110','10001','01111','00001','11110']};
+function R(g,x,y,w,h,c,a=1){if(w>0&&h>0)g.fillStyle(c,a).fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));}
+function L(g,x,y,x2,y2,c,a=1,w=1){g.lineStyle(w,c,a).lineBetween(x,y,x2,y2);}
+function O(g,x,y,r,c,a=1){g.fillStyle(c,a).fillCircle(x,y,r);}
+function E(g,x,y,w,h,c,a=1){g.fillStyle(c,a).fillEllipse(x,y,w,h);}
+function TR(g,x1,y1,x2,y2,x3,y3,c,a=1){g.fillStyle(c,a).fillTriangle(x1,y1,x2,y2,x3,y3);}
+function font(g,text,x,y,size,c){const lines=String(text).toUpperCase(); const width=lines.length*6*size-size;let xx=x;
+ for(let chr of lines){const rows=FONT[chr]||FONT[' '];for(let py=0;py<5;py++)for(let px=0;px<5;px++)if(rows[py][px]==='1')R(g,xx+px*size,y+py*size,size,size,c);xx+=6*size;}return width;}
+function drawLabel(g,v,x,y,width){const n=v.title,scale= n.length>16?1.9:2.35;const ww=n.length*6*scale;const xx=x+Math.max(13,(width-ww)/2),yy=y+5;R(g,xx-11,yy-5,ww+20,17*scale,CL.ink,.96);R(g,xx-8,yy-2,ww+14,2,v.color,.89);font(g,n,xx,yy+7,scale,CL.cream);R(g,xx-8,yy+21*scale-3,ww+14,2,v.color,.84);}
+function windows(g,x,y,w,c){for(let i=0;i<1;i++)for(let j=0;j<w;j++){let xx=x+j*38,yy=y+i*40;R(g,xx-3,yy-3,22,30,CL.ink);R(g,xx,yy,17,23,(j+i)%3?0xb8d5dc:0xf6b9b6,.82);R(g,xx+8,yy,2,23,0x6b6f85);R(g,xx,yy+13,17,2,0x546c82);R(g,xx+2,yy+2,4,5,CL.cream,.34)}}
+function door(g,v,x,y,w,h){const dx=v.door*T+16,ww=48,yy=y+h-46;
+ R(g,dx-ww/2-8,yy-14,ww+16,59,CL.ink);R(g,dx-ww/2,yy,ww,43,0x526077);R(g,dx-ww/2+6,yy+4,ww-12,35,0x263b4b);R(g,dx+9,yy+23,3,3,v.color);R(g,dx-ww/2-16,y+h-5,ww+32,6,0xf2d7a7,.9);}
+function motif(g,id,x,y,w,h,c){if(id==='record'){O(g,x,y,Math.min(w,h)*.42,CL.ink);O(g,x,y,Math.min(w,h)*.31,c);O(g,x,y,Math.min(w,h)*.21,CL.ink);O(g,x,y,Math.min(w,h)*.06,CL.cream);}
+ else if(id==='star'){for(let i=0;i<8;i++){const a=i*Math.PI/4;L(g,x,y,x+Math.cos(a)*w*.49,y+Math.sin(a)*h*.49,c,.9,4)}O(g,x,y,4,CL.cream);}
+ else if(id==='equalizer'){for(let i=0;i<11;i++){const hh=6+Math.abs(Math.sin(i*1.7))*h*.8;R(g,x+i*w/11,y-hh/2,w/18,hh,i%2?c:CL.cream,.82)}}
+ else if(id==='flower'){O(g,x,y,7,CL.cream);for(let i=0;i<6;i++){const a=i*Math.PI/3;O(g,x+Math.cos(a)*w*.3,y+Math.sin(a)*h*.3,8,c,.8)}}
+ else if(id==='film'){R(g,x-w/2,y-h/2,w,h,CL.ink);for(let i=0;i<5;i++){R(g,x-w/2+i*w/5+4,y-h/2+4,w/7,4,CL.cream);R(g,x-w/2+i*w/5+4,y+h/2-8,w/7,4,CL.cream)}R(g,x-w*.38,y-h*.3,w*.76,h*.6,c,.8)}
+ else if(id==='arch'){for(let i=0;i<4;i++){E(g,x,y-i*4,w-i*12,h-i*10,i%2?CL.ink:c,.65)}O(g,x,y-12,8,CL.cream)}}
+function facade(g,b){const v=BY_NAME.get(b?.name);if(!v)return false;
+ const x=v.x*T,y=v.y*T,w=v.w*T,h=v.h*T,roof=h*.39,front=y+roof;
+ // Three-layer architecture: cast shadow / bespoke roof / facade / working entrance.
+ R(g,x+13,y+16,w,h,CL.ink,.32);R(g,x,y+27,w,h-27,CL.ink);R(g,x+7,y+38,w-14,h-45,0x3d3d5a);R(g,x+12,y+49,w-24,h-64,0x536074);
+ for(let i=0;i<7;i++){R(g,x+20+i*(w-40)/7,y+57,2,h-90,0x98b0ba,.18);}
+ const k=v.kind;
+ if(k==='symphony'){
+  R(g,x+24,y+17,w-48,roof-10,0x463550);TR(g,x+12,y+62,x+w/2,y-12,x+w-12,y+62,0x6a506e);TR(g,x+42,y+59,x+w/2,y+12,x+w-42,y+59,0xc48aa0);
+  for(let i=0;i<4;i++){let px=x+24+i*(w-48)/3;R(g,px,y+24,9,roof-3,0xeccaa4);O(g,px+5,y+22,11,v.color)}
+  for(let i=0;i<5;i++)R(g,x+42+i*70,front+6,16,h*.31,0xffe6ba,.67);
+  motif(g,'star',x+w/2,y+83,62,62,v.color);
+ }else if(k==='skybridge'){
+  R(g,x+19,y+7,105,roof+26,0x485c87);R(g,x+w-124,y+7,105,roof+26,0x485c87);R(g,x+111,y+46,w-222,30,CL.ink);R(g,x+114,y+48,w-228,24,v.color,.84);for(let i=0;i<5;i++)L(g,x+115+i*34,y+48,x+130+i*34,y+72,CL.cream,.7,3);
+  windows(g,x+45,front+18,3,v.color);windows(g,x+w-111,front+18,3,v.color);
+ }else if(k==='rooftop'){
+  for(let i=0;i<9;i++){let px=x+17+i*46;R(g,px,y+12,5,roof-10,0x92e9df);R(g,px-4,y+16,13,7,CL.cream,.75)}
+  R(g,x+20,y+30,w-40,28,0x212b49);for(let i=0;i<10;i++)O(g,x+35+i*34,y+40,4,i%2?CL.pink:CL.teal);
+  for(let i=0;i<5;i++)TR(g,x+22+i*76,y+10,x+60+i*76,y-19,x+98+i*76,y+10,i%2?0x7ab9cd:0xdca5ba,.7);
+  windows(g,x+45,front+22,8,v.color);
+ }else if(k==='academy'){
+  R(g,x+22,y+18,w-44,roof-3,0x53648c);for(let i=0;i<5;i++)R(g,x+30+i*70,y+22,58,roof-8,i%2?0xa9dbe3:0xd9c6f4,.78);
+  for(let i=0;i<5;i++)L(g,x+30+i*70,y+22,x+30+i*70+58,y+22+roof-8,CL.cream,.8,2);
+  windows(g,x+40,front+19,8,v.color);
+ }else if(k==='graffiti'){
+  for(let i=0;i<4;i++){let sy=y+15+i*24;R(g,x+17+i*3,sy,w-35-i*6,18,0x3b4f69);R(g,x+21+i*3,sy+3,w-43-i*6,3,i%2?CL.pink:CL.teal,.8)}
+  for(let i=0;i<8;i++){let xx=x+30+i*44,yy=front+20+(i%2)*44;TR(g,xx,yy,xx+42,yy-20,xx+36,yy+39,i%2?v.color:CL.teal,.6)}
+  motif(g,'star',x+w*.3,front+54,76,76,CL.cream);
+ }else if(k==='lightlab'){
+  TR(g,x+14,y+roof+11,x+w*.48,y-18,x+w-8,y+roof+11,0x6077a7);TR(g,x+64,y+roof+2,x+w*.48,y+12,x+w-55,y+roof+2,0xbddcf1);
+  for(let i=0;i<5;i++)L(g,x+47+i*78,front+14,x+25+i*78,y+h-34,i%2?v.color:CL.cream,.45,4);
+  motif(g,'equalizer',x+w/2,front+39,190,80,v.color);
+ }else if(k==='hologram'){
+  E(g,x+w/2,y+roof*.44,w-45,roof*1.45,0x455d8d);E(g,x+w/2,y+roof*.44,w-85,roof*.97,0x8fcee2,.85);E(g,x+w/2,y+roof*.5,w-145,roof*.64,0x4a7195,.8);
+  for(let i=0;i<9;i++)L(g,x+36+i*43,y+roof*.3,x+34+i*43,front+20,v.color,.5,2);
+  motif(g,'arch',x+w/2,front+72,142,100,v.color);
+ }else if(k==='costume'){
+  TR(g,x+10,y+roof,x+w/2,y-20,x+w-10,y+roof,0x745973);TR(g,x+38,y+roof-3,x+w/2,y+15,x+w-37,y+roof-3,0xc694ad);
+  for(let i=0;i<8;i++){let px=x+23+i*47;R(g,px,front+7,34,56,i%2?0xda8d98:0xcac7eb,.75);TR(g,px,front+6,px+17,front-13,px+34,front+6,CL.cream,.7)}
+ }else if(k==='vinyl'){
+  R(g,x+16,y+18,w-32,roof-18,0x694c56);for(let i=0;i<3;i++)motif(g,'record',x+92+i*105,y+74,75,75,i%2?v.color:CL.cream);
+  for(let i=0;i<7;i++)E(g,x+36+i*54,front+58,18,12,i%2?CL.amber:CL.pink,.64);
+ }else if(k==='hostel'){
+  for(let i=0;i<8;i++)R(g,x+13+i*(w-26)/8,y+8,6,roof-11,i%2?0x9acda8:CL.cream,.53);
+  windows(g,x+39,front+17,8,v.color);for(let i=0;i<6;i++){let px=x+29+i*68;R(g,px,front+86,46,5,0xc5cba8);O(g,px+6,front+80,8,0x77b69e)}
+ }else if(k==='cinema'){
+  R(g,x+24,y+14,w-48,roof-19,0x21304b);motif(g,'film',x+w*.51,y+70,w*.56,75,v.color);
+  for(let i=0;i<3;i++){R(g,x+27+i*127,front+12,104,86,CL.ink);R(g,x+33+i*127,front+18,92,73,[0x9c79c6,0xc17ca0,0x669fba][i]);}
+ }else if(k==='kite'){
+  for(let i=0;i<5;i++){const px=x+40+i*79;L(g,px,front+10,px,y-16,CL.cream,.7,2);TR(g,px-22,y+10,px,y-24,px+22,y+10,i%2?CL.pink:CL.teal);TR(g,px-22,y+10,px,y+36,px+22,y+10,CL.cream,.7)}
+  windows(g,x+40,front+25,8,v.color);
+ }else if(k==='market'){
+  R(g,x+8,y+38,w-16,roof,0x415070);for(let i=0;i<7;i++){let xx=x+18+i*(w-36)/7;TR(g,xx,y+48,xx+(w-40)/14,y+9,xx+(w-40)/7,y+48,i%2?CL.pink:CL.cream);R(g,xx,y+57,(w-40)/7,roof-31,i%2?0xc3bbdb:0x88c9c4,.85)}
+  for(let i=0;i<5;i++){let px=x+32+i*76;R(g,px,front+35,55,48,CL.ink);R(g,px+6,front+40,43,34,[0xd8b5b8,0xcbd99a,0x93d1db][i%3]);}
+ }else if(k==='snack'){
+  for(let i=0;i<4;i++){let px=x+23+i*103;TR(g,px,y+80,px+50,y-11,px+97,y+80,i%2?0xc99279:0x76a8ac);R(g,px+8,y+75,81,11,CL.cream);R(g,px+8,front+20,81,48,0x8e6870);R(g,px+18,front+31,62,18,0xfad6a0)}
+  for(let i=0;i<4;i++){O(g,x+57+i*103,front+2,9,CL.amber,.55)}
+ }else if(k==='rhythm'){
+  for(let i=0;i<4;i++){let px=x+34+i*101;R(g,px,y+17,68,roof-16,CL.ink);motif(g,'record',px+34,y+roof*.52,45,45,i%2?v.color:CL.teal)}
+  motif(g,'equalizer',x+w/2,front+50,230,64,v.color);
+ }else if(k==='garden'){
+  TR(g,x+19,y+roof,x+w*.24,y+9,x+w*.48,y+roof,0x7fb8a3);TR(g,x+w*.48,y+roof,x+w*.73,y-7,x+w-12,y+roof,0xa1d5bc);
+  for(let i=0;i<7;i++)motif(g,'flower',x+33+i*63,front+43,45,35,i%2?v.color:CL.pink);
+  for(let i=0;i<7;i++)R(g,x+23+i*59,front+70,30,20,0x467f64,.82);
+ }else if(k==='sculpture'){
+  for(let i=0;i<4;i++){const px=x+60+i*100;R(g,px-27,y+roof*.6,54,14,CL.cream,.75);motif(g,'arch',px,y+roof*.52,70,76,i%2?v.color:CL.teal)}
+  for(let i=0;i<5;i++)R(g,x+24+i*84,front+17,53,36,0x718d9c,.6);
+ }else if(k==='bridge'){
+  R(g,x+14,y+roof*.5,w-28,37,0x7c718f);for(let i=0;i<12;i++){let px=x+22+i*(w-44)/12;R(g,px,y+roof*.5,10,37,i%2?v.color:CL.cream,.67)}
+  for(let i=0;i<6;i++){let px=x+27+i*75;L(g,px,y+roof*.5,px+30,y-5,v.color,.72,4)}
+  motif(g,'equalizer',x+w/2,front+46,260,65,v.color);
+ }else if(k==='wheel'){
+  L(g,x+w/2,y+roof*.85,x+w*.3,y+roof+39,CL.cream,.9,7);L(g,x+w/2,y+roof*.85,x+w*.7,y+roof+39,CL.cream,.9,7);
+  O(g,x+w/2,y+roof*.47,roof*.47,CL.cream,.75);O(g,x+w/2,y+roof*.47,roof*.42,CL.ink);for(let i=0;i<12;i++){let a=i*Math.PI/6,px=x+w/2+Math.cos(a)*roof*.37,py=y+roof*.47+Math.sin(a)*roof*.37;L(g,x+w/2,y+roof*.47,px,py,i%2?v.color:CL.teal,.88,3);O(g,px,py,5,CL.cream)}
+ }else if(k==='lantern'){
+  for(let i=0;i<5;i++)motif(g,'arch',x+54+i*82,y+roof*.52,85,86,0x8fd7b3);
+  for(let i=0;i<10;i++){let px=x+24+i*44;L(g,px,y+9,px,y+42,CL.cream,.7);E(g,px,y+46,18,28,i%2?0xffb76d:0xeab1c0);}
+ }
+ // Architectural texture, inset columns, coordinated awnings and ground contact.
+ for(let i=0;i<8;i++){R(g,x+16+i*(w-36)/8,front+8,3,h-roof-26,v.color,.17);}
+ for(let i=0;i<7;i++)R(g,x+22+i*(w-44)/7,y+h-19,22,3,v.color,.32);
+ R(g,x+7,y+h-7,w-14,5,CL.brass,.85);R(g,x+7,y+h-1,w-14,3,CL.ink,.7);
+ drawLabel(g,v,x,y,w);door(g,v,x,y,w,h);return true;
+}
+function paintStreets(g,a){if(a?.id!==ID)return;
+ const t=32;function painted(x,y,c){R(g,x*t,y*t,1.9*t,0.12*t,c,.54)}
+ // Paving grid and route-coded bands are visual only. All road collisions remain managed by the game.
+ for(let x=72;x<a.w-2;x+=3)for(let y=2;y<a.h-2;y+=3){const n=(x*19+y*37)%17;if(n<5){R(g,x*t+5,y*t+13,4+(n%3)*3,3,n%2?CL.cream:0x89acbd,.23)}}
+ for(let y=0;y<a.h-2;y+=7)for(let x of [73,90])R(g,x*t+8,y*t+7,2*t,2,CL.cream,.24);
+ for(let x=3;x<75;x+=7)for(let y of [70,88])R(g,x*t+4,y*t+8,5*t,2,CL.brass,.16);
+ for(let y of [14,33,49,68,86])for(let x=70;x<106;x+=2)R(g,x*t+7,y*t+9,17,4,(x+y)%4?0xadc7d6:CL.pink,.28);
+ // Chromatic pedestrian crossing near every fresh block; stay on ground and keep all doors visible.
+ for(let v of VENUES){const cy=(v.y+v.h+1.2)*t, cx=(v.door+0.5)*t;
+  for(let j=-2;j<=2;j++)R(g,cx-37+j*18,cy,13,5,j%2?v.color:CL.cream,.43);
+  for(let k=0;k<7;k++)R(g,v.x*t+14+k*(v.w*t-30)/7,(v.y+v.h+1)*t+18,7,3,v.color,.26);
+ }
+ // Fairy-light alleyways and repeating floor mosaics between southern blocks.
+ for(let y of [71,88])for(let x=4;x<72;x+=6){O(g,x*t+12,y*t+17,5,x%2?CL.teal:CL.amber,.3);R(g,x*t+4,y*t+23,30,2,CL.cream,.18)}
+ // Visual zoning for the actual Painters Quarter layout: subtle signs stamped into pavement,
+ // no collision footprints or overlays covering doors.
+ const zones=[
+  {label:'GALLERY WALK',x:78,y:16,c:0xb7e5e0},
+  {label:'PAINTERS ROW',x:78,y:34,c:0xffb5c3},
+  {label:'MAKER COURT',x:78,y:51,c:0xdac6ff},
+  {label:'MUSIC AVENUE',x:78,y:69,c:0xffd8a0},
+  {label:'ART MARKET',x:5,y:74,c:0xeac4e7}
+ ];
+ for(const z of zones){
+  const px=z.x*t+4,py=z.y*t+2,labelSize=1.45,len=z.label.length*6*labelSize;
+  R(g,px-7,py-6,len+17,27,0x35445a,.24);
+  R(g,px-6,py-5,len+15,2,z.c,.47);
+  font(g,z.label,px,py+4,labelSize,z.c);
+ }
+ // Colour guides for the painting/gallery quarter, with calm neutral paving elsewhere.
+ for(let j=0;j<18;j++){
+  const xx=(77+j*1.55)*t,yy=(16+j%4*.43)*t;
+  O(g,xx,yy,3.1,[0xffcb84,0x9de4d6,0xf3a5c9][j%3],.28);
+ }
+ for(let j=0;j<9;j++){
+  const xx=(77+j*3.3)*t,yy=35*t+(j%2)*5;
+  R(g,xx,yy,17,3,[0xf4bbcf,0xa4dada,0xecc98f][j%3],.3);
+ }
+ // A large icon marking the Pulse Street Stage without occupying player collision tiles.
+ for(let i=0;i<6;i++){R(g,(44+i*2)*t,(73+i%2)*t,9,6,i%2?CL.pink:CL.teal,.28)}
+}
+function paintInterior(g,s){if(!s||!s.__lq69Kind)return false;
+ const W=s.w*T,H=s.h*T,kind=s.__lq69Kind,c=s.__lq69Color||CL.pink;
+ // Physical furniture and collision remain defined by the room specification.
+ // This pass embellishes only the back wall, stage background, and tile-floor decals.
+ R(g,10,8,W-20,8,CL.ink,.63);for(let i=0;i<12;i++)R(g,14+i*(W-30)/12,18,3,42,c,.23);
+ R(g,18,65,W-36,4,c,.40);R(g,16,71,W-32,3,CL.cream,.24);
+ if(['symphony','hologram','academy','rhythm','rooftop','lightlab','bridge','wheel'].includes(kind)){
+   R(g,60,14,W-120,65,CL.ink,.8);for(let i=0;i<8;i++){const x=73+i*(W-150)/8;R(g,x,22,9,37+(i%3)*7,i%2?c:CL.teal,.63)}
+   for(let i=0;i<5;i++){const x=62+i*(W-122)/5;TR(g,x,14,x+36,14,x+18,44,i%2?CL.pink:CL.blue,.21)}
+   motif(g,'equalizer',W/2,49,W*.3,37,c);
+ }else if(['graffiti','costume','sculpture','garden','lantern','market'].includes(kind)){
+   for(let i=0;i<5;i++){let x=50+i*(W-100)/5;TR(g,x,16,x+32,17,x+20,50,i%2?CL.pink:c,.5);O(g,x+18,51,5,CL.cream,.57)}
+ }else if(['vinyl','hostel','snack','kite','cinema','skybridge'].includes(kind)){
+   for(let i=0;i<5;i++){let x=38+i*(W-75)/5;R(g,x,20,38,40,0x5b728b,.7);R(g,x+5,25,28,27,i%2?c:CL.teal,.32)}
+ }
+ // Each room has its own functional, non-blocking wall identity.
+ if(kind==='academy')for(let k=0;k<6;k++){let x=24+k*75;R(g,x,86,60,68,0xb3d4e1,.54);L(g,x+3,89,x+57,149,CL.cream,.27,3)}
+ else if(kind==='symphony'){for(let k=0;k<4;k++){const x=40+k*120;R(g,x,83,36,64,CL.brass,.28);E(g,x+18,95,25,18,CL.cream,.53)}font(g,'CONCERT TONIGHT',120,103,2.4,CL.amber)}
+ else if(kind==='rooftop'||kind==='kite'){for(let k=0;k<7;k++){TR(g,28+k*65,87,44+k*65,64,60+k*65,87,k%2?CL.teal:CL.pink,.62);R(g,40+k*65,84,3,29,CL.cream,.33)}}
+ else if(kind==='graffiti'){for(let k=0;k<11;k++){const x=18+k*43;TR(g,x,93,x+32,85,x+22,117,k%2?CL.pink:CL.amber,.55)}}
+ else if(kind==='lightlab'||kind==='hologram'){for(let k=0;k<7;k++)L(g,80+k*51,92,230,186,k%2?c:CL.teal,.18,3)}
+ else if(kind==='costume'){for(let k=0;k<6;k++){const x=35+k*78;TR(g,x,105,x+26,70,x+52,105,k%2?c:CL.teal,.49);R(g,x+16,107,20,32,0xc2a5cb,.48)}}
+ else if(kind==='vinyl'||kind==='rhythm'){for(let k=0;k<5;k++)motif(g,'record',58+k*100,114,42,42,k%2?c:CL.teal)}
+ else if(kind==='cinema'){R(g,70,83,W-140,79,CL.ink,.5);for(let k=0;k<10;k++)R(g,80+k*35,88,17,8,CL.cream,.3)}
+ else if(kind==='snack'||kind==='market'){for(let k=0;k<6;k++){R(g,35+k*75,88,57,48,k%2?0xb77f87:0x719f9a,.47);TR(g,31+k*75,90,61+k*75,59,88+k*75,90,CL.cream,.38)}}
+ else if(kind==='garden'||kind==='sculpture'||kind==='lantern'){for(let k=0;k<8;k++){const x=36+k*56;O(g,x,108,12,k%2?c:CL.teal,.32);R(g,x-6,110,13,27,0x638b79,.28)}}
+ else if(kind==='wheel'){motif(g,'star',W/2,100,104,104,CL.amber)}
+ else if(kind==='skybridge'||kind==='bridge'){for(let k=0;k<6;k++){const x=49+k*81;R(g,x,100,42,9,c,.41);R(g,x+17,91,5,48,CL.brass,.32)}}
+ else if(kind==='hostel'){for(let k=0;k<6;k++){const x=48+k*74;R(g,x,86,52,33,CL.cream,.20);R(g,x+4,90,44,26,0x6f9eb5,.3)}}
+ // Small inlaid music and art floor decoration, traversable and not a new hitbox.
+ for(let i=0;i<7;i++){const x=31+i*(W-62)/7;R(g,x,H*.61,17,2,c,.22);R(g,x+6,H*.65,4,4,CL.cream,.16)}
+ return true;
+}
+const EVENTS=[
+ {day:'Open Studio Morning',night:'Projection Parade',site:'Light Lab Studio',a:'A wave of light moves across the city.'},
+ {day:'Street Rhythm Practice',night:'Neon Dance Jam',site:'Mirror Dance Academy',a:'Dancers share an all-ages choreography.'},
+ {day:'Mural Makers Day',night:'Colour Carnival',site:'Graffiti Tower',a:'Visitors paint a community artwork.'},
+ {day:'Artist Market Fair',night:'Midnight Lantern Walk',site:'Artist Market Arcade',a:'Craft stalls and lanterns fill the streets.'}
+];
+const MISSION=[
+ {title:'A city for everyone',place:'Neon Symphony Hall',question:'Which sentence welcomes visitors and gives a reason?',options:['I think our festival should welcome everyone because art brings people together.','We do festival because.','Festival should people.'],correct:0,story:'The musicians agree to share the main stage with every artist.'},
+ {title:'The three marks',place:'Graffiti Tower',question:'Which sentence explains a mural idea clearly?',options:['Paint a picture.','I prefer the star, eye and wave because they tell our district’s story.','The wall good.'],correct:1,story:'The old star, eye and wave appear in a new community mural.'},
+ {title:'Check the rhythm',place:'Backbeat Warehouse',question:'How can you report the speaker problem politely?',options:['Speaker broken no.','Fix it fast!','Could we test the speakers again? The left one is too quiet.'],correct:2,story:'The sound technicians balance the speakers before the performance.'},
+ {title:'Invite the dance crew',place:'Mirror Dance Academy',question:'Choose the best invitation.',options:['Would your dance crew like to perform at our festival?','You dance, yes.','Can dance now because me.'],correct:0,story:'The students prepare an energetic routine for the town.'},
+ {title:'Paint with light',place:'Light Lab Studio',question:'Which option gives a clear suggestion?',options:['Lighting more.','We should use soft colours near the path so everyone can walk safely.','Lights everywhere always.'],correct:1,story:'The technicians set up gentle and colourful projection effects.'},
+ {title:'The final curtain',place:'Dream Gate Plaza',question:'Which closing announcement is most suitable?',options:['End.','People listen now.','Thank you for creating this festival with us. Enjoy the art and music!'],correct:2,story:'The Dream Gate glows. The community festival begins!'}
+];
+const allZones=Object.freeze(['concert','gallery','dance','creative','social','market']);
+const getScene=()=>{try{return window.__lifequestGetScene?.()||null;}catch(_){return null}};
+const active=sc=>!!(sc?.area?.id===ID&&sc?.player&&!sc.switching);
+function data(sc=getScene()){if(!sc?.store?.game)return {step:0,visits:{},mural:'star',eventVisits:{},won:false};
+ const g=sc.store.game;if(!g.lq69Festival||typeof g.lq69Festival!=='object')g.lq69Festival={step:0,visits:{},mural:'star',eventVisits:{},won:false};return g.lq69Festival;}
+function save(sc){try{sc?.store?.save?.()}catch(_){}}
+function near(sc,px,py,r=4.4){if(!active(sc)||sc.inside)return false;return Math.hypot(sc.player.x/T-(px+.5),sc.player.y/T-(py+.5))<=r}
+function vdoor(v){return [v.door,v.y+v.h]}
+function missionPoint(m){if(m.place==='Dream Gate Plaza')return [36,39];if(m.place==='Backbeat Warehouse')return [9,45];const v=BY_NAME.get(m.place);return v?vdoor(v):[36,39]}
+function guideTo(sc,tx,ty,label){
+ if(!active(sc)||!sc.area?.isTileBlocked)return false;
+ const w=sc.area.w,h=sc.area.h,start=[Math.floor(sc.player.x/T),Math.floor(sc.player.y/T)];
+ const key=(x,y)=>y*w+x,prev=new Int32Array(w*h).fill(-1),queue=[start],target=key(tx,ty);
+ const origin=key(...start);prev[origin]=origin;
+ for(let i=0;i<queue.length&&prev[target]===-1;i++){
+  let [x,y]=queue[i];for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=w||ny>=h||sc.area.isTileBlocked(nx,ny))continue;
+   const k=key(nx,ny);if(prev[k]>=0)continue;prev[k]=key(x,y);queue.push([nx,ny]);
+  }
+ }
+ if(prev[target]===-1){toast('Không tìm thấy lối đi tới '+label);return false;}
+ const path=[];for(let k=target,count=0;count<w*h;count++){path.push([k%w,Math.floor(k/w)]);if(k===origin)break;k=prev[k];}
+ path.reverse();guide={target:[tx,ty],label,path,origin:start,started:performance.now()};
+ toast('Đã bật chỉ đường: '+label+' · '+path.length+' ô');return true;
+}
+function guideRefresh(sc){if(!guide||!active(sc))return;let x=Math.floor(sc.player.x/T),y=Math.floor(sc.player.y/T);
+ if(Math.hypot(guide.target[0]-x,guide.target[1]-y)<2){guide=null;return}
+ if(Math.hypot(guide.origin[0]-x,guide.origin[1]-y)>=7){const old=guide;guide=null;guideTo(sc,...old.target,old.label)}
+}
+function trackVisit(sc,v){if(!near(sc,v.door,v.y+v.h,3.8))return false;const d=data(sc);const first=!d.visits[v.name];d.visits[v.name]=(d.visits[v.name]||0)+1;save(sc);if(first)toast('Khám phá mới: '+v.name+' ✦');return true;}
+function timeOf(sc){const g=sc?.store?.game||{};const min=Number(g.minutes??720);const day=Number(g.day??1);return {minutes:(min%1440+1440)%1440,day:Math.max(1,day),night:min>=1080||min<330};}
+function eventFor(sc){const {day,night}=timeOf(sc);const x=EVENTS[(day-1)%EVENTS.length];return {name:night?x.night:x.day,site:x.site,desc:x.a,night};}
+let root=null,panel=null,toastEl=null,uiTab='festival',picked=0,fx=null,crowd=[],guide=null,install=null,lastDraw=0,lastRoot=0,lastCrowd=0,prefs={lights:true,crowd:true,particles:true};
+const escapeHTML=s=>String(s).replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[k]));
+function toast(msg){if(!toastEl)return;toastEl.textContent=msg;toastEl.hidden=false;let n=++toast.counter;setTimeout(()=>{if(n===toast.counter)toastEl.hidden=true},3400)}toast.counter=0;
+function hud(){const sc=getScene();if(!root)return;const on=active(sc);root.hidden=!on;if(!on&&panel&&!panel.hidden)close();}
+function drawPanel(){if(!panel)return;const sc=getScene(),d=data(sc),m=MISSION[Math.min(5,d.step)],ev=eventFor(sc);const seen=VENUES.filter(v=>d.visits[v.name]).length;
+ const nav=document.getElementById('lq69-nav');nav.innerHTML=['festival','venues','events','visual'].map((k,i)=>`<button data-lq69-tab="${k}" class="${k===uiTab?'selected':''}">${['🎵 Nhiệm vụ','🏙 Công trình','🎆 Sự kiện','⚙ Hiệu ứng'][i]}</button>`).join('');
+ const out=document.getElementById('lq69-body');let html='';
+ if(uiTab==='festival'){
+ const artMod=window.LQArtV71,activities=artMod?.activities||[],done=artMod?.progress?.(sc)?.done||[];
+ const nextTask=activities.find(t=>!done.includes(t.id));
+ if(activities.length){html+=`<div class="lq69-quest" style="margin-bottom:12px"><div class="lq69-sub">PAINTERS QUARTER · BA HOẠT ĐỘNG</div><h3>Học hội họa trước khi vẽ</h3><p>${done.length}/3 hoạt động hoàn thành · ${nextTask?`Tiếp theo: ${escapeHTML(nextTask.title)} tại <b>${escapeHTML(nextTask.place)}</b>.`:'Đã mở khóa Community Wall! Hãy đến Mural Workshop để vẽ.'}</p><button data-lq69="guideArt">🧭 ${nextTask?'Chỉ đường hoạt động tiếp theo':'Chỉ đường tới Community Wall'}</button></div>`;}
+ html+=`<div class="lq69-lead><div class="lq69-sub">NEON CARNIVAL · B1 ENGLISH ADVENTURE</div><h3>The Festival of Light and Sound</h3><p>Phục hồi một khu phố cũ bằng nghệ thuật, âm nhạc và những lựa chọn của bạn.</p><div class="lq69-meter"><i style="width:${Math.min(100,d.step/6*100)}%"></i></div><small>Hoàn thành ${Math.min(d.step,6)}/6 chương</small></div>`;
+ if(d.step>=6)html+=`<div class="lq69-success">✨ Lễ hội đã khai mạc! Tranh cộng đồng và ánh đèn ở Dream Gate được mở vĩnh viễn trong bản lưu.</div>`;
+ else{const pt=missionPoint(m);const close=near(sc,...pt,5.1);html+=`<article class="lq69-quest"><div class="lq69-sub">CHƯƠNG ${d.step+1} / 6</div><h3>${escapeHTML(m.title)}</h3><p><b>Địa điểm:</b> ${escapeHTML(m.place)}</p><p>${escapeHTML(m.question)}</p><div class="lq69-answers">${m.options.map((s,i)=>`<button class="${picked===i?'picked':''}" data-answer="${i}">${escapeHTML(s)}</button>`).join('')}</div><button class="lq69-action" data-lq69="complete" ${!close?'disabled':''}>${close?'✓ Hoàn thành thử thách':'Đến gần địa điểm để tiếp tục'}</button><button data-lq69="guideQuest">🧭 Chỉ đường tới đây</button><p class="lq69-sub">Vị trí mục tiêu: (${pt[0]}, ${pt[1]}) · ${close?'Bạn đang ở gần điểm nhiệm vụ':'Di chuyển tới vị trí, rồi mở lại bằng F4'}</p></article>`;}
+ if(d.step===1)html+=`<div class="lq69-quest" style="margin-top:10px"><b>Chọn biểu tượng cho bức tranh cộng đồng</b><div class="lq69-answers">${['star','eye','wave'].map((k,i)=>`<button data-mural="${k}" class="${d.mural===k?'picked':''}">${['★ Ngôi sao','◉ Con mắt','≈ Làn sóng'][i]}</button>`).join('')}</div></div>`;
+ html+=`<p class="lq69-sub">Khám phá ${seen}/${VENUES.length} địa điểm mới. Tiến trình được lưu cùng trò chơi.</p>`;
+ }else if(uiTab==='venues'){
+ html+=`<div class="lq69-lead"><h3>20 công trình có thể bước vào</h3><p>Tìm đến cửa của từng công trình và nhấn E để khám phá nội thất. Nhấn F4 để ghi dấu địa điểm gần bạn.</p><b>Đã khám phá: ${seen}/20</b></div><div class="lq69-grid">`;
+ for(const v of VENUES){const isNear=near(sc,v.door,v.y+v.h,4.5);html+=`<div class="lq69-venue"><b style="color:#${v.color.toString(16).padStart(6,'0')}">${escapeHTML(v.name)}</b><span>${escapeHTML(v.zone)} · (${v.door},${v.y+v.h})</span><button data-visit="${escapeHTML(v.name)}" ${isNear?'':'disabled'}>${d.visits[v.name]?'✓ Đã ghé':isNear?'✦ Khám phá':'Đến gần cửa'}</button><button data-guide="${escapeHTML(v.name)}">🧭 Chỉ đường</button></div>`;}html+='</div>';
+ }else if(uiTab==='events'){
+ html+=`<div class="lq69-lead"><div class="lq69-sub">LỊCH THEO NGÀY & GIỜ TRONG GAME</div><h3>${escapeHTML(ev.name)}</h3><p>${escapeHTML(ev.desc)}</p><p>Địa điểm: <b>${escapeHTML(ev.site)}</b></p></div><div class="lq69-eventlist">`;
+ for(let i=0;i<EVENTS.length;i++){const evx=EVENTS[i];html+=`<div><b>Ngày ${i+1} (chu kỳ 4 ngày)</b><p>Ban ngày: ${escapeHTML(evx.day)}</p><p>Ban tối: ${escapeHTML(evx.night)}</p></div>`;}html+='</div>';
+ }else{html+=`<div class="lq69-lead"><h3>Tối ưu đồ họa</h3><p>Giữ các hệ thống V66–V68, chỉ điều chỉnh hiệu ứng bổ sung V69.</p></div>`;for(const [k,label] of [['lights','Ánh sáng sân khấu'],['crowd','Người tham dự lễ hội'],['particles','Hạt giấy và ánh sáng']])html+=`<label class="lq69-opt"><input type="checkbox" data-option="${k}" ${prefs[k]?'checked':''}/> ${label}</label>`;}
+ out.innerHTML=html;
+}
+function open(){if(!root||!active(getScene()))return;panel.hidden=false;picked=0;drawPanel()}
+function close(){if(panel)panel.hidden=true}
+function mount(){if(root)return;const css=document.createElement('style');css.textContent=`
+#lq69-root[hidden],#lq69-panel[hidden],#lq69-toast[hidden]{display:none!important}
+#lq69-root{position:fixed;inset:0;z-index:10021;pointer-events:none;font:13px system-ui,sans-serif;color:#fff}
+#lq69-open{position:absolute;top:148px;right:13px;pointer-events:auto;color:#fff1e3;border:1px solid #e1a4d5;background:linear-gradient(130deg,#38224aeb,#142f4aec);border-radius:9px;padding:9px 12px;cursor:pointer;box-shadow:0 6px 20px #0009;font-weight:800}
+#lq69-panel{position:absolute;inset:0;pointer-events:auto;background:#07101edb;display:grid;place-items:center;padding:10px;backdrop-filter:blur(4px)}
+#lq69-card{width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column;border:1px solid #8869a8;border-radius:15px;background:#151c32;color:#f4eefc;box-shadow:0 20px 60px #000c;overflow:hidden}
+#lq69-card header{display:flex;align-items:center;justify-content:space-between;gap:7px;background:#222b48;padding:13px 16px;border-bottom:1px solid #465474}
+#lq69-card header h2{margin:0;font-size:17px;color:#ffe1b3}#lq69-card button{font:inherit;cursor:pointer;border:1px solid #6585b7;border-radius:8px;padding:8px 10px;color:#fff;background:#2b476b}
+#lq69-card button:hover:not(:disabled){background:#376c96}#lq69-card button:disabled{opacity:.55;cursor:not-allowed}
+#lq69-nav{display:flex;gap:6px;overflow:auto;padding:9px;background:#171f35}#lq69-nav button{white-space:nowrap;flex:1}#lq69-nav .selected{background:#65508c;border-color:#d9add9}
+#lq69-body{overflow:auto;min-height:220px;padding:16px;line-height:1.52}#lq69-body h3{color:#fff2ca;font-size:17px;margin:3px 0 9px}#lq69-body p{margin:7px 0 11px}
+.lq69-lead{border-radius:11px;padding:13px;background:#202e4b;border:1px solid #425d84;margin-bottom:14px}.lq69-sub{color:#b6bdd9;font-size:11px;letter-spacing:.04em}
+.lq69-meter{height:8px;background:#323650;border-radius:9px;overflow:hidden;margin:10px 0}.lq69-meter i{display:block;height:100%;background:linear-gradient(90deg,#79c9ea,#efa4c5);transition:width .25s}
+.lq69-quest{background:#20283e;padding:15px;border:1px solid #4b5c85;border-radius:12px}.lq69-answers{display:grid;gap:8px;margin:12px 0}.lq69-answers button{text-align:left}.lq69-answers .picked{background:#655085!important;border-color:#ffd8a9!important}
+#lq69-card button.lq69-action{background:#8c4f91;border-color:#f2c5ea;font-weight:800}.lq69-success{padding:16px;border-radius:10px;border:1px solid #7dccbb;background:#215650;margin-bottom:12px}
+.lq69-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.lq69-venue{display:flex;flex-direction:column;gap:5px;background:#1f3049;border:1px solid #3a5275;border-radius:9px;padding:10px}.lq69-venue span{color:#9fafca;font-size:11px}.lq69-venue button{align-self:flex-start;font-size:11px!important}
+.lq69-eventlist{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lq69-eventlist>div{background:#1e2f47;border-radius:9px;padding:12px}.lq69-opt{display:flex;align-items:center;gap:10px;padding:9px}.lq69-opt input{accent-color:#a989d0}
+#lq69-toast{position:absolute;top:21%;left:50%;transform:translateX(-50%);background:#1d4b55;border:1px solid #bfe4d3;padding:12px 15px;border-radius:9px;box-shadow:0 8px 20px #000a;max-width:80vw}
+@media(max-width:540px){#lq69-open{top:125px;right:6px;padding:7px;font-size:11px}.lq69-grid,.lq69-eventlist{grid-template-columns:1fr}#lq69-card header h2{font-size:14px}#lq69-body{padding:10px}}
+`;document.head.appendChild(css);
+ root=document.createElement('div');root.id='lq69-root';root.hidden=true;
+ root.innerHTML=`<button id="lq69-open" title="F4 · Art District Festival">🎵 V69 FESTIVAL</button><div id="lq69-toast" hidden role="status"></div><div id="lq69-panel" hidden><section id="lq69-card" role="dialog" aria-label="Art District Festival" aria-modal="true"><header><h2>✦ ART DISTRICT · NEON CARNIVAL</h2><button data-lq69="close">✕</button></header><nav id="lq69-nav"></nav><main id="lq69-body"></main></section></div>`;document.body.appendChild(root);panel=document.getElementById('lq69-panel');toastEl=document.getElementById('lq69-toast');
+ document.getElementById('lq69-open').addEventListener('click',open);
+ root.addEventListener('click',e=>{if(e.target===panel){close();return;}const t=e.target.closest('button');if(!t)return;const sc=getScene();
+  if(t.dataset.lq69Tab){uiTab=t.dataset.lq69Tab;drawPanel();return;}
+  if(t.dataset.answer!==undefined){picked=Number(t.dataset.answer);drawPanel();return;}
+  if(t.dataset.mural){data(sc).mural=t.dataset.mural;save(sc);drawPanel();return;}
+  if(t.dataset.visit){const v=BY_NAME.get(t.dataset.visit);if(v)trackVisit(sc,v);drawPanel();return;}
+  if(t.dataset.guide){const v=BY_NAME.get(t.dataset.guide);if(v&&guideTo(sc,v.door,v.y+v.h,v.name))close();return;}
+  const a=t.dataset.lq69;if(a==='close'){close();return;}
+   if(a==='guideArt'){const mod=window.LQArtV71;const tasks=mod?.activities||[],d=mod?.progress?.(sc)?.done||[],next=tasks.find(t=>!d.includes(t.id));const goal=next?.at||[9,32];if(guideTo(sc,...goal,next?.place||'Mural Workshop'))close();return;}
+  if(a==='guideQuest'){const m=MISSION[data(sc).step];if(m){const pt=missionPoint(m);if(guideTo(sc,...pt,m.place))close();}return;}
+  if(a==='complete'){guide=null;const d=data(sc);const m=MISSION[d.step];if(!m)return;const pt=missionPoint(m);if(!near(sc,...pt,5.1)){toast('Cần tới gần địa điểm.');return;}if(picked!==m.correct){toast('Thử lại: hãy chọn câu tiếng Anh tự nhiên và đầy đủ nhất.');return;}d.step++;if(d.step>=6)d.won=true;save(sc);toast(m.story);picked=0;drawPanel();}
+ });
+ root.addEventListener('change',e=>{const k=e.target?.dataset?.option;if(k in prefs){prefs[k]=!!e.target.checked;toast('Đã lưu thiết lập hiển thị tạm thời.')}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel&&!panel.hidden){e.preventDefault();e.stopImmediatePropagation();close();return;}
+  if(e.key!=='F4'||e.repeat||e.altKey||e.metaKey||e.ctrlKey||e.defaultPrevented)return;
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable)return;
+  if(!active(getScene()))return;e.preventDefault();e.stopImmediatePropagation();panel.hidden?open():close();},true);
+}
+function cloneCrowd(sc){if(!active(sc)||crowd.length||!prefs.crowd)return;const sprites=(sc.npcs||[]).filter(n=>n?.sprite?.texture?.key&&n.sprite.texture.key!=='__MISSING');if(!sprites.length)return;
+ const sites=[[83,14],[100,14],[83,32],[100,32],[83,50],[100,50],[83,66],[100,66],[83,83],[100,83],[11,72],[29,72],[47,72],[65,72],[11,90],[65,90]];
+ for(let i=0;i<sites.length;i++){const src=sprites[(i*3+1)%sprites.length],pt=sites[i];if(sc.area.isTileBlocked(pt[0],pt[1]))continue;
+ const sp=sc.add.sprite((pt[0]+.5)*T,(pt[1]+.5)*T,src.sprite.texture.key).setDepth(7.3).setScale(.92);sp.setVisible(true);
+ crowd.push({sprite:sp,x:pt[0]+.5,y:pt[1]+.5,home:pt,face:1,seed:i,base:src});
+ }
+}
+function clearCrowd(){for(let c of crowd)try{c.sprite.destroy()}catch(_){}crowd=[]}
+function crowdFrame(sc,time){if(!prefs.crowd){for(let c of crowd)c.sprite.setVisible(false);return}cloneCrowd(sc);const cam=sc.cameras?.main;
+ for(let c of crowd){const phase=time*.00055+c.seed*2;const dx=Math.sin(phase)*.78,dy=Math.cos(phase*.57)*.5;
+ let nx=c.home[0]+.5+dx,ny=c.home[1]+.5+dy;let tx=Math.floor(nx),ty=Math.floor(ny);
+ if(sc.area.isTileBlocked(tx,ty)){nx=c.home[0]+.5;ny=c.home[1]+.5}
+ c.sprite.x=nx*T;c.sprite.y=ny*T;c.sprite.setFlipX(Math.cos(phase)<0);
+ const hidden=cam&&(c.sprite.x<cam.worldView.x-80||c.sprite.y<cam.worldView.y-80||c.sprite.x>cam.worldView.right+80||c.sprite.y>cam.worldView.bottom+80);
+ c.sprite.setVisible(!hidden);if(c.base?.sprite?.texture?.key&&Math.floor(time/280+c.seed)%3===0){const key=c.base.sprite.texture.key;if(sc.textures.exists(key)&&c.sprite.texture.key!==key)c.sprite.setTexture(key);}
+ }
+}
+function drawLive(sc,time){if(!fx||!active(sc)||sc.inside){fx?.clear();return;}fx.clear();guideRefresh(sc);const cam=sc.cameras?.main,now=time*.001,tn=timeOf(sc),night=tn.night;
+ const visible=(x,y,r=160)=>!cam||(x>cam.worldView.x-r&&x<cam.worldView.right+r&&y>cam.worldView.y-r&&y<cam.worldView.bottom+r);
+ if(prefs.lights)for(let i=0;i<VENUES.length;i++){
+ const v=VENUES[i],cx=(v.x+v.w/2)*T,cy=(v.y+1)*T;if(!visible(cx,cy))continue;
+ const pulse=.58+.28*Math.sin(now*1.3+i*1.7),al=night?0.16:0.06;
+ O(fx,cx,cy+52,32+pulse*15,v.color,al*pulse);O(fx,cx,cy+52,12,v.color,(night?.48:.16)*pulse);
+ for(let j=0;j<7;j++){let px=(v.x+.8+j*(v.w-1.6)/6)*T,py=(v.y+.8)*T;O(fx,px,py,3.2,j%2?v.color:CL.cream,night?.78:.32)}
+ if(i<6&&night){for(let k=0;k<3;k++){let px=cx-60+k*60+Math.sin(now*1.5+k)*7;L(fx,px,cy+84,px+Math.sin(now+k)*12,cy+130,v.color,.12,2);}}
+ }
+ if(guide?.path?.length){for(let i=0;i<guide.path.length;i+=2){const pt=guide.path[i],x=(pt[0]+.5)*T,y=(pt[1]+.5)*T;if(visible(x,y,20)){O(fx,x,y,4.2,CL.teal,.5);O(fx,x,y,1.8,CL.cream,.67)}}
+  const [gx,gy]=guide.target,x=(gx+.5)*T,y=(gy+.5)*T;if(visible(x,y,70)){O(fx,x,y,13,CL.teal,.18);O(fx,x,y,5,CL.amber,.8)}
+ }
+ const md=data(sc);if(md.step>=2){const px=36*T,py=26*T;if(visible(px,py,100)){
+   if(md.mural==='star')motif(fx,'star',px,py,68,68,CL.amber);
+   else if(md.mural==='eye'){E(fx,px,py,72,36,CL.teal,.30);O(fx,px,py,13,CL.purple,.62);O(fx,px,py,6,CL.cream,.74)}
+   else{for(let k=0;k<14;k++)O(fx,px-50+k*8,py+Math.sin(k*.7+time*.001)*10,3,CL.blue,.62)}
+ }}
+ const d=data(sc);if(d.won){const px=36*T,py=28*T;if(visible(px,py,260)){
+  for(let i=0;i<15;i++){let ang=i*Math.PI*2/15+now*.1,rr=75+(i%3)*19;O(fx,px+Math.cos(ang)*rr,py+Math.sin(ang)*rr,3+(i%3),[CL.pink,CL.teal,CL.amber][i%3],night?.6:.28)}
+ }}
+ if(prefs.particles){const vw=cam?.worldView;
+  if(vw){for(let i=0;i<34;i++){const phase=(now*.26+i*.137)%1;let px=vw.x+((i*127+Math.floor(now*.12)*31)%Math.max(1,vw.width)),py=vw.y+((i*67+23)%Math.max(1,vw.height))-phase*40;
+   const nearVenue=VENUES.some(v=>Math.abs(px-(v.x+v.w/2)*T)<100&&Math.abs(py-(v.y+v.h)*T)<120);if(nearVenue)R(fx,px,py,2,3,i%2?CL.pink:CL.teal,.17);
+  }}
+ }
+}
+function clean(sc){clearCrowd();if(fx){fx.destroy();fx=null}if(install===sc)install=null}
+function attach(sc){if(!active(sc)||install===sc)return;if(install)clean(install);install=sc;fx=sc.add.graphics().setDepth(7.05);fx.__lq69=true;
+ const loop=(t)=>{if(!active(sc))return;if(sc.inside){fx.clear();for(let c of crowd)c.sprite.setVisible(false);return;}
+ if(t-lastDraw>120){lastDraw=t;drawLive(sc,t)}if(t-lastCrowd>110){lastCrowd=t;crowdFrame(sc,t)}
+ if(t-lastRoot>800){lastRoot=t;hud();}
+ };
+ sc.events.on('update',loop);
+ sc.events.once('shutdown',()=>{sc.events.off('update',loop);clean(sc)})
+}
+function start(){mount();setInterval(()=>{const sc=getScene();hud();if(active(sc)&&install!==sc)attach(sc);else if(install&&(!active(sc)||install!==sc))clean(install);},850)}
+window.LQArtV69=Object.freeze({version:'69.0.0',venues:VENUES,facade,paintStreets,paintInterior,open,close,mission:()=>MISSION,festival:()=>data(),events:eventFor,diagnostics:()=>{const sc=getScene();return {map:sc?.area?.id,totalVenues:VENUES.length,buildingCount:sc?.area?.buildings?.length||0,progress:data(sc).step,newBuildings:VENUES.filter(v=>sc?.area?.buildings?.some?.(b=>b.name===v.name)).length,crowd:crowd.length,inside:sc?.inside?.b?.name||null}}});
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+
+var ue = class {
+            id;
+            name;
+            w;
+            h;
+            buildings;
+            places;
+            roadsH;
+            roadsV;
+            park;
+            campus;
+            lake;
+            theme;
+            rails;
+            railTiles;
+            spawn;
+            npcs;
+            warps;
+            portals;
+            obstacles;
+            blocked;
+            constructor(e) {
+              ((this.id = e.id),
+                (this.name = e.name),
+                (this.w = e.w),
+                (this.h = e.h),
+                (this.buildings = e.buildings),
+                (this.places = e.places),
+                (this.roadsH = e.roadsH),
+                (this.roadsV = e.roadsV),
+                (this.park = e.park),
+                (this.campus = e.campus),
+                (this.lake = e.lake),
+                (this.theme = e.theme ?? `town`),
+                (this.rails = e.rails ?? []),
+                (this.railTiles = new Set()));
+              for (let e of this.rails) {
+                let t = le(e);
+                for (let e = 1; e < t.length; e++) {
+                  let n = t[e - 1],
+                    r = t[e],
+                    i = Math.max(1, Math.ceil(Math.hypot(r.x - n.x, r.y - n.y) / 8));
+                  for (let e = 0; e <= i; e++) {
+                    let t = n.x + ((r.x - n.x) * e) / i,
+                      a = n.y + ((r.y - n.y) * e) / i;
+                    this.railTiles.add(Math.floor(a / 32) * this.w + Math.floor(t / 32));
+                  }
+                }
+              }
+              ((this.spawn = e.spawn),
+                (this.npcs = e.npcs),
+                (this.warps = e.warps ?? []),
+                (this.portals = e.portals ?? {}),
+                (this.obstacles = e.makeObstacles(this)),
+                (this.blocked = Array.from({ length: this.h }, () => Array(this.w).fill(!1))));
+              for (let e of this.obstacles)
+                for (let t = e.y; t < e.y + e.h; t++)
+                  for (let n = e.x; n < e.x + e.w; n++) this.blocked[t][n] = !0;
+              for (let e of this.buildings)
+                for (let part of e.collisionRects || [e])
+                  for (let t = part.y; t < part.y + part.h; t++)
+                    for (let n = part.x; n < part.x + part.w; n++)
+                      if (t >= 0 && t < this.h && n >= 0 && n < this.w)
+                        this.blocked[t][n] = !0;
+              // Precise polygon occupancy replaces legacy full building rectangles.
+              LQPrecisePhysics.attachArea(this);
+            }
+            warpAt(e, t) {
+              return this.warps.find((n) => e >= n.x && e < n.x + n.w && t >= n.y && t < n.y + n.h);
+            }
+            isRoad(e, t) {
+              return (
+                this.roadsH.some(
+                  (n) => t >= n.y && t < n.y + n.h && e >= (n.x0 ?? 0) && e < (n.x1 ?? this.w),
+                ) ||
+                this.roadsV.some(
+                  (n) => e >= n.x && e < n.x + n.w && t >= (n.y0 ?? 0) && t < (n.y1 ?? this.h),
+                )
+              );
+            }
+            isTileBlocked(e, t) {
+              return e < 0 || t < 0 || e >= this.w || t >= this.h || this.blocked[t][e];
+            }
+            findPath(e, t) {
+              let n = this.w,
+                r = Math.min(n - 1, Math.max(0, Math.floor(e.x / 32))),
+                i = Math.min(this.h - 1, Math.max(0, Math.floor(e.y / 32)));
+              if (r === t.x && i === t.y) return [ce(t.x, t.y)];
+              let a = new Map(),
+                o = (e, t) => t * n + e,
+                s = [[r, i]];
+              a.set(o(r, i), -1);
+              let c = [
+                [1, 0],
+                [-1, 0],
+                [0, 1],
+                [0, -1],
+                [1, 1],
+                [1, -1],
+                [-1, 1],
+                [-1, -1],
+              ];
+              for (let e = 0; e < s.length; e++) {
+                let [n, r] = s[e];
+                if (n === t.x && r === t.y) break;
+                for (let [e, t] of c) {
+                  let i = n + e,
+                    c = r + t;
+                  this.isTileBlocked(i, c) ||
+                    a.has(o(i, c)) ||
+                    ((e === 0 ||
+                      t === 0 ||
+                      (!this.isTileBlocked(n + e, r) && !this.isTileBlocked(n, r + t))) &&
+                      (a.set(o(i, c), o(n, r)), s.push([i, c])));
+                }
+              }
+              if (!a.has(o(t.x, t.y))) return []; // V52.1: never walk directly through buildings
+              let l = [];
+              for (let e = o(t.x, t.y); e !== -1; e = a.get(e))
+                l.push(ce(e % n, Math.floor(e / n)));
+              return (l.pop(), l.reverse());
+            }
+          };
+var de = [
+            { name: `Sunny Cafe`, x: 5, y: 3, w: 7, h: 4, color: 12866122, door: 8, awning: !0 },
+            {
+              name: `Post Office`,
+              x: 21,
+              y: 3,
+              w: 5,
+              h: 4,
+              color: 12859962,
+              door: 23,
+              sign: `mail`,
+              chimney: !1,
+            },
+            {
+              name: `Town Hall`,
+              x: 27,
+              y: 3,
+              w: 7,
+              h: 4,
+              color: 4874936,
+              door: 30,
+              tower: `hall`,
+              chimney: !1,
+            },
+            {
+              name: `Bank`,
+              x: 36,
+              y: 3,
+              w: 6,
+              h: 4,
+              color: 6056838,
+              door: 38,
+              wall: 14474722,
+              columns: !0,
+              sign: `coin`,
+              chimney: !1,
+            },
+            { name: `Library`, x: 5, y: 18, w: 7, h: 4, color: 4168296, door: 8, sign: `book` },
+            {
+              name: `Gym`,
+              x: 13,
+              y: 18,
+              w: 4,
+              h: 4,
+              color: 8018632,
+              door: 14,
+              sign: `dumbbell`,
+              chimney: !1,
+            },
+            {
+              name: `Market`,
+              x: 21,
+              y: 18,
+              w: 5,
+              h: 4,
+              color: 4892746,
+              door: 23,
+              awning: !0,
+              sign: `cart`,
+              chimney: !1,
+            },
+            { name: `Corner Shop`, x: 27, y: 18, w: 7, h: 4, color: 3119784, door: 30, awning: !0 },
+            {
+              name: `Restaurant`,
+              x: 36,
+              y: 18,
+              w: 6,
+              h: 4,
+              color: 14248491,
+              door: 38,
+              awning: !0,
+              sign: `fork`,
+            },
+            { name: `Lily's House`, x: 2, y: 25, w: 4, h: 3, color: 14247802, door: 3 },
+            { name: `Ms. Green's House`, x: 8, y: 25, w: 4, h: 3, color: 5218138, door: 9 },
+            { name: `Mr. Brown's House`, x: 23, y: 25, w: 4, h: 3, color: 5929160, door: 24 },
+            { name: `Hero's Home`, x: 13, y: 25, w: 4, h: 3, color: 3842303, door: 14 },
+            { name: `Tom's House`, x: 30, y: 25, w: 4, h: 3, color: 13146682, door: 31 },
+            { name: `Mia's House`, x: 35, y: 25, w: 4, h: 3, color: 10119368, door: 36 },
+            {
+              name: `Hospital`,
+              x: 49,
+              y: 3,
+              w: 8,
+              h: 5,
+              color: 4889304,
+              door: 52,
+              wall: 16054522,
+              floors: 2,
+              sign: `cross`,
+              chimney: !1,
+            },
+            {
+              name: `Fire Station`,
+              x: 58,
+              y: 3,
+              w: 5,
+              h: 4,
+              color: 13119536,
+              door: 60,
+              wall: 15259848,
+              bays: [
+                { i: 0, n: 2 },
+                { i: 3, n: 2 },
+              ],
+              chimney: !1,
+            },
+            {
+              name: `School`,
+              x: 49,
+              y: 15,
+              w: 13,
+              h: 6,
+              color: 5661306,
+              door: 55,
+              wall: 12869706,
+              floors: 2,
+              chimney: !1,
+            },
+            {
+              name: `Apartments`,
+              x: 2,
+              y: 36,
+              w: 6,
+              h: 5,
+              color: 8018586,
+              door: 4,
+              wall: 15325632,
+              floors: 2,
+              chimney: !1,
+            },
+            {
+              name: `Hotel`,
+              x: 9,
+              y: 36,
+              w: 7,
+              h: 5,
+              color: 2787994,
+              door: 12,
+              wall: 15787216,
+              floors: 2,
+              sign: `bed`,
+              chimney: !1,
+            },
+            {
+              name: `Police Station`,
+              x: 22,
+              y: 37,
+              w: 6,
+              h: 4,
+              color: 2771624,
+              door: 24,
+              wall: 14212328,
+              sign: `badge`,
+              chimney: !1,
+            },
+            {
+              name: `Cinema`,
+              x: 29,
+              y: 37,
+              w: 8,
+              h: 4,
+              color: 9054810,
+              door: 32,
+              awning: !0,
+              sign: `film`,
+              chimney: !1,
+            },
+            {
+              name: `Church`,
+              x: 39,
+              y: 36,
+              w: 5,
+              h: 5,
+              color: 6974074,
+              door: 41,
+              wall: 15789280,
+              tower: `steeple`,
+              chimney: !1,
+            },
+          ];
+var fe = {
+            cafe: { x: 8, y: 7 },
+            post: { x: 23, y: 7 },
+            hall: { x: 30, y: 7 },
+            bank: { x: 38, y: 7 },
+            library: { x: 8, y: 22 },
+            gym: { x: 14, y: 22 },
+            market: { x: 23, y: 22 },
+            shop: { x: 30, y: 22 },
+            restaurant: { x: 38, y: 22 },
+            hospital: { x: 52, y: 8 },
+            fire: { x: 60, y: 7 },
+            school: { x: 55, y: 22 },
+            apartments: { x: 4, y: 41 },
+            hotel: { x: 12, y: 41 },
+            police: { x: 24, y: 41 },
+            cinema: { x: 32, y: 41 },
+            church: { x: 41, y: 41 },
+            lake: { x: 55, y: 41 },
+            park: { x: 25, y: 15 },
+            plaza: { x: 19, y: 14 },
+            home_barista: { x: 3, y: 28 },
+            home_librarian: { x: 9, y: 28 },
+            home_mayor: { x: 24, y: 28 },
+            home_shopkeeper: { x: 31, y: 28 },
+            home_kid: { x: 36, y: 28 },
+            home_doctor: { x: 3, y: 41 },
+            home_teacher: { x: 5, y: 41 },
+            home_chef: { x: 6, y: 41 },
+            home_police: { x: 11, y: 41 },
+            home_firefighter: { x: 13, y: 41 },
+            home_player: { x: 14, y: 28 },
+            home_banker: { x: 7, y: 41 },
+            home_postman: { x: 8, y: 41 },
+            home_clerk: { x: 14, y: 41 },
+            home_priest: { x: 43, y: 41 },
+            home_cinema: { x: 34, y: 41 },
+            home_etmaster: { x: 2, y: 41 },
+            home_etclerk: { x: 9, y: 41 },
+            home_etporter: { x: 10, y: 41 },
+            stn_ticket: { x: 17, y: 58 },
+            stn_cargo: { x: 44, y: 58 },
+            stn_bench: { x: 24, y: 61 },
+            stn_platform: { x: 36, y: 64 },
+            stn_hall: { x: 30, y: 60 },
+            stn_forecourt: { x: 21, y: 51 },
+          };
+var pe = { x: 22, y: 13, w: 10, h: 4 };
+var me = { x: 48, y: 13, w: 15, h: 18 };
+var he = { x: 51, y: 36, w: 8, h: 4 };
+        function ge(e) {
+          let { w: t, h: n } = e,
+            r = [],
+            i = new Set(Object.values(e.places).map((e) => e.y * t + e.x)),
+            a = new Set();
+          for (let n of e.buildings)
+            for (let e = n.y - 1; e <= n.y + n.h + 1; e++)
+              for (let r = n.x - 1; r <= n.x + n.w; r++) a.add(e * t + r);
+          let o = (r, o) =>
+              r >= 0 &&
+              o >= 0 &&
+              r < t &&
+              o < n &&
+              !e.isRoad(r, o) &&
+              !a.has(o * t + r) &&
+              !i.has(o * t + r),
+            s = (e, t) => {
+              o(e, t) && r.push({ kind: `tree`, x: e, y: t, w: 1, h: 1 });
+            },
+            c = (e, t) => {
+              o(e, t) && r.push({ kind: `lamp`, x: e, y: t, w: 1, h: 1 });
+            };
+          for (let r = 0; r < t; r += 2)
+            (e.isRoad(r, 0) || s(r, 0), e.isRoad(r, n - 1) || s(r, n - 1));
+          for (let r = 2; r < n - 1; r += 2)
+            (e.isRoad(0, r) || s(0, r), e.isRoad(t - 1, r) || s(t - 1, r));
+          for (let [e, t] of [
+            [2, 14],
+            [3, 15],
+            [2, 16],
+            [14, 14],
+            [15, 15],
+            [14, 16],
+            [35, 14],
+            [36, 15],
+            [35, 16],
+            [2, 8],
+            [14, 8],
+            [36, 9],
+            [14, 23],
+            [15, 22],
+            [41, 14],
+            [42, 15],
+            [41, 16],
+            [40, 28],
+            [41, 29],
+            [13, 29],
+            [14, 28],
+            [1, 43],
+            [3, 44],
+            [6, 43],
+            [12, 43],
+            [15, 43],
+            [22, 43],
+            [26, 43],
+            [34, 43],
+            [38, 44],
+            [49, 33],
+            [52, 34],
+            [60, 34],
+            [62, 36],
+            [50, 43],
+            [60, 43],
+            [62, 43],
+            [48, 9],
+            [62, 9],
+            [58, 9],
+            [46, 4],
+            [40, 9],
+          ])
+            s(e, t);
+          for (let [e, t] of [
+            [22, 13],
+            [24, 13],
+            [29, 13],
+            [31, 13],
+            [22, 16],
+            [24, 16],
+            [29, 16],
+            [31, 16],
+          ])
+            s(e, t);
+          (r.push({ kind: `fountain`, x: 26, y: 14, w: 2, h: 2 }),
+            r.push(
+              { kind: `bench`, x: 23, y: 15, w: 1, h: 1 },
+              { kind: `bench`, x: 30, y: 15, w: 1, h: 1 },
+            ));
+          for (let [e, t] of [
+            [16, 8],
+            [21, 8],
+            [16, 14],
+            [21, 14],
+            [16, 20],
+            [21, 20],
+            [16, 26],
+            [21, 26],
+            [16, 36],
+            [21, 36],
+            [16, 42],
+            [21, 42],
+            [43, 8],
+            [48, 8],
+            [43, 14],
+            [43, 20],
+            [43, 26],
+            [43, 36],
+            [48, 36],
+            [43, 42],
+            [48, 42],
+          ])
+            c(e, t);
+          let l = me,
+            u = (e, t, n, i) => r.push({ kind: `fence`, x: e, y: t, w: n, h: i });
+          (u(l.x, l.y, l.w, 1),
+            u(l.x, l.y + 1, 1, 8),
+            u(l.x, 25, 1, 5),
+            u(l.x, 30, 6, 1),
+            u(57, 30, 6, 1),
+            u(l.x + l.w - 1, l.y + 1, 1, 16),
+            r.push({ kind: `flagpole`, x: 52, y: 24, w: 1, h: 1 }),
+            r.push({ kind: `bikes`, x: 58, y: 21, w: 2, h: 1 }),
+            r.push({ kind: `slide`, x: 50, y: 26, w: 1, h: 2 }),
+            r.push({ kind: `swings`, x: 52, y: 26, w: 2, h: 1 }),
+            r.push({ kind: `sandbox`, x: 50, y: 29, w: 2, h: 1 }),
+            r.push({ kind: `seesaw`, x: 52, y: 28, w: 2, h: 1 }),
+            r.push({ kind: `pond`, x: he.x, y: he.y, w: he.w, h: he.h }));
+          for (let [e, t] of [
+            [50, 38],
+            [59, 38],
+            [54, 35],
+            [56, 35],
+            [54, 40],
+            [56, 40],
+          ])
+            r.push({ kind: `bench`, x: e, y: t, w: 1, h: 1 });
+          for (let [e, t] of [
+            [50, 36],
+            [59, 36],
+            [50, 40],
+            [59, 40],
+            [49, 38],
+            [60, 38],
+            [52, 41],
+            [58, 41],
+          ])
+            s(e, t);
+          for (let q of [
+            [11, 52, 17, 6],
+            [33, 52, 18, 6],
+            [25, 47, 3, 5],
+            [33, 47, 3, 5],
+            [14, 48, 3, 2],
+            [44, 48, 3, 2],
+            [20, 49, 1, 1],
+            [40, 49, 1, 1],
+            [15, 59, 6, 1],
+            [41, 59, 6, 1],
+            [23, 60, 4, 1],
+            [34, 60, 4, 1],
+            [11, 60, 3, 2],
+            [48, 60, 3, 2],
+            [21, 62, 7, 1],
+            [34, 62, 7, 1],
+            [15, 65, 32, 2],
+            [22, 69, 30, 2],
+          ])
+            r.push({ kind: `station`, x: q[0], y: q[1], w: q[2], h: q[3] });
+          return r;
+        }
+        var _e = new ue({
+            id: `english-town`,
+            name: `English Town`,
+            w: 64,
+            h: 75,
+            buildings: de,
+            places: fe,
+            roadsV: [
+              { x: 17, w: 4, y1: 47 },
+              { x: 44, w: 4, y1: 47 },
+            ],
+            roadsH: [
+              { y: 10, h: 3 },
+              { y: 31, h: 3 },
+            ],
+            park: pe,
+            campus: me,
+            lake: he,
+            spawn: { x: 19, y: 12 },
+            portals: {},
+            warps: [
+              {
+                x: 44,
+                y: 64,
+                w: 3,
+                h: 1,
+                needsPass: !0,
+                label: `Train to Minerals Town`,
+                to: `mining-town`,
+                spawn: { x: 42, y: 63 },
+              },
+            ],
+            npcs: [
+              `barista`,
+              `mayor`,
+              `rook`,
+              `librarian`,
+              `shopkeeper`,
+              `kid`,
+              `doctor`,
+              `police`,
+              `teacher`,
+              `firefighter`,
+              `chef`,
+              `banker`,
+              `postman`,
+              `hotelclerk`,
+              `priest`,
+              `cinema`,
+              `etmaster`,
+              `etclerk`,
+              `etporter`,
+            ],
+            makeObstacles: ge,
+          });
+var ve = [
+            {
+              name: `Great Mine`,
+              x: 18,
+              y: 8,
+              w: 25,
+              h: 10,
+              color: 12084538,
+              door: 30,
+              wall: 11049096,
+              chimney: !1,
+            },
+            {
+              name: `Mine Office`,
+              x: 8,
+              y: 22,
+              w: 7,
+              h: 4,
+              color: 9067066,
+              door: 11,
+              wall: 14207144,
+              sign: `coin`,
+              chimney: !1,
+            },
+            {
+              name: `Smithy`,
+              x: 19,
+              y: 22,
+              w: 6,
+              h: 4,
+              color: 4868690,
+              door: 21,
+              wall: 12101776,
+              sign: `anvil`,
+            },
+            {
+              name: `Tool Shop`,
+              x: 36,
+              y: 22,
+              w: 6,
+              h: 4,
+              color: 8018474,
+              door: 38,
+              wall: 14733224,
+              awning: !0,
+              sign: `pickaxe`,
+              chimney: !1,
+            },
+            {
+              name: `Gem Shop`,
+              x: 45,
+              y: 22,
+              w: 7,
+              h: 4,
+              color: 2783882,
+              door: 48,
+              wall: 15261904,
+              awning: !0,
+              sign: `gem`,
+              chimney: !1,
+            },
+            {
+              name: `Mining Inn`,
+              x: 8,
+              y: 32,
+              w: 8,
+              h: 5,
+              color: 10111546,
+              door: 11,
+              wall: 14731432,
+              floors: 2,
+              sign: `bed`,
+              chimney: !1,
+            },
+            {
+              name: `First-Aid Post`,
+              x: 19,
+              y: 33,
+              w: 5,
+              h: 4,
+              color: 13126218,
+              door: 21,
+              wall: 15789280,
+              sign: `cross`,
+              chimney: !1,
+            },
+            {
+              name: `Rail Station`,
+              x: 36,
+              y: 32,
+              w: 9,
+              h: 5,
+              color: 4872810,
+              door: 40,
+              wall: 13154456,
+              sign: `train`,
+              chimney: !1,
+            },
+            {
+              name: `Old Freight Workshop`,
+              x: 48,
+              y: 41,
+              w: 8,
+              h: 4,
+              color: 5988188,
+              wall: 6907491,
+              door: 52,
+              chimney: !1,
+            },
+          ];
+var ye = {
+            mine: { x: 30, y: 18 },
+            office: { x: 11, y: 26 },
+            smithy: { x: 21, y: 26 },
+            tools: { x: 38, y: 26 },
+            gems: { x: 48, y: 26 },
+            inn: { x: 11, y: 37 },
+            aid: { x: 21, y: 37 },
+            station: { x: 40, y: 37 },
+            square: { x: 30, y: 28 },
+            gate: { x: 8, y: 42 },
+            mine_west: { x: 22, y: 18 },
+            mine_east: { x: 38, y: 18 },
+            ore_yard: { x: 41, y: 19 },
+            loading: { x: 35, y: 19 },
+            home_timber: { x: 7, y: 37 },
+            home_sorter: { x: 8, y: 37 },
+            home_blaster: { x: 15, y: 37 },
+            home_cart: { x: 16, y: 37 },
+            home_foreman: { x: 9, y: 37 },
+            home_miner: { x: 10, y: 37 },
+            home_innkeeper: { x: 11, y: 37 },
+            home_smith: { x: 12, y: 37 },
+            home_gem: { x: 13, y: 37 },
+            home_medic: { x: 14, y: 37 },
+            home_stmaster: { x: 17, y: 37 },
+            home_tclerk: { x: 18, y: 37 },
+            home_porter: { x: 24, y: 37 },
+            stn_ticket: { x: 17, y: 58 },
+            stn_cargo: { x: 44, y: 58 },
+            stn_bench: { x: 24, y: 61 },
+            stn_platform: { x: 36, y: 64 },
+            stn_hall: { x: 30, y: 60 },
+            stn_forecourt: { x: 21, y: 51 },
+            art_lane: { x: 53, y: 39 },
+          };
+var be = [
+            {
+              bend: 2.5,
+              points: [
+                { x: 33.5, y: 43 },
+                { x: 33.5, y: 38 },
+                { x: 30.5, y: 29 },
+                { x: 30.5, y: 18.5 },
+              ],
+            },
+            {
+              bend: 1.5,
+              shared: 0.75,
+              buffer: `end`,
+              points: [
+                { x: 30.5, y: 26 },
+                { x: 30.5, y: 24.5 },
+                { x: 32.5, y: 20.5 },
+                { x: 32.5, y: 19 },
+              ],
+            },
+            {
+              bend: 1.5,
+              shared: 0.5,
+              buffer: `end`,
+              points: [
+                { x: 33.5, y: 43 },
+                { x: 33.5, y: 42 },
+                { x: 35, y: 38.5 },
+                { x: 35, y: 37.6 },
+              ],
+            },
+            {
+              bend: 0,
+              points: [
+                { x: 0, y: 66 },
+                { x: 60, y: 66 },
+              ],
+            },
+            {
+              bend: 0,
+              points: [
+                { x: 0, y: 70 },
+                { x: 60, y: 70 },
+              ],
+            },
+          ];
+        function xe(e) {
+          let { w: t, h: n } = e,
+            r = [],
+            i = new Set(),
+            a = (e, n) => n * t + e,
+            o = new Set();
+          for (let t of e.buildings)
+            for (let e = t.y - 1; e <= t.y + t.h + 1; e++)
+              for (let n = t.x - 1; n <= t.x + t.w; n++) o.add(a(n, e));
+          let s = new Set(Object.values(e.places).map((e) => a(e.x, e.y))),
+            c = e.railTiles,
+            l = (l, u, d, f = 1, p = 1) => {
+              for (let r = d; r < d + p; r++)
+                for (let d = u; d < u + f; d++)
+                  if (
+                    d < 0 ||
+                    r < 0 ||
+                    d >= t ||
+                    r >= n ||
+                    e.isRoad(d, r) ||
+                    e.warpAt(d, r) ||
+                    s.has(a(d, r)) ||
+                    i.has(a(d, r)) ||
+                    (Math.abs(d - e.spawn.x) <= 2 && Math.abs(r - e.spawn.y) <= 2) ||
+                    (l === `minecart` ? !c.has(a(d, r)) : c.has(a(d, r)) || o.has(a(d, r)))
+                  )
+                    return;
+              for (let e = d; e < d + p; e++) for (let t = u; t < u + f; t++) i.add(a(t, e));
+              r.push({ kind: l, x: u, y: d, w: f, h: p });
+            };
+          for (let e = 0; e < t; e += 2) (l(`pine`, e, 0), l(`pine`, e, n - 1));
+          for (let e = 2; e < n - 1; e += 2) (l(`pine`, 0, e), l(`pine`, t - 1, e));
+          for (let [e, t] of [
+            [3, 3],
+            [6, 4],
+            [9, 3],
+            [12, 5],
+            [4, 11],
+            [14, 10],
+            [47, 4],
+            [50, 6],
+            [54, 4],
+            [56, 10],
+            [52, 13],
+            [3, 28],
+            [57, 30],
+            [3, 33],
+            [4, 41],
+            [7, 43],
+            [12, 42],
+            [18, 44],
+            [40, 42],
+            [44, 44],
+            [50, 41],
+            [54, 43],
+            [57, 36],
+          ])
+            l(`pine`, e, t);
+          for (let [e, t, n, r] of [
+            [3, 8, 2, 1],
+            [6, 13, 1, 1],
+            [10, 7, 1, 1],
+            [12, 15, 2, 1],
+            [2, 16, 1, 1],
+            [50, 10, 2, 1],
+            [55, 16, 1, 1],
+            [47, 8, 1, 1],
+            [53, 7, 1, 1],
+            [3, 24, 2, 1],
+            [1, 36, 1, 1],
+            [56, 24, 2, 1],
+            [55, 33, 1, 1],
+            [17, 40, 2, 1],
+            [24, 38, 1, 1],
+            [37, 40, 2, 1],
+            [46, 39, 1, 1],
+            [8, 41, 1, 1],
+            [14, 40, 1, 1],
+            [26, 42, 2, 1],
+            [34, 43, 1, 1],
+            [52, 38, 2, 1],
+            [57, 42, 1, 1],
+            [20, 20, 1, 1],
+            [45, 20, 1, 1],
+          ])
+            l(`rock`, e, t, n, r);
+          for (let [e, t] of [
+            [13, 17],
+            [14, 17],
+            [46, 34],
+            [46, 35],
+            [43, 23],
+            [26, 23],
+          ])
+            l(`crates`, e, t);
+          for (let [e, t] of [
+            [53, 23],
+            [17, 33],
+            [17, 34],
+            [26, 24],
+            [44, 17],
+            [15, 18],
+          ])
+            l(`barrel`, e, t);
+          for (let [e, t] of [
+            [32, 20],
+            [33, 40],
+          ])
+            l(`minecart`, e, t);
+          for (let [e, t] of [
+            [28, 25],
+            [32, 25],
+            [28, 32],
+            [28, 36],
+          ])
+            l(`lamp`, e, t);
+          for (let q of [
+            [11, 52, 17, 6],
+            [33, 52, 18, 6],
+            [25, 47, 3, 5],
+            [33, 47, 3, 5],
+            [14, 48, 3, 2],
+            [44, 48, 3, 2],
+            [20, 49, 1, 1],
+            [40, 49, 1, 1],
+            [15, 59, 6, 1],
+            [41, 59, 6, 1],
+            [23, 60, 4, 1],
+            [34, 60, 4, 1],
+            [11, 60, 3, 2],
+            [48, 60, 3, 2],
+            [21, 62, 7, 1],
+            [34, 62, 7, 1],
+            [15, 65, 32, 2],
+            [22, 69, 30, 2],
+          ])
+            r.push({ kind: `station`, x: q[0], y: q[1], w: q[2], h: q[3] });
+          return r;
+        }
+        var Se = [
+            _e,
+            new ue({
+              id: `mining-town`,
+              name: `Minerals Town`,
+              w: 60,
+              h: 75,
+              theme: `mine`,
+              buildings: ve,
+              places: ye,
+              roadsH: [{ y: 27, h: 3 }],
+              roadsV: [{ x: 29, w: 3, y0: 18, y1: 47 }],
+              rails: be,
+              spawn: { x: 8, y: 42 },
+              npcs: [
+                `vex`,
+                `morrow`,
+                `foreman`,
+                `miner`,
+                `blaster`,
+                `carter`,
+                `sorter`,
+                `timberman`,
+                `smith`,
+                `gemdealer`,
+                `medic`,
+                `innkeeper`,
+                `stationmaster`,
+                `ticketclerk`,
+                `porter`,
+              ],
+              warps: [
+                {
+                  x: 44,
+                  y: 64,
+                  w: 3,
+                  h: 1,
+                  needsPass: !0,
+                  label: `Train to English Town`,
+                  to: `english-town`,
+                  spawn: { x: 42, y: 63 },
+                },
+                {
+                  x: 51,
+                  y: 46,
+                  w: 3,
+                  h: 1,
+                  label: `Hidden freight tunnel → Art District`,
+                  to: `art-district`,
+                  spawn: { x: 35, y: 51 },
+                  requiresArtDistrict: !1,
+                  hiddenUntilArtUnlock: !1,
+                },
+              ],
+              makeObstacles: xe,
+            }),
+            new ue({
+              id: `art-district`,
+              name: `Art District – Painters Quarter & Neon Carnival`,
+              w: 110,
+              h: 100,
+              theme: `art`,
+              buildings: [
+                { name: `Neon Symphony Hall`, x: 77, y: 55, w: 13, h: 8, color: 0xffb668, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Skybridge Gallery`, x: 77, y: 3, w: 13, h: 8, color: 0xaab6ff, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Aurora Rooftop Club`, x: 94, y: 55, w: 13, h: 8, color: 0x89ecf0, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Mirror Dance Academy`, x: 77, y: 72, w: 13, h: 8, color: 0xf6b1dc, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Graffiti Tower`, x: 77, y: 20, w: 13, h: 9, color: 0xf9b06a, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Light Lab Studio`, x: 94, y: 20, w: 13, h: 9, color: 0x85bdff, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Hologram Theater`, x: 94, y: 3, w: 13, h: 8, color: 0xc1a4fc, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Costume Studio`, x: 77, y: 38, w: 13, h: 8, color: 0xffab9b, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Vinyl Social House`, x: 94, y: 72, w: 13, h: 8, color: 0xf7cd89, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Art Hostel`, x: 94, y: 38, w: 13, h: 8, color: 0xb6e6aa, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Cinema Wall`, x: 77, y: 88, w: 13, h: 8, color: 0xffa7bf, wall: 0x40546a, door: 83, chimney: !1 },
+                { name: `Kite Roof Plaza`, x: 94, y: 88, w: 13, h: 8, color: 0x8dd4ce, wall: 0x40546a, door: 100, chimney: !1 },
+                { name: `Artist Market Arcade`, x: 4, y: 61, w: 14, h: 7, color: 0xe9b8f2, wall: 0x40546a, door: 11, chimney: !1 },
+                { name: `Midnight Snack Alley`, x: 4, y: 79, w: 14, h: 7, color: 0xffbd81, wall: 0x40546a, door: 11, chimney: !1 },
+                { name: `Rhythm Workshop`, x: 40, y: 61, w: 14, h: 7, color: 0xe7acfa, wall: 0x40546a, door: 47, chimney: !1 },
+                { name: `Sound Garden`, x: 58, y: 61, w: 14, h: 7, color: 0xa3ecb3, wall: 0x40546a, door: 65, chimney: !1 },
+                { name: `Sculpture Garden`, x: 22, y: 61, w: 14, h: 7, color: 0xc0e1ff, wall: 0x40546a, door: 29, chimney: !1 },
+                { name: `Beat Bridge`, x: 22, y: 79, w: 14, h: 7, color: 0xfea4cd, wall: 0x40546a, door: 29, chimney: !1 },
+                { name: `Mini Ferris Neon`, x: 40, y: 79, w: 14, h: 7, color: 0xffda89, wall: 0x40546a, door: 47, chimney: !1 },
+                { name: `Lantern Courtyard`, x: 58, y: 79, w: 14, h: 7, color: 0xa4e5ce, wall: 0x40546a, door: 65, chimney: !1 },
+                { name: `Color Gallery`, x: 4, y: 4, w: 11, h: 7, color: 5724237, wall: 8619141, door: 9, chimney: !1 },
+                // (moved from the top middle to the bottom-left corner on 08/11/2026: the middle is kept free for a future landmark)
+                { name: `Backbeat Warehouse`, x: 4, y: 39, w: 11, h: 6, color: 4936534, wall: 7892069, door: 9, chimney: !1 },
+                { name: `Open Canvas Gallery`, x: 57, y: 4, w: 11, h: 7, color: 6250337, wall: 9211020, door: 62, chimney: !1 },
+                { name: `Mural Workshop`, x: 4, y: 25, w: 11, h: 7, color: 5263693, wall: 7766156, door: 9, chimney: !1 },
+                { name: `Photo Lab`, x: 57, y: 25, w: 11, h: 7, color: 4803911, wall: 8290435, door: 62, chimney: !1 },
+                { name: `Independent Studio`, x: 57, y: 39, w: 11, h: 6, color: 5395280, wall: 8882312, door: 62, chimney: !1 },
+              ],
+              places: {
+                noor_front: { x: 9, y: 12 },
+                ivo_front: { x: 9, y: 47 },
+                ada_front: { x: 62, y: 12 },
+                kai_front: { x: 9, y: 34 },
+                mira_yard: { x: 27, y: 44 },
+                ren_front: { x: 62, y: 34 },
+                sol_front: { x: 62, y: 47 },
+                tunnel_spawn: { x: 35, y: 51 },
+                plaza: { x: 36, y: 40 }, // in front of the tunnel (the middle is the fenced site)
+              },
+              // V69: continuous pedestrian avenues through both new quarters;
+              // all old streets and tunnel approach remain available.
+              roadsH: [
+                { y: 14, h: 3 }, { y: 27, h: 2, x0: 23, x1: 49 },
+                { y: 33, h: 3 }, { y: 49, h: 3, x0: 69, x1: 110 },
+                { y: 69, h: 3 }, { y: 86, h: 2 },
+              ],
+              roadsV: [
+                { x: 20, w: 3, y0: 14, y1: 59 },
+                { x: 49, w: 3, y0: 14, y1: 59 },
+                { x: 34, w: 4, y0: 10, y1: 58 },
+                { x: 72, w: 4, y0: 10, y1: 98 },
+                { x: 90, w: 4, y0: 10, y1: 98 },
+                { x: 18, w: 4, y0: 57, y1: 98 },
+                { x: 37, w: 3, y0: 57, y1: 98 },
+                { x: 55, w: 3, y0: 57, y1: 98 },
+              ],
+              spawn: { x: 35, y: 51 },
+              npcs: [`noor`, `ivo`, `ada`, `kai`, `mira`, `ren`, `sol`],
+              warps: [
+                {
+                  x: 33, y: 54, w: 4, h: 1,
+                  label: `Back through the hidden freight tunnel`,
+                  to: `mining-town`, spawn: { x: 48, y: 47 },
+                },
+              ],
+              // V67 — fully open Living Canvas plaza. Only the two gate tower bases
+              // are physical blockers; the 4-tile central axis remains walkable.
+              makeObstacles: (a) => [
+                { kind: `art-gate-base`, x: 30, y: 11, w: 3, h: 5 },
+                { kind: `art-gate-base`, x: 40, y: 11, w: 3, h: 5 },
+                { kind: `bench`, x: 25, y: 19, w: 1, h: 1 },
+                { kind: `bench`, x: 46, y: 19, w: 1, h: 1 },
+                { kind: `lamp`, x: 17, y: 18, w: 1, h: 1 },
+                { kind: `lamp`, x: 54, y: 18, w: 1, h: 1 },
+                { kind: `lamp`, x: 18, y: 37, w: 1, h: 1 },
+                { kind: `lamp`, x: 53, y: 37, w: 1, h: 1 },
+                { kind: `barrel`, x: 16, y: 23, w: 1, h: 1 },
+                { kind: `barrel`, x: 55, y: 23, w: 1, h: 1 },
+                { kind: `crates`, x: 19, y: 29, w: 1, h: 1 },
+                { kind: `crates`, x: 52, y: 29, w: 1, h: 1 },
+                { kind: `bench`, x: 24, y: 44, w: 1, h: 1 },
+                { kind: `bench`, x: 47, y: 44, w: 1, h: 1 },
+                { kind: `lamp`, x: 30, y: 48, w: 1, h: 1 },
+                { kind: `lamp`, x: 41, y: 48, w: 1, h: 1 },
+              ],
+            }),
+          ],
+          Ce = _e.id;
+        // Chapter 2: Oriaris Village, English Town 70 years ago (data and drawing in js/past.js).
+        if (window.LQPast && window.LQPast.area) Se.push(new ue(window.LQPast.area));
+        // Chapter 2: the North Trail (3 maps) and the North Camp, where the player brings the letters (js/front.js).
+        if (window.LQFront && window.LQFront.areas) window.LQFront.areas.forEach((a) => Se.push(new ue(a)));
+        // Public directory of every real, registered outdoor map. Keep this driven by
+        // Se so newly added chapters automatically appear in the Menu map selector.
+        // Fast travel never creates a fake area and only spawns on walkable tiles.
+        window.LQWorldMaps = Object.freeze({
+          list: () => Se.map((a) => ({ id: a.id, name: a.name, theme: a.theme, w: a.w, h: a.h })),
+          destination: (id) => {
+            const area = Se.find((a) => a.id === id);
+            if (!area) return null;
+            const spawn = area.spawn || { x: Math.floor(area.w / 2), y: Math.floor(area.h / 2) };
+            const x0 = Math.max(0, Math.min(area.w - 1, Math.floor(Number(spawn.x) || 0)));
+            const y0 = Math.max(0, Math.min(area.h - 1, Math.floor(Number(spawn.y) || 0)));
+            for (let radius = 0; radius < Math.max(area.w, area.h); radius++) {
+              for (let dy = -radius; dy <= radius; dy++) {
+                for (let dx = -radius; dx <= radius; dx++) {
+                  if (Math.max(Math.abs(dx), Math.abs(dy)) !== radius) continue;
+                  const x = x0 + dx, y = y0 + dy;
+                  if (area.isTileBlocked(x, y) || area.warpAt(x, y)) continue;
+                  return { id: area.id, name: area.name, spawn: { x, y } };
+                }
+              }
+            }
+            return null;
+          },
+        });
+        function we(e) {
+          return Se.find((t) => t.id === e) ?? _e;
+        }
+        function Te(e) {
+          return re.filter((t) => e.npcs.includes(t.id));
+        }
+        function Ee(e) {
+          return Se.find((t) => t.npcs.includes(e)) ?? _e;
+        }
+        function De() {
+          let e = [],
+            t = new Map();
+          for (let n of Se) {
+            n.npcs.length > 0 &&
+              n.npcs.length < 3 &&
+              e.push(`${n.id}: has ${n.npcs.length} resident(s); use 0 or at least 3`);
+            let r = (t, r, i) => {
+              let a = Se.find((e) => e.id === r);
+              if (!a) {
+                e.push(`${n.id}: ${t} leads to unknown area "${r}"`);
+                return;
+              }
+              (a.isTileBlocked(i.x, i.y) &&
+                e.push(`${n.id}: ${t} lands on a blocked tile (${i.x},${i.y}) of ${r}`),
+                a.warpAt(i.x, i.y) &&
+                  e.push(
+                    `${n.id}: ${t} lands inside a warp zone of ${r} (it would bounce straight back)`,
+                  ));
+            };
+            for (let e of n.warps) r(`warp "${e.label}"`, e.to, e.spawn);
+            for (let [t, i] of Object.entries(n.portals))
+              (n.buildings.some((e) => e.name === t) ||
+                e.push(`${n.id}: portal in unknown building "${t}"`),
+                r(`portal "${i.label}"`, i.to, i.spawn),
+                i.guard &&
+                  !n.npcs.includes(i.guard) &&
+                  e.push(
+                    `${n.id}: portal "${i.label}" guard "${i.guard}" does not live in this area`,
+                  ));
+            for (let r of n.npcs) {
+              (re.some((e) => e.id === r) || e.push(`${n.id}: resident "${r}" is not in NPCS`),
+                ie[r] || e.push(`${n.id}: resident "${r}" has no schedule`));
+              let i = t.get(r);
+              (i && e.push(`NPC "${r}" lives in both ${i} and ${n.id}`), t.set(r, n.id));
+              for (let t of ie[r] ?? [])
+                n.places[t.place] ||
+                  e.push(`${n.id}: ${r}'s schedule uses unknown place "${t.place}"`);
+            }
+            for (let [t, r] of Object.entries(n.places))
+              n.isTileBlocked(r.x, r.y) &&
+                e.push(`${n.id}: place "${t}" (${r.x},${r.y}) is blocked`);
+            n.isTileBlocked(n.spawn.x, n.spawn.y) && e.push(`${n.id}: spawn tile is blocked`);
+            for (let t of n.buildings)
+              n.isTileBlocked(t.door, t.y + t.h) &&
+                e.push(`${n.id}: the door of ${t.name} is blocked`);
+          }
+          for (let n of re) t.has(n.id) || e.push(`NPC "${n.id}" does not live in any area`);
+          return e;
+        }
+
+        var Oe = () => ({ messages: 0, corrections: 0, praised: 0, words: [], tips: [], book: [] }),
+          ke = 150;
+        function Ae(e, t) {
+          let n = t.term.trim().toLowerCase();
+          if (!n) return;
+          let r = e.book.findIndex((e) => e.term.toLowerCase() === n);
+          (r >= 0 && e.book.splice(r, 1), e.book.push(t), e.book.length > ke && e.book.shift());
+        }
+        var je = 600,
+          Me = 6;
+        function Ne(e, t, n) {
+          e.messages++;
+          for (let n of t.toLowerCase().match(/[a-z']{4,}/g) ?? [])
+            e.words.length < je && !e.words.includes(n) && e.words.push(n);
+          n &&
+            (/^(better|remember|check|use|tip)/i.test(n)
+              ? (e.corrections++, e.tips.push(n), e.tips.length > Me && e.tips.shift())
+              : e.praised++);
+        }
+        function Pe(e, t) {
+          let n = e.toLowerCase();
+          return t.some((e) =>
+            RegExp(`(?:^|[^a-z'])${e.replace(/[.*+?^${}()|[\]\\]/g, `\\$&`)}(?:$|[^a-z'])`).test(n),
+          );
+        }
+        var Fe = `english-town-save-v1`,
+          Ie = 80,
+          Le = 12,
+          Re = 10,
+          ze = () => ({
+            playerName: null,
+            visits: 0,
+            lastVisit: null,
+            affinity: 0,
+            facts: [],
+            transcript: [],
+            goalDone: !1,
+            summary: ``,
+            events: [],
+            turnCounter: 0,
+            summarizedCounter: 0,
+          }),
+          Be = class {
+            game = {
+              money: 100,
+              rep: 0,
+              day: 1,
+              minutes: 480,
+              quests: {},
+              stats: Oe(),
+              area: Ce,
+              visited: [Ce],
+            };
+            mem = {};
+            load() {
+              try {
+                let e = localStorage.getItem(Fe);
+                if (!e) return;
+                let t = JSON.parse(e);
+                (Object.assign(this.game, t.game),
+                  (this.game.stats = { ...Oe(), ...t.game?.stats }),
+                  Array.isArray(this.game.visited) || (this.game.visited = [Ce]),
+                  (this.mem = t.mem ?? {}));
+              } catch {}
+            }
+            frozen = !1;
+            save() {
+              if (!this.frozen)
+                try {
+                  localStorage.setItem(Fe, JSON.stringify({ game: this.game, mem: this.mem }));
+                } catch {}
+            }
+            exportJson() {
+              return JSON.stringify(
+                { app: `english-town`, version: 1, game: this.game, mem: this.mem },
+                null,
+                2,
+              );
+            }
+            importJson(e) {
+              let t = JSON.parse(e),
+                n = t?.game;
+              if (
+                !n ||
+                typeof n != `object` ||
+                typeof n.day != `number` ||
+                typeof n.money != `number` ||
+                typeof n.rep != `number` ||
+                typeof n.minutes != `number`
+              )
+                throw Error(`This file is not an English Town save.`);
+              (localStorage.setItem(
+                Fe,
+                JSON.stringify({ game: n, mem: t.mem && typeof t.mem == `object` ? t.mem : {} }),
+              ),
+                (this.frozen = !0));
+            }
+            reset() {
+              try {
+                localStorage.removeItem(Fe);
+              } catch {}
+            }
+            get(e) {
+              return (this.mem[e] = { ...ze(), ...this.mem[e] });
+            }
+            all() {
+              return Object.entries(this.mem);
+            }
+          };
+        function Ve(e) {
+          return e < 0
+            ? `Unfriendly`
+            : e < 10
+              ? `Stranger`
+              : e < 30
+                ? `Acquaintance`
+                : e < 60
+                  ? `Friend`
+                  : `Close friend`;
+        }
+        function He(e, t) {
+          let n = t - e.day;
+          return n <= 0 ? `earlier today` : n === 1 ? `yesterday` : `${n} days ago`;
+        }
+        var Ue = new Set([
+          `fine`,
+          `good`,
+          `ok`,
+          `okay`,
+          `great`,
+          `happy`,
+          `sad`,
+          `tired`,
+          `hungry`,
+          `a`,
+          `an`,
+          `the`,
+          `new`,
+          `from`,
+          `here`,
+          `student`,
+          `looking`,
+          `not`,
+          `very`,
+          `so`,
+          `sorry`,
+          `learning`,
+          `ready`,
+          `bored`,
+          `busy`,
+        ]);
+        function We(e) {
+          let t = e.match(/\b(?:my name is|i am|i'm|im|call me)\s+([a-z]+)/i);
+          return !t || Ue.has(t[1].toLowerCase())
+            ? null
+            : t[1][0].toUpperCase() + t[1].slice(1).toLowerCase();
+        }
+        var Ge = (e) => e.split(/\s+(?:and|but|because|so|when|if)\s+|[.,!?;]/)[0].trim();
+        function Ke(e) {
+          let t = e,
+            n = [],
+            r = (e, t) => {
+              let r = t ? Ge(t) : ``;
+              r.length >= 2 && r.length <= 30 && n.push(`${e} ${r}`);
+            };
+          (r(`like`, t.match(/\bi (?:really |also )?(?:like|love|enjoy) ([a-z' ]+)/i)?.[1]),
+            r(`dislike`, t.match(/\bi (?:hate|(?:don't|do not|dont) like) ([a-z' ]+)/i)?.[1]),
+            r(`live in`, t.match(/\bi live in ([a-z ]+)/i)?.[1]),
+            r(`are from`, t.match(/\bi(?: am|'m) from ([a-z ]+)/i)?.[1]));
+          let i = t.match(/\bmy fa?vou?rite (\w+) is ([a-z ]+)/i);
+          if (i) {
+            let e = Ge(i[2]);
+            e && n.push(`say your favorite ${i[1]} is ${e}`);
+          }
+          return n;
+        }
+        function qe(e, t) {
+          let n = t.trim();
+          n &&
+            !e.facts.some((e) => e.toLowerCase() === n.toLowerCase()) &&
+            (e.facts.push(n), e.facts.length > Le && e.facts.shift());
+        }
+        function Je(e, t, n) {
+          (e.events.push({ day: t, text: n }), e.events.length > Re && e.events.shift());
+        }
+        function Ye(e, ...t) {
+          ((e.turnCounter += t.length),
+            e.transcript.push(...t),
+            e.transcript.length > Ie && e.transcript.splice(0, e.transcript.length - Ie));
+        }
+
+        var Xe = {
+            doctor: {
+              short: `Dr. Chen`,
+              traits: `calm, caring, observant, dry sense of humor, always thinks about health and gives practical advice`,
+              style: `Gentle and professional. Asks about symptoms ("since when?", "how bad?"). Ends with a short health tip. Says "take care".`,
+              lines: {
+                greet: [
+                  `Hello, {p}. Please, come in. How are you feeling?`,
+                  `Good to see you, {p}! Is everything okay?`,
+                ],
+                howAreYou: [
+                  `I'm fine, thank you for asking. Most patients forget to ask! How are you feeling, {p}?`,
+                  `A little tired, but a doctor is always on duty. And you?`,
+                ],
+                askName: [
+                  `I'm Dr. Chen. I take care of everyone in this town. And your name is...?`,
+                ],
+                thanks: [
+                  `You're welcome. Remember to drink water and sleep well!`,
+                  `My pleasure, {p}. Take care of yourself.`,
+                ],
+                bye: [
+                  `Take care, {p}. Come back if you feel worse.`,
+                  `Goodbye! And remember: eight hours of sleep, every night.`,
+                ],
+                yes: [`Good. Can you tell me more?`, `I see. Let's go step by step.`],
+                no: [
+                  `No problem. Tell me what is bothering you instead.`,
+                  `That's good to hear. Any other symptoms?`,
+                ],
+                whereFrom: [
+                  `I studied medicine in the big city, but I came back here. Small towns need doctors too. Where are you from?`,
+                ],
+                hobby: [
+                  `I like jogging in the park and playing the piano. Do you exercise, {p}?`,
+                  `I love cooking healthy soup! Do you cook?`,
+                ],
+                weather: [
+                  `Cold weather means many colds. Wear a jacket, {p}!`,
+                  `Hot days? Drink plenty of water and wear a hat.`,
+                ],
+                help: [`Of course. Tell me what hurts, and since when.`],
+                compliment: [
+                  `Thank you, that is kind. I just do my job.`,
+                  `Ha, thanks. A smile is good medicine too!`,
+                ],
+                insult: [`Please stay calm. Anger is bad for your heart.`],
+                work: [
+                  `I treat colds, broken arms, headaches... everything! The hospital is always busy.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(headache|head hurts|migraine)\b/,
+                  replies: [
+                    `A headache? Do you drink enough water? Rest your eyes and sleep well. Does it hurt a lot?`,
+                  ],
+                },
+                {
+                  re: /\b(cold|cough|fever|flu|sore throat)\b/,
+                  replies: [
+                    `That sounds like a cold. Rest, drink warm tea, and stay home. For how many days?`,
+                  ],
+                },
+                {
+                  re: /\b(stomach|belly|vomit|nausea)\b/,
+                  replies: [
+                    `A stomach ache? Eat light food, like rice or soup. What did you eat today?`,
+                  ],
+                },
+                {
+                  re: /\b(tired|sleep|insomnia)\b/,
+                  replies: [
+                    `Tired? Sleep seven or eight hours and never skip breakfast. How late do you go to bed?`,
+                  ],
+                },
+                {
+                  re: /\b(medicine|pill|tablet)\b/,
+                  replies: [
+                    `Take medicine only as I tell you, and never too many! Do you have any allergies?`,
+                  ],
+                },
+              ],
+              fallback: [
+                `I see. Can you describe it in a simple way?`,
+                `Hmm, tell me more, {p}. How long has it been like this?`,
+                `Interesting. Does anything make it better or worse?`,
+                `Mm-hm. And how do you feel today, in general?`,
+              ],
+              hints: [
+                `By the way, {p}, is anything hurting today? You can tell me.`,
+                `Do you have any health problem you want to talk about? A headache, a cold...?`,
+              ],
+              goalDone: [
+                `Thank you for telling me, {p}. Rest, drink water, and you will feel better soon. Your English is very clear!`,
+                `I understand now. Don't worry, it is nothing serious. Well explained, {p}!`,
+              ],
+            },
+            police: {
+              short: `Officer Davis`,
+              traits: `firm but friendly, protective, observant, loves his town, knows every street, a little serious about safety rules`,
+              style: `Calm and clear, short sentences. Says "stay safe". Gives precise directions using landmarks. Never rude.`,
+              lines: {
+                greet: [
+                  `Good day, {p}. Everything alright in town?`,
+                  `Hello there. Officer Davis here. Need anything?`,
+                ],
+                howAreYou: [
+                  `Doing well, thanks. A quiet day is the best kind of day for a police officer. And you, {p}?`,
+                  `Fine, a bit of paperwork today. How about you?`,
+                ],
+                askName: [`I'm Officer Davis. I keep the town safe. May I ask your name?`],
+                thanks: [`You're welcome. Stay safe out there.`, `Just doing my job, {p}.`],
+                bye: [
+                  `Stay safe, {p}. And use the zebra crossings!`,
+                  `Take care. You know where to find me if you need help.`,
+                ],
+                yes: [`Good. Please, go on.`, `Understood. What else can I do for you?`],
+                no: [`Alright. Is there a problem?`, `Okay. Let me know if anything changes.`],
+                whereFrom: [
+                  `I grew up two streets from here. I never wanted to leave. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `I like fishing at the lake on weekends, and I coach the kids' football team. What do you do for fun?`,
+                  `Reading detective novels, of course! Do you like mysteries?`,
+                ],
+                weather: [
+                  `Rain makes the roads slippery. Walk carefully, {p}!`,
+                  `Sunny days are great for patrol. I walk the whole town.`,
+                ],
+                help: [`Of course, that is my job. What is the problem?`],
+                compliment: [
+                  `Thank you, that is kind of you.`,
+                  `Appreciate it, {p}. The town makes my job easy.`,
+                ],
+                insult: [`Please watch your language. Let us stay polite.`],
+                work: [
+                  `I patrol the town, help people, and solve small problems. Mostly lost cats and lost tourists!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(hospital|doctor|clinic)\b/,
+                  replies: [
+                    `The hospital is in the east. Take the main road, cross the big avenue at the zebra crossing, and look for the blue roof.`,
+                  ],
+                },
+                {
+                  re: /\b(school|teacher|class)\b/,
+                  replies: [
+                    `The school is in the east too, behind the white fence. Cross the big avenue and follow the road south.`,
+                  ],
+                },
+                {
+                  re: /\b(library|book)\b/,
+                  replies: [
+                    `The library is south-west of the main road, with the green roof, next to the gym.`,
+                  ],
+                },
+                {
+                  re: /\b(cafe|coffee)\b/,
+                  replies: [
+                    `Sunny Cafe is in the north-west. Follow the main road west and look for the red roof with stripes.`,
+                  ],
+                },
+                {
+                  re: /\b(park|fountain)\b/,
+                  replies: [
+                    `The park with the fountain is in the middle of town, just south of the main road.`,
+                  ],
+                },
+                {
+                  re: /\b(steal|stole|thief|crime|lost wallet)\b/,
+                  replies: [
+                    `Report it to me right away. Tell me what happened and where. Safety first.`,
+                  ],
+                },
+                {
+                  re: /\b(road|cross|crossing|traffic|street)\b/,
+                  replies: [`Always use the zebra crossings and look both ways. It saves lives!`],
+                },
+              ],
+              fallback: [
+                `I see. Can you explain more clearly, {p}?`,
+                `Hmm. Tell me what you mean.`,
+                `Understood. Is that something I should know about?`,
+                `Interesting. Anything else I can help with?`,
+              ],
+              hints: [
+                `If you are looking for a place in town, just ask me for directions, {p}.`,
+                `Are you lost? I know every street. Just ask me where something is.`,
+              ],
+              goalDone: [
+                `Of course, {p}. Follow the main road, use the zebra crossing, and you will find it. Good question!`,
+                `No problem! Stay on the sidewalk, and ask me again if you get lost. Your English is clear, {p}!`,
+              ],
+            },
+            teacher: {
+              short: `Ms. Taylor`,
+              traits: `enthusiastic, encouraging, patient, loves languages, celebrates every small success, a bit of a perfectionist about grammar`,
+              style: `Warm and upbeat. Says "Great job!", "Nice try!", "Let's practice!". Gently repeats the correct form. Asks the player to try again.`,
+              lines: {
+                greet: [
+                  `Hello, {p}! Great to see you! Ready to practice some English?`,
+                  `Hi there, {p}! What a nice surprise!`,
+                ],
+                howAreYou: [
+                  `I'm wonderful, thank you for asking! Nice and polite, {p}! How are you today?`,
+                  `Very well! I love teaching. How about you?`,
+                ],
+                askName: [`I'm Ms. Taylor, the English teacher. Can you say: "My name is..."?`],
+                thanks: [
+                  `You're welcome! Nice use of "thank you"!`,
+                  `Anytime, {p}! Keep practicing!`,
+                ],
+                bye: [
+                  `Goodbye, {p}! Practice a little every day!`,
+                  `See you soon! Remember: one new word a day!`,
+                ],
+                yes: [`Great! Can you say it in a full sentence?`, `Excellent! Tell me more.`],
+                no: [
+                  `That's okay! Can you explain why? Try a full sentence.`,
+                  `No problem. What would you like to practice instead?`,
+                ],
+                whereFrom: [
+                  `I'm from a small town near the sea. Can you tell me about YOUR hometown? Use full sentences!`,
+                ],
+                hobby: [
+                  `I love reading, singing, and learning languages. What is your hobby? Say: "My hobby is..."`,
+                  `I paint on weekends. It's relaxing! And you?`,
+                ],
+                weather: [
+                  `Let's use the weather to practice! "It is sunny." "It is rainy." What is it like today?`,
+                  `Weather is a perfect topic for small talk. How is the weather in your country?`,
+                ],
+                help: [`Of course! I love helping. Ask me anything about English.`],
+                compliment: [
+                  `Aw, thank you, {p}! You are a wonderful student!`,
+                  `That is so kind. Your English is improving, too!`,
+                ],
+                insult: [`That's not a kind word. Let's use polite English, please.`],
+                work: [`I teach English at the school. My students are the best part of my day!`],
+              },
+              topics: [
+                {
+                  re: /\b(grammar|tense|verb|sentence)\b/,
+                  replies: [
+                    `Grammar is just patterns! Try: subject + verb + object. "I like apples." Can you make your own sentence?`,
+                  ],
+                },
+                {
+                  re: /\b(vocabulary|words?|meaning)\b/,
+                  replies: [
+                    `Learn five new words a day and use each one in a sentence. Which word is new for you?`,
+                  ],
+                },
+                {
+                  re: /\b(speak|speaking|talk|pronunciation)\b/,
+                  replies: [
+                    `Speaking is the best practice! Talk to people in town every day, just like you are doing now.`,
+                  ],
+                },
+                {
+                  re: /\b(homework|exercise|assignment)\b/,
+                  replies: [
+                    `Homework: write three sentences about your day. Can you tell me one right now?`,
+                  ],
+                },
+                {
+                  re: /\b(exam|test|quiz)\b/,
+                  replies: [
+                    `Don't worry about tests! A little practice every day beats studying all night.`,
+                  ],
+                },
+                {
+                  re: /\b(movie|film|music|song|youtube)\b/,
+                  replies: [
+                    `Watching movies in English with subtitles really helps! What is your favorite film?`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Good try, {p}! Can you say that again, a little more slowly?`,
+                `Interesting! Can you make it a full sentence?`,
+                `Nice! Tell me more. Try to use a new word!`,
+                `I like your effort! What happened next?`,
+              ],
+              hints: [
+                `Do you have a question about English, {p}? Homework, grammar, how to learn faster? I'm here to help!`,
+                `Would you like some tips to learn English? Just ask me!`,
+              ],
+              goalDone: [
+                `What a great question, {p}! Study a little every day, speak with people, and read. Wonderful English!`,
+                `Excellent, {p}! Asking about learning is the first step. Here's a tip: practice every single day!`,
+              ],
+            },
+            firefighter: {
+              short: `Carlos`,
+              traits: `brave, warm, sporty, jokes to stay cheerful, proud of the fire station, always safety-minded`,
+              style: `Energetic and friendly. Says "my friend", "no sweat", "stay safe". Uses short, vivid sentences. Sometimes teases lightly.`,
+              lines: {
+                greet: [
+                  `Hey, {p}! Good to see you, my friend!`,
+                  `Hello! Welcome to the best station in town!`,
+                ],
+                howAreYou: [
+                  `Strong and ready, my friend! Just finished training. How are you, {p}?`,
+                  `Can't complain! No fires today, which is great. And you?`,
+                ],
+                askName: [`I'm Carlos, firefighter! Strong arms, big heart. What's your name?`],
+                thanks: [`No sweat, {p}! Happy to help!`, `Anytime! That's what we're here for!`],
+                bye: [`Stay safe, {p}! And check your smoke alarm!`, `See you around, my friend!`],
+                yes: [`Awesome! Tell me more!`, `That is the spirit!`],
+                no: [`No worries. What would you like instead?`, `Fair enough, my friend.`],
+                whereFrom: [`Born here! My dad was a firefighter too. Where are you from, {p}?`],
+                hobby: [
+                  `I love football, grilling, and rescuing cats from trees. True story! What about you?`,
+                  `Working out at the gym! Strong body, strong rescue. Do you exercise?`,
+                ],
+                weather: [
+                  `Hot dry days worry us. Fires start easily. Be careful with campfires, {p}!`,
+                  `Rainy days are quiet for us. I like them!`,
+                ],
+                help: [`Sure thing! What do you need, my friend?`],
+                compliment: [
+                  `Ha, thanks! You are too kind!`,
+                  `Thank you, {p}! Pizza on me. Just kidding!`,
+                ],
+                insult: [`Hey, easy now. Let us keep it friendly, okay?`],
+                work: [
+                  `I put out fires and rescue people and cats. Every day is different. I love it!`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(fire|smoke|alarm|burn)\b/,
+                  replies: [
+                    `Always test your smoke alarm every month, my friend! Do you have one at home?`,
+                  ],
+                },
+                {
+                  re: /\b(truck|siren|hose|ladder)\b/,
+                  replies: [
+                    `Our red fire truck is the pride of the station! Want to see the ladder? Just do not touch the siren!`,
+                  ],
+                },
+                {
+                  re: /\b(emergency|accident|danger)\b/,
+                  replies: [
+                    `In an emergency, stay calm, call the emergency number, and say your address clearly.`,
+                  ],
+                },
+                {
+                  re: /\b(cat|dog|animal|tree)\b/,
+                  replies: [
+                    `Ha! Yes, I once saved a cat from a tall tree. Classic! Do you like animals?`,
+                  ],
+                },
+                {
+                  re: /\b(gym|exercise|train|training|strong)\b/,
+                  replies: [`We train every day. Strong body, strong rescue! Do you work out?`],
+                },
+              ],
+              fallback: [
+                `Ha! Good one, {p}. Tell me more!`,
+                `No kidding? And then what?`,
+                `Interesting, my friend. What else is going on?`,
+                `I like that! Keep going.`,
+              ],
+              hints: [
+                `Hey, {p}, do you know what to do in a fire? Ask me about fire safety!`,
+                `Curious about my job, my friend? Ask me anything about fire safety!`,
+              ],
+              goalDone: [
+                `Great question, {p}! Stay low under the smoke, test your alarm, and know two exits. You'll be safe. Nice English!`,
+                `That's what I like to hear! Fire safety matters. Thanks for asking, {p}!`,
+              ],
+            },
+            chef: {
+              short: `Marco`,
+              traits: `passionate, dramatic, proud of his family recipes, generous, talks with his hands, hates when people say food is "just okay"`,
+              style: `Warm and theatrical. Sprinkles "Mamma mia!", "bellissimo", "my friend". Describes food with delicious details. Speaks simple English.`,
+              lines: {
+                greet: [
+                  `Ciao, {p}! Welcome, welcome! Are you hungry?`,
+                  `Ah, a new face! Sit down, my friend!`,
+                ],
+                howAreYou: [
+                  `Mamma mia, I'm great! The sauce is perfect today. And you, {p}?`,
+                  `Hot kitchen, hot heart! I'm good. How are you?`,
+                ],
+                askName: [`I'm Marco, the chef! My name is on the sign. What's your name, friend?`],
+                thanks: [`Prego! It is my pleasure, {p}!`, `For you, always! Enjoy your meal!`],
+                bye: [`Ciao, {p}! Come back hungry!`, `Arrivederci! The kitchen will miss you!`],
+                yes: [`Bellissimo! Tell me more!`, `Perfetto! What shall we cook?`],
+                no: [
+                  `No? Mamma mia! What would you like instead?`,
+                  `Ah, a picky customer! I like a challenge!`,
+                ],
+                whereFrom: [
+                  `My family came from Italy three generations ago. I learned to cook from my grandma. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `Cooking is my work AND my hobby! On Sundays I make pasta for the whole street. Do you cook?`,
+                  `I love opera and football! Do you like music?`,
+                ],
+                weather: [
+                  `Cold weather? Soup, my friend! Hot weather? Ice cream! Food fixes every weather.`,
+                  `A sunny day is perfect for fresh salad!`,
+                ],
+                help: [`Of course! Are you hungry? Tell me what you like and I cook it!`],
+                compliment: [
+                  `Grazie! You make me blush, {p}!`,
+                  `Mamma mia, thank you! That is the best part of my day!`,
+                ],
+                insult: [`Ehi! In my kitchen, we are kind to each other. Please!`],
+                work: [
+                  `I cook for the whole town! Pizza, pasta, soup, everything fresh. Cooking is my love.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(pizza|margherita)\b/,
+                  replies: [
+                    `Pizza! My grandmother's recipe, with fresh basil and hot cheese. One margherita coming up?`,
+                  ],
+                },
+                {
+                  re: /\b(pasta|spaghetti|lasagna|noodles?)\b/,
+                  replies: [
+                    `Pasta, bellissimo! Handmade this morning. Tomato sauce or cream sauce?`,
+                  ],
+                },
+                {
+                  re: /\b(soup)\b/,
+                  replies: [
+                    `My vegetable soup warms the heart. Perfect for a cold day. Do you want a big bowl?`,
+                  ],
+                },
+                {
+                  re: /\b(dessert|cake|ice cream|tiramisu|sweet)\b/,
+                  replies: [
+                    `Dessert? Tiramisu is my masterpiece! Coffee, cream and cocoa. You must try it!`,
+                  ],
+                },
+                {
+                  re: /\b(price|cost|how much|expensive|cheap)\b/,
+                  replies: [
+                    `Take a look at my menu for the current prices. What would you like?`,
+                  ],
+                },
+                {
+                  re: /\b(vegetarian|vegan|meat)\b/,
+                  replies: [
+                    `Vegetarian? Of course! My vegetable lasagna is bellissimo. No meat, only love!`,
+                  ],
+                },
+                {
+                  re: /\b(spicy|hot sauce|chili)\b/,
+                  replies: [
+                    `Spicy? A little chili, yes! But not too much. We want to taste the food!`,
+                  ],
+                },
+              ],
+              fallback: [
+                `Ah, interesting, {p}! Tell me more!`,
+                `Mamma mia, really? And then?`,
+                `Hmm, I like how you think! What else?`,
+                `You know what goes well with that? Good food! Are you hungry?`,
+              ],
+              hints: [
+                `But you must be hungry, {p}! What would you like to eat today? Pasta? Pizza?`,
+                `Come on, my friend, order something! Tell me what you would like to eat!`,
+              ],
+              goalDone: [
+                `Bellissimo choice, {p}! I cook it right now, with love. And your English is perfetto!`,
+                `Perfetto! One order coming up, {p}! Nice speaking, my friend!`,
+              ],
+            },
+          };
+var Ze = {
+            banker: {
+              short: `Ms. Park`,
+              traits: `precise, polite, thrifty, quietly funny, loves numbers and tidy desks, gives careful money advice`,
+              style: `Calm and professional. Says "certainly", "of course", "let me check". Explains money words in simple English.`,
+              lines: {
+                greet: [
+                  `Good day, {p}. Welcome to the bank. How may I help you?`,
+                  `Hello, {p}. Please, come to my desk.`,
+                ],
+                howAreYou: [
+                  `I am well, thank you. Numbers are calm today. And you, {p}?`,
+                  `Quite good! My coffee and my calculator are both working. How are you?`,
+                ],
+                askName: [`I am Ms. Park, the bank manager. May I have your name, please?`],
+                thanks: [
+                  `You are welcome, {p}. Safe saving!`,
+                  `My pleasure. That is what the bank is for.`,
+                ],
+                bye: [
+                  `Goodbye, {p}. Remember: save a little every week.`,
+                  `Have a lovely day. Come back any time.`,
+                ],
+                yes: [`Wonderful. Please, tell me more.`, `Certainly. What would you like to do?`],
+                no: [
+                  `I understand. Is there something else I can do?`,
+                  `That is fine. Take your time to decide.`,
+                ],
+                whereFrom: [
+                  `I grew up in a small town by the river. I moved here for the quiet. Where are you from, {p}?`,
+                ],
+                hobby: [
+                  `I collect old coins from different countries. Do you collect anything, {p}?`,
+                  `I enjoy gardening on Sundays. Small seeds, big results, like savings!`,
+                ],
+                weather: [
+                  `Rainy days are good for the bank: nobody goes shopping! Ha. What do you like, {p}?`,
+                ],
+                help: [
+                  `Of course. I can help you open an account, save money, or change money. What do you need?`,
+                ],
+                compliment: [
+                  `Thank you, that is very kind of you, {p}.`,
+                  `How nice. You have good manners.`,
+                ],
+                insult: [`Please, let us stay polite. Respect is free, but it is worth a lot.`],
+                work: [
+                  `I manage the bank. I help people save money, open accounts and plan for the future.`,
+                ],
+              },
+              topics: [
+                {
+                  re: /\b(account|open an account|savings)\b/,
+                  replies: [
+                    `A savings account is a safe place for your money, and it grows a little each month. Would you like to open one?`,
+                  ],
+                },
+                {
+                  re: /\b(save|saving|deposit)\b/,
+                  replies: [
+                    `Saving is easy: put aside a small part of your money each week. How much would you like to deposit?`,
+                  ],
+                },
+                {
+                  re: /\b(loan|borrow|debt)\b/,
+                  replies: [
+                    `A loan is money you borrow and pay back later, with a little extra. Think carefully first. What is the money for?`,
+                  ],
+                },
+                {
+                  re: /\b(card|credit|cash|atm)\b/,
+                  replies: [
+                    `Cash is good for small things, and a card is safer for big things. Which do you use, {p}?`,
+                  ],
+                },
+                {
+                  re: /\b(rich|poor|money|salary)\b/,
+                  replies: [
+                    `Money is a tool, not a goal. It helps you live well. What is your plan for it?`,
+                  ],
+                },
+              ],
+              fallback: [
+                `I see. Could you explain a little more, {p}?`,
+                `Hmm. Let me think. Do you have a question about money?`,
+                `Interesting. Is that something the bank can help with?`,
+                `Certainly. And what else would you like to know?`,
+              ],
+              hints: [
+                `By the way, {p}, would you like to open a savings account? I can explain it.`,
+                `Do you want to save some money today? Just tell me what you need.`,
+              ],
+              goalDone: [
+                `Certainly, {p}! I will open your account right away. Your English is very clear!`,
+                `Excellent decision, {p}. Saving is a good habit. Well said!`,
+              ],
+            },
+            postman: {
+              short: `Sam`,
+              traits: `friendly, sporty, always in a hurry, loves walking, knows everyone and every street, collects funny stories about letters`,
+              style: `Quick and cheerful. Says "no problem", "right away", "you got it". Short sentences, lots of street and delivery words.`,
+              lines: {
+                greet: [
+                  `Hey, {p}! Good to see you! Got a letter for me?`,
+                  `Hello there! Sam, the post office. What can I do?`,
+                ],
+                howAreYou: [
+                  `Tired legs, happy heart! I walked ten kilometers today. How are you, {p}?`,
+                  `Super! The sun is out and the bag is light. And you?`,
+                ],
+          
