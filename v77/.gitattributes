@@ -1,8 +1,0 @@
-build.sh text eol=lf
-game.sha256 text eol=lf
-living/*.js text eol=lf
-living/*.cjs text eol=lf
-living/*.css text eol=lf
-living/title/*.html text eol=lf
-living/title/*.webp binary
-living/art/*.png binary
