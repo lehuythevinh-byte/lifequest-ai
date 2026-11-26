@@ -8,9 +8,27 @@ const file=path.join(__dirname,'game.html');
 let day='',used=0,active=0;const clients=new Map();
 const limit=Math.max(1,Math.min(500,Number(process.env.AI_DAILY_REQUEST_LIMIT)||50));
 const reply=(res,n,o)=>{res.writeHead(n,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(o));};
+function stripNpcMetadata(value){
+ if(typeof value!=='string')return '';
+ let s=value.replace(/\r\n?/g,'\n').trim();
+ // Metadata is never spoken. Require a label at a line boundary or explicit divider;
+ // also catch distinctive machine-only keys when an AI puts them on the same line.
+ const labels='topic[_ ]?status|affinity[_ ]?delta|mood[_ ]?source|reply[_ ]?source|goal[_ ]?done|vietnamese[_ ]?tip|natural[_ ]?alternative|remember|correction|mood|vocabulary|notice|system[_ ]?instruction';
+ const labelStart=new RegExp('(?:^|\\n|\\s+---+\\s*)[\\t ]*(?:[-*]\\s+)?[\\s*"\'`_]*(?:'+labels+')[\\s*"\'`_]*[:=]','im');
+ const machineInline= /[ \t]+(?:["'`*_]*)(?:topicStatus|affinityDelta|goalDone|vietnameseTip|naturalAlternative|replySource|moodSource)(?:["'`*_]*)\s*[:=]/i;
+ const cut=[s.search(labelStart),s.search(machineInline)].filter(i=>i>=0);
+ if(cut.length)s=s.slice(0,Math.min(...cut));
+ s=s.replace(/(?:\n|\s)(?:[-*_]{3,})\s*$/,'').trim();
+ return s;
+}
 function makeStructured(body, system, messages){
  const g=body.generationConfig||{};
- if(g.responseMimeType!=="application/json")return null;
+ if(g.responseMimeType!=="application/json"){
+  if(system.includes("## Now\nThe player has just walked up to you.")&&messages.length===1&&messages[0]?.role==="user"&&messages[0]?.content==="*The player walks up to you.*"){
+   return {mode:"greeting",schema:{type:"object",properties:{reply:{type:"string",description:"Only the NPC's natural spoken greeting. No labels, metadata or Markdown."}},required:["reply"],additionalProperties:false}};
+  }
+  return null;
+ }
  const str=()=>({type:"string"}), bool=()=>({type:"boolean"});
  const obj=(properties,required=Object.keys(properties))=>({type:"object",properties,required,additionalProperties:false});
  const strings=(...keys)=>obj(Object.fromEntries(keys.map(k=>[k,str()])));
@@ -59,9 +77,18 @@ function decodeStructured(data,mode){
  if(!raw)throw Object.assign(Error("Claude returned an empty response"),{code:"EMPTY_RESPONSE"});
  if(!mode)return raw;
  let parsed=JSON.parse(raw.replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,""));
+ if(mode==="greeting"){
+  const clean=stripNpcMetadata(parsed?.reply);
+  if(!clean)throw Object.assign(Error("Claude returned no usable greeting"),{code:"EMPTY_RESPONSE"});
+  return clean;
+ }
  if(mode==="wrapped"){if(!parsed||!Object.hasOwn(parsed,"result"))throw Error("Missing structured result");parsed=parsed.result;}
  if(mode==="serialized"){if(typeof parsed?.json!=="string")throw Error("Missing serialized JSON");parsed=JSON.parse(parsed.json);}
  if(parsed===null||typeof parsed!=="object")throw Error("Expected JSON object or array");
+ if(!Array.isArray(parsed)&&typeof parsed.reply==="string"&&(Object.hasOwn(parsed,"topicStatus")||Object.hasOwn(parsed,"affinityDelta")||Object.hasOwn(parsed,"goalDone"))){
+  parsed.reply=stripNpcMetadata(parsed.reply);
+  if(!parsed.reply)throw Object.assign(Error("Claude returned no usable dialogue"),{code:"EMPTY_RESPONSE"});
+ }
  return JSON.stringify(parsed);
 }
 function convert(body){
@@ -73,7 +100,8 @@ function convert(body){
  const g=body.generationConfig||{};let system=body.systemInstruction?typeof body.systemInstruction==='string'?parts([{text:body.systemInstruction}]):parts(body.systemInstruction.parts):'';
  const structured=makeStructured(body,system,messages);
  if(structured){
-   if(structured.mode==='wrapped')system+='\nReturn the requested output inside the result property. The result must be the requested JSON value.';
+   if(structured.mode==='greeting')system+='\nFINAL OUTPUT RULE FOR THIS GREETING: Only return the structured reply field. Earlier instructions about topicStatus, mood, affinityDelta, corrections, memory and quest fields do not apply to this greeting. Never put those fields inside reply.';
+   else if(structured.mode==='wrapped')system+='\nReturn the requested output inside the result property. The result must be the requested JSON value.';
    else if(structured.mode==='serialized')system+='\nPut the complete requested JSON object or array, serialized as a JSON string, inside the json property. Do not add Markdown.';
    else system+='\nFollow the supplied JSON output schema. Preserve the learner meaning and use empty strings or arrays when the task specifies them.';
  }
@@ -81,7 +109,7 @@ function convert(body){
 }
 async function handler(req,res){
  const p=new URL(req.url,'http://localhost').pathname;
- if(p==='/health')return reply(res,200,{status:'running',release:'V107-Claude.2-StructuredJSON',structuredOutput:true,provider:'Claude',configured:!!key,model});
+ if(p==='/health')return reply(res,200,{status:'running',release:'V107-Claude.3-DialogueGuard',structuredOutput:true,provider:'Claude',configured:!!key,model});
  if(p==='/api/gemini'||p==='/api/claude'){
   if(req.method==='GET')return reply(res,200,{ok:!!key,provider:'Claude',model,models:[model]});
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
@@ -104,4 +132,4 @@ async function handler(req,res){
  const stat=await fs.promises.stat(file);res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Length':stat.size,'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'});if(req.method==='HEAD')return res.end();await pipeline(fs.createReadStream(file),res);
 }
 if(require.main===module)http.createServer((req,res)=>handler(req,res).catch(()=>{if(!res.headersSent&&!res.destroyed)reply(res,500,{error:'Internal error'});else res.destroy();})).listen(port,'0.0.0.0',()=>console.log('LifeQuest V107 ready; Claude configured:',!!key));
-module.exports={convert,handler,makeStructured,decodeStructured};
+module.exports={convert,handler,makeStructured,decodeStructured,stripNpcMetadata};
