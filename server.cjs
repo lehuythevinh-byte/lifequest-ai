@@ -2,7 +2,7 @@
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const {pipeline}=require('node:stream/promises');
 const key=(process.env.ANTHROPIC_API_KEY||'').trim();
-const model=process.env.CLAUDE_MODEL||'claude-haiku-4-5';
+const model=(process.env.CLAUDE_MODEL||'claude-haiku-4-5').trim();
 const port=Number(process.env.PORT||8787), origin=(process.env.RENDER_EXTERNAL_URL||`http://localhost:${port}`).replace(/\/$/,'');
 const file=path.join(__dirname,'game.html');
 let day='',used=0,active=0;const clients=new Map();
@@ -16,16 +16,16 @@ function convert(body){
  if(messages.at(-1)?.role!=='user')throw Error('Last turn must be user');
  const g=body.generationConfig||{};let system=body.systemInstruction?typeof body.systemInstruction==='string'?parts([{text:body.systemInstruction}]):parts(body.systemInstruction.parts):'';
  if(g.responseMimeType==='application/json'){const schema=JSON.stringify(g.responseSchema||{});if(schema.length>12000)throw Error('Schema too large');system+='\nReturn only valid JSON, no Markdown. Follow this schema: '+schema;}
- return {model,messages,system,max_tokens:Math.min(4096,Math.max(32,Number(g.maxOutputTokens)||1024)),...(Number.isFinite(g.temperature)?{temperature:Math.max(0,Math.min(1,g.temperature))}:{})};
+ return {model,messages,system,max_tokens:Math.min(4096,Math.max(g.responseMimeType==='application/json'?1024:128,Number(g.maxOutputTokens)||1536)),...(Number.isFinite(g.temperature)?{temperature:Math.max(0,Math.min(1,g.temperature))}:{})};
 }
 async function handler(req,res){
  const p=new URL(req.url,'http://localhost').pathname;
- if(p==='/health')return reply(res,200,{status:'running',release:'V107',provider:'Claude',configured:!!key,model});
+ if(p==='/health')return reply(res,200,{status:'running',release:'V107-Claude.1',provider:'Claude',configured:!!key,model});
  if(p==='/api/gemini'||p==='/api/claude'){
-  if(req.method==='GET')return reply(res,200,{ok:!!key,provider:'Claude',models:['gemini-2.5-flash',model]});
+  if(req.method==='GET')return reply(res,200,{ok:!!key,provider:'Claude',model,models:[model]});
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   if(![origin,`http://localhost:${port}`,`http://127.0.0.1:${port}`].includes(req.headers.origin)||!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))return reply(res,403,{error:'Same-origin JSON required'});
-  if(!key)return reply(res,503,{error:'ANTHROPIC_API_KEY not configured'});
+  if(!key)return reply(res,503,{error:{message:'ANTHROPIC_API_KEY not configured in Render'}});
   let size=0,chunks=[];for await(const c of req){size+=c.length;if(size>125*1024)return reply(res,413,{error:'Request too large'});chunks.push(c);}
   let input,request;try{input=JSON.parse(Buffer.concat(chunks));request=convert(input.body);}catch(e){return reply(res,400,{error:e.message});}
   const now=Date.now(),today=new Date(now).toISOString().slice(0,10);if(day!==today){day=today;used=0;}
@@ -33,11 +33,11 @@ async function handler(req,res){
   const ip=req.socket.remoteAddress||'unknown';const c=clients.get(ip)||{start:now,n:0};clients.set(ip,c);
   if(used>=limit||active>=2||c.n>=20)return reply(res,429,{error:'AI request limit reached'});used++;c.n++;active++;
   try{const upstream=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01',...(process.env.ANTHROPIC_WORKSPACE_ID?{'anthropic-workspace-id':process.env.ANTHROPIC_WORKSPACE_ID}:{})},body:JSON.stringify(request),signal:AbortSignal.timeout(25000)});
-   if(!upstream.ok){await upstream.body?.cancel();return reply(res,upstream.status,{error:{message:'Claude returned HTTP '+upstream.status}});}
+   if(!upstream.ok){await upstream.body?.cancel();const status=upstream.status;const msg=({400:'Claude rejected request; check model and request format',401:'Claude API key invalid',403:'Claude API access denied',404:'Claude model not available; check CLAUDE_MODEL',429:'Claude rate limit or quota reached',529:'Claude service overloaded'})[status]||'Claude upstream HTTP '+status;console.warn('[Claude upstream]',status,upstream.headers.get('request-id')||'');return reply(res,status,{error:{message:msg,code:status}});}
    const data=await upstream.json();let text=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n');
-   if(input.body.generationConfig?.responseMimeType==='application/json'){text=text.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');try{JSON.parse(text);}catch{return reply(res,502,{error:'Claude returned invalid JSON'});}}
+   if(input.body.generationConfig?.responseMimeType==='application/json'){text=text.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');try{JSON.parse(text);}catch{const first=text.search(/[\[{]/),last=Math.max(text.lastIndexOf('}'),text.lastIndexOf(']'));if(first>=0&&last>first){const candidate=text.slice(first,last+1);try{JSON.parse(candidate);text=candidate;}catch{}}try{JSON.parse(text);}catch{console.warn('[Claude JSON]',data.stop_reason||'unknown');return reply(res,502,{error:{message:data.stop_reason==='max_tokens'?'Claude response exceeded token budget':'Claude returned invalid JSON',code:'INVALID_JSON'}});}}}
    return reply(res,200,{candidates:[{content:{role:'model',parts:[{text}]},finishReason:data.stop_reason==='max_tokens'?'MAX_TOKENS':'STOP'}],modelVersion:data.model});
-  }catch{return reply(res,502,{error:'Claude temporarily unavailable'});}finally{active--;}
+  }catch(err){const timed=err?.name==='TimeoutError'||err?.name==='AbortError';console.warn('[Claude transport]',err?.name||'unknown');return reply(res,timed?504:502,{error:{message:timed?'Claude request timed out':'Claude network connection failed',code:timed?'TIMEOUT':'UPSTREAM_NETWORK'}});}finally{active--;}
  }
  if(!['/','/index.html','/game.html'].includes(p)||!['GET','HEAD'].includes(req.method))return reply(res,404,{error:'Not found'});
  const stat=await fs.promises.stat(file);res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Length':stat.size,'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'});if(req.method==='HEAD')return res.end();await pipeline(fs.createReadStream(file),res);
