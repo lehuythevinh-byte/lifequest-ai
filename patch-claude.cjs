@@ -16,11 +16,11 @@
  s=s.replace(/(?:saved|ai|obj)\.geminiKey\s*\|\|\s*(?:window\.LIFEQUEST_AI_CONFIG\?|cfg)\.GEMINI_API_KEY\s*\|\|\s*''/g,"''");
  s=s.replace(/e\.geminiModel\s*\|\|\s*window\.LIFEQUEST_AI_CONFIG\?\.MODEL/g,"window.LIFEQUEST_AI_CONFIG?.MODEL");
  s=s.replace(/(?:saved|ai)\.geminiModel(?:\?\.trim\(\))?\s*\|\|\s*(?:window\.LIFEQUEST_AI_CONFIG\?\.MODEL|cfg\.MODEL)/g,m=>m.includes('cfg.MODEL')?'cfg.MODEL':'window.LIFEQUEST_AI_CONFIG?.MODEL');
- one("let e = this.keyInput.value.trim();\n               if (!e)","let e = '';\n               if (!(await window.LQGemini.proxyAvailable()))");
+ one("let e = this.keyInput.value.trim();\n              if (!e)","let e = '';\n               if (!(await window.LQGemini.proxyAvailable()))");
  one('this.setStatus(`Paste your API key first.`, !1);','this.setStatus("Claude is not configured on the server. Check ANTHROPIC_API_KEY in Render.", !1);');
  one('new Rt(e, this.modelInput.value).test()','new Rt("", window.LIFEQUEST_AI_CONFIG.MODEL, true).test()');
- one('e.geminiKey\n                     ? `A key is saved. NPCs use Gemini.`\n                     : `No key yet. NPCs use simple offline replies.`','"Checking Claude server..."');
- one('(this.root.style.display = `block`),\n                 setTimeout(() => this.keyInput.focus(), 0));','(this.root.style.display = `block`),\n                 window.LQGemini.proxyAvailable().then(ok=>this.setStatus(ok?"Claude server configured. Test connection to verify.":"Claude unavailable. Offline mode.",ok)));');
+ one('e.geminiKey\n                    ? `A key is saved. NPCs use Gemini.`\n                    : `No key yet. NPCs use simple offline replies.`','"Checking Claude server..."');
+ one('(this.root.style.display = `block`),\n                setTimeout(() => this.keyInput.focus(), 0));','(this.root.style.display = `block`),\n                 window.LQGemini.proxyAvailable().then(ok=>this.setStatus(ok?"Claude server configured. Test connection to verify.":"Claude unavailable. Offline mode.",ok)));');
  one('<div class="row"><button id="ai-close" type="button">Close</button></div>','<div class="row"><button id="ai-claude-test" type="button" onclick="document.getElementById(\'ai-test\').click()">Test Claude connection</button><button id="ai-close" type="button">Close</button></div>');
  one(".then(async (r) => r.ok && (await r.json()).ok === true)",".then(async (r) => {const j=await r.json();if(r.ok&&j.model)window.LIFEQUEST_AI_CONFIG.MODEL=j.model;return r.ok&&j.ok===true;})");
  one("status.textContent = key\n          ? 'Gemini configured · lessons ready'\n          : 'Offline learning · add your own key to use Gemini';","window.LQGemini.proxyAvailable().then(ok=>{status.textContent=ok?'Claude configured · lessons ready':'Offline learning · Claude server unavailable';});");
@@ -32,6 +32,9 @@
  s=s.replaceAll('free Gemini limit reached','Claude request limit reached').replaceAll('Free-tier limit reached.','Claude request limit reached.');
  s=s.replaceAll('Check your internet and the API key in ⚙ AI (K).','Check the server connection and Render logs.');
  s=s.replaceAll('https://aistudio.google.com/apikey','https://console.anthropic.com/');
+ s=s.replaceAll('NPC chats, sentence hints and the AI Coach work best with your own free Gemini key. It is saved only in this browser and sent only to Google. You can skip this and add it later.','Claude is configured by the game administrator on Render; no player API key is required.');
+ s=s.replaceAll('Get a free API key ↗','Claude console');
+ s=s.replaceAll('Connect Gemini for extended lookups','Connect the Claude server for extended lookups');
  s=s.replaceAll('Gemini','Claude').replaceAll('/api/gemini','/api/claude').replaceAll('gemini-proxy','claude-proxy').replaceAll('gemini-2.5-flash','claude-haiku-4-5');
  const chunks=s.split(boundary);if(chunks.length!==2)throw Error('Invalid manifest boundary');
  const tmp=file+'.claude.tmp',fd=fs.openSync(tmp,'w');try{fs.writeSync(fd,chunks[0]);fs.writeSync(fd,bytes.subarray(start,end+1));fs.writeSync(fd,chunks[1]);}finally{fs.closeSync(fd);}
