@@ -11,3 +11,5 @@ node --check remove-forgotten-valley.cjs
 node remove-forgotten-valley.cjs game.html
 node --check reply-first.cjs
 node reply-first.cjs game.html
+node --check dialogue-guard.cjs
+node dialogue-guard.cjs game.html
