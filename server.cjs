@@ -7,7 +7,18 @@ const port=Number(process.env.PORT||8787), origin=(process.env.RENDER_EXTERNAL_U
 const file=path.join(__dirname,'game.html');
 let day='',used=0,active=0;const clients=new Map();
 const limit=Math.max(1,Math.min(500,Number(process.env.AI_DAILY_REQUEST_LIMIT)||50));
-const reply=(res,n,o)=>{res.writeHead(n,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(o));};
+const hourlyLimit=Math.max(1,Math.min(500,Math.floor(Number(process.env.AI_HOURLY_REQUEST_LIMIT)||20)));
+const reply=(res,n,o,headers={})=>{res.writeHead(n,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers});res.end(JSON.stringify(o));};
+function limited(res,status,code,message,seconds){
+ const retryAfterSec=Math.max(1,Math.ceil(seconds));
+ return reply(res,status,{error:{code,message,retryAfterSec}},{'Retry-After':String(retryAfterSec)});
+}
+function checkBudget(now,used,limit,active,client,hourlyLimit){
+ if(used>=limit)return {status:429,code:'LOCAL_DAILY_LIMIT',message:'LifeQuest daily AI limit reached. Try again after the UTC daily reset or ask the administrator to review the request budget.',seconds:(Date.parse(new Date(now).toISOString().slice(0,10)+'T00:00:00Z')+86400000-now)/1000};
+ if(client.n>=hourlyLimit)return {status:429,code:'LOCAL_HOURLY_LIMIT',message:'LifeQuest hourly AI limit reached. Wait for the hourly reset.',seconds:(client.start+3600000-now)/1000};
+ if(active>=2)return {status:503,code:'LOCAL_BUSY',message:'LifeQuest AI is busy with other requests. Try again shortly.',seconds:5};
+ return null;
+}
 function stripNpcMetadata(value){
  if(typeof value!=='string')return '';
  let s=value.replace(/\r\n?/g,'\n').trim();
@@ -109,7 +120,7 @@ function convert(body){
 }
 async function handler(req,res){
  const p=new URL(req.url,'http://localhost').pathname;
- if(p==='/health')return reply(res,200,{status:'running',release:'V107-Claude.3-DialogueGuard',structuredOutput:true,provider:'Claude',configured:!!key,model});
+ if(p==='/health')return reply(res,200,{status:'running',release:'V107-Claude.4-RateGuard',structuredOutput:true,provider:'Claude',configured:!!key,model});
  if(p==='/api/gemini'||p==='/api/claude'){
   if(req.method==='GET')return reply(res,200,{ok:!!key,provider:'Claude',model,models:[model]});
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
@@ -120,9 +131,13 @@ async function handler(req,res){
   const now=Date.now(),today=new Date(now).toISOString().slice(0,10);if(day!==today){day=today;used=0;}
   for(const [k,v] of clients)if(now-v.start>=3600000)clients.delete(k);
   const ip=req.socket.remoteAddress||'unknown';const c=clients.get(ip)||{start:now,n:0};clients.set(ip,c);
-  if(used>=limit||active>=2||c.n>=20)return reply(res,429,{error:'AI request limit reached'});used++;c.n++;active++;
+  const blocked=checkBudget(now,used,limit,active,c,hourlyLimit);
+  if(blocked)return limited(res,blocked.status,blocked.code,blocked.message,blocked.seconds);
+  used++;c.n++;active++;
   try{const upstream=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01',...(process.env.ANTHROPIC_WORKSPACE_ID?{'anthropic-workspace-id':process.env.ANTHROPIC_WORKSPACE_ID}:{})},body:JSON.stringify(request),signal:AbortSignal.timeout(25000)});
-   if(!upstream.ok){await upstream.body?.cancel();const status=upstream.status;const msg=({400:'Claude rejected request; check model and request format',401:'Claude API key invalid',403:'Claude API access denied',404:'Claude model not available; check CLAUDE_MODEL',429:'Claude rate limit or quota reached',529:'Claude service overloaded'})[status]||'Claude upstream HTTP '+status;console.warn('[Claude upstream]',status,upstream.headers.get('request-id')||'');return reply(res,status,{error:{message:msg,code:status}});}
+   if(!upstream.ok){await upstream.body?.cancel();const status=upstream.status;
+    if(status===429){const header=upstream.headers.get('retry-after');const numeric=Number(header);const date=Date.parse(header||'');const delay=header&&Number.isFinite(numeric)&&numeric>0?numeric:Number.isFinite(date)?Math.max(1,(date-Date.now())/1000):60;console.warn('[Claude upstream] 429',upstream.headers.get('request-id')||'');return limited(res,429,'ANTHROPIC_RATE_LIMIT','Claude API rate limit reached. Check Anthropic usage and rate limits if this continues.',delay);}
+    const msg=({400:'Claude rejected request; check model and request format',401:'Claude API key invalid',403:'Claude API access denied',404:'Claude model not available; check CLAUDE_MODEL',429:'Claude rate limit or quota reached',529:'Claude service overloaded'})[status]||'Claude upstream HTTP '+status;console.warn('[Claude upstream]',status,upstream.headers.get('request-id')||'');return reply(res,status,{error:{message:msg,code:status}});}
    const data=await upstream.json();let text;
    try{text=decodeStructured(data,mode);}catch(err){const code=err.code||'INVALID_JSON';console.warn('[Claude output]',code,data.stop_reason||'unknown',upstream.headers.get('request-id')||'');return reply(res,code==='REFUSAL'?422:502,{error:{message:err.code?err.message:'Claude returned malformed structured JSON; retry the conversation',code}});}
    return reply(res,200,{candidates:[{content:{role:'model',parts:[{text}]},finishReason:data.stop_reason==='max_tokens'?'MAX_TOKENS':'STOP'}],modelVersion:data.model});
@@ -132,4 +147,4 @@ async function handler(req,res){
  const stat=await fs.promises.stat(file);res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Length':stat.size,'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'});if(req.method==='HEAD')return res.end();await pipeline(fs.createReadStream(file),res);
 }
 if(require.main===module)http.createServer((req,res)=>handler(req,res).catch(()=>{if(!res.headersSent&&!res.destroyed)reply(res,500,{error:'Internal error'});else res.destroy();})).listen(port,'0.0.0.0',()=>console.log('LifeQuest V107 ready; Claude configured:',!!key));
-module.exports={convert,handler,makeStructured,decodeStructured,stripNpcMetadata};
+module.exports={convert,handler,makeStructured,decodeStructured,stripNpcMetadata,checkBudget};
