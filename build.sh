@@ -7,3 +7,5 @@ sha256sum -c game.sha256
 node --check server.cjs
 node --check patch-claude.cjs
 node patch-claude.cjs game.html
+node --check remove-forgotten-valley.cjs
+node remove-forgotten-valley.cjs game.html
