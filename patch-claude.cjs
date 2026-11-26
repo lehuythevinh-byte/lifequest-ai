@@ -22,7 +22,7 @@
  one('e.geminiKey\n                    ? `A key is saved. NPCs use Gemini.`\n                    : `No key yet. NPCs use simple offline replies.`','"Checking Claude server..."');
  one('(this.root.style.display = `block`),\n                setTimeout(() => this.keyInput.focus(), 0));','(this.root.style.display = `block`),\n                 window.LQGemini.proxyAvailable().then(ok=>this.setStatus(ok?"Claude server configured. Test connection to verify.":"Claude unavailable. Offline mode.",ok)));');
  one('<div class="row"><button id="ai-close" type="button">Close</button></div>','<div class="row"><button id="ai-claude-test" type="button" onclick="document.getElementById(\'ai-test\').click()">Test Claude connection</button><button id="ai-close" type="button">Close</button></div>');
- one(".then(async (r) => r.ok && (await r.json()).ok === true)",".then(async (r) => {const j=await r.json();if(r.ok&&j.model)window.LIFEQUEST_AI_CONFIG.MODEL=j.model;return r.ok&&j.ok===true;})");
+ one(".then(async (r) => r.ok && (await r.json()).ok === true)",".then(async (r) => {const j=await r.json();if(r.ok&&j.model)window.LIFEQUEST_AI_CONFIG.MODEL=j.model;const ok=r.ok&&j.ok===true;if(!ok)setTimeout(()=>{probe=null;},10000);return ok;})");
  one("status.textContent = key\n          ? 'Gemini configured · lessons ready'\n          : 'Offline learning · add your own key to use Gemini';","window.LQGemini.proxyAvailable().then(ok=>{status.textContent=ok?'Claude configured · lessons ready':'Offline learning · Claude server unavailable';});");
  s=s.replaceAll('Open Settings > Test to check your key.','Check the Claude server connection in Settings > Test Claude connection.');
  s=s.replaceAll('Enter your key in ⚙ AI (K) for free-form chat.','Ask the administrator to configure ANTHROPIC_API_KEY in Render.');
@@ -34,7 +34,13 @@
  s=s.replaceAll('https://aistudio.google.com/apikey','https://console.anthropic.com/');
  s=s.replaceAll('NPC chats, sentence hints and the AI Coach work best with your own free Gemini key. It is saved only in this browser and sent only to Google. You can skip this and add it later.','Claude is configured by the game administrator on Render; no player API key is required.');
  s=s.replaceAll('Get a free API key ↗','Claude console');
+ s=s.replaceAll('A key is already saved','Claude is server-managed');
+ s=s.replaceAll('No Gemini API key yet','Claude server unavailable');
+ s=s.replaceAll('Press Save to use it.','Configured on the server.');
+ s=s.replaceAll('AbortSignal.timeout(9000)','AbortSignal.timeout(28000)');
  s=s.replaceAll('Connect Gemini for extended lookups','Connect the Claude server for extended lookups');
+ // Keep legacy variable names for save compatibility, but prohibit the old provider URL.
+ s=s.replaceAll('https://generativelanguage.googleapis.com/v1beta','/api/claude-legacy-disabled');
  s=s.replaceAll('Gemini','Claude').replaceAll('/api/gemini','/api/claude').replaceAll('gemini-proxy','claude-proxy').replaceAll('gemini-2.5-flash','claude-haiku-4-5');
  const chunks=s.split(boundary);if(chunks.length!==2)throw Error('Invalid manifest boundary');
  const tmp=file+'.claude.tmp',fd=fs.openSync(tmp,'w');try{fs.writeSync(fd,chunks[0]);fs.writeSync(fd,bytes.subarray(start,end+1));fs.writeSync(fd,chunks[1]);}finally{fs.closeSync(fd);}
