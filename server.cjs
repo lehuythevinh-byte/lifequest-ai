@@ -8,6 +8,62 @@ const file=path.join(__dirname,'game.html');
 let day='',used=0,active=0;const clients=new Map();
 const limit=Math.max(1,Math.min(500,Number(process.env.AI_DAILY_REQUEST_LIMIT)||50));
 const reply=(res,n,o)=>{res.writeHead(n,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(o));};
+function makeStructured(body, system, messages){
+ const g=body.generationConfig||{};
+ if(g.responseMimeType!=="application/json")return null;
+ const str=()=>({type:"string"}), bool=()=>({type:"boolean"});
+ const obj=(properties,required=Object.keys(properties))=>({type:"object",properties,required,additionalProperties:false});
+ const strings=(...keys)=>obj(Object.fromEntries(keys.map(k=>[k,str()])));
+ const arr=items=>({type:"array",items});
+ function normalize(raw,depth=0){
+  if(!raw||typeof raw!=="object"||Array.isArray(raw)||depth>12)throw Error("Unsupported JSON schema");
+  const type=String(raw.type||"").toLowerCase();
+  if(!["object","array","string","integer","number","boolean","null"].includes(type))throw Error("Unsupported JSON schema type");
+  const out={type};
+  if(typeof raw.description==="string")out.description=raw.description.slice(0,1000);
+  if(Array.isArray(raw.enum)&&raw.enum.length&&raw.enum.length<=100&&raw.enum.every(v=>v===null||["string","number","boolean"].includes(typeof v)))out.enum=raw.enum;
+  if(type==="object"){
+   const props=Object.entries(raw.properties||{});
+   if(!props.length||props.length>60)throw Error("Invalid JSON schema properties");
+   out.properties=Object.fromEntries(props.map(([k,v])=>[k,normalize(v,depth+1)]));
+   out.required=Array.isArray(raw.required)?raw.required.filter(k=>Object.hasOwn(out.properties,k)):props.map(([k])=>k);
+   out.additionalProperties=false;
+  }
+  if(type==="array")out.items=normalize(raw.items,depth+1);
+  if(raw.nullable===true&&type!=="null")return {anyOf:[out,{type:"null"}]};
+  return out;
+ }
+ let schema,mode="direct";
+ if(g.responseSchema){
+  if(JSON.stringify(g.responseSchema).length>12000)throw Error("Schema too large");
+  schema=normalize(g.responseSchema);
+ }else if(system.startsWith("You are the English Teacher for LifeQuest.")){
+  schema=obj({...Object.fromEntries(["minimalCorrection","naturalAlternative","vietnameseExplanation","englishExplanation","clarificationQuestion","errorType"].map(k=>[k,str()])),noCorrectionNeeded:bool(),clarificationOptions:arr(strings("label","sentence"))});
+ }else if(system.startsWith("You independently examine a proposed English correction for LifeQuest.")){
+  schema=obj(Object.fromEntries(["meaningPreserved","grammarCorrect","minimal","explanationCorrect","needsClarification"].map(k=>[k,bool()])));
+ }else{
+  const prompt=messages[0]?.content||"";
+  if(prompt.startsWith("You are an English tutor.")&&prompt.includes("JSON array of three strings"))schema=arr(str());
+  else if(prompt.startsWith("Create engaging English-learning RPG dialogue quest flavor."))schema=strings("title","summary_vi","instruction_en");
+  else if(prompt.startsWith("You are an English-learning quest recommender for a fictional valley."))schema=strings("id","why");
+  else if(prompt.startsWith("Return only a JSON array with exactly three objects, one for each of these IDs:")||prompt.startsWith("Roleplay an educational discussion between three fictional valley specialists."))schema=arr(strings("id","text"));
+  else {schema=strings("json");mode="serialized";}
+ }
+ if(mode==="direct"&&schema.type!=="object"){schema=obj({result:schema});mode="wrapped";}
+ return {schema,mode};
+}
+function decodeStructured(data,mode){
+ if(data.stop_reason==="refusal")throw Object.assign(Error("Claude declined this request"),{code:"REFUSAL"});
+ if(data.stop_reason==="max_tokens")throw Object.assign(Error("Claude response exceeded token budget"),{code:"MAX_TOKENS"});
+ const raw=(data.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("\n").trim();
+ if(!raw)throw Object.assign(Error("Claude returned an empty response"),{code:"EMPTY_RESPONSE"});
+ if(!mode)return raw;
+ let parsed=JSON.parse(raw.replace(/^```(?:json)?\s*/i,"").replace(/\s*```$/,""));
+ if(mode==="wrapped"){if(!parsed||!Object.hasOwn(parsed,"result"))throw Error("Missing structured result");parsed=parsed.result;}
+ if(mode==="serialized"){if(typeof parsed?.json!=="string")throw Error("Missing serialized JSON");parsed=JSON.parse(parsed.json);}
+ if(parsed===null||typeof parsed!=="object")throw Error("Expected JSON object or array");
+ return JSON.stringify(parsed);
+}
 function convert(body){
  if(!Array.isArray(body?.contents)||!body.contents.length||body.contents.length>40)throw Error('Invalid messages');
  let total=0;const parts=p=>{if(!Array.isArray(p)||!p.length||p.length>8||p.some(x=>typeof x?.text!=='string'||x.text.length>24000))throw Error('Only text is supported');const t=p.map(x=>x.text).join('\n');total+=t.length;if(total>60000)throw Error('Prompt too long');return t;};
@@ -15,27 +71,32 @@ function convert(body){
  if(messages[0]?.role!=='user')throw Error('First turn must be user');
  if(messages.at(-1)?.role!=='user')throw Error('Last turn must be user');
  const g=body.generationConfig||{};let system=body.systemInstruction?typeof body.systemInstruction==='string'?parts([{text:body.systemInstruction}]):parts(body.systemInstruction.parts):'';
- if(g.responseMimeType==='application/json'){const schema=JSON.stringify(g.responseSchema||{});if(schema.length>12000)throw Error('Schema too large');system+='\nReturn only valid JSON, no Markdown. Follow this schema: '+schema;}
- return {model,messages,system,max_tokens:Math.min(4096,Math.max(g.responseMimeType==='application/json'?1024:128,Number(g.maxOutputTokens)||1536)),...(Number.isFinite(g.temperature)?{temperature:Math.max(0,Math.min(1,g.temperature))}:{})};
+ const structured=makeStructured(body,system,messages);
+ if(structured){
+   if(structured.mode==='wrapped')system+='\nReturn the requested output inside the result property. The result must be the requested JSON value.';
+   else if(structured.mode==='serialized')system+='\nPut the complete requested JSON object or array, serialized as a JSON string, inside the json property. Do not add Markdown.';
+   else system+='\nFollow the supplied JSON output schema. Preserve the learner meaning and use empty strings or arrays when the task specifies them.';
+ }
+ return {request:{model,messages,system,max_tokens:Math.min(8192,Math.max(structured?2048:128,Number(g.maxOutputTokens)||1536)),...(structured?{output_config:{format:{type:'json_schema',schema:structured.schema}}}:{}),...(Number.isFinite(g.temperature)?{temperature:Math.max(0,Math.min(1,g.temperature))}:{})},mode:structured?.mode||null};
 }
 async function handler(req,res){
  const p=new URL(req.url,'http://localhost').pathname;
- if(p==='/health')return reply(res,200,{status:'running',release:'V107-Claude.1',provider:'Claude',configured:!!key,model});
+ if(p==='/health')return reply(res,200,{status:'running',release:'V107-Claude.2-StructuredJSON',structuredOutput:true,provider:'Claude',configured:!!key,model});
  if(p==='/api/gemini'||p==='/api/claude'){
   if(req.method==='GET')return reply(res,200,{ok:!!key,provider:'Claude',model,models:[model]});
   if(req.method!=='POST')return reply(res,405,{error:'Method not allowed'});
   if(![origin,`http://localhost:${port}`,`http://127.0.0.1:${port}`].includes(req.headers.origin)||!/^application\/json(?:;|$)/i.test(req.headers['content-type']||''))return reply(res,403,{error:'Same-origin JSON required'});
   if(!key)return reply(res,503,{error:{message:'ANTHROPIC_API_KEY not configured in Render'}});
   let size=0,chunks=[];for await(const c of req){size+=c.length;if(size>125*1024)return reply(res,413,{error:'Request too large'});chunks.push(c);}
-  let input,request;try{input=JSON.parse(Buffer.concat(chunks));request=convert(input.body);}catch(e){return reply(res,400,{error:e.message});}
+  let input,request,mode;try{input=JSON.parse(Buffer.concat(chunks));({request,mode}=convert(input.body));}catch(e){return reply(res,400,{error:e.message});}
   const now=Date.now(),today=new Date(now).toISOString().slice(0,10);if(day!==today){day=today;used=0;}
   for(const [k,v] of clients)if(now-v.start>=3600000)clients.delete(k);
   const ip=req.socket.remoteAddress||'unknown';const c=clients.get(ip)||{start:now,n:0};clients.set(ip,c);
   if(used>=limit||active>=2||c.n>=20)return reply(res,429,{error:'AI request limit reached'});used++;c.n++;active++;
   try{const upstream=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01',...(process.env.ANTHROPIC_WORKSPACE_ID?{'anthropic-workspace-id':process.env.ANTHROPIC_WORKSPACE_ID}:{})},body:JSON.stringify(request),signal:AbortSignal.timeout(25000)});
    if(!upstream.ok){await upstream.body?.cancel();const status=upstream.status;const msg=({400:'Claude rejected request; check model and request format',401:'Claude API key invalid',403:'Claude API access denied',404:'Claude model not available; check CLAUDE_MODEL',429:'Claude rate limit or quota reached',529:'Claude service overloaded'})[status]||'Claude upstream HTTP '+status;console.warn('[Claude upstream]',status,upstream.headers.get('request-id')||'');return reply(res,status,{error:{message:msg,code:status}});}
-   const data=await upstream.json();let text=(data.content||[]).filter(x=>x.type==='text').map(x=>x.text).join('\n');
-   if(input.body.generationConfig?.responseMimeType==='application/json'){text=text.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');try{JSON.parse(text);}catch{const first=text.search(/[\[{]/),last=Math.max(text.lastIndexOf('}'),text.lastIndexOf(']'));if(first>=0&&last>first){const candidate=text.slice(first,last+1);try{JSON.parse(candidate);text=candidate;}catch{}}try{JSON.parse(text);}catch{console.warn('[Claude JSON]',data.stop_reason||'unknown');return reply(res,502,{error:{message:data.stop_reason==='max_tokens'?'Claude response exceeded token budget':'Claude returned invalid JSON',code:'INVALID_JSON'}});}}}
+   const data=await upstream.json();let text;
+   try{text=decodeStructured(data,mode);}catch(err){const code=err.code||'INVALID_JSON';console.warn('[Claude output]',code,data.stop_reason||'unknown',upstream.headers.get('request-id')||'');return reply(res,code==='REFUSAL'?422:502,{error:{message:err.code?err.message:'Claude returned malformed structured JSON; retry the conversation',code}});}
    return reply(res,200,{candidates:[{content:{role:'model',parts:[{text}]},finishReason:data.stop_reason==='max_tokens'?'MAX_TOKENS':'STOP'}],modelVersion:data.model});
   }catch(err){const timed=err?.name==='TimeoutError'||err?.name==='AbortError';console.warn('[Claude transport]',err?.name||'unknown');return reply(res,timed?504:502,{error:{message:timed?'Claude request timed out':'Claude network connection failed',code:timed?'TIMEOUT':'UPSTREAM_NETWORK'}});}finally{active--;}
  }
@@ -43,4 +104,4 @@ async function handler(req,res){
  const stat=await fs.promises.stat(file);res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Length':stat.size,'Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'});if(req.method==='HEAD')return res.end();await pipeline(fs.createReadStream(file),res);
 }
 if(require.main===module)http.createServer((req,res)=>handler(req,res).catch(()=>{if(!res.headersSent&&!res.destroyed)reply(res,500,{error:'Internal error'});else res.destroy();})).listen(port,'0.0.0.0',()=>console.log('LifeQuest V107 ready; Claude configured:',!!key));
-module.exports={convert,handler};
+module.exports={convert,handler,makeStructured,decodeStructured};
