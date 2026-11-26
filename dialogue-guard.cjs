@@ -23,9 +23,9 @@ function stripNpcMetadata(value){
  let src=original.subarray(0,start).toString('utf8')+marker+original.subarray(end+1).toString('utf8');
  function one(a,b){if(src.split(a).length!==2)throw Error('Missing or ambiguous dialogue guard anchor: '+a.slice(0,100));src=src.replace(a,b);}
  one("function lqNpcSafeText(value, fallback = '') {",stripNpcMetadata.toString()+"\n        function lqNpcSafeText(value, fallback = '') {");
- one("           // Sometimes the provider emits malformed JSON with a valid reply property.",`           raw=stripNpcMetadata(raw);
+ one("// Sometimes the provider emits malformed JSON with a valid reply property.",`           raw=stripNpcMetadata(raw);
            if(!raw)return fallback;
-           // Sometimes the provider emits malformed JSON with a valid reply property.`);
+// Sometimes the provider emits malformed JSON with a valid reply property.`);
  const chunks=src.split(marker);
  if(chunks.length!==2)throw Error('Manifest boundary corrupted');
  const tmp=file+'.dialogue-guard.tmp',fd=fs.openSync(tmp,'w');
