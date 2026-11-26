@@ -9,3 +9,5 @@ node --check patch-claude.cjs
 node patch-claude.cjs game.html
 node --check remove-forgotten-valley.cjs
 node remove-forgotten-valley.cjs game.html
+node --check reply-first.cjs
+node reply-first.cjs game.html
