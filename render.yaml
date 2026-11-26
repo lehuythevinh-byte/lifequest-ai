@@ -14,5 +14,7 @@ services:
         value: claude-haiku-4-5
       - key: AI_DAILY_REQUEST_LIMIT
         value: '50'
+      - key: AI_HOURLY_REQUEST_LIMIT
+        value: '20'
       - key: NODE_VERSION
         value: '22'
