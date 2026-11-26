@@ -15,3 +15,5 @@ node --check dialogue-guard.cjs
 node dialogue-guard.cjs game.html
 node --check grammar-guard.cjs
 node grammar-guard.cjs game.html
+node --check rate-guard.cjs
+node rate-guard.cjs game.html
