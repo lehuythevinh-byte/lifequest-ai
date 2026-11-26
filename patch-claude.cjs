@@ -1,0 +1,39 @@
+'use strict';
+(function migrate(){
+ const fs=require('node:fs');
+ const file=process.argv[2]||'game.html', bytes=fs.readFileSync(file);
+ const start=bytes.indexOf('<script id="lq-offline-manifest51">'),end=bytes.indexOf('\n',start);
+ if(start<0||end<0||end-start<1000000)throw Error('Offline manifest boundary not found');
+ const boundary='/*LQ107_MANIFEST_BOUNDARY*/';
+ let s=bytes.subarray(0,start).toString('utf8')+boundary+bytes.subarray(end+1).toString('utf8');
+ function one(a,b){if(!s.includes(a))throw Error('Missing patch anchor: '+a.slice(0,100));s=s.replace(a,b);}
+ one("window.__lqModelReady=repair();","try{const cfg=read(); delete cfg.geminiKey; delete cfg.geminiModel; localStorage.setItem(KEY,JSON.stringify(cfg));}catch{} window.__lqModelReady=Promise.resolve();");
+ one("(this.apiKey = e),\n                (this.viaProxy = n)","(this.apiKey = ''),\n                (this.viaProxy = !0)");
+ one("geminiKey: String(e.geminiKey || window.LIFEQUEST_AI_CONFIG?.GEMINI_API_KEY || '')","geminiKey: ''");
+ one("geminiKey: this.keyInput.value.trim(),","geminiKey: '',");
+ one("geminiModel: this.modelInput.value.trim(),","geminiModel: window.LIFEQUEST_AI_CONFIG.MODEL,");
+ one("cfg.geminiKey = v;","delete cfg.geminiKey;");
+ s=s.replace(/(?:saved|ai|obj)\.geminiKey\s*\|\|\s*(?:window\.LIFEQUEST_AI_CONFIG\?|cfg)\.GEMINI_API_KEY\s*\|\|\s*''/g,"''");
+ s=s.replace(/e\.geminiModel\s*\|\|\s*window\.LIFEQUEST_AI_CONFIG\?\.MODEL/g,"window.LIFEQUEST_AI_CONFIG?.MODEL");
+ s=s.replace(/(?:saved|ai)\.geminiModel(?:\?\.trim\(\))?\s*\|\|\s*(?:window\.LIFEQUEST_AI_CONFIG\?\.MODEL|cfg\.MODEL)/g,m=>m.includes('cfg.MODEL')?'cfg.MODEL':'window.LIFEQUEST_AI_CONFIG?.MODEL');
+ one("let e = this.keyInput.value.trim();\n               if (!e)","let e = '';\n               if (!(await window.LQGemini.proxyAvailable()))");
+ one('this.setStatus(`Paste your API key first.`, !1);','this.setStatus("Claude is not configured on the server. Check ANTHROPIC_API_KEY in Render.", !1);');
+ one('new Rt(e, this.modelInput.value).test()','new Rt("", window.LIFEQUEST_AI_CONFIG.MODEL, true).test()');
+ one('e.geminiKey\n                     ? `A key is saved. NPCs use Gemini.`\n                     : `No key yet. NPCs use simple offline replies.`','"Checking Claude server..."');
+ one('(this.root.style.display = `block`),\n                 setTimeout(() => this.keyInput.focus(), 0));','(this.root.style.display = `block`),\n                 window.LQGemini.proxyAvailable().then(ok=>this.setStatus(ok?"Claude server configured. Test connection to verify.":"Claude unavailable. Offline mode.",ok)));');
+ one('<div class="row"><button id="ai-close" type="button">Close</button></div>','<div class="row"><button id="ai-claude-test" type="button" onclick="document.getElementById(\'ai-test\').click()">Test Claude connection</button><button id="ai-close" type="button">Close</button></div>');
+ one(".then(async (r) => r.ok && (await r.json()).ok === true)",".then(async (r) => {const j=await r.json();if(r.ok&&j.model)window.LIFEQUEST_AI_CONFIG.MODEL=j.model;return r.ok&&j.ok===true;})");
+ one("status.textContent = key\n          ? 'Gemini configured · lessons ready'\n          : 'Offline learning · add your own key to use Gemini';","window.LQGemini.proxyAvailable().then(ok=>{status.textContent=ok?'Claude configured · lessons ready':'Offline learning · Claude server unavailable';});");
+ s=s.replaceAll('Open Settings > Test to check your key.','Check the Claude server connection in Settings > Test Claude connection.');
+ s=s.replaceAll('Enter your key in ⚙ AI (K) for free-form chat.','Ask the administrator to configure ANTHROPIC_API_KEY in Render.');
+ s=s.replaceAll('Check the key in ⚙ AI (K).','Check ANTHROPIC_API_KEY in Render.');
+ s=s.replaceAll('Check the model name in ⚙ AI (K), for example gemini-2.5-flash.','Check CLAUDE_MODEL in Render.');
+ s=s.replaceAll('enter a Gemini API key in ⚙ AI (K)','configure the Claude server');
+ s=s.replaceAll('free Gemini limit reached','Claude request limit reached').replaceAll('Free-tier limit reached.','Claude request limit reached.');
+ s=s.replaceAll('Check your internet and the API key in ⚙ AI (K).','Check the server connection and Render logs.');
+ s=s.replaceAll('https://aistudio.google.com/apikey','https://console.anthropic.com/');
+ s=s.replaceAll('Gemini','Claude').replaceAll('/api/gemini','/api/claude').replaceAll('gemini-proxy','claude-proxy').replaceAll('gemini-2.5-flash','claude-haiku-4-5');
+ const chunks=s.split(boundary);if(chunks.length!==2)throw Error('Invalid manifest boundary');
+ const tmp=file+'.claude.tmp',fd=fs.openSync(tmp,'w');try{fs.writeSync(fd,chunks[0]);fs.writeSync(fd,bytes.subarray(start,end+1));fs.writeSync(fd,chunks[1]);}finally{fs.closeSync(fd);}
+ fs.renameSync(tmp,file);console.log('Claude frontend patch applied; original embedded assets preserved.');
+})();
