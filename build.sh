@@ -13,3 +13,5 @@ node --check reply-first.cjs
 node reply-first.cjs game.html
 node --check dialogue-guard.cjs
 node dialogue-guard.cjs game.html
+node --check grammar-guard.cjs
+node grammar-guard.cjs game.html
