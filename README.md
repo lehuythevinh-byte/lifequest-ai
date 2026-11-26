@@ -2,7 +2,7 @@
 
 ### Meaning Guardian · Học tiếng Anh qua thế giới nhập vai tương tác
 
-![Version](https://img.shields.io/badge/Version-V107%20Claude.3-356D65) ![CEFR](https://img.shields.io/badge/CEFR-A1%E2%80%93C1-426E97) ![AI](https://img.shields.io/badge/AI-Claude-D4A574) ![Runtime](https://img.shields.io/badge/Runtime-Node.js%2022-43853D)
+![Version](https://img.shields.io/badge/Version-V107%20Claude.4-356D65) ![CEFR](https://img.shields.io/badge/CEFR-A1%E2%80%93C1-426E97) ![AI](https://img.shields.io/badge/AI-Claude-D4A574) ![Runtime](https://img.shields.io/badge/Runtime-Node.js%2022-43853D)
 
 > **Khám phá thế giới. Trò chuyện bằng tiếng Anh. Sửa lỗi mà không làm mất ý định của người học.**
 
@@ -88,7 +88,7 @@ Có thể bật/tắt Teacher, Voice và hiệu ứng chuyển động chân dun
 
 ## 6. Kiến trúc và phiên bản hiện tại
 
-**Nhánh triển khai:** `deploy/lifequest-v107-claude` · **Backend:** `V107-Claude.3-DialogueGuard`
+**Nhánh triển khai:** `deploy/lifequest-v107-claude` · **Backend:** `V107-Claude.4-RateGuard`
 
 ```mermaid
 flowchart LR
@@ -142,7 +142,10 @@ Mở `http://localhost:8787` nếu chưa thiết lập biến `PORT`. Để sử
 | `ANTHROPIC_API_KEY` | Khóa Claude bí mật, bắt buộc để dùng AI trực tuyến. |
 | `CLAUDE_MODEL` | Mặc định `claude-haiku-4-5`. |
 | `AI_DAILY_REQUEST_LIMIT` | Mặc định 50 yêu cầu/ngày cho mỗi tiến trình đang chạy; không phải giới hạn chi phí cứng. |
+| `AI_HOURLY_REQUEST_LIMIT` | Mặc định 20 yêu cầu/giờ theo địa chỉ kết nối (có thể dùng chung sau proxy); điều chỉnh theo ngân sách. |
 | `NODE_VERSION` | `22` trong cấu hình Render. |
+
+Rate Guard phân biệt giới hạn ngày, giờ, máy chủ bận và 429 của Claude; trả `Retry-After` tương ứng. Từ điển lưu tối đa 300 kết quả từ đơn đã tra thành công trong bộ nhớ của phiên trình duyệt. Bộ đếm nội bộ đặt lại khi tiến trình khởi động lại, không thay thế giới hạn chi phí Anthropic.
 
 Kiểm tra `/health` để xem phiên bản backend và trạng thái đã cấu hình khóa. `configured: true` chỉ xác nhận có biến khóa, không chứng minh khóa hợp lệ hoặc AI trả lời thành công. Dùng chức năng Test Claude connection và thử hội thoại thực tế để xác minh.
 
@@ -161,6 +164,8 @@ lifequest-ai/
 ├── remove-forgotten-valley.cjs  # Loại map và xử lý tương thích save
 ├── reply-first.cjs              # Hiện lời đáp NPC trước feedback
 ├── dialogue-guard.cjs           # Lọc dữ liệu kỹ thuật khỏi lời thoại
+├── grammar-guard.cjs            # Cải thiện sửa câu và phản hồi
+├── rate-guard.cjs               # Giới hạn API và cache từ điển
 ├── render.yaml                  # Blueprint Render
 └── README.md
 ```
